@@ -1,0 +1,22 @@
+{
+    "type":"json_state",
+
+    "gama_ws_port":6666,
+    "monitor_ws_port":80,
+    "vr_ws_port":8080,
+    "app_port":8000,
+    
+    "gama": {
+        "model_file":"/models/model1.gaml",
+        "ip_adress":"localhost",
+        "connected":false,
+        "launched_experiment":false,
+        "loading":false,
+        "content_error":"",
+        "experiment_id":""
+    },
+
+    "vr": {
+        "id_connected":[]
+    }
+}

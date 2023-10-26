@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Remote app</title>
+    <!-- Incluez la bibliothèque D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f2f2f2;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+h1 {
+    background-color: #0074d9;
+    color: #fff;
+    padding: 20px;
+    text-align: center;
+    margin: 0;
+    width: 100%; /* Barre bleue sur toute la largeur */
+}
+
+h2 {
+    color: #0074d9;
+    text-align: center;
+}
+
+p {
+    margin: 10px 0;
+    text-align: center;
+    width: 100%; /* Texte sur toute la largeur */
+}
+
+
+#connection-state {
+    font-weight: bold;
+    font-size: 18px;
+    color: #4CAF50;
+}
+
+#authentification-state {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+#authentification-state.success {
+    color: #4CAF50;
+}
+
+#authentification-state.error {
+    color: #FF5733;
+}
+
+#id-view {
+    font-weight: bold;
+}
+
+#x-coordinate, #y-coordinate {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+#graph-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#graph-frame {
+    fill: none;
+    stroke: #000;
+    stroke-width: 2;
+}
+
+#change-pos {
+    background-color: #0074d9;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 20px;
+}
+
+#change-pos:hover {
+    background-color: #0056a1;
+}
+
+#new_x, #new_y {
+    width: 50px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 14px;
+    margin: 5px;
+}
+
+#new_x:focus, #new_y:focus {
+    outline: none;
+    border-color: #0074d9;
+}
+
+/* Réponses aux tailles d'écran spécifiques */
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 24px;
+    }
+    h2 {
+        font-size: 18px;
+    }
+    p {
+        font-size: 16px;
+    }
+    #change-pos {
+        font-size: 14px;
+    }
+}
+
+/* Pour les tablettes Samsung en mode portrait */
+@media (max-width: 768px) and (orientation: portrait) {
+    #graph-container {
+        padding: 10px;
+    }
+}
+
+/* Pour les tablettes Samsung en mode paysage et les écrans d'ordinateur */
+@media (min-width: 769px) {
+    #graph-container {
+        padding: 20px;
+    }
+}
+
+    </style>
+</head>
+<body>
+    <h1>Gama Server Linker - Game Page</h1>
+
+        <p id="connection-state" style="color:green;font-weight: bold;"></p>
+        <p id="authentification-state"></p>
+        <p>
+            <span>ID player: </span><span id="id-view"></span>
+        </p>
+        
+        <h2>Current position:</h2>
+
+            <p>X coordinate : <span id="x-coordinate"></span></p>
+            <p>Y coordinate : <span id="y-coordinate"></span></p>
+
+            <svg id="graph-container" width="400" height="400">
+                <!-- Ajoutez un rectangle pour le cadre -->
+                <rect id="graph-frame" width="400" height="400" fill="none" stroke="black" stroke-width="2"></rect>
+            </svg>
+
+        <h2>Change position:</h2>
+
+            <p><span>X: </span><span><input id="new_x"></span></p>
+            <p><span>Y: </span><span><input id="new_y"></span></p>
+            <button id="change-pos">Change position</button>
+
+    <script>
+        function generateGuid() {
+            return 'xxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+        const graph_size = 400;
+        const svg = d3.select("#graph-container");
+        const graphFrame = d3.select("#graph-frame");
+
+        var x = 0;
+        var y = 0;
+
+        var json_state;
+
+        const id_unique = generateGuid();
+        document.querySelector("#id-view").innerHTML = id_unique;
+        const hostname = window.location.hostname;
+        const socket = new WebSocket('ws://'+hostname+':8080');
+
+        socket.onopen = function() {
+            document.querySelector("#connection-state").innerHTML = "&#10004; Connected to central Server"
+            message = {type:"connection", id:id_unique}
+            socket.send(JSON.stringify(message))
+        };
+
+        socket.onmessage = function(event) {
+
+            var json = JSON.parse(event.data)
+            if (json.type == "json_state") {
+                
+                json_state = json;
+                const authentified = json_state.vr[id_unique].authentified;
+                document.querySelector("#authentification-state").innerHTML = authentified ? "&#10004; Authentified to Gama Server" : "&#x274C; Unauthentified to Gama Server, please wait"
+                document.querySelector("#authentification-state").style = authentified ? "color:green;" : "color:red;";
+            }
+            else if (json.type == "json_simulation") {
+                const json_simulation = json;
+                position = json_simulation.position
+                x = position.x;
+                y = position.y;
+                document.querySelector("#x-coordinate").innerHTML = x;
+                document.querySelector("#y-coordinate").innerHTML = y;
+
+                svg.selectAll(".temp-circles").remove();
+
+                svg.append("circle")
+                    .attr("cx", x*graph_size/100)
+                    .attr("class", "temp-circles")
+                    .attr("cy", y*graph_size/100)
+                    .attr("r", 8) // Rayon du cercle
+                    .style("fill", "blue"); // Couleur de remplissage du cercle
+            }
+        };
+        
+        socket.addEventListener('close', (event) => {
+            document.querySelector("#connection-state").innerHTML = "&#x274C; The central server disconnected ! Please refresh this page when the server came back to work"
+            document.querySelector("#connection-state").style = "color:red;font-weight: bold;"
+            if (event.wasClean) {
+                console.log('The WebSocket connection with Gama Server was properly be closed');
+            } else {
+                console.error('The Websocket connection with Gama Server interruped suddenly');
+            }
+            console.log(`Closure id : ${event.code}, Reason : ${event.reason}`);
+
+        })
+
+        socket.addEventListener('error', (error) => {
+            document.querySelector("#connection-state").innerHTML = "&#x274C; The cetral server disconnected ! Please refresh this page when the server came back to work"
+            document.querySelector("#connection-state").style = "color:red;font-weight: bold;"
+        });
+
+        document.getElementById("change-pos").addEventListener("click", function() {
+            let newX = document.querySelector("#new_x").value;
+            let newY = document.querySelector("#new_y").value;
+
+            // Vérifiez si les valeurs sont numériques avant de les envoyer
+            if (!isNaN(newX) && !isNaN(newY)) {
+                let pos = [Number(newX), Number(newY)];
+                socket.send(pos.join(";"));
+                console.log(newX);
+                console.log(newY);
+                document.querySelector("#new_x").value = '';
+                document.querySelector("#new_y").value = '';
+            } else {
+                // Gérez ici le cas où les valeurs ne sont pas numériques
+                alert("Veuillez entrer des valeurs numériques valides.");
+            }
+                })
+
+            
+    </script>
+</body>
+</html>
