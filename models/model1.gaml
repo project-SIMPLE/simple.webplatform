@@ -14,31 +14,28 @@ global {
 
 	reflex  send_simulation_info when:every(1 #cycle){
 		map<string, unknown> json;
-		map<string, unknown> sending_message;
-		loop vr_headset over:VrHeadset {
-			if(vr_headset.isAlive){
+		list<map> contents;
+		loop player over:Player {
+			if(player.isAlive){
 				map<string,unknown> info_json;
+				map<string,unknown> contents_json;
 				map<string, unknown> location_json;
-				location_json["x"] <- vr_headset.location.x;
-				location_json["y"] <- vr_headset.location.y;
-				info_json["position"] <- location_json;
-				json[vr_headset.id] <- info_json;
-			
+				location_json["x"] <- player.location.x;
+				location_json["y"] <- player.location.y;
+				contents_json["position"] <- location_json;
+				info_json["id"] <- [player.id];
+				info_json["contents"] <- contents_json;		
+				contents <+ info_json;			
 			}
 		}
-		write as_json_string(json);
-	}
-	
-	action removeVrHeadset(string id_vr) {
-		loop vr_headset over: VrHeadset {
-			if (vr_headset.id = id_vr){
-				vr_headset.isAlive <- false;
-			}
+		json["contents"] <- contents;
+		ask gama {
+			do send message: to_json(json);
 		}
 	}
 }
 
-species VrHeadset skills:[moving] {
+species Player skills:[moving] {
 	
 	string id;
 	rgb color <- rgb(rnd(0,255),rnd(0,255),rnd(0,255));
@@ -56,16 +53,30 @@ species VrHeadset skills:[moving] {
     		draw circle(1) color:color;
     	}
     }
-    
-    
 }
 
 // Créez un environnement avec une zone spécifique où RandomGuy se déplace
 experiment test type:gui {
+	
+	action create_player(string id_player) {
+		create Player {
+			id <- id_player;
+		}
+	}
+	
+	action remove_player(string id_player) {
+		loop player over: Player {
+			if (player.id = id_player){
+				player.isAlive <- false;
+			}
+		}
+	}
+	
+	
     float minimum_cycle_duration <- 0.03 #second;
     output {
     	display map {
-			species VrHeadset aspect: base;
+			species Player aspect: base;
 		}
     }
 }
