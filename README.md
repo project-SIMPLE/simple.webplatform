@@ -32,14 +32,20 @@ There is also the page settings which allows you to change the ports and the mod
 ### Player page (Optionnal)
 
 Go to [localhost:8000/player](http:localhost:8000/player)
+This feature can be activated in the setting page in 'About player' by clicking on 'Player web interface'.
 When a player connects, you will see it on the monitor page and you can add it on the gama simulation when it is launched.
 
 ## Operating details
 
 You can see below the schema of the operation of the server. The server magages the several connections and authenticate the players to Gama.
 
-![Operating schema](https://github.com/leonsi7/gama-server-middleware/assets/104212258/1b5cd07b-3726-4b06-badc-aa8bfa7fa146)
+![Operating details](https://github.com/project-SIMPLE/GamaServerMiddleware/assets/104212258/11a17b79-2ec2-4fa1-ad95-a174807a8437)
 
+**About internet ports:**
+- *Application port* is the HTTP web interface of the server. If you change this port, you have to go the the webpage [localhost:your_new_port/](http:localhost:your_new_port/).
+- *Monitor websocket port* can be changed freely without any consequences for the use. I gave the possibility to change it if there is a concurrency.
+- *GAMA Server websocket port* must be the same as the port used by Gama Server. You will be able to see which one in used in the setting page of GAMA.
+- *Player websocket port* is the port where player will connect.
 
 ## Create your own game
 First, you will have to create a new model based on the example model1.gaml
