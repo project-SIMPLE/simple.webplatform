@@ -63,6 +63,10 @@ class App {
           res.sendFile('favicon.ico', { root: 'views/public' });
         });
 
+        this.app.get('/help', (req, res) => {
+          res.redirect('https://github.com/project-SIMPLE/GamaServerMiddleware');
+        });
+
 
         this.server = this.app.listen(this.app_port, () => {
             console.log(`-> Listening on port ${this.app_port}`)
