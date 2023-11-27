@@ -16,7 +16,7 @@ function createWebSocket(monitor_ws_port) {
         const json = JSON.parse(event.data)
         const formattedJSON = JSON.stringify(json, null, 2);
         if (json.type == "json_state") {
-            document.getElementById('json-state-display').textContent = formattedJSON;
+            document.getElementById('json-state-display').textContent = json.gama.content_error.content;
         }
         else if (json.type == "json_simulation") {
             document.getElementById('json-simulation-display').textContent = formattedJSON;

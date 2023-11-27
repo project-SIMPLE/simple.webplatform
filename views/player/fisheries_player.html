@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gama Server Linker Player</title>
+    <style>
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f2f2f2;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+h1 {
+    background-color: #0074d9;
+    color: #fff;
+    padding: 20px;
+    text-align: center;
+    margin: 0;
+    width: 100%; /* Barre bleue sur toute la largeur */
+}
+
+h2 {
+    color: #0074d9;
+    text-align: center;
+}
+
+p {
+    margin: 10px 0;
+    text-align: center;
+    width: 100%; /* Texte sur toute la largeur */
+}
+
+.default-button {
+    color: #0074d9;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 5px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+    text-align: center;
+}
+
+
+#connection-state {
+    font-weight: bold;
+    font-size: 18px;
+    color: #4CAF50;
+}
+
+#authentification-state {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+#authentification-state.success {
+    color: #4CAF50;
+}
+
+#authentification-state.error {
+    color: #FF5733;
+}
+
+#id-view {
+    font-weight: bold;
+}
+
+#x-coordinate, #y-coordinate {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+#graph-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#graph-frame {
+    fill: none;
+    stroke: #000;
+    stroke-width: 2;
+}
+
+
+#new_x, #new_y {
+    width: 50px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 14px;
+    margin: 5px;
+}
+
+#new_x:focus, #new_y:focus {
+    outline: none;
+    border-color: #0074d9;
+}
+
+/* Réponses aux tailles d'écran spécifiques */
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 24px;
+    }
+    h2 {
+        font-size: 18px;
+    }
+    p {
+        font-size: 16px;
+    }
+}
+
+/* Pour les tablettes Samsung en mode portrait */
+@media (max-width: 768px) and (orientation: portrait) {
+    #graph-container {
+        padding: 10px;
+    }
+}
+
+/* Pour les tablettes Samsung en mode paysage et les écrans d'ordinateur */
+@media (min-width: 769px) {
+    #graph-container {
+        padding: 20px;
+    }
+}
+
+#buttons {
+    display: flex;
+    flex-direction: column;
+}
+
+    </style>
+</head>
+<body>
+    <h1>Gama Server Linker - Game Page</h1>
+
+        <p id="connection-state" style="color:green;font-weight: bold;"></p>
+        <p id="authentification-state"></p>
+        <p>
+            <span>ID player: </span><span id="id-view"></span>
+        </p>
+        <h2>Company info</h2>
+
+        <p>Name: <span id="name"></span></p>
+        <p>Owner: <span id="owner"></span></p>
+        
+        <h2>Company's growth:</h2>
+
+        <p>Capture: <span id="capture"></span> kg</p>
+        <p>Income: <span id="income"></span> kG</p>
+        <p>Maintenance cost: <span id="maintenance_cost"></span> kG</p>
+        <p>Capital: <span id="capital"></span> G</p>
+        <p>Fleet size: <span id="fleet_size"></span> trawler(s)</p>
+        
+        <div id="buttons">
+            <button class="default-button" id="buy-boat" style="background-color: 1fff37;">Buy boat</button>
+            <button class="default-button" id="sell-boat" style="background-color: f00020;">Sell boat</button>
+        </div>
+
+        <h2>Messages</h2>
+        <div id="messages"></div>
+
+    <script>
+
+        var json_state;
+        const id_unique = generateGuid();
+        document.querySelector("#id-view").innerHTML = id_unique;
+        const hostname = window.location.hostname;
+
+        function generateGuid() {
+            return 'xxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        fetch('/getWsGamePort')
+            .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    createWebSocket(data.player_ws_port)
+        });
+
+        const graph_size = 400;
+        
+        function createWebSocket(player_ws_port) {
+            const socket = new WebSocket('ws://'+hostname+':'+ player_ws_port);
+
+            socket.onopen = function() {
+                document.querySelector("#connection-state").innerHTML = "&#10004; Connected to central Server"
+                message = {type:"connection", id:id_unique}
+                socket.send(JSON.stringify(message))
+            };
+
+            socket.onmessage = function(event) {
+
+                var json = JSON.parse(event.data)
+                console.log(json);
+                if (json.type == "json_state") {
+                    json_state = json;
+                    const authentified = json_state.player[id_unique].authentified;
+                    document.querySelector("#authentification-state").innerHTML = authentified ? "&#10004; Authentified to Gama Server" : "&#x274C; Unauthentified to Gama Server, please wait"
+                    document.querySelector("#authentification-state").style = authentified ? "color:green;" : "color:red;";
+                }
+                else if (json.type == "json_simulation") {
+                    json = json.contents
+                    if (json.type == "init") {
+                        json = json.contents
+                    }
+                    else if (json.type == "cycle") {
+                        json = json.contents
+                        document.querySelector("#name").innerHTML = json.name;
+                        document.querySelector("#owner").innerHTML = json.owner;
+                        document.querySelector("#capture").innerHTML = json.capture.toFixed(2);
+                        document.querySelector("#income").innerHTML = json.income.toFixed(2);
+                        document.querySelector("#maintenance_cost").innerHTML = json.maintenance_cost.toFixed(2);
+                        document.querySelector("#capital").innerHTML = json.capital;
+                        document.querySelector("#fleet_size").innerHTML = json.fleet_size;
+                    }
+                    else if (json.type == "message") {
+                        document.querySelector("#messages").textContent += json.message + "\n";
+                    }
+                }
+            };
+            
+            socket.addEventListener('close', (event) => {
+                document.querySelector("#connection-state").innerHTML = "&#x274C; The central server disconnected ! Please refresh this page when the server came back to work"
+                document.querySelector("#connection-state").style = "color:red;font-weight: bold;"
+                if (event.wasClean) {
+                    console.log('The WebSocket connection with Gama Server was properly be closed');
+                } else {
+                    console.error('The Websocket connection with Gama Server interruped suddenly');
+                }
+                console.log(`Closure id : ${event.code}, Reason : ${event.reason}`);
+
+            })
+
+            socket.addEventListener('error', (error) => {
+                document.querySelector("#connection-state").innerHTML = "&#x274C; The cetral server disconnected ! Please refresh this page when the server came back to work"
+                document.querySelector("#connection-state").style = "color:red;font-weight: bold;"
+            });
+
+            document.querySelector("#buy-boat").addEventListener('click', ()=>{
+                console.log("cic");
+                socket.send(JSON.stringify({
+                    "type": "expression",
+                    "expr": "do buy_boat($id);"
+                }))
+            })
+
+            document.querySelector("#sell-boat").addEventListener('click', ()=>{
+                socket.send(JSON.stringify({
+                    "type": "expression",
+                    "expr": "do sell_boat($id);"
+                }))
+            })
+        }
+    </script>
+</body>
+</html>

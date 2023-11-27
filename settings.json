@@ -4,10 +4,10 @@
   "monitor_ws_port": 80,
   "player_ws_port": 8080,
   "app_port": 8000,
-  "model_file_path": "/Users/across-lab/git/gaml.extention.unity/models/LinkToUnity/Demo/DemoModelVR.gaml",
-  "experiment_name": "vr_xp",
+  "model_file_path": "models/fisheries_model/models/multiplayer_fisheries_game.gaml",
+  "experiment_name": "Multiplayer",
   "ip_address_gama_server": "localhost",
   "player_web_interface": true,
-  "player_html_file": "game1.html",
-  "type_model_file_path": "absolute"
+  "player_html_file": "fisheries_player.html",
+  "type_model_file_path": "relative"
 }

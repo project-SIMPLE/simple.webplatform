@@ -4,7 +4,7 @@ npm install
 open "http://localhost:8000"
 
 # Exécute npm start en premier plan
-npm start
+node index.js
 
 # Attend que l'utilisateur appuie sur "Entrée" pour quitter
 read -p "Press enter to quit..."
