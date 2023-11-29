@@ -98,6 +98,10 @@ class ServerModel {
         this.gama_connector.removePlayer(id_player);
     }
 
+    clean_all() {
+        this.player_server.clean_all();
+    }
+
     /**
      * Sends an expression for a certain player
      * @param {String} id_player - The id of the player to apply this expression

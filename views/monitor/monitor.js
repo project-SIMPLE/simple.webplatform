@@ -16,7 +16,6 @@ function createWebSocket(monitor_ws_port) {
     socket.onmessage = function(event){
         const json_state = JSON.parse(event.data)
         if (json_state.type == "json_state") {
-
             // About GAMA
             document.querySelector("#try-connection").disabled =  json_state["gama"]["connected"] ? true : false
             document.querySelector("#gama-connection-state").innerHTML = json_state["gama"]["connected"] ? "&#10004; Connected": "&#x274C; Not connected"
@@ -209,6 +208,10 @@ function createWebSocket(monitor_ws_port) {
 
     document.querySelector("#remove-everyone").addEventListener('click', () => {
         socket.send(JSON.stringify({"type":"remove_every_players"}))
+    })
+
+    document.querySelector("#clean-all").addEventListener('click', () => {
+        socket.send(JSON.stringify({"type":"clean_all"}))
     })
 
     socket.addEventListener('close', (event) => {

@@ -36,6 +36,7 @@ class MonitorServer {
                 else if (type == "add_player_headset") server_model.addPlayer(json_monitor["id"])
                 else if (type == "remove_player_headset") server_model.removePlayer(json_monitor["id"])
                 else if (type == "json_settings") server_model.changeJsonSettings(json_monitor)
+                else if (type == "clean_all") server_model.clean_all()
             })
         });
     }

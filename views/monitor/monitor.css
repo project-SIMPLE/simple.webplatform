@@ -274,7 +274,16 @@ background-color: #a8252f;
 #remove-everyone:disabled {
 background-color: #ccc;
 }
+#clean-all  {
+background-color: #dc3545;
+}
+#clean-all:hover  {
+background-color: #a8252f;
+}
 
+#clean-all:disabled {
+background-color: #ccc;
+}
 
 
 .player-section {

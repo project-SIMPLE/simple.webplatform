@@ -128,6 +128,20 @@ class PlayerServer {
         })
     }
 
+    clean_all() {
+        var to_remove = []
+        this.server_model.json_state.player.id_connected.forEach((player_id, idx) => {
+            if (this.server_model.json_state.player[player_id] != undefined && this.server_model.json_state.player[player_id].connected == false) {
+                const index = player_socket_clients_id.indexOf(player_id)
+                player_socket_clients_id.splice(index,1)
+                player_socket_clients.splice(index,1)
+                this.server_model.json_state.player.id_connected.splice(idx,1)
+                this.server_model.json_state.player[player_id] = undefined
+            }
+        })
+        this.server_model.notifyMonitor();
+    }
+
 
     // removeEveryPlayers() {
     //     this.server_model.json_state["player"]["id_connected"].forEach(id_player => {
