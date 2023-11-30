@@ -36,7 +36,7 @@ class PlayerServer {
                     else {
                         player_socket_clients.push(ws)
                         player_socket_clients_id.push(json_player.id)
-                        console.log(json_player);
+                        console.log('-> New connection of the id: '+json_player.id);
                         server_model.json_state["player"]["id_connected"].push(json_player.id)
                         server_model.json_state["player"][json_player.id] = {}
                         server_model.json_state["player"][json_player.id]["date_connection"] = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
@@ -48,8 +48,8 @@ class PlayerServer {
                 if (json_player.type =="expression") {
                     const index = player_socket_clients.indexOf(ws)
                     const id_player = player_socket_clients_id[index]
+                    console.log('-> Sending expression for the player '+id_player+':')
                     console.log(json_player);
-                    console.log(id_player);
                     server_model.sendExpression(id_player, json_player.expr);
                 }
         
