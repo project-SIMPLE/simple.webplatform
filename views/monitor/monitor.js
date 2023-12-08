@@ -21,7 +21,7 @@ function createWebSocket(monitor_ws_port) {
             document.querySelector("#gama-connection-state").innerHTML = json_state["gama"]["connected"] ? "&#10004; Connected": "&#x274C; Not connected"
             document.querySelector("#gama-connection-state").style = json_state["gama"]["connected"] ? "color:green;" : "color:red;"
             document.querySelector("#gama-loader").style.visibility = json_state["gama"]["loading"] ? "visible" : "hidden";
-            document.querySelector("#content-error").innerHTML = json_state.gama.content_error != "" ? "Error: " + json_state.gama.content_error.type + ". Click for more details." : ""
+            document.querySelector("#content-error").innerHTML = json_state.gama.content_error != "" ? "Error: " + json_state.gama.content_error.type + ", see log for more details.": ""
 
             //About experiment state
             if (json_state.gama.experiment_state == 'NONE') {

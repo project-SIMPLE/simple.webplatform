@@ -193,9 +193,9 @@ p {
                 }
                 else if (json.type == "json_simulation") {
                     const json_simulation = json;
-                    position = json_simulation.position
-                    x = position.x;
-                    y = position.y;
+                    var position = json_simulation.contents.position
+                    var x = position.x;
+                    var y = position.y;
                     document.querySelector("#x-coordinate").innerHTML = x;
                     document.querySelector("#y-coordinate").innerHTML = y;
 

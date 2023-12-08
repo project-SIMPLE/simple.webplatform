@@ -112,7 +112,6 @@ class PlayerServer {
                         json_simulation_player.contents = element.contents
                         json_simulation_player.type = "json_simulation"
                         player_socket_clients[index].send(JSON.stringify(json_simulation_player))
-                        console.log("LA   "+id_player);
                         console.log(json_simulation_player);
                     }
                 })
@@ -127,14 +126,20 @@ class PlayerServer {
 
     sendPing(id_player) {
         const ws = getWsClient(id_player)
-        ws.send("{\"type\":\"ping\"}");
-        pongTimeoutId = setTimeout(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-                // Fermer la connexion si le pong n'est pas reçu dans les temps
-                ws.terminate();
-                console.log('-> The connection with: '+id_player+" has been interrupted due to pong non-response");
-            }
-        }, 3000);
+        try {
+            ws.send("{\"type\":\"ping\"}");
+            pongTimeoutId = setTimeout(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    // Fermer la connexion si le pong n'est pas reçu dans les temps
+                    ws.terminate();
+                    console.log('-> The connection with: '+id_player+" has been interrupted due to pong non-response");
+                }
+            }, 3000);
+        }
+        catch (error) {
+            console.log("\x1b[41m -> Error when sending ping message\x1b[0m");
+        }
+        
     }
     /**
      * Send the json_state to the player. It seperates the json to send only the necessary information to the players.
@@ -149,6 +154,7 @@ class PlayerServer {
             json_state_player.player = {}
             json_state_player.player[id_player] = json_state.player[id_player]
             client.send(JSON.stringify(json_state_player));
+            console.log(json_state_player);
         })
     }
 
