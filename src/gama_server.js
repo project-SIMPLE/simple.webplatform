@@ -94,7 +94,7 @@ class ConnectorGamaServer {
     send_expression() {
         return  {
             "type": "expression",
-            "content": "Remove a VR ", 
+            "content": "Send an expression", 
             "exp_id": server_model_copy.json_state.gama.experiment_id,
             "expr": current_expression
         }
@@ -206,6 +206,7 @@ class ConnectorGamaServer {
 
     addPlayer(id_player) {
         if (['NONE',"NOTREADY"].includes(this.server_model.json_state["gama"]["experiment_state"])) return
+        if (this.server_model.json_state.player[id_player].authentified) return
         current_id_player = id_player
         list_messages = [this.add_player];
         index_messages = 0;
@@ -227,6 +228,7 @@ class ConnectorGamaServer {
 
     removePlayer(id_player) {
         if (['NONE',"NOTREADY"].includes(this.server_model.json_state["gama"]["experiment_state"])) return
+        if (!this.server_model.json_state.player[id_player].authentified) return
         current_id_player = id_player
         list_messages = [this.remove_player];
         index_messages = 0;

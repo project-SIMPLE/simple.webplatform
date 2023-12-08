@@ -7,6 +7,18 @@ const DEFAULT_PLAYER_WS_PORT = 8080;
 const player_socket_clients = []
 const player_socket_clients_id = []
 
+var pongTimeoutId;
+
+function getIdClient(ws) {
+    const index = player_socket_clients.indexOf(ws)
+    return player_socket_clients_id[index]
+}
+
+function getWsClient(id) {
+    const index = player_socket_clients_id.indexOf(id)
+    return player_socket_clients[index]
+}
+
 /**
  * Cresates a websocket server to handle player connections
  */
@@ -19,56 +31,64 @@ class PlayerServer {
         this.server_model = server_model;
         this.player_ws_port = server_model.json_settings.player_ws_port != undefined ? server_model.json_settings.player_ws_port : DEFAULT_PLAYER_WS_PORT;
         this.player_socket = new WebSocket.Server({ port: this.player_ws_port });
+        const player_server = this;
 
         this.player_socket.on('connection', function connection(ws) {
             ws.on('message', function incoming(message) {
                 const json_player = JSON.parse(message)
-                if (json_player.type == "connection") {
+                if (json_player.type == "pong") {
+                    clearTimeout(pongTimeoutId);
+                    setTimeout(() => {
+                        player_server.sendPing(getIdClient(ws))
+                    }, 5000);
+                }
+                else if (json_player.type == "connection") {
                     //Si le casque a déjà été connecté
                     if (server_model.json_state["player"]["id_connected"].includes(json_player.id)) {
                         const index = player_socket_clients_id.indexOf(json_player.id)
                         player_socket_clients[index] = ws
                         server_model.json_state["player"][json_player.id]["date_connection"] = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
                         server_model.json_state["player"][json_player.id]["connected"] = true
+                        if (json_player.enable_ping_pong != undefined && json_player.enable_ping_pong) player_server.sendPing(json_player.id)
                         server_model.notifyMonitor();
+                        console.log('-> Reconnection of the id: '+json_player.id);
                     }
                     //Sinon
                     else {
                         player_socket_clients.push(ws)
                         player_socket_clients_id.push(json_player.id)
-                        console.log('-> New connection of the id: '+json_player.id);
                         server_model.json_state["player"]["id_connected"].push(json_player.id)
                         server_model.json_state["player"][json_player.id] = {}
                         server_model.json_state["player"][json_player.id]["date_connection"] = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
                         server_model.json_state["player"][json_player.id]["authentified"] = false
                         server_model.json_state["player"][json_player.id]["connected"] = true
+                        if (json_player.enable_ping_pong != undefined && json_player.enable_ping_pong) player_server.sendPing(json_player.id)
                         server_model.notifyMonitor();
+                        console.log('-> New connection of the id: '+json_player.id);
                     }
                 }
-                if (json_player.type =="expression") {
-                    const index = player_socket_clients.indexOf(ws)
-                    const id_player = player_socket_clients_id[index]
+                else if (json_player.type =="expression") {
+                    const id_player = getIdClient(ws)
                     console.log('-> Sending expression for the player '+id_player+':')
                     console.log(json_player);
                     server_model.sendExpression(id_player, json_player.expr);
                 }
-        
-                // if (json_player.type == "exit" && server_model.json_state["player"]["id_connected"].includes(json_player.id) && server_model.json_state["player"][json_player.id]["authentified"] == true){
-                //     server_model.removePlayerHeadset()
-                // }
+                else if (json_player.type =="disconnect_properly") {
+                    const id_player = getIdClient(ws)
+                    server_model.removePlayer(id_player)
+                }
             });
         
             ws.on('close', () => {
-                const index = player_socket_clients.indexOf(ws)
-                const id_player = player_socket_clients_id[index]
+                const id_player = getIdClient(ws)
                 server_model.json_state["player"][id_player]["connected"] = false
                 server_model.json_state["player"][id_player]["date_connection"] = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
                 server_model.notifyMonitor();
+                console.log("-> The player: "+getIdClient(ws)+" disconnected");
             })
         
             ws.on('error', (error) => {
-                const index = player_socket_clients.indexOf(ws)
-                const id_player = player_socket_clients_id[index]
+                const id_player = getIdClient(ws)
                 server_model.json_state["player"][id_player]["connected"] = false
                 server_model.json_state["player"][id_player]["date_connection"] = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
                 server_model.notifyMonitor();
@@ -84,14 +104,6 @@ class PlayerServer {
     broadcastSimulationPlayer() {
         if (this.server_model.json_simulation.contents == undefined) return
         this.server_model.json_simulation.contents.forEach((element) => {
-            // const id_player = element.id[0]
-            // const index = player_socket_clients_id.indexOf(id_player)
-            // if (index != -1) {
-            //     const json_simulation_player = {}
-            //     json_simulation_player.contents = element.contents
-            //     json_simulation_player.type = "json_simulation"
-            //     player_socket_clients[index].send(JSON.stringify(json_simulation_player))
-            // }
             element.id.forEach((id_player) => {
                 const index = player_socket_clients_id.indexOf(id_player)
                 if (index != -1) {
@@ -102,22 +114,25 @@ class PlayerServer {
                 }
             })
         });
-        // for (var id_player in this.server_model.json_simulation) {
-        //     if (this.server_model.json_simulation[id_player] != undefined) {
-        //         const index = player_socket_clients_id.indexOf(id_player)
-        //         const json_simulation_player = this.server_model.json_simulation[id_player];
-        //         json_simulation_player.type = "json_simulation"
-        //         player_socket_clients[index].send(JSON.stringify(json_simulation_player))
-        //     } 
-        // }
+    }
+
+    sendPing(id_player) {
+        const ws = getWsClient(id_player)
+        ws.send("{\"type\":\"ping\"}");
+        pongTimeoutId = setTimeout(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                // Fermer la connexion si le pong n'est pas reçu dans les temps
+                ws.terminate();
+                console.log('-> The connection with: '+id_player+" has been interrupted due to pong non-response");
+            }
+        }, 3000);
     }
     /**
      * Send the json_state to the player. It seperates the json to send only the necessary information to the players.
      */
     broadcastJsonStatePlayer() {
         player_socket_clients.forEach((client) => {
-            const index = player_socket_clients.indexOf(client)
-            const id_player = player_socket_clients_id[index]
+            const id_player = getIdClient(client)
             const json_state = this.server_model.json_state
             const json_state_player = {}
             json_state_player.type = json_state.type
@@ -131,7 +146,8 @@ class PlayerServer {
     clean_all() {
         var to_remove = []
         this.server_model.json_state.player.id_connected.forEach((player_id, idx) => {
-            if (this.server_model.json_state.player[player_id] != undefined && this.server_model.json_state.player[player_id].connected == false) {
+            if (this.server_model.json_state.player[player_id] != undefined && !this.server_model.json_state.player[player_id].connected&& 
+            !this.server_model.json_state.player[player_id].authentified) {
                 const index = player_socket_clients_id.indexOf(player_id)
                 player_socket_clients_id.splice(index,1)
                 player_socket_clients.splice(index,1)
@@ -142,12 +158,7 @@ class PlayerServer {
         this.server_model.notifyMonitor();
     }
 
-
-    // removeEveryPlayers() {
-    //     this.server_model.json_state["player"]["id_connected"].forEach(id_player => {
-    //         this.server_model.json_state["player"][id_player]["authentified"] = false
-    //     });
-    // }
+    
 
     /**
      * Closes the websocket server

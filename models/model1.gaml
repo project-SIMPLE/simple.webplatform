@@ -1,19 +1,17 @@
 /**
-* Name: Testgamaserver
+* Name: GamaServerLinkerExample
 * Based on the internal empty template. 
 * Author: Léon
 * Tags: 
 */
 
 
-model Testgamaserver
+model GamaServerLinkerExample
 
-/* Insert your model definition here */
 
 global {
 
 	reflex  send_simulation_info when:every(1 #cycle){
-		map<string, unknown> json;
 		list<map> contents;
 		loop player over:Player {
 			if(player.isAlive){
@@ -28,9 +26,26 @@ global {
 				contents <+ info_json;			
 			}
 		}
+		map<string, unknown> json;
 		json["contents"] <- contents;
 		ask gama {
 			do send message: to_json(json);
+		}
+	}
+	
+	action send_init_info(string id_player) {
+		ask first(Player where (each.id=id_player)){
+			list<map> contents;
+			map<string,unknown> info_json;
+			map<string,unknown> contents_json;
+			info_json["id"] <- [self.id];
+			info_json["contents"] <- "Init message";
+			contents <+ info_json;	
+			map<string, unknown> json;
+			json["contents"] <- contents;
+			ask gama {
+				do send message: to_json(json);
+			}
 		}
 	}
 }
@@ -56,7 +71,7 @@ species Player skills:[moving] {
 }
 
 // Créez un environnement avec une zone spécifique où RandomGuy se déplace
-experiment test type:gui {
+experiment random_walk_example type:gui {
 	
 	action create_player(string id_player) {
 		create Player {
@@ -69,6 +84,12 @@ experiment test type:gui {
 			if (player.id = id_player){
 				player.isAlive <- false;
 			}
+		}
+	}
+
+	action init_player(string id_player) {
+		ask world {
+			do send_init_info(id_player);
 		}
 	}
 	

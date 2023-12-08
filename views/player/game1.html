@@ -183,6 +183,7 @@ p {
             socket.onmessage = function(event) {
 
                 var json = JSON.parse(event.data)
+                console.log(json);
                 if (json.type == "json_state") {
                     
                     json_state = json;
