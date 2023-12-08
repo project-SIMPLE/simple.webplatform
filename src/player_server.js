@@ -20,7 +20,7 @@ function getWsClient(id) {
 }
 
 /**
- * Cresates a websocket server to handle player connections
+ * Creates a websocket server to handle player connections
  */
 class PlayerServer {
     /**
@@ -103,17 +103,26 @@ class PlayerServer {
      */
     broadcastSimulationPlayer() {
         if (this.server_model.json_simulation.contents == undefined) return
-        this.server_model.json_simulation.contents.forEach((element) => {
-            element.id.forEach((id_player) => {
-                const index = player_socket_clients_id.indexOf(id_player)
-                if (index != -1) {
-                    const json_simulation_player = {}
-                    json_simulation_player.contents = element.contents
-                    json_simulation_player.type = "json_simulation"
-                    player_socket_clients[index].send(JSON.stringify(json_simulation_player))
-                }
-            })
-        });
+        try {
+            this.server_model.json_simulation.contents.forEach((element) => {
+                element.id.forEach((id_player) => {
+                    const index = player_socket_clients_id.indexOf(id_player)
+                    if (index != -1) {
+                        const json_simulation_player = {}
+                        json_simulation_player.contents = element.contents
+                        json_simulation_player.type = "json_simulation"
+                        player_socket_clients[index].send(JSON.stringify(json_simulation_player))
+                        console.log("LA   "+id_player);
+                        console.log(json_simulation_player);
+                    }
+                })
+            });
+        }
+        catch (exception) {
+            //Exception are written in red
+            console.log("\x1b[41m -> The following message hasn't the correct format:\x1b[0m");
+            console.log(this.server_model.json_simulation);
+        }
     }
 
     sendPing(id_player) {

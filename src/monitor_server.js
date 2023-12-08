@@ -58,16 +58,7 @@ class MonitorServer {
             client.send(JSON.stringify(this.server_model.json_settings));
         })
     }
-    /**
-     * Send the json_simulation to the monitor
-     */
-    sendMonitorJsonSimulation() {
-        var json_simulation = this.server_model.json_simulation
-        json_simulation.type = "json_simulation"
-        if (monitor_socket_clients != undefined) monitor_socket_clients.forEach((client) => {
-            client.send(JSON.stringify(json_simulation));
-        })
-    }
+    
     /**
      * Closes the websocket server
      */

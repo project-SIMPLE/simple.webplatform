@@ -65,7 +65,6 @@ class ServerModel {
      */
     notifyPlayerClients() {
         this.player_server.broadcastSimulationPlayer()
-        this.monitor_server.sendMonitorJsonSimulation()
     }
 
     /**

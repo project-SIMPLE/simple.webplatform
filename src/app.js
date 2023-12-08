@@ -29,10 +29,6 @@ class App {
         this.app.get('/monitor', (req, res) => {
           res.sendFile('monitor.html', { root: 'views/monitor' });
         });
-
-        this.app.get('/flow_displayer', (req, res) => {
-          res.sendFile('flow_displayer.html', { root: 'views/flow_displayer' });
-        });
         
         this.app.get('/settings', (req, res) => {
           res.sendFile('settings.html', { root: 'views/settings' });

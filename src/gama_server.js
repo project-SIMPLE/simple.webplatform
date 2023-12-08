@@ -316,42 +316,54 @@ class ConnectorGamaServer {
     
         gama_socket.onmessage = function(event) {
             try {
-                const data = JSON.parse(event.data)
+                const message = JSON.parse(event.data)
                 
-                if (data.type == "SimulationStatus") {
+                if (message.type == "SimulationStatus") {
                     console.log("Message received from Gama Server:");
-                    console.log(data);
-                    server_model.json_state.gama.experiment_id = data.exp_id;
-                    if (data.content == 'NONE' && ['RUNNING','PAUSED','NOTREADY'].includes(server_model.json_state.gama.experiment_state)) {
+                    console.log(message);
+                    server_model.json_state.gama.experiment_id = message.exp_id;
+                    if (message.content == 'NONE' && ['RUNNING','PAUSED','NOTREADY'].includes(server_model.json_state.gama.experiment_state)) {
                         server_model.removeEveryPlayers();
                     }
-                    server_model.json_state.gama.experiment_state = data.content;
+                    server_model.json_state.gama.experiment_state = message.content;
                     server_model.notifyMonitor();
                 }
-                if (data.type == "SimulationOutput") {
-                    server_model.json_simulation = JSON.parse(data.content)
-                    server_model.notifyPlayerClients();
+                if (message.type == "SimulationOutput") {
+                    try {
+                        server_model.json_simulation = JSON.parse(message.content)
+                        server_model.notifyPlayerClients();
+                    }
+                    catch (error) {
+                        console.log("\x1b[41m-> Unable to parse recived message:\x1b[0m");
+                        console.log(message.content);
+                    }
                 }
-                if (data.type == "CommandExecutedSuccessfully") {
+                if (message.type == "CommandExecutedSuccessfully") {
                     console.log("Message received from Gama Server:");
-                    console.log(data);
+                    console.log(message);
                     server_model.json_state.gama.content_error = ""
-                    if (data.command != undefined && data.command.type == "load") server_model.json_state.gama.experiment_name = data.content
+                    if (message.command != undefined && message.command.type == "load") server_model.json_state.gama.experiment_name = message.content
                     continue_sending = true
-                    setTimeout(sendMessages,300) 
+                    setTimeout(sendMessages,300)
+                    try {
+                        const content = JSON.parse(message.content)
+                        server_model.json_simulation = content
+                        server_model.notifyPlayerClients();
+                    }
+                    catch (exception) {}
                 }
-                if (gama_error_messages.includes(data.type)) {
+                if (gama_error_messages.includes(message.type)) {
                     console.log("Message received from Gama Server:");
-                    console.log(data);
-                    server_model.json_state.gama.content_error = data
+                    console.log(message);
+                    server_model.json_state.gama.content_error = message
                     server_model.json_state.gama.loading = false
                     server_model.notifyMonitor();
                     throw "A problem appeared in the last message. Please check the response from the Server"
                 }
             }
             catch (error) {
-                console.log(error);
-    
+                console.log("\x1b[41m")
+                console.log(error+" \x1b[0m");
             }
         }
         gama_socket.addEventListener('close', (event) => {
