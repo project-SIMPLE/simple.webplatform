@@ -87,13 +87,14 @@ You will also be able to handle these following message:
   }
   ```
 - json_simulation messages: this json sends you all the information about the simulation in itself. It has the following form
-- ```
+  ```
   {
   type: 'json_simulation'
   contents: your_content,
   }
   ```
-  
+**Gama side**
+
 ## Going further
 If you want to modify the code, I let you the UML diagram which shows the global structure of the middleware.
 
