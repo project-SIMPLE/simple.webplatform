@@ -45,7 +45,8 @@ class PlayerServer {
                 if (json_player.type == "ping") {
                     ws.send(JSON.stringify({
                         "type": "pong",
-                        "id": json_player.id
+                        "id": json_player.id,
+                        "message": json_player.message
                     }));
                 }
                 else if (json_player.type == "connection") {

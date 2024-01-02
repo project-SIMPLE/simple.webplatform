@@ -4,6 +4,7 @@ const PLAYER_WS_PORT = 8080;
 const IP_ADDRESS = "192.168.0.64"
 const TIME_ACTIVITY = 10*1000
 const FREQUENCY_MESSAGES = 100
+const LENGTH_MSSAGES = 200
 
 const NB_CLIENTS = 30
 
@@ -95,7 +96,8 @@ class Client {
         if (this.client_socket != undefined && this.client_socket.readyState === WebSocket.OPEN) {
             this.client_socket.send(JSON.stringify({
                 "type": "ping",
-                "id": this.message_counter
+                "id": this.message_counter,
+                "message": 'A'.repeat(LENGTH_MSSAGES)
             }));
             this.sent_messages.set(this.message_counter, new Date().getTime())
             this.message_counter = this.message_counter + 1;
