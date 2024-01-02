@@ -2,10 +2,10 @@ const WebSocket = require('ws');
 
 const PLAYER_WS_PORT = 8080;
 const IP_ADDRESS = "192.168.0.64"
-const TIME_ACTIVITY = 5*1000
+const TIME_ACTIVITY = 10*1000
 const FREQUENCY_MESSAGES = 100
 
-const NB_CLIENTS = 100
+const NB_CLIENTS = 30
 
 
 class Collector {
@@ -15,7 +15,7 @@ class Collector {
         }
         this.results = []
         console.log("Please wait",Math.floor(TIME_ACTIVITY/1000),"seconds...");
-        setTimeout(this.analyse_results.bind(this), TIME_ACTIVITY+1000)
+        setTimeout(this.analyse_results.bind(this), TIME_ACTIVITY+2000)
     }
 
     add_result(map_results) {
@@ -28,10 +28,11 @@ class Collector {
         let durations = [];
 
         // Aggregate results from the Maps
+        console.log(this.results);
         this.results.forEach(map => {
             totalLost += map.get('nb_lost');
             totalSuccess += map.get('nb_success');
-            durations = durations.concat(map.get('list_success'));
+            durations = durations.concat(map.get('durations'));
         });
         // Calculate the proportion of lost
         let proportionLost = totalLost / (totalLost + totalSuccess);
@@ -75,7 +76,7 @@ class Client {
         const name = this.name;
         const client = this;
         client_socket.onopen = function() {
-            //console.log("-> Client "+name+" connected");
+            console.log("-> Client "+name+" connected");
             client_socket.send(JSON.stringify({type:"connection", id:name}))
         };
 
@@ -104,6 +105,10 @@ class Client {
 
     end() {
         clearTimeout(this.id_timeout)
+        setTimeout(this.close.bind(this),1000)
+    }
+
+    close() {
         this.client_socket.close()
         this.calculate_results()
     }
@@ -112,10 +117,12 @@ class Client {
         var nb_lost = 0;
         var nb_sucess = 0;
         const delta_time = []
+        const id_messages_lost = []
         this.sent_messages.forEach((time_sent, id) => {
             const time_received = this.received_messages.get(id)
             if (time_received == undefined) {
                 nb_lost = nb_lost + 1;
+                id_messages_lost.push(id)
             }
             else {
                 nb_sucess = nb_sucess + 1
@@ -125,7 +132,8 @@ class Client {
         this.collector.add_result(new Map([
             ['nb_lost', nb_lost],
             ['nb_success', nb_sucess],
-            ['list_success', delta_time]
+            ['durations', delta_time],
+            ['id_messages_lost', id_messages_lost]
         ]));
     }
 }
