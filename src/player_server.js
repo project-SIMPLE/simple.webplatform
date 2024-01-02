@@ -42,6 +42,12 @@ class PlayerServer {
                         player_server.sendPing(getIdClient(ws))
                     }, 5000);
                 }
+                if (json_player.type == "ping") {
+                    ws.send(JSON.stringify({
+                        "type": "pong",
+                        "id": json_player.id
+                    }));
+                }
                 else if (json_player.type == "connection") {
                     //Si le casque a déjà été connecté
                     if (server_model.json_state["player"]["id_connected"].includes(json_player.id)) {
@@ -154,7 +160,6 @@ class PlayerServer {
             json_state_player.player = {}
             json_state_player.player[id_player] = json_state.player[id_player]
             client.send(JSON.stringify(json_state_player));
-            console.log(json_state_player);
         })
     }
 
