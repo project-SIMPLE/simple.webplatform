@@ -47,10 +47,56 @@ You can see below the schema of the operation of the server. The server magages 
 - *GAMA Server websocket port* must be the same as the port used by Gama Server. You will be able to see which one in used in the setting page of GAMA.
 - *Player websocket port* is the port where player will connect.
 
-## Create your own game
+## Create your own web game
 First, you will have to create a new model based on the example model1.gaml
 You will need to create a webpage based on player.html.
 If you want to add player's instructions, you will also need to add code in player_server.js, server_model.js and gama_server.js. To understand how this code works, I created an UML diagram to show you the structure of the code.
+
+## Create your game using your preffered programming language
+**Player side**
+You will have to create a websocket client and implement some standardized messages
+- For the connection of the player: The message format is
+  ```
+  {type:"connection", id:your_id, enable_ping_pong:true or false}
+  ```
+  ```your_id```contains the id of the player. You can choose every string you wan. I advise the use of UUID.
+  ```enable_ping_pong```will be true if you cannot handle disconnections.
+  In that case, the middleware will send you {type:ping} message every 5 seconds, and you will have to respond {type:pong}. If you don't do that, the connection will be cancelled.
+- Sending an expression to Gama Server:
+  ```{type:"expression", expr:your_expression}```
+  ```your_expression```is an GAML expression that you want Gama execute it.
+  Useful tool: If you put ```$id```in your expression, the middleware will replace it by the id of the player.
+- Disconnect properly: If you want to remove the player from the Gama Simulation, you have to send the message ```{type:"disconnect_properly"}``` before disconnecting your player.
+
+You will also be able to handle these following message:
+- json_state message: This JSON contains all the information on the simulation state and on the current player state. The form of Json_state is the following:
+  ```
+  {
+  type: 'json_state',
+  gama: {
+    connected: true or false,
+    experiment_state: 'NONE' or 'NOTREADY' or 'PAUSED' or 'RUNNING',
+    loading: true or false,
+    content_error: '',
+    experiment_id: '',
+    experiment_name: ''
+    },
+  player: {
+    id_of_your_player: { date_connection: '15:57', authentified: true or false, connected: true or flase }
+    }
+  }
+  ```
+- json_simulation messages: this json sends you all the information about the simulation in itself. It has the following form
+  ```
+  {
+  type: 'json_simulation'
+  contents: your_content,
+  }
+  ```
+**Gama side**
+
+## Going further
+If you want to modify the code, I let you the UML diagram which shows the global structure of the middleware.
 
 ![Pseudo UML Diagram](https://github.com/leonsi7/gama-server-middleware/assets/104212258/ae3ac0c4-1663-47b0-b916-dbad47586010)
 
