@@ -4,14 +4,16 @@ const PLAYER_WS_PORT = 8080;
 const IP_ADDRESS = "192.168.0.64"
 const TIME_ACTIVITY = 10*1000
 const FREQUENCY_MESSAGES = 100
-const LENGTH_MSSAGES = 200
+const LENGTH_MESSAGES = 20000
 
-const NB_CLIENTS = 30
+const NB_CLIENTS = 20
 
 
 class Collector {
     constructor() {
-        for (let i = 0; i < NB_CLIENTS; i++) {
+        this.counter_clients_connected = 0;
+        this.number_clients = NB_CLIENTS;
+        for (let i = 0; i < this.number_clients; i++) {
             new Client(i, this);
         }
         this.results = []
@@ -77,7 +79,10 @@ class Client {
         const name = this.name;
         const client = this;
         client_socket.onopen = function() {
-            console.log("-> Client "+name+" connected");
+            client.collector.counter_clients_connected = client.collector.counter_clients_connected + 1;
+            if (client.collector.counter_clients_connected == client.collector.number_clients) {
+                console.log("-> All the clients are connected");
+            }
             client_socket.send(JSON.stringify({type:"connection", id:name}))
         };
 
@@ -97,7 +102,7 @@ class Client {
             this.client_socket.send(JSON.stringify({
                 "type": "ping",
                 "id": this.message_counter,
-                "message": 'A'.repeat(LENGTH_MSSAGES)
+                "message": 'A'.repeat(LENGTH_MESSAGES)
             }));
             this.sent_messages.set(this.message_counter, new Date().getTime())
             this.message_counter = this.message_counter + 1;
