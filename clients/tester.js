@@ -1,12 +1,11 @@
 const WebSocket = require('ws');
 
 const PLAYER_WS_PORT = 8080;
-const IP_ADDRESS = "192.168.0.64"
-const TIME_ACTIVITY = 10*1000
-const FREQUENCY_MESSAGES = 100
-const LENGTH_MESSAGES = 2000
-
-const NB_CLIENTS = 20
+const IP_ADDRESS = "10.0.129.193"
+const ACTIVITY_DURATION = 10*1000
+const MESSAGE_INTERVAL = 100
+const LENGTH_MESSAGES = 500
+const NB_CLIENTS = 30
 
 
 class Collector {
@@ -17,8 +16,8 @@ class Collector {
             new Client(i, this);
         }
         this.results = []
-        console.log("Please wait",Math.floor(TIME_ACTIVITY/1000),"seconds...");
-        setTimeout(this.analyse_results.bind(this), TIME_ACTIVITY+2000)
+        console.log("Please wait",Math.floor(ACTIVITY_DURATION/1000),"seconds...");
+        setTimeout(this.analyse_results.bind(this), ACTIVITY_DURATION+2000)
     }
 
     add_result(map_results) {
@@ -79,8 +78,8 @@ class Client {
         this.sent_messages = new Map();
         this.client_socket = this.create_socket();
         this.message_counter = 0;
-        setTimeout(this.end.bind(this), TIME_ACTIVITY)
-        this.id_timeout = setTimeout(this.send_message.bind(this), FREQUENCY_MESSAGES)
+        setTimeout(this.end.bind(this), ACTIVITY_DURATION)
+        this.id_timeout = setTimeout(this.send_message.bind(this), MESSAGE_INTERVAL)
     }
 
     create_socket() {
@@ -116,7 +115,7 @@ class Client {
             this.sent_messages.set(this.message_counter, new Date().getTime())
             this.message_counter = this.message_counter + 1;
         }
-        this.id_timeout = setTimeout(this.send_message.bind(this), FREQUENCY_MESSAGES);
+        this.id_timeout = setTimeout(this.send_message.bind(this), MESSAGE_INTERVAL);
     }
 
     end() {
