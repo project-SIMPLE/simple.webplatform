@@ -42,8 +42,17 @@ class Collector {
         // Calculate the average of durations
         let averageDurations = durations.reduce((acc, value) => acc + value, 0) / durations.length;
 
+        //Printing durations
+        const fs = require('fs');
+        const filePath = 'results.txt';
+        const contentText = JSON.stringify(durations);
+        fs.writeFile(filePath, contentText, (err) => {
+            if (!err) {
+                console.log('Content successfully saved to the file');
+            }
+        });
+
         // Calculate the median of durations
-        console.log("Durations: ", durations);
         durations.sort((a, b) => a - b);
         let medianDurations = 0;
 
