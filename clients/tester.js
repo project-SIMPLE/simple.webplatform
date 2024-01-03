@@ -3,17 +3,22 @@ const WebSocket = require('ws');
 const PLAYER_WS_PORT = 8080;
 const IP_ADDRESS = "192.168.0.64"
 const TIME_ACTIVITY = 10*1000
+<<<<<<< HEAD
 const FREQUENCY_MESSAGES = 1000
 const LENGTH_MESSAGES = 2000
 
 const NB_CLIENTS = 1
+=======
+const FREQUENCY_MESSAGES = 100
+const LENGTH_MSSAGES = 1000
+
+const NB_CLIENTS = 30
+>>>>>>> eacc2a053eef338487740dcaf4553e3c6212cb22
 
 
 class Collector {
     constructor() {
-        this.counter_clients_connected = 0;
-        this.number_clients = NB_CLIENTS;
-        for (let i = 0; i < this.number_clients; i++) {
+        for (let i = 0; i < NB_CLIENTS; i++) {
             new Client(i, this);
         }
         this.results = []
@@ -31,6 +36,7 @@ class Collector {
         let durations = [];
 
         // Aggregate results from the Maps
+        console.log(this.results);
         this.results.forEach(map => {
             totalLost += map.get('nb_lost');
             totalSuccess += map.get('nb_success');
@@ -41,16 +47,6 @@ class Collector {
 
         // Calculate the average of durations
         let averageDurations = durations.reduce((acc, value) => acc + value, 0) / durations.length;
-
-        //Printing durations
-        const fs = require('fs');
-        const filePath = 'results.txt';
-        const contentText = JSON.stringify(durations);
-        fs.writeFile(filePath, contentText, (err) => {
-            if (!err) {
-                console.log('Content successfully saved to the file');
-            }
-        });
 
         // Calculate the median of durations
         durations.sort((a, b) => a - b);
@@ -65,7 +61,7 @@ class Collector {
         }
         // Display the results
         console.log("Results:")
-        console.log('Proportion of lost:', Math.round(proportionLost*100),"%");
+        console.log('Proportion of lost:', proportionLost,"%");
         console.log('Average of durations:', averageDurations,"ms");
         console.log('Median of durations:', medianDurations,"ms");
     }
@@ -88,10 +84,7 @@ class Client {
         const name = this.name;
         const client = this;
         client_socket.onopen = function() {
-            client.collector.counter_clients_connected = client.collector.counter_clients_connected + 1;
-            if (client.collector.counter_clients_connected == client.collector.number_clients) {
-                console.log("-> All the clients are connected");
-            }
+            console.log("-> Client "+name+" connected");
             client_socket.send(JSON.stringify({type:"connection", id:name}))
         };
 
@@ -114,7 +107,7 @@ class Client {
             this.client_socket.send(JSON.stringify({
                 "type": "ping",
                 "id": this.message_counter,
-                "message": 'A'.repeat(LENGTH_MESSAGES)
+                "message": 'A'.repeat(LENGTH_MSSAGES)
             }));
 
 
@@ -144,10 +137,12 @@ class Client {
         var nb_lost = 0;
         var nb_sucess = 0;
         const delta_time = []
+        const id_messages_lost = []
         this.sent_messages.forEach((time_sent, id) => {
             const time_received = this.received_messages.get(id)
             if (time_received == undefined) {
                 nb_lost = nb_lost + 1;
+                id_messages_lost.push(id)
             }
             else {
                 nb_sucess = nb_sucess + 1
@@ -158,6 +153,7 @@ class Client {
             ['nb_lost', nb_lost],
             ['nb_success', nb_sucess],
             ['durations', delta_time],
+            ['id_messages_lost', id_messages_lost]
         ]));
     }
 }
