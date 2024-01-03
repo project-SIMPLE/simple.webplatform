@@ -1,13 +1,13 @@
 {
   "type": "json_settings",
-  "gama_ws_port": 6666,
+  "gama_ws_port": 6969,
   "monitor_ws_port": 8001,
   "player_ws_port": 8080,
   "app_port": 8000,
   "model_file_path": "models/model1.gaml",
-  "experiment_name": "random_walk_example",
+  "experiment_name": "test",
   "ip_address_gama_server": "localhost",
-  "player_web_interface": true,
+  "player_web_interface": false,
   "player_html_file": "game1.html",
   "type_model_file_path": "relative"
 }

@@ -88,10 +88,12 @@ class PlayerServer {
         
             ws.on('close', () => {
                 const id_player = getIdClient(ws)
-                server_model.json_state["player"][id_player]["connected"] = false
-                server_model.json_state["player"][id_player]["date_connection"] = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
-                server_model.notifyMonitor();
-                console.log("-> The player: "+getIdClient(ws)+" disconnected");
+                if (server_model.json_state["player"][id_player] != undefined) {
+                    server_model.json_state["player"][id_player]["connected"] = false
+                    server_model.json_state["player"][id_player]["date_connection"] = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
+                    server_model.notifyMonitor();
+                    console.log("-> The player: "+getIdClient(ws)+" disconnected");
+                }
             })
         
             ws.on('error', (error) => {
