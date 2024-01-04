@@ -3,10 +3,10 @@ const WebSocket = require('ws');
 const PLAYER_WS_PORT = 8080;
 const IP_ADDRESS = "192.168.0.64"
 const TIME_ACTIVITY = 10*1000
-const FREQUENCY_MESSAGES = 1000
+const FREQUENCY_MESSAGES = 100
 const LENGTH_MESSAGES = 2000
 
-const NB_CLIENTS = 1
+const NB_CLIENTS = 20
 
 
 class Collector {
@@ -92,12 +92,16 @@ class Client {
             if (client.collector.counter_clients_connected == client.collector.number_clients) {
                 console.log("-> All the clients are connected");
             }
-            client_socket.send(JSON.stringify({type:"connection", id:name}))
+            client_socket.send(JSON.stringify({type:"connection", id:"P"+name}))
         };
 
         client_socket.onmessage = function(event) {
             var json = JSON.parse(event.data)
-            console.log(json);
+
+            if (json.type == "json_simulation") {
+                var id = parseInt(json.contents.id_message)
+                client.received_messages.set(id, new Date().getTime())
+            }
             
             if (json.type == "pong") {
                 var id = json.id
@@ -111,18 +115,18 @@ class Client {
         if (this.client_socket != undefined && this.client_socket.readyState === WebSocket.OPEN) {
 
             //To send to test the connection with GAMA
-            this.client_socket.send(JSON.stringify({
-                "type": "ping",
-                "id": this.message_counter,
-                "message": 'A'.repeat(LENGTH_MESSAGES)
-            }));
+            //this.client_socket.send(JSON.stringify({
+            //    "type": "ping",
+            //    "id": this.message_counter,
+            //    "message": 'A'.repeat(LENGTH_MESSAGES)
+            //}));
 
 
             
             // To send to test the connection with the middleware
             this.client_socket.send(JSON.stringify({
                 "type": "expression",
-                "expr": "do reply($id,"+this.message_counter+","+'A'.repeat(LENGTH_MESSAGES)+");"
+                "expr": "do reply($id,\""+this.message_counter+"\",\""+'A'.repeat(LENGTH_MESSAGES)+"\");"
             }));
             this.sent_messages.set(this.message_counter, new Date().getTime())
             this.message_counter = this.message_counter + 1;

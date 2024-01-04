@@ -25,10 +25,14 @@ global {
 		ask gama {
 			do send message: to_json(json);
 		}
+		write "I received smth";
 	}
+
 }
 // Créez un environnement avec une zone spécifique où RandomGuy se déplace
 experiment tester type:gui {
+
+	
 	
 	action reply(string id, string id_message, string content) {
 		ask world {
