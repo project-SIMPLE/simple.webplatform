@@ -1,25 +1,70 @@
 const WebSocket = require('ws');
+const fs = require('fs');
 
 const PLAYER_WS_PORT = 8080;
 const IP_ADDRESS = "192.168.0.64"
-const TIME_ACTIVITY = 30*1000
-const FREQUENCY_MESSAGES = 50
-
-const LENGTH_MESSAGES = 200
-
-const NB_CLIENTS = 30
+const TIME_ACTIVITY = 5*1000
 const STAGGERED = false;
+
+const NB_MEASUREMENTS = 15
+
+function logList(start, end, steps) {
+    const result = [];
+    
+    for (let i = 0; i <= steps; i++) {
+      const value = Math.pow(10, start + i * (end - start) / steps);
+      result.push(value);
+    }
+    
+    return result;
+  }
+
+class Measurer {
+    constructor() {
+        this.loglist = logList(0,9,NB_MEASUREMENTS)
+        this.results = []
+        this.counter = 0;
+        this.continue_measure()
+    }
+
+    add_result(map) {
+        this.results.push(map);
+        if (this.counter == NB_MEASUREMENTS) this.conclude()
+        else this.continue_measure()
+    }
+
+    continue_measure() {
+        new Collector(this, 2,100,Math.floor(this.loglist[this.counter]));
+        this.counter++;
+    }
+
+    conclude() {
+        // Convertir l'objet JSON en chaîne
+        const jsonString = JSON.stringify(this.results, null, 2); // Le paramètre '2' indique l'indentation de 2 espaces pour une meilleure lisibilité
+        console.log(jsonString);
+        // Enregistrer la chaîne JSON dans un fichier
+        fs.writeFile('results_measurer.json', jsonString, 'utf-8', (err) => {
+        if (err) {
+            console.error('Erreur lors de l\'enregistrement du fichier :', err);
+            }
+        });
+    }
+}
 
 
 class Collector {
-    constructor() {
+    constructor(measurer, nb_clients, frequency_messages, length_messages) {
+        this.measurer = measurer;
+        this.FREQUENCY_MESSAGES = frequency_messages;
+        this.LENGTH_MESSAGES = length_messages;
+        this.NB_CLIENTS = nb_clients;
         this.counter_clients_connected = 0;
-        this.number_clients = NB_CLIENTS;
+        this.number_clients = this.NB_CLIENTS;
         var delay = 0
         for (let i = 0; i < this.number_clients; i++) {
             if (STAGGERED) new Client(i, this, delay);
             else new Client(i, this, 0);
-            delay = delay + FREQUENCY_MESSAGES/NB_CLIENTS
+            delay = delay + this.FREQUENCY_MESSAGES/this.NB_CLIENTS
         }
         this.results = []
         console.log("Please wait",Math.floor(TIME_ACTIVITY/1000),"seconds...");
@@ -48,8 +93,7 @@ class Collector {
         let averageDurations = durations.reduce((acc, value) => acc + value, 0) / durations.length;
 
         //Printing durations
-        const fs = require('fs');
-        const filePath = 'results.txt';
+        const filePath = 'results_collector.txt';
         const contentText = JSON.stringify(durations);
         fs.writeFile(filePath, contentText, (err) => {
             if (!err) {
@@ -69,13 +113,23 @@ class Collector {
             medianDurations = durations[Math.floor(durations.length / 2)];
         }
         // Display the results
+        const flow_messages = 1000/this.FREQUENCY_MESSAGES*this.NB_CLIENTS
         console.log("Results:")
-        console.log("Flow messages:", 1000/FREQUENCY_MESSAGES*NB_CLIENTS,"msg/s");
+        console.log("Length messages", this.LENGTH_MESSAGES,"char");
+        console.log("Flow messages:", flow_messages,"msg/s");
         console.log('Proportion of lost:', Math.round(proportionLost*100),"%","("+totalLost+"/"+(totalLost + totalSuccess)+")");
         console.log('Average of durations:', averageDurations,"ms");
         console.log('Median of durations:', medianDurations,"ms");
 
         //console.log(this.results);
+        this.measurer.add_result({
+            length_messages: this.LENGTH_MESSAGES,
+            flow_messages: flow_messages,
+            nb_lost: totalLost,
+            nb_success: totalSuccess,
+            avg_durations: averageDurations,
+            med_durations: medianDurations
+        });
     }
 }
 
@@ -88,7 +142,7 @@ class Client {
         this.client_socket = this.create_socket();
         this.message_counter = 0;
         setTimeout(this.end.bind(this), TIME_ACTIVITY + delay)
-        this.id_timeout = setTimeout(this.send_message.bind(this), FREQUENCY_MESSAGES + delay)
+        this.id_timeout = setTimeout(this.send_message.bind(this), this.collector.FREQUENCY_MESSAGES + delay)
     }
 
     create_socket() {
@@ -126,7 +180,7 @@ class Client {
             //this.client_socket.send(JSON.stringify({
             //    "type": "ping",
             //    "id": this.message_counter,
-            //    "message": 'A'.repeat(LENGTH_MESSAGES)
+            //    "message": 'A'.repeat(this.collector.LENGTH_MESSAGES)
             //}));
 
 
@@ -134,12 +188,12 @@ class Client {
             // To send to test the connection with the middleware
             this.client_socket.send(JSON.stringify({
                 "type": "expression",
-                "expr": "do reply($id,\""+this.message_counter+"\",\""+'A'.repeat(LENGTH_MESSAGES)+"\");"
+                "expr": "do reply($id,\""+this.message_counter+"\",\""+'A'.repeat(this.collector.LENGTH_MESSAGES)+"\");"
             }));
             this.sent_messages.set(this.message_counter, new Date().getTime())
             this.message_counter = this.message_counter + 1;
         }
-        this.id_timeout = setTimeout(this.send_message.bind(this), FREQUENCY_MESSAGES);
+        this.id_timeout = setTimeout(this.send_message.bind(this), this.collector.FREQUENCY_MESSAGES);
     }
 
     end() {
@@ -178,4 +232,4 @@ class Client {
 }
 
 
-new Collector()
+new Measurer()

@@ -2,7 +2,7 @@ import json
 import matplotlib.pyplot as plt
 
 # Lire la liste depuis le fichier results.txt
-with open('results.txt', 'r') as file:
+with open('results_collector.txt', 'r') as file:
     data = file.read()
     ma_liste = json.loads(data)
 

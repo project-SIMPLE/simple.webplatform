@@ -1,0 +1,114 @@
+[
+  {
+    "length_messages": 1,
+    "flow_messages": 20,
+    "nb_lost": 5,
+    "nb_success": 93,
+    "avg_durations": 4.010752688172043,
+    "med_durations": 3
+  },
+  {
+    "length_messages": 3,
+    "flow_messages": 20,
+    "nb_lost": 7,
+    "nb_success": 91,
+    "avg_durations": 3.659340659340659,
+    "med_durations": 3
+  },
+  {
+    "length_messages": 15,
+    "flow_messages": 20,
+    "nb_lost": 4,
+    "nb_success": 94,
+    "avg_durations": 2.4574468085106385,
+    "med_durations": 2
+  },
+  {
+    "length_messages": 63,
+    "flow_messages": 20,
+    "nb_lost": 2,
+    "nb_success": 96,
+    "avg_durations": 2.6041666666666665,
+    "med_durations": 3
+  },
+  {
+    "length_messages": 251,
+    "flow_messages": 20,
+    "nb_lost": 1,
+    "nb_success": 97,
+    "avg_durations": 2.6804123711340204,
+    "med_durations": 3
+  },
+  {
+    "length_messages": 1000,
+    "flow_messages": 20,
+    "nb_lost": 5,
+    "nb_success": 93,
+    "avg_durations": 3.21505376344086,
+    "med_durations": 3
+  },
+  {
+    "length_messages": 3981,
+    "flow_messages": 20,
+    "nb_lost": 1,
+    "nb_success": 97,
+    "avg_durations": 4.43298969072165,
+    "med_durations": 4
+  },
+  {
+    "length_messages": 15848,
+    "flow_messages": 20,
+    "nb_lost": 2,
+    "nb_success": 96,
+    "avg_durations": 10.53125,
+    "med_durations": 11
+  },
+  {
+    "length_messages": 63095,
+    "flow_messages": 20,
+    "nb_lost": 6,
+    "nb_success": 92,
+    "avg_durations": 16.73913043478261,
+    "med_durations": 14
+  },
+  {
+    "length_messages": 251188,
+    "flow_messages": 20,
+    "nb_lost": 2,
+    "nb_success": 94,
+    "avg_durations": 25.73404255319149,
+    "med_durations": 23
+  },
+  {
+    "length_messages": 1000000,
+    "flow_messages": 20,
+    "nb_lost": 4,
+    "nb_success": 90,
+    "avg_durations": 312.7111111111111,
+    "med_durations": 300
+  },
+  {
+    "length_messages": 3981071,
+    "flow_messages": 20,
+    "nb_lost": 76,
+    "nb_success": 8,
+    "avg_durations": 3187.625,
+    "med_durations": 2977
+  },
+  {
+    "length_messages": 15848931,
+    "flow_messages": 20,
+    "nb_lost": 40,
+    "nb_success": 14,
+    "avg_durations": 1259.642857142857,
+    "med_durations": 1207
+  },
+  {
+    "length_messages": 63095734,
+    "flow_messages": 20,
+    "nb_lost": 15,
+    "nb_success": 0,
+    "avg_durations": null,
+    "med_durations": null
+  }
+]
