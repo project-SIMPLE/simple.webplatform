@@ -3,9 +3,9 @@ const WebSocket = require('ws');
 const PLAYER_WS_PORT = 8080;
 const IP_ADDRESS = "192.168.0.64"
 const TIME_ACTIVITY = 30*1000
-const FREQUENCY_MESSAGES = 20
+const FREQUENCY_MESSAGES = 50
 
-const LENGTH_MESSAGES = 20
+const LENGTH_MESSAGES = 200
 
 const NB_CLIENTS = 30
 const STAGGERED = false;
@@ -70,6 +70,7 @@ class Collector {
         }
         // Display the results
         console.log("Results:")
+        console.log("Flow messages:", 1000/FREQUENCY_MESSAGES*NB_CLIENTS,"msg/s");
         console.log('Proportion of lost:', Math.round(proportionLost*100),"%","("+totalLost+"/"+(totalLost + totalSuccess)+")");
         console.log('Average of durations:', averageDurations,"ms");
         console.log('Median of durations:', medianDurations,"ms");

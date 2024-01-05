@@ -7,7 +7,7 @@ with open('results.txt', 'r') as file:
     ma_liste = json.loads(data)
 
 # Créer un histogramme
-plt.hist(ma_liste, bins=min(max(ma_liste), 20), color='blue', edgecolor='black', alpha=0.7, density=True)
+plt.hist(ma_liste, bins=min(max(ma_liste), 20), color='blue', edgecolor='black', alpha=0.7, density=False)
 
 # Ajouter des labels et un titre
 plt.xlabel('Valeurs')
