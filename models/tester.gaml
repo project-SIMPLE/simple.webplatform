@@ -25,7 +25,6 @@ global {
 		ask gama {
 			do send message: to_json(json);
 		}
-		write "I received smth";
 	}
 
 }

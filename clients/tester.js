@@ -2,19 +2,24 @@ const WebSocket = require('ws');
 
 const PLAYER_WS_PORT = 8080;
 const IP_ADDRESS = "192.168.0.64"
-const TIME_ACTIVITY = 10*1000
-const FREQUENCY_MESSAGES = 100
-const LENGTH_MESSAGES = 2000
+const TIME_ACTIVITY = 30*1000
+const FREQUENCY_MESSAGES = 20
 
-const NB_CLIENTS = 20
+const LENGTH_MESSAGES = 20
+
+const NB_CLIENTS = 30
+const STAGGERED = false;
 
 
 class Collector {
     constructor() {
         this.counter_clients_connected = 0;
         this.number_clients = NB_CLIENTS;
+        var delay = 0
         for (let i = 0; i < this.number_clients; i++) {
-            new Client(i, this);
+            if (STAGGERED) new Client(i, this, delay);
+            else new Client(i, this, 0);
+            delay = delay + FREQUENCY_MESSAGES/NB_CLIENTS
         }
         this.results = []
         console.log("Please wait",Math.floor(TIME_ACTIVITY/1000),"seconds...");
@@ -65,22 +70,24 @@ class Collector {
         }
         // Display the results
         console.log("Results:")
-        console.log('Proportion of lost:', Math.round(proportionLost*100),"%");
+        console.log('Proportion of lost:', Math.round(proportionLost*100),"%","("+totalLost+"/"+(totalLost + totalSuccess)+")");
         console.log('Average of durations:', averageDurations,"ms");
         console.log('Median of durations:', medianDurations,"ms");
+
+        //console.log(this.results);
     }
 }
 
 class Client {
-    constructor(name, collector) {
+    constructor(name, collector, delay) {
         this.collector = collector;
         this.name = name
         this.received_messages = new Map();
         this.sent_messages = new Map();
         this.client_socket = this.create_socket();
         this.message_counter = 0;
-        setTimeout(this.end.bind(this), TIME_ACTIVITY)
-        this.id_timeout = setTimeout(this.send_message.bind(this), FREQUENCY_MESSAGES)
+        setTimeout(this.end.bind(this), TIME_ACTIVITY + delay)
+        this.id_timeout = setTimeout(this.send_message.bind(this), FREQUENCY_MESSAGES + delay)
     }
 
     create_socket() {
@@ -148,10 +155,12 @@ class Client {
         var nb_lost = 0;
         var nb_sucess = 0;
         const delta_time = []
+        const id_message_lost = []
         this.sent_messages.forEach((time_sent, id) => {
             const time_received = this.received_messages.get(id)
             if (time_received == undefined) {
                 nb_lost = nb_lost + 1;
+                id_message_lost.push(id)
             }
             else {
                 nb_sucess = nb_sucess + 1
@@ -162,6 +171,7 @@ class Client {
             ['nb_lost', nb_lost],
             ['nb_success', nb_sucess],
             ['durations', delta_time],
+            ['id_message_lost', id_message_lost]
         ]));
     }
 }
