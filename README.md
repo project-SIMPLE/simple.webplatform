@@ -1,4 +1,4 @@
-# Gama Server Linker
+# Gama Server Middleware
 
 ## Introduction
 
