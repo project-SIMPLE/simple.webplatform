@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Charger les données depuis le fichier JSON
-with open("results_measurer.json", "r") as file:
+with open("clients/results_measurer.json", "r") as file:
     data = json.load(file)
 
 # Extraire les données

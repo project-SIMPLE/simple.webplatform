@@ -6,7 +6,7 @@ const IP_ADDRESS = "192.168.0.64"
 const TIME_ACTIVITY = 5*1000
 const STAGGERED = false;
 
-const NB_MEASUREMENTS = 15
+const NB_MEASUREMENTS = 5
 
 function logList(start, end, steps) {
     const result = [];

@@ -7,7 +7,7 @@
   "model_file_path": "models/tester.gaml",
   "experiment_name": "tester",
   "ip_address_gama_server": "localhost",
-  "player_web_interface": false,
+  "player_web_interface": true,
   "player_html_file": "game1.html",
   "type_model_file_path": "relative"
 }
