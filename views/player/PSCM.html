@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gama Server Linker Player</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        h1 {
+            background-color: #0074d9;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            margin: 0;
+            width: 100%; /* Barre bleue sur toute la largeur */
+        }
+        h2 {
+            color: #0074d9;
+            text-align: center;
+        }
+        p {
+            margin: 10px 0;
+            text-align: center;
+            width: 100%; /* Texte sur toute la largeur */
+        }
+        #connection-state {
+            font-weight: bold;
+            font-size: 18px;
+            color: #4CAF50;
+        }
+        #authentification-state {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        #authentification-state.success {
+            color: #4CAF50;
+        }
+        #authentification-state.error {
+            color: #FF5733;
+        }
+        #id-view {
+            font-weight: bold;
+        }
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 24px;
+            }
+            h2 {
+                font-size: 18px;
+            }
+            p {
+                font-size: 16px;
+            }
+        }
+        @media (max-width: 768px) and (orientation: portrait) {
+            #graph-container {
+                padding: 10px;
+            }
+        }
+        @media (min-width: 769px) {
+            #graph-container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Gama Server Linker - Game Page</h1>
+
+        <p id="connection-state" style="color:green;font-weight: bold;"></p>
+        <p id="authentification-state"></p>
+        <p>
+            <span>ID player: </span><span id="id-view"></span>
+        </p>
+        <p>
+            <span>You are </span><span id="name-view"></span><span> in </span><span id="color-view">.....</span><br>
+            <label for="name">Enter your name:</label>
+            <input type="text" id="name" name="name"><button id="name-button">Enter</button><br><br>
+            <span>You have: </span><span id="nb-agent-view"></span><span> soldiers</span>
+        </p>
+        <p>
+            <span>You predator: </span><span id="predator-view"></span><span> in </span><span id="predator-color-view">.....</span><br>
+            <span>You prey: </span><span id="prey-view"></span><span> in </span><span id="prey-color-view">.....</span>
+        </p>
+
+        <h2>Strategy</h2>
+
+        <p>
+            <span>Your strategy: </span><span id="strategy-view"></span><br>
+            <span>Your attack rate: </span><span id="attack-rate-view"></span>
+        </p>
+    <script>
+
+        var json_state;
+        const id_unique = generateGuid();
+        document.querySelector("#id-view").innerHTML = id_unique;
+        const hostname = window.location.hostname;
+        var socket;
+
+        function generateGuid() {
+            return 'xxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        fetch('/getWsGamePort')
+            .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    socket = createWebSocket(data.player_ws_port)
+        });
+
+        function createWebSocket(player_ws_port) {
+            const socket = new WebSocket('ws://'+hostname+':'+ player_ws_port);
+
+            socket.onopen = function() {
+                document.querySelector("#connection-state").innerHTML = "&#10004; Connected to central Server"
+                message = {type:"connection", id:id_unique}
+                socket.send(JSON.stringify(message))
+            };
+
+            socket.onmessage = function(event) {
+                var json = JSON.parse(event.data)
+                console.log(json);
+                if (json.type == "json_state") {
+                    
+                    json_state = json;
+                    const authentified = json_state.player[id_unique].authentified;
+                    document.querySelector("#authentification-state").innerHTML = authentified ? "&#10004; Authentified to Gama Server" : "&#x274C; Unauthentified to Gama Server, please wait"
+                    document.querySelector("#authentification-state").style = authentified ? "color:green;" : "color:red;";
+                }
+                else if (json.type == "json_simulation") {
+                    const json_simulation = json;
+                    console.log(json_simulation);
+                    document.querySelector("#name-view").innerHTML =  json_simulation.contents.name == undefined ? "(enter your name)" : json_simulation.contents.name ;
+                    const color = "rgb("+ json_simulation.contents.color.red + ", "+ json_simulation.contents.color.green + ", "+ json_simulation.contents.color.blue + ");"
+                    console.log("iciii"+color);
+                    document.querySelector("#color-view").style = 'background-color:'+ color + ' color: '+ color;
+                    console.log('background-color:'+ color + ' color: '+ color);
+                    document.querySelector("#nb-agent-view").innerHTML = json_simulation.contents.nb_agents
+                    document.querySelector("#strategy-view").innerHTML = json_simulation.contents.startegy;
+                    document.querySelector("#attack-rate-view").innerHTML = json_simulation.contents.attack_rate;
+                    document.querySelector("#predator-view").innerHTML = json_simulation.contents.predator.name == undefined ? "..." : json_simulation.contents.predator.name ;
+                    const color_predator = "rgb("+ json_simulation.contents.predator.color.red + ", "+ json_simulation.contents.predator.color.green + ", "+ json_simulation.contents.predator.color.blue + ");"
+                    document.querySelector("#predator-color-view").style = 'background-color:'+ color_predator+ ' color: '+ color_predator;
+                    document.querySelector("#prey-view").innerHTML = json_simulation.contents.prey.name == undefined ? "..." : json_simulation.contents.prey.name ;
+                    const color_prey = "rgb("+ json_simulation.contents.prey.color.red + ", "+ json_simulation.contents.prey.color.green + ", "+ json_simulation.contents.prey.color.blue + ");"
+                    document.querySelector("#prey-color-view").style = 'background-color:'+ color_prey+ ' color: '+ color_prey;
+                }
+            };
+            
+            socket.addEventListener('close', (event) => {
+                document.querySelector("#connection-state").innerHTML = "&#x274C; The central server disconnected ! Please refresh this page when the server came back to work"
+                document.querySelector("#connection-state").style = "color:red;font-weight: bold;"
+                if (event.wasClean) {
+                    console.log('The WebSocket connection with Gama Server was properly be closed');
+                } else {
+                    console.error('The Websocket connection with Gama Server interruped suddenly');
+                }
+                console.log(`Closure id : ${event.code}, Reason : ${event.reason}`);
+
+            })
+
+            socket.addEventListener('error', (error) => {
+                document.querySelector("#connection-state").innerHTML = "&#x274C; The cetral server disconnected ! Please refresh this page when the server came back to work"
+                document.querySelector("#connection-state").style = "color:red;font-weight: bold;"
+            });
+
+            return socket;
+        }
+
+        document.querySelector("#name-button").addEventListener('click', ()=>{
+                socket.send(JSON.stringify({
+                    "type": "expression",
+                    "expr": "do set_name($id,\""+document.querySelector("#name").value+"\");"
+                }))
+                document.querySelector("#name").value = ""
+            });
+    </script>
+</body>
+</html>

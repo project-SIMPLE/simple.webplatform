@@ -324,6 +324,7 @@ class ConnectorGamaServer {
                     server_model.json_state.gama.experiment_id = message.exp_id;
                     if (message.content == 'NONE' && ['RUNNING','PAUSED','NOTREADY'].includes(server_model.json_state.gama.experiment_state)) {
                         server_model.removeEveryPlayers();
+                        
                     }
                     server_model.json_state.gama.experiment_state = message.content;
                     server_model.notifyMonitor();

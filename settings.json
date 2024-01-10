@@ -4,10 +4,10 @@
   "monitor_ws_port": 8001,
   "player_ws_port": 8080,
   "app_port": 8000,
-  "model_file_path": "models/tester.gaml",
-  "experiment_name": "tester",
+  "model_file_path": "models/PSC_multiplayer.gaml",
+  "experiment_name": "Battle",
   "ip_address_gama_server": "localhost",
   "player_web_interface": true,
-  "player_html_file": "game1.html",
+  "player_html_file": "PSCM2.html",
   "type_model_file_path": "relative"
 }
