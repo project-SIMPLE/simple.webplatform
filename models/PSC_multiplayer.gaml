@@ -9,7 +9,7 @@
 model PSCmultiplayer
 
 
-global {
+global torus:true{
 	float size <- 20.0;
 	int number_agents_per_player <- 10;
 	list<rgb> colors_allowed <- [#yellow, #blue, #green,#red, #purple];
@@ -17,7 +17,8 @@ global {
 	list<string> player_name;
 	
 	list<string> players_to_kill <- [];
-	list<string> players_to_restart <- [];
+	bool restart <- false;
+	
 	
 	init {
 		ask gama {
@@ -48,6 +49,7 @@ global {
 				do change_prey(player_name[0]);
 				do change_predator(player_name[length(player_name)-1]);
 				do change_attack_rate("0.5");
+				do update_nb_agents;
 			}
 			player_name <+ id_name_input;
 		}
@@ -62,15 +64,19 @@ global {
 					self.color <- myself.color;
 				}
 				do change_attack_rate("0.5");
+				do update_nb_agents;
 			}
 			player_name <+ id_name_input;
 		}
 		do send_info;
+		ask experiment {
+			do update_outputs;
+		}
+		
 	}
 	
 	reflex kill_player when:  length(players_to_kill) != 0 {
-		string player_to_kill <- players_to_kill[0];
-		if player_to_kill in player_name {
+		loop player_to_kill over: players_to_kill {
 			remove player_to_kill all:true from: player_name;
 			ask first(Player where (each.id_player=player_to_kill)) {
 				ask first(Player where (each.id_player=self.predator)) {
@@ -89,44 +95,9 @@ global {
 				}
 			}
 		}
-		remove index:0 from: players_to_kill;
+		players_to_kill <- [];
 		do send_info;
 		
-	}
-	
-	reflex restart_player when: length(players_to_restart) != 0 {
-		string player_to_restart <- players_to_restart[0];
-		Player player <- first(Player where (each.id_player= player_to_restart));
-		string strategy <- player.strategy;
-		string name_player <- player.name_player;
-		float attack_rate <- player.attack_rate;
-		
-		if player_to_restart in player_name {
-			remove player_to_restart all:true from: player_name;
-			ask first(Player where (each.id_player=player_to_restart)) {
-				ask first(Player where (each.id_player=self.predator)) {
-					self.prey <- myself.prey;
-				}
-				ask first(Player where (each.id_player=self.prey)) {
-					self.predator <- myself.predator;
-				}
-				colors_allowed <+ self.color;
-				do die;
-			}
-			list<Agent> agents_to_kill <- Agent where (each.type=player_to_restart);
-			if length(agents_to_kill) != 0 {
-				ask agents_to_kill {
-					do die;
-				}
-			}
-		}
-		remove index:0 from: players_to_restart;
-		
-		do create_player(player_to_restart);
-		do set_name(player_to_restart, name_player);
-		do change_strategy(player_to_restart, strategy);
-		do change_attack_rate(player_to_restart, string(attack_rate));
-		do send_info;
 	}
 	
 	action remove_player(string id_name_input) {
@@ -138,6 +109,9 @@ global {
 			do change_strategy(new_strategy);
 		}
 		do send_info;
+		ask experiment {
+			do update_outputs;
+		}
 	}
 	
 	action change_attack_rate(string id_player_input, string new_attack_rate) {
@@ -145,6 +119,9 @@ global {
 			do change_attack_rate(new_attack_rate);
 		}
 		do send_info;
+		ask experiment {
+			do update_outputs;
+		}
 	}
 	
 	action set_name(string id_player_input, string new_name) {
@@ -155,6 +132,9 @@ global {
 			}
 		}
 		do send_info;
+		ask experiment {
+			do update_outputs;
+		}
 	}
 	
 	reflex send_info {
@@ -190,7 +170,33 @@ global {
 	}
 	
 	action restart {
-		players_to_restart <- player_name;
+		restart <- true;
+	}
+	
+	reflex restart when: restart {
+		list<string> copy_player_name <- player_name;
+		player_name <- [];
+		colors_allowed <- [#yellow, #blue, #green,#red, #purple];
+		loop player_to_restart over: copy_player_name {
+			Player player <- first(Player where (each.id_player= player_to_restart));
+			string strategy <- player.strategy;
+			string name_player <- player.name_player;
+			float attack_rate <- player.attack_rate;
+			ask first(Player where (each.id_player=player_to_restart)) {
+				do die;
+			}
+			list<Agent> agents_to_kill <- Agent where (each.type=player_to_restart);
+			if length(agents_to_kill) != 0 {
+				ask agents_to_kill {
+					do die;
+				}
+			}
+			do create_player(player_to_restart);
+			do set_name(player_to_restart, name_player);
+			do change_strategy(player_to_restart, strategy);
+			do change_attack_rate(player_to_restart, string(attack_rate));
+		}
+		restart <- false;
 	}
 }
 
@@ -235,6 +241,9 @@ species Player {
 		ask Agent where (each.type = self.id_player) {
 			self.attack_rate <- myself.attack_rate;
 		}
+	}
+	action update_nb_agents {
+		self.nb_agents <- length(Agent where (each.type=self.id_player));
 	}
 	
 	reflex calculate_barycenters {
@@ -364,9 +373,21 @@ experiment Battle type:gui {
                 loop player over: Player
                 {
                     draw square(15#px) at: { 20#px, y } color: player.color border: #white;
-                    draw player.name_player +" - "+player.nb_agents at: { 40#px, y + 8#px } color: # white font: font("Helvetica", 20, #bold);
-                    draw player.strategy+" - "+ int(player.attack_rate*100) + "%" at: { 40#px, y + 28#px } color: # white font: font("Helvetica", 15, #bold);
+                    if player.is_alive {
+                    	draw player.name_player +" - "+player.nb_agents at: { 40#px, y + 8#px } color: # white font: font("Helvetica", 20, #bold);
+                    	draw player.strategy+" - "+ int(player.attack_rate*100) + "%" at: { 40#px, y + 28#px } color: # white font: font("Helvetica", 15);
+                    }
+                    else {
+                    	draw player.name_player +" - "+player.nb_agents at: { 40#px, y + 8#px } color: # darkred font: font("Helvetica", 20, #bold);
+                    	draw player.strategy+" - "+ int(player.attack_rate*100) + "%" at: { 40#px, y + 28#px } color: # darkred font: font("Helvetica", 15, #bold);
+                    }
                     y <- y + 70#px;
+                }
+                write "----------";
+                write Player count (each.is_alive);
+                write int(length(Player)/2);
+                if length(Player) != 0 and Player count (each.is_alive) = int(length(Player)/2) {
+                	draw "Game finished !" at: { 20#px, y + 40#px } color: # white font: font("Helvetica", 25, #bold);
                 }
             }
 		}
