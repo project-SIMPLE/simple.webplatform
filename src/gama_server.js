@@ -153,7 +153,7 @@ class ConnectorGamaServer {
             this.server_model.notifyMonitor();
             function_to_call = () => {
                 this.server_model.json_state["gama"]["loading"] = false
-                this.server_model.removeEveryPlayers();
+                this.server_model.unauthentifyEveryPlayers();
                 this.server_model.notifyMonitor();
             }
             this.sendMessages()
@@ -250,7 +250,7 @@ class ConnectorGamaServer {
         var index = 0
         this.server_model.json_state.player.id_connected.forEach(id_player => {
             if (this.server_model.json_state.player[id_player].connected && !this.server_model.json_state.player[id_player].authentified) {
-                setTimeout(() => {this.addPlayer(id_player)},400*index);
+                setTimeout(() => {this.addPlayer(id_player)},500*index);
                 index = index + 1
             }
         });
@@ -264,7 +264,7 @@ class ConnectorGamaServer {
             var index = 0
             this.server_model.json_state.player.id_connected.forEach(id_player => {
                 if (this.server_model.json_state.player[id_player].authentified) {
-                    setTimeout(() => {this.removePlayer(id_player);},400*index);
+                    setTimeout(() => {this.removePlayer(id_player);},500*index);
                     index = index + 1
                 }
             });
@@ -276,6 +276,7 @@ class ConnectorGamaServer {
             this.server_model.notifyMonitor();
         }
     }
+
     /**
      * Sends an expression for a certain player
      * @param {String} id_player - The id of the player to apply this expression
@@ -322,8 +323,8 @@ class ConnectorGamaServer {
                     console.log("Message received from Gama Server:");
                     console.log(message);
                     server_model.json_state.gama.experiment_id = message.exp_id;
-                    if (message.content == 'NONE' && ['RUNNING','PAUSED','NOTREADY'].includes(server_model.json_state.gama.experiment_state)) {
-                        server_model.removeEveryPlayers();
+                    if (['NONE','NOTREADY'].includes(message.content) && ['RUNNING','PAUSED','NOTREADY'].includes(server_model.json_state.gama.experiment_state)) {
+                        server_model.unauthentifyEveryPlayers();
                         
                     }
                     server_model.json_state.gama.experiment_state = message.content;

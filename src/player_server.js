@@ -181,6 +181,13 @@ class PlayerServer {
         this.server_model.notifyMonitor();
     }
 
+    unauthentifyEveryPlayers() {
+        this.server_model.json_state.player.id_connected.forEach(id_player => {
+            this.server_model.json_state.player[id_player].authentified = false;
+        });
+        this.server_model.notifyMonitor();
+    }
+
     
 
     /**

@@ -74,6 +74,10 @@ class ServerModel {
         this.gama_connector.removeEveryPlayers();
     }
 
+    unauthentifyEveryPlayers() {
+        this.player_server.unauthentifyEveryPlayers();
+    }
+
     /**
      * Add every connected but not authenticated players to the simulation
      */
