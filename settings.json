@@ -4,7 +4,7 @@
   "monitor_ws_port": 8001,
   "player_ws_port": 8080,
   "app_port": 8000,
-  "model_file_path": "models/",
+  "model_file_path": "models/PSC_multiplayer.gaml",
   "experiment_name": "Battle",
   "ip_address_gama_server": "localhost",
   "player_web_interface": true,

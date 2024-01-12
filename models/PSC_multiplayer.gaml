@@ -9,7 +9,7 @@
 model PSCmultiplayer
 
 
-global torus:true{
+global {
 	float size <- 20.0;
 	int number_agents_per_player <- 10;
 	list<rgb> colors_allowed <- [#yellow, #blue, #green,#red, #purple];
@@ -25,6 +25,8 @@ global torus:true{
 			pref_experiment_ask_closing <- false;
 		}
 	}
+	
+	
 	
 	action create_player(string id_name_input) {
 		if length(player_name) != 0 {
@@ -327,6 +329,21 @@ species Agent skills: [moving] {
 	}
 }
 
+species user control:user_only {
+   user_panel "Default" initial: true {
+      transition to: "Basic Control" when: true;
+   }
+   
+   user_panel "Basic Control" {
+      user_command "Restart game" {
+         ask world{
+            do restart;
+         }
+      }
+      transition to: "Default" when: true;                    
+   }
+}
+
 experiment Battle type:gui {
 	
 	action create_player(string id_player_input) {
@@ -359,8 +376,16 @@ experiment Battle type:gui {
 		}
 	}
 	
+	action restart {
+		ask world {
+			do restart;
+		}
+	}
+	
+	user_command "Restart game" action: restart;
 	
     output {
+    	
     	display map fullscreen: true{
 			species Agent aspect: base transparency: 0.5;
 			
@@ -383,12 +408,10 @@ experiment Battle type:gui {
                     }
                     y <- y + 70#px;
                 }
-                write "----------";
-                write Player count (each.is_alive);
-                write int(length(Player)/2);
                 if length(Player) != 0 and Player count (each.is_alive) = int(length(Player)/2) {
-                	draw "Game finished !" at: { 20#px, y + 40#px } color: # white font: font("Helvetica", 25, #bold);
+                	draw "End of game !" at: { 20#px, y + 40#px } color: # white font: font("Helvetica", 25, #bold);
                 }
+                
             }
 		}
     }
