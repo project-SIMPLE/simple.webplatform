@@ -1,7 +1,7 @@
 //Imports
 const express = require('express');
 const fs = require('fs');
-const ServerModel = require('./controller');
+const Controller = require('./controller');
 
 // Default values
 const DEFAULT_APP_PORT = 80;
@@ -16,7 +16,7 @@ class App {
      */
     constructor(controller) {
         this.controller = controller;
-        this.app_port = this.controller.json_settings.app_port != undefined ? controller.json_settings.app_port : DEFAULT_APP_PORT;
+        this.app_port = this.controller.model.getJsonSettings().app_port != undefined ? controller.model.getJsonSettings().app_port : DEFAULT_APP_PORT;
         
         this.app = express();
         this.app.set('view engine', 'ejs');
@@ -36,8 +36,8 @@ class App {
 
         
         this.app.get('/player', (req, res) => {
-          if (this.controller.json_settings.player_web_interface){
-            res.sendFile(this.controller.json_settings.player_html_file, { root: 'views/player' });
+          if (this.controller.model.getJsonSettings().player_web_interface){
+            res.sendFile(this.controller.model.getJsonSettings().player_html_file, { root: 'views/player' });
           }
           else {
             res.sendFile('404.html', { root: 'views/public' });
@@ -48,11 +48,11 @@ class App {
         //Some getters
 
         this.app.get('/getWsMonitorPort', (req, res) => {
-          res.json({ "monitor_ws_port" : controller.json_settings.monitor_ws_port });
+          res.json({ "monitor_ws_port" : controller.model.getJsonSettings().monitor_ws_port });
         });
 
         this.app.get('/getWsGamePort', (req, res) => {
-          res.json({ "player_ws_port" : controller.json_settings.player_ws_port });
+          res.json({ "player_ws_port" : controller.model.getJsonSettings().player_ws_port });
         });
         
         this.app.get('/favicon.ico', (req, res) => {

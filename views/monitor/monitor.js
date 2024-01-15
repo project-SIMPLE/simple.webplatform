@@ -15,6 +15,7 @@ function createWebSocket(monitor_ws_port) {
 
     socket.onmessage = function(event){
         const json_state = JSON.parse(event.data)
+        console.log(json_state);
         if (json_state.type == "json_state") {
             // About GAMA
             document.querySelector("#try-connection").disabled =  json_state["gama"]["connected"] ? true : false
@@ -79,7 +80,7 @@ function createWebSocket(monitor_ws_port) {
 
             // About VR    
             document.querySelector("#player-container").innerHTML = ""
-            json_state["player"]["id_connected"].forEach(element => {
+            for (var element in json_state.player) {
                 const player_button_add_span = document.createElement('span')
                 const player_button_add = document.createElement('button')
                 player_button_add_span.appendChild(player_button_add)
@@ -112,10 +113,10 @@ function createWebSocket(monitor_ws_port) {
                 player_id.innerHTML = "ID: <b>" + String(element) + "</b>"
                 if (['RUNNING','PAUSED'].includes(json_state["gama"]["experiment_state"])) {
                     
-                    if (json_state["player"][element]["authentified"]) {
+                    if (json_state["player"][element]["in_game"]) {
                         player_button_add.disabled = true
                         player_button_remove.disabled = false
-                        player_status.innerHTML = "Status: Authenticated"
+                        player_status.innerHTML = "Status: In game"
                         if (json_state["player"][element]["connected"]){
                             player_icon_span.innerHTML = "&#10004;"
                             player_icon_span.style = "color:green;"
@@ -135,7 +136,7 @@ function createWebSocket(monitor_ws_port) {
                     else {
                         player_button_add.disabled = false
                         player_button_remove.disabled = true
-                        player_status.innerHTML = "Status: Unauthenticated"
+                        player_status.innerHTML = "Status: Not in game"
                         if (json_state["player"][element]["connected"]){
                             player_icon_span.innerHTML = "&#x231B;"
                             player_id.style = "color:orange;"
@@ -158,7 +159,7 @@ function createWebSocket(monitor_ws_port) {
                     if (json_state["player"][element]["connected"]){
                         player_icon_span.innerHTML = "&#x231B;"
                         player_id.style = "color:orange;"
-                        player_status.innerHTML = "Status: Unauthenticated"
+                        player_status.innerHTML = "Status: Not in game"
                         player_status.style = "color:orange;"
                         player_date.innerHTML = "Connected at: " + json_state["player"][element]["date_connection"] 
                         player_date.style = "color:orange;"
@@ -166,7 +167,7 @@ function createWebSocket(monitor_ws_port) {
                     else {
                         player_icon_span.innerHTML = "&#x274C;"
                         player_id.style = "color:red;"
-                        player_status.innerHTML = "Status: Unauthenticated"
+                        player_status.innerHTML = "Status: Not in game"
                         player_status.style = "color:red;"
                         player_date.innerHTML = "Last connection at: " + json_state["player"][element]["date_connection"] 
                         player_date.style = "color:red;"
@@ -190,7 +191,7 @@ function createWebSocket(monitor_ws_port) {
                 player_button_remove.addEventListener('click', () => {
                     socket.send(JSON.stringify({"type":"remove_player_headset","id":element}))
                 })
-            });
+            }
         }
     }
 
@@ -231,7 +232,7 @@ function createWebSocket(monitor_ws_port) {
             console.log('The WebSocket connection with Gama Server was properly be closed');
         } else {
             console.error('The Websocket connection with Gama Server interruped suddenly');
-            document.querySelector("#connection-state").innerHTML = "&#x274C; The central server disconnected ! Please refresh this page when the server came back to work"
+            document.querySelector("#connection-state").innerHTML = "&#x274C; The middleware disconnected ! Please refresh this page when the server came back to work"
             document.querySelector("#connection-state").style = "color:red;"
             document.querySelector(".sections").style = "display:none;"
         }
@@ -239,7 +240,7 @@ function createWebSocket(monitor_ws_port) {
     })
 
     socket.addEventListener('error', (error) => {
-        document.querySelector("#connection-state").innerHTML = "&#x274C; The cetral server disconnected ! Please refresh this page when the server came back to work"
+        document.querySelector("#connection-state").innerHTML = "&#x274C; The middleware disconnected ! Please refresh this page when the server came back to work"
         document.querySelector("#connection-state").style = "color:red;"
         document.querySelector(".sections").style = "display:none;"
     });

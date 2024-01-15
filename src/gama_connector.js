@@ -14,7 +14,7 @@ var function_to_call;
 var current_id_player;
 var current_expression;
 
-var server_model_copy;
+var controller_copy;
 var model_file;
 var experiment_name
 
@@ -33,15 +33,15 @@ const gama_error_messages = ["SimulationStatusError",
 class ConnectorGamaServer {
     /**
      * Constructor of the websocket client
-     * @param {ServerModel} server_model - The model of the project
+     * @param {Controller} controller - The model of the project
      */
-    constructor(server_model) {
-        this.server_model = server_model;
-        server_model_copy = server_model;
-        this.gama_ws_port = this.server_model.json_settings.gama_ws_port != undefined ? this.server_model.json_settings.gama_ws_port : DEFAULT_GAMA_WS_PORT;
+    constructor(controller) {
+        this.controller = controller;
+        controller_copy = controller;
+        this.gama_ws_port = this.controller.model.getJsonSettings().gama_ws_port != undefined ? this.controller.model.getJsonSettings().gama_ws_port : DEFAULT_GAMA_WS_PORT;
         this.gama_error_messages = gama_error_messages;
-        model_file = this.server_model.json_settings.type_model_file_path == "absolute" ? this.server_model.json_settings.model_file_path : process.cwd() + "/" + this.server_model.json_settings.model_file_path
-        experiment_name = this.server_model.json_settings.experiment_name;
+        model_file = this.controller.model.getJsonSettings().type_model_file_path == "absolute" ? this.controller.model.getJsonSettings().model_file_path : process.cwd() + "/" + this.controller.model.getJsonSettings().model_file_path
+        experiment_name = this.controller.model.getJsonSettings().experiment_name;
         this.gama_socket = this.connectGama();
     }
 
@@ -59,26 +59,26 @@ class ConnectorGamaServer {
     play_experiment() {
         return {
             "type": "play",
-            "exp_id": server_model_copy.json_state.gama.experiment_id,
+            "exp_id": controller_copy.model.getGama().experiment_id,
         }
     } 
     stop_experiment() {
         return  {
             "type": "stop",
-            "exp_id": server_model_copy.json_state.gama.experiment_id,
+            "exp_id": controller_copy.model.getGama().experiment_id,
         }
     }
     pause_experiment() {
         return {
             "type": "pause",
-            "exp_id": server_model_copy.json_state.gama.experiment_id,
+            "exp_id": controller_copy.model.getGama().experiment_id,
         }
     }
     add_player() {
         return  {
             "type": "expression",
             "content": "Add a new VR headset", 
-            "exp_id": server_model_copy.json_state.gama.experiment_id,
+            "exp_id": controller_copy.model.getGama().experiment_id,
             "expr": "do create_player(\""+current_id_player+"\");"
         }
     }
@@ -86,7 +86,7 @@ class ConnectorGamaServer {
         return  {
             "type": "expression",
             "content": "Remove a VR ", 
-            "exp_id": server_model_copy.json_state.gama.experiment_id,
+            "exp_id": controller_copy.model.getGama().experiment_id,
             "expr": "do remove_player(\""+current_id_player+"\");"
         }
     }
@@ -95,7 +95,7 @@ class ConnectorGamaServer {
         return  {
             "type": "expression",
             "content": "Send an expression", 
-            "exp_id": server_model_copy.json_state.gama.experiment_id,
+            "exp_id": controller_copy.model.getGama().experiment_id,
             "expr": current_expression
         }
     }
@@ -127,16 +127,14 @@ class ConnectorGamaServer {
      * Asks Gama to launch the experiment
      */
     launchExperiment() {
-        if (this.server_model.json_state["gama"]["connected"] == true && this.server_model.json_state["gama"]["experiment_state"] == 'NONE') {
+        if (this.controller.model.getGama().connected == true && this.controller.model.getGama().experiment_state == 'NONE') {
             list_messages = [this.load_experiment];
             index_messages = 0;
             do_sending = true;
             continue_sending = true;
-            this.server_model.json_state["gama"]["loading"] = true
-            this.server_model.notifyMonitor();
+            this.controller.model.setGamaLoading(true)
             function_to_call = () => {
-                this.server_model.json_state["gama"]["loading"] = false
-                this.server_model.notifyMonitor();
+                this.controller.model.setGamaLoading(false)
             }
             this.sendMessages()
         }
@@ -145,17 +143,15 @@ class ConnectorGamaServer {
      * Asks Gama to stop the experiment
      */
     stopExperiment() {
-        if (['RUNNING','PAUSED','NOTREADY'].includes(this.server_model.json_state["gama"]["experiment_state"])) {
+        if (['RUNNING','PAUSED','NOTREADY'].includes(this.controller.model.getGama().experiment_state)) {
             list_messages = [this.stop_experiment];
             index_messages = 0;
             do_sending = true;
             continue_sending = true;
-            this.server_model.json_state["gama"]["loading"] = true
-            this.server_model.notifyMonitor();
+            this.controller.model.setGamaLoading(true)
             function_to_call = () => {
-                this.server_model.json_state["gama"]["loading"] = false
-                this.server_model.unauthentifyEveryPlayers();
-                this.server_model.notifyMonitor();
+                this.controller.model.setGamaLoading(false)
+                this.controller.model.setRemoveInGameEveryPlayers()
             }
             this.sendMessages()
         }
@@ -165,16 +161,14 @@ class ConnectorGamaServer {
      * Asks Gama to pause the experiment
      */
     pauseExperiment() {
-        if (['RUNNING'].includes(this.server_model.json_state["gama"]["experiment_state"])) {
+        if (['RUNNING'].includes(this.controller.model.getGama().experiment_state)) {
             list_messages = [this.pause_experiment];
             index_messages = 0;
             do_sending = true;
             continue_sending = true;
-            this.server_model.json_state["gama"]["loading"] = true
-            this.server_model.notifyMonitor();
+            this.controller.model.setGamaLoading(true)
             function_to_call = () => {
-                this.server_model.json_state["gama"]["loading"] = false
-                this.server_model.notifyMonitor();
+                this.controller.model.setGamaLoading(false)
             }
             this.sendMessages()
         }
@@ -184,16 +178,14 @@ class ConnectorGamaServer {
      * Asks Gama to play the experiment
      */
     resumeExperiment() {
-        if (this.server_model.json_state["gama"]["experiment_state"] == 'PAUSED') {
+        if (this.controller.model.getGama().experiment_state == 'PAUSED') {
             list_messages = [this.play_experiment];
             index_messages = 0;
             do_sending = true;
             continue_sending = true;
-            this.server_model.json_state["gama"]["loading"] = true
-            this.server_model.notifyMonitor();
+            this.controller.model.setGamaLoading(true)
             function_to_call = () => {
-                this.server_model.json_state["gama"]["loading"] = false
-                this.server_model.notifyMonitor();
+                this.controller.model.setGamaLoading(false)
             }
             this.sendMessages()
         }
@@ -205,9 +197,9 @@ class ConnectorGamaServer {
      * @returns 
      */
 
-    addPlayer(id_player) {
-        if (['NONE',"NOTREADY"].includes(this.server_model.json_state["gama"]["experiment_state"])) return
-        if (this.server_model.json_state.player[id_player].authentified) return
+    addInGamePlayer(id_player) {
+        if (['NONE',"NOTREADY"].includes(this.controller.model.getGama().experiment_state)) return
+        if (this.controller.model.getPlayerState(id_player).in_game) return
         current_id_player = id_player
         list_messages = [this.add_player];
         index_messages = 0;
@@ -215,8 +207,7 @@ class ConnectorGamaServer {
         continue_sending = true;
         function_to_call = () => {
             console.log("The Player: "+id_player+" has been added to Gama");
-            this.server_model.json_state["player"][id_player]["authentified"] = true
-            this.server_model.notifyMonitor();
+            this.controller.model.setPlayerInGame(id_player, true)
         }
         this.sendMessages()
     }
@@ -227,9 +218,9 @@ class ConnectorGamaServer {
      * @returns 
      */
 
-    removePlayer(id_player) {
-        if (['NONE',"NOTREADY"].includes(this.server_model.json_state["gama"]["experiment_state"])) return
-        if (!this.server_model.json_state.player[id_player].authentified) return
+    removeInGamePlayer(id_player) {
+        if (['NONE',"NOTREADY"].includes(this.controller.model.getGama().experiment_state)) return
+        if (!this.controller.model.getPlayerState(id_player).in_game) return
         current_id_player = id_player
         list_messages = [this.remove_player];
         index_messages = 0;
@@ -237,8 +228,7 @@ class ConnectorGamaServer {
         continue_sending = true;
         function_to_call = () => {
             console.log("The Player: "+id_player+" has been removed from Gama");
-            this.server_model.json_state["player"][id_player]["authentified"] = false
-            this.server_model.notifyMonitor();
+            this.controller.model.setPlayerInGame(id_player, false)
         }
         this.sendMessages()
     }
@@ -247,34 +237,31 @@ class ConnectorGamaServer {
      * Adds all the players which are connected but not authenticated
      */
 
-    addEveryPlayers() {
+    addInGameEveryPlayers() {
         var index = 0
-        this.server_model.json_state.player.id_connected.forEach(id_player => {
-            if (this.server_model.json_state.player[id_player].connected && !this.server_model.json_state.player[id_player].authentified) {
-                setTimeout(() => {this.addPlayer(id_player)},500*index);
+        for(var id_player in this.controller.model.getAllPlayers()) {
+            if (this.controller.model.getPlayer(id_player).connected && !this.controller.model.getPlayer(id_player).in_game) {
+                setTimeout(() => {this.addInGamePlayer(id_player)},500*index);
                 index = index + 1
             }
-        });
+        }
     }
 
     /**
      * Removes all the players which are authenticated
      */
-    removeEveryPlayers() {
-        if (["RUNNING",'PAUSED'].includes(this.server_model.json_state.gama.experiment_state)){
+    removeInGameEveryPlayers() {
+        if (["RUNNING",'PAUSED'].includes(this.controller.model.getGama().experiment_state)){
             var index = 0
-            this.server_model.json_state.player.id_connected.forEach(id_player => {
-                if (this.server_model.json_state.player[id_player].authentified) {
-                    setTimeout(() => {this.removePlayer(id_player);},500*index);
+            for(var id_player in this.controller.model.getAllPlayers()) {
+                if (this.controller.model.getPlayer(id_player).in_game) {
+                    setTimeout(() => {this.removeInGamePlayer(id_player)},500*index);
                     index = index + 1
                 }
-            });
+            }
         }
         else {
-            this.server_model.json_state.player.id_connected.forEach(id_player => {
-                this.server_model.json_state.player[id_player].authentified = false;
-            });
-            this.server_model.notifyMonitor();
+            this.controller.model.setRemoveInGameEveryPlayers();
         }
     }
 
@@ -286,7 +273,7 @@ class ConnectorGamaServer {
      */
 
     sendExpression(id_player, expr) {
-        if (['NONE',"NOTREADY"].includes(this.server_model.json_state["gama"]["experiment_state"])) return
+        if (['NONE',"NOTREADY"].includes(this.controller.model.getGama().experiment_state)) return
         expr = expr.replace('$id', "\"" + id_player + "\"")
         current_expression = expr
         list_messages = [this.send_expression];
@@ -300,7 +287,7 @@ class ConnectorGamaServer {
     }
 
     sendAsk(json) {
-        if (['NONE',"NOTREADY"].includes(this.server_model.json_state["gama"]["experiment_state"])) return
+        if (['NONE',"NOTREADY"].includes(this.controller.model.getGama().experiment_state)) return
         list_messages = [json];
         index_messages = 0;
         do_sending = true;
@@ -315,17 +302,15 @@ class ConnectorGamaServer {
      * @returns 
      */
     connectGama() {
-        this.server_model.json_state["gama"]["loading"] = true
-        this.server_model.notifyMonitor();
-        const server_model = this.server_model;
+        this.controller.model.setGamaLoading(true)
+        const controller = this.controller;
         const sendMessages = this.sendMessages;
-        gama_socket = new WebSocket("ws://"+this.server_model.json_settings.ip_address_gama_server+":"+this.gama_ws_port);
+        gama_socket = new WebSocket("ws://"+this.controller.model.getJsonSettings().ip_address_gama_server+":"+this.gama_ws_port);
     
         gama_socket.onopen = function() {
             console.log("-> Connected to Gama Server");
-            server_model.json_state["gama"]["connected"] = true
-            server_model.json_state["gama"]["experiment_state"] = 'NONE'
-            server_model.notifyMonitor();
+            controller.model.setGamaConnection(true)
+            controller.model.setGamaExperimentState('NONE')
         };
     
         gama_socket.onmessage = function(event) {
@@ -335,18 +320,16 @@ class ConnectorGamaServer {
                 if (message.type == "SimulationStatus") {
                     console.log("Message received from Gama Server:");
                     console.log(message);
-                    server_model.json_state.gama.experiment_id = message.exp_id;
-                    if (['NONE','NOTREADY'].includes(message.content) && ['RUNNING','PAUSED','NOTREADY'].includes(server_model.json_state.gama.experiment_state)) {
-                        server_model.unauthentifyEveryPlayers();
+                    controller.model.setGamaExperimentId(message.exp_id)
+                    if (['NONE','NOTREADY'].includes(message.content) && ['RUNNING','PAUSED','NOTREADY'].includes(controller.model.getGama().experiment_state)) {
+                        controller.model.setRemoveInGameEveryPlayers();
                         
                     }
-                    server_model.json_state.gama.experiment_state = message.content;
-                    server_model.notifyMonitor();
+                    controller.model.setGamaExperimentState(message.content)
                 }
                 if (message.type == "SimulationOutput") {
                     try {
-                        server_model.json_simulation = JSON.parse(message.content)
-                        server_model.notifyPlayerClients();
+                        controller.broadcastSimulationOutput(message.content);
                     }
                     catch (error) {
                         console.log("\x1b[41m-> Unable to parse recived message:\x1b[0m");
@@ -356,23 +339,21 @@ class ConnectorGamaServer {
                 if (message.type == "CommandExecutedSuccessfully") {
                     console.log("Message received from Gama Server:");
                     console.log(message);
-                    server_model.json_state.gama.content_error = ""
-                    if (message.command != undefined && message.command.type == "load") server_model.json_state.gama.experiment_name = message.content
+                    controller.model.setGamaContentError('')
+                    if (message.command != undefined && message.command.type == "load") controller.model.setGamaExperimentName(message.content)
                     continue_sending = true
                     setTimeout(sendMessages,300)
                     try {
                         const content = JSON.parse(message.content)
-                        server_model.json_simulation = content
-                        server_model.notifyPlayerClients();
+                        controller.broadcastSimulationOutput(content);
                     }
                     catch (exception) {}
                 }
                 if (gama_error_messages.includes(message.type)) {
                     console.log("Message received from Gama Server:");
                     console.log(message);
-                    server_model.json_state.gama.content_error = message
-                    server_model.json_state.gama.loading = false
-                    server_model.notifyMonitor();
+                    controller.model.setGamaContentError(message)
+                    this.controller.model.setGamaLoading(false)
                     throw "A problem appeared in the last message. Please check the response from the Server"
                 }
             }
@@ -382,13 +363,10 @@ class ConnectorGamaServer {
             }
         }
         gama_socket.addEventListener('close', (event) => {
-            server_model.json_state["gama"]["connected"] = false;
-            server_model.json_state["gama"]["experiment_state"] = "NONE";
-            server_model.json_state["gama"]["loading"] = false;
-            server_model.json_state["player"]["id_connected"].forEach(id_player => {
-                server_model.json_state["player"][id_player]["authentified"] = false;
-            });
-            server_model.notifyMonitor();
+            controller.model.setGamaConnection(false)
+            controller.model.setGamaExperimentState("NONE")
+            controller.model.setGamaLoading(false)
+            controller.model.setRemoveInGameEveryPlayers()
             if (event.wasClean) {
                 console.log('-> The WebSocket connection with Gama Server was properly be closed');
             } else {
@@ -399,8 +377,7 @@ class ConnectorGamaServer {
             console.log("-> Failed to connect with Gama Server")
             
         });
-        this.server_model.json_state["gama"]["loading"] = false
-        this.server_model.notifyMonitor();
+        controller.model.setGamaLoading(false)
         return gama_socket
     }
     close(){

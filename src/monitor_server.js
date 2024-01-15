@@ -16,13 +16,14 @@ class MonitorServer {
      */
     constructor(controller) {
         this.controller = controller;
-        this.monitor_ws_port = controller.json_settings.monitor_ws_port != undefined ? controller.json_settings.monitor_ws_port : DEFAULT_MONITOR_WS_PORT;
+        const monitor_server = this
+        this.monitor_ws_port = controller.model.getJsonSettings().monitor_ws_port != undefined ?  controller.model.getJsonSettings().monitor_ws_port : DEFAULT_MONITOR_WS_PORT;
         this.monitor_socket = new WebSocket.Server({ port: this.monitor_ws_port });
 
         this.monitor_socket.on('connection', function connection(ws) {
             monitor_socket_clients.push(ws)
-            controller.notifyMonitor();
-            controller.sendJsonSettings()
+            monitor_server.sendMonitorJsonState();
+            monitor_server.sendMonitorJsonSettings()
             ws.on('message', function incoming(message) {
                 const json_monitor = JSON.parse(message)
                 const type = json_monitor['type']
@@ -31,12 +32,12 @@ class MonitorServer {
                 else if (type == "pause_experiment") controller.pauseExperiment()
                 else if (type == "resume_experiment") controller.resumeExperiment()
                 else if (type == "try_connection") controller.connectGama()
-                else if (type == "add_every_players") controller.addEveryPlayers()
-                else if (type == "remove_every_players") controller.removeEveryPlayers()
-                else if (type == "add_player_headset") controller.addPlayer(json_monitor["id"])
-                else if (type == "remove_player_headset") controller.removePlayer(json_monitor["id"])
+                else if (type == "add_every_players") controller.addInGameEveryPlayers()
+                else if (type == "remove_every_players") controller.removeInGameEveryPlayers()
+                else if (type == "add_player_headset") controller.addInGamePlayer(json_monitor["id"])
+                else if (type == "remove_player_headset") controller.removeInGamePlayer(json_monitor["id"])
                 else if (type == "json_settings") controller.changeJsonSettings(json_monitor)
-                else if (type == "clean_all") controller.clean_all()
+                else if (type == "clean_all") controller.cleanAll()
             })
         });
     }
@@ -46,7 +47,7 @@ class MonitorServer {
      */
     sendMonitorJsonState() {
         if (monitor_socket_clients != undefined) monitor_socket_clients.forEach((client) => {
-            client.send(JSON.stringify(this.controller.json_state));
+            client.send(JSON.stringify(this.controller.model.getAll()));
         })
     }
 
@@ -55,7 +56,7 @@ class MonitorServer {
      */
     sendMonitorJsonSettings() {
         if (monitor_socket_clients != undefined) monitor_socket_clients.forEach((client) => {
-            client.send(JSON.stringify(this.controller.json_settings));
+            client.send(JSON.stringify(this.controller.model.getJsonSettings()));
         })
     }
     

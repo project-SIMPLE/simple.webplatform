@@ -47,9 +47,9 @@ function createWebSocket(player_ws_port) {
         if (json.type == "json_state") {
             
             json_state = json;
-            const authentified = json_state.player[id_unique].authentified;
-            document.querySelector("#authentification-state").innerHTML = authentified ? "&#10004; Authentified to Gama Server" : "&#x274C; Unauthentified to Gama Server, please wait"
-            document.querySelector("#authentification-state").style = authentified ? "color:green;" : "color:red;";
+            const in_game = json_state.in_game;
+            document.querySelector("#authentification-state").innerHTML = in_game ? "&#10004; In game" : "&#x274C; Not yet in the game, please wait"
+            document.querySelector("#authentification-state").style = in_game ? "color:green;" : "color:red;";
         }
         else if (json.type == "json_simulation") {
             const json_simulation = json;

@@ -1,8 +1,9 @@
-const ConnectorGamaServer = require('./gama_server.js');
+const ConnectorGamaServer = require('./gama_connector.js');
 const MonitorServer = require('./monitor_server.js');
 const PlayerServer = require('./player_server.js');
 const App = require('./app.js');
-const fs = require('fs');
+const Model = require('./model.js')
+
 
 /**
  * Creates the model of the project
@@ -12,15 +13,13 @@ class Controller {
      * Instanciates all the components of the server
      */
     constructor() {
-        this.json_state = JSON.parse(fs.readFileSync('src/json_state.json', 'utf-8'));
-        this.json_settings = JSON.parse(fs.readFileSync('settings.json', 'utf-8'));
-        this.json_simulation = {};
+        this.model = new Model(this)
         this.monitor_server = new MonitorServer(this);
         this.player_server = new PlayerServer(this);
         this.app = new App(this);
         this.gama_connector = new ConnectorGamaServer(this);
         console.log('-> Gama Server Middleware launched sucessfully');
-        console.log('Note: Refresh the webpage localhost:'+this.json_settings.app_port+' if the connection failed');
+        console.log('Note: Refresh the webpage localhost:'+this.model.getJsonSettings().app_port+' if the connection failed');
     }
 
     /**
@@ -36,73 +35,64 @@ class Controller {
     }
 
     /**
-     * Changes the json_settings
+     * Changes the json_settings, then restart the player server, the gama connector, the monitor server
      * @param {JSON} json_settings - The new json
      */
     changeJsonSettings(json_settings){
-        this.json_settings = json_settings
-        fs.writeFileSync('settings.json', JSON.stringify(json_settings,null, 2), 'utf-8')
-        this.restart()
+        this.model.setJsonSettings(json_settings)
     }
 
     /**
-     * Sends the json_settings to the monitor
-     */
-    sendJsonSettings() {
-        this.monitor_server.sendMonitorJsonSettings();
-    }
-
-    /**
-     * Sends to both the monitor and the players the json_state
+     * Sends to the monitor the updated json_state
      */
     notifyMonitor() {
         this.monitor_server.sendMonitorJsonState();
-        this.player_server.broadcastJsonStatePlayer();
+    }
+
+    notifyPlayerChange(id_player, json_player) {
+        this.player_server.notifyPlayerChange(id_player, json_player)
     }
 
     /**
-     * Sends to both the monitor and the players the json_simulation
+     * Sends to the correct player a the new json of its updated information
+     * @param {JSON} json_output - The new updated json of the player
      */
-    notifyPlayerClients() {
-        this.player_server.broadcastSimulationPlayer()
+    broadcastSimulationOutput(json_output) {
+        this.player_server.broadcastSimulationOutput(json_output)
     }
 
     /**
      * Removes every players wich are authenticated
      */
-    removeEveryPlayers() {
-        this.gama_connector.removeEveryPlayers();
-    }
-
-    unauthentifyEveryPlayers() {
-        this.player_server.unauthentifyEveryPlayers();
+    removeInGameEveryPlayers() {
+        this.gama_connector.removeInGameEveryPlayers();
     }
 
     /**
      * Add every connected but not authenticated players to the simulation
      */
-    addEveryPlayers() {
-        this.gama_connector.addEveryPlayers();
+    addInGameEveryPlayers() {
+        this.gama_connector.addInGameEveryPlayers();
     }
 
     /**
      * Adds a new player to the simulation
      * @param {String} id_player - The id of the player
      */
-    addPlayer(id_player) {
-        this.gama_connector.addPlayer(id_player);
+    addInGamePlayer(id_player) {
+        this.gama_connector.addInGamePlayer(id_player);
     }
 
     /**
      * Removes a new player to the simulation
      * @param {String} id_player - The id of the player
      */
-    removePlayer(id_player) {
-        this.gama_connector.removePlayer(id_player);
+    removeInGamePlayer(id_player) {
+        this.gama_connector.removeInGamePlayer(id_player);
     }
 
-    clean_all() {
-        this.player_server.clean_all();
+    cleanAll() {
+        this.player_server.cleanAll();
     }
 
     /**

@@ -29,14 +29,13 @@ class PlayerServer {
      */
     constructor(controller) {
         this.controller = controller;
-        this.player_ws_port = controller.json_settings.player_ws_port != undefined ? controller.json_settings.player_ws_port : DEFAULT_PLAYER_WS_PORT;
+        this.player_ws_port = controller.model.getJsonSettings().player_ws_port != undefined ? controller.model.getJsonSettings().player_ws_port : DEFAULT_PLAYER_WS_PORT;
         this.player_socket = new WebSocket.Server({ port: this.player_ws_port });
         const player_server = this;
 
         this.player_socket.on('connection', function connection(ws) {
             ws.on('message', function incoming(message) {
                 const json_player = JSON.parse(message)
-                console.log(json_player);
                 if (json_player.type == "pong") {
                     clearTimeout(pongTimeoutId);
                     setTimeout(() => {
@@ -52,24 +51,19 @@ class PlayerServer {
                 }
                 else if (json_player.type == "connection") {
                     //Si le casque a déjà été connecté
-                    if (controller.json_state["player"]["id_connected"].includes(json_player.id)) {
+                    if (controller.model.getPlayerState(json_player.id) != undefined) {
                         const index = player_socket_clients_id.indexOf(json_player.id)
                         player_socket_clients[index] = ws
-                        controller.json_state["player"][json_player.id]["date_connection"] = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
-                        controller.json_state["player"][json_player.id]["connected"] = true
-                        if (json_player.enable_ping_pong != undefined && json_player.enable_ping_pong) player_server.sendPing(json_player.id)
-                        controller.notifyMonitor();
+                        controller.model.setPlayerConnection(json_player.id, true, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
+                        if (json_player.set_heartbeat != undefined && json_player.set_heartbeat) player_server.sendPing(json_player.id)
                         console.log('-> Reconnection of the id: '+json_player.id);
                     }
                     //Sinon
                     else {
                         player_socket_clients.push(ws)
                         player_socket_clients_id.push(json_player.id)
-                        controller.json_state["player"]["id_connected"].push(json_player.id)
-                        controller.json_state["player"][json_player.id] = {}
-                        controller.json_state["player"][json_player.id]["date_connection"] = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
-                        controller.json_state["player"][json_player.id]["authentified"] = false
-                        controller.json_state["player"][json_player.id]["connected"] = true
+                        controller.model.insertPlayer(json_player.id)
+                        controller.model.setPlayerConnection(json_player.id, true, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
                         if (json_player.enable_ping_pong != undefined && json_player.enable_ping_pong) player_server.sendPing(json_player.id)
                         controller.notifyMonitor();
                         console.log('-> New connection of the id: '+json_player.id);
@@ -78,36 +72,32 @@ class PlayerServer {
                 else if (json_player.type =="expression") {
                     const id_player = getIdClient(ws)
                     console.log('-> Sending expression for the player '+id_player+':')
-                    console.log(json_player);
                     controller.sendExpression(id_player, json_player.expr);
                 }
                 else if (json_player.type =="ask") {
                     const id_player = getIdClient(ws)
                     console.log('-> Sending ask for the player '+id_player+':')
-                    console.log(json_player);
                     controller.sendAsk(json_player);
                 }
                 else if (json_player.type =="disconnect_properly") {
                     const id_player = getIdClient(ws)
-                    controller.removePlayer(id_player)
+                    controller.removeInGamePlayer(id_player)
+                    ws.close()
                 }
             });
         
             ws.on('close', () => {
                 const id_player = getIdClient(ws)
-                if (controller.json_state["player"][id_player] != undefined) {
-                    controller.json_state["player"][id_player]["connected"] = false
-                    controller.json_state["player"][id_player]["date_connection"] = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
-                    controller.notifyMonitor();
+                if (controller.model.getPlayerState(id_player) != undefined) {
+                    controller.model.setPlayerConnection(id_player, false, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
                     console.log("-> The player: "+getIdClient(ws)+" disconnected");
                 }
             })
         
             ws.on('error', (error) => {
                 const id_player = getIdClient(ws)
-                controller.json_state["player"][id_player]["connected"] = false
-                controller.json_state["player"][id_player]["date_connection"] = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
-                controller.notifyMonitor();
+                controller.model.setPlayerConnection(json_player.id, false, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
+                console.log("-> The player: "+getIdClient(ws)+" disconnected");
             });
         
         });
@@ -117,17 +107,17 @@ class PlayerServer {
      * Send the json_simulation to the players. It seperates the json to send only the necessary information to the players.
      * @returns 
      */
-    broadcastSimulationPlayer() {
-        if (this.controller.json_simulation.contents == undefined) return
+    broadcastSimulationOutput(json_output) {
+        if (json_output.contents == undefined) return
         try {
-            this.controller.json_simulation.contents.forEach((element) => {
+            json_output.contents.forEach((element) => {
                 element.id.forEach((id_player) => {
                     const index = player_socket_clients_id.indexOf(id_player)
                     if (index != -1) {
-                        const json_simulation_player = {}
-                        json_simulation_player.contents = element.contents
-                        json_simulation_player.type = "json_simulation"
-                        player_socket_clients[index].send(JSON.stringify(json_simulation_player))
+                        const json_output_player = {}
+                        json_output_player.contents = element.contents
+                        json_output_player.type = "json_output"
+                        player_socket_clients[index].send(JSON.stringify(json_output_player))
                         //console.log(json_simulation_player);
                     }
                 })
@@ -136,7 +126,7 @@ class PlayerServer {
         catch (exception) {
             //Exception are written in red
             console.log("\x1b[41m -> The following message hasn't the correct format:\x1b[0m");
-            console.log(this.controller.json_simulation);
+            console.log(json_output);
         }
     }
 
@@ -160,6 +150,7 @@ class PlayerServer {
     /**
      * Send the json_state to the player. It seperates the json to send only the necessary information to the players.
      */
+
     broadcastJsonStatePlayer() {
         player_socket_clients.forEach((client) => {
             const id_player = getIdClient(client)
@@ -173,29 +164,29 @@ class PlayerServer {
         })
     }
 
-    clean_all() {
+    notifyPlayerChange(id_player, json_player) {
+        const index = player_socket_clients_id.indexOf(id_player)
+        if (index != -1) {
+            const json_state_player = {}
+            json_state_player.type = "json_state"
+            json_state_player.id_player = id_player
+            const concatenated_json_state_player = { ...json_state_player, ...json_player };
+            player_socket_clients[index].send(JSON.stringify(concatenated_json_state_player))
+            //console.log(json_simulation_player);
+        }
+    }
+
+    cleanAll() {
         var to_remove = []
-        this.controller.json_state.player.id_connected.forEach((player_id, idx) => {
-            if (this.controller.json_state.player[player_id] != undefined && !this.controller.json_state.player[player_id].connected&& 
-            !this.controller.json_state.player[player_id].authentified) {
-                const index = player_socket_clients_id.indexOf(player_id)
-                player_socket_clients_id.splice(index,1)
-                player_socket_clients.splice(index,1)
-                this.controller.json_state.player.id_connected.splice(idx,1)
-                this.controller.json_state.player[player_id] = undefined
-            }
-        })
-        this.controller.notifyMonitor();
+        for(var id_player in this.controller.model.getAllPlayers()) {
+            if (!this.controller.model.getPlayerState(id_player).connected && !this.controller.model.getPlayerState(id_player).in_game) {
+                    const index = player_socket_clients_id.indexOf(id_player)
+                    player_socket_clients_id.splice(index,1)
+                    player_socket_clients.splice(index,1)
+                    this.controller.model.withdrawPlayer(id_player)
+                }
+        }
     }
-
-    unauthentifyEveryPlayers() {
-        this.controller.json_state.player.id_connected.forEach(id_player => {
-            this.controller.json_state.player[id_player].authentified = false;
-        });
-        this.controller.notifyMonitor();
-    }
-
-    
 
     /**
      * Closes the websocket server
