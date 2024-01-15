@@ -7,7 +7,7 @@ const fs = require('fs');
 /**
  * Creates the model of the project
  */
-class ServerModel {
+class Controller {
     /**
      * Instanciates all the components of the server
      */
@@ -116,6 +116,15 @@ class ServerModel {
     }
 
     /**
+     * Sends an ask to Gama Server
+     * @param {JSON} json - The ask
+     * @returns 
+     */
+    sendAsk(json) {
+        this.gama_connector.sendAsk(json)
+    }
+
+    /**
      * Cf GamaConnector
      */
     launchExperiment() {
@@ -152,4 +161,4 @@ class ServerModel {
 
 }
 
-module.exports = ServerModel;
+module.exports = Controller;

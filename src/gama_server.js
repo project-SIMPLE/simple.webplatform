@@ -113,6 +113,7 @@ class ConnectorGamaServer {
                     console.log("Waiting for the answer (if any)...")
                 }
                 else gama_socket.send(JSON.stringify(list_messages[index_messages]));
+                console.log(JSON.stringify(list_messages[index_messages]));
                 continue_sending = false;
                 index_messages = index_messages + 1;
             }
@@ -293,7 +294,19 @@ class ConnectorGamaServer {
         do_sending = true;
         continue_sending = true;
         function_to_call = () => {
-            console.log("The Player: "+id_player+" called the function: "+expr);
+            console.log("The Player: "+id_player+" called the function: "+expr+" successfully.");
+        }
+        this.sendMessages()
+    }
+
+    sendAsk(json) {
+        if (['NONE',"NOTREADY"].includes(this.server_model.json_state["gama"]["experiment_state"])) return
+        list_messages = [json];
+        index_messages = 0;
+        do_sending = true;
+        continue_sending = true;
+        function_to_call = () => {
+            console.log("The ask: "+json.action+" was sent successfully");
         }
         this.sendMessages()
     }

@@ -3,10 +3,10 @@ const fs = require('fs');
 
 const PLAYER_WS_PORT = 8080;
 const IP_ADDRESS = "192.168.0.64"
-const TIME_ACTIVITY = 5*1000
+const TIME_ACTIVITY = 10*1000
 const STAGGERED = false;
 
-const NB_MEASUREMENTS = 5
+const NB_MEASUREMENTS = 1
 
 function logList(start, end, steps) {
     const result = [];
@@ -34,14 +34,13 @@ class Measurer {
     }
 
     continue_measure() {
-        new Collector(this, 2,100,Math.floor(this.loglist[this.counter]));
+        new Collector(this, 10 ,20, 10);
         this.counter++;
     }
 
     conclude() {
         // Convertir l'objet JSON en chaîne
         const jsonString = JSON.stringify(this.results, null, 2); // Le paramètre '2' indique l'indentation de 2 espaces pour une meilleure lisibilité
-        console.log(jsonString);
         // Enregistrer la chaîne JSON dans un fichier
         fs.writeFile('results_measurer.json', jsonString, 'utf-8', (err) => {
         if (err) {
@@ -186,10 +185,21 @@ class Client {
 
             
             // To send to test the connection with the middleware
+            //this.client_socket.send(JSON.stringify({
+            //    "type": "expression",
+            //    "expr": "do reply($id,\""+this.message_counter+"\",\""+'A'.repeat(this.collector.LENGTH_MESSAGES)+"\");"
+            //}));
+
             this.client_socket.send(JSON.stringify({
-                "type": "expression",
-                "expr": "do reply($id,\""+this.message_counter+"\",\""+'A'.repeat(this.collector.LENGTH_MESSAGES)+"\");"
-            }));
+                type: "ask",
+                action: "reply",
+                agent:"experiment[0].world",
+                args: JSON.stringify({
+                    id: "P"+this.name,
+                    id_message: this.message_counter.toString(),
+                    content: 'A'.repeat(this.collector.LENGTH_MESSAGES)
+                })
+            }))
             this.sent_messages.set(this.message_counter, new Date().getTime())
             this.message_counter = this.message_counter + 1;
         }

@@ -1,12 +1,12 @@
 /**
-* Name: Tester
+* Name: GamaServerLinkerExample
 * Based on the internal empty template. 
 * Author: Léon
 * Tags: 
 */
 
 
-model Tester
+model GamaServerLinkerExample
 
 
 global {
@@ -26,12 +26,9 @@ global {
 			do send message: to_json(json);
 		}
 	}
-
 }
 // Créez un environnement avec une zone spécifique où RandomGuy se déplace
 experiment tester type:gui {
-
-	
 	
 	action reply(string id, string id_message, string content) {
 		ask world {

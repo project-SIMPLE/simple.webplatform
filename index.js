@@ -1,3 +1,3 @@
-const ServerModel = require('./src/server_model.js');
+const Controller = require('./src/controller.js');
 
-new ServerModel();
+new Controller();

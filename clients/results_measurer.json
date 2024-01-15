@@ -1,42 +1,10 @@
 [
   {
-    "length_messages": 1,
-    "flow_messages": 20,
-    "nb_lost": 18,
-    "nb_success": 80,
-    "avg_durations": 19.625,
-    "med_durations": 14
-  },
-  {
-    "length_messages": 63,
-    "flow_messages": 20,
-    "nb_lost": 18,
-    "nb_success": 80,
-    "avg_durations": 11.7625,
-    "med_durations": 9.5
-  },
-  {
-    "length_messages": 3981,
-    "flow_messages": 20,
-    "nb_lost": 11,
-    "nb_success": 87,
-    "avg_durations": 11.03448275862069,
-    "med_durations": 10
-  },
-  {
-    "length_messages": 251188,
-    "flow_messages": 20,
-    "nb_lost": 7,
-    "nb_success": 89,
-    "avg_durations": 34.056179775280896,
-    "med_durations": 24
-  },
-  {
-    "length_messages": 15848931,
-    "flow_messages": 20,
-    "nb_lost": 55,
-    "nb_success": 3,
-    "avg_durations": 3512,
-    "med_durations": 3424
+    "length_messages": 10,
+    "flow_messages": 500,
+    "nb_lost": 4730,
+    "nb_success": 0,
+    "avg_durations": null,
+    "med_durations": null
   }
 ]

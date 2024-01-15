@@ -12,31 +12,31 @@ var monitor_socket_clients = []
 class MonitorServer {
     /**
      * Creates the websocket server
-     * @param {ServerModel} server_model - The server model of the project
+     * @param {Controller} controller - The server model of the project
      */
-    constructor(server_model) {
-        this.server_model = server_model;
-        this.monitor_ws_port = server_model.json_settings.monitor_ws_port != undefined ? server_model.json_settings.monitor_ws_port : DEFAULT_MONITOR_WS_PORT;
+    constructor(controller) {
+        this.controller = controller;
+        this.monitor_ws_port = controller.json_settings.monitor_ws_port != undefined ? controller.json_settings.monitor_ws_port : DEFAULT_MONITOR_WS_PORT;
         this.monitor_socket = new WebSocket.Server({ port: this.monitor_ws_port });
 
         this.monitor_socket.on('connection', function connection(ws) {
             monitor_socket_clients.push(ws)
-            server_model.notifyMonitor();
-            server_model.sendJsonSettings()
+            controller.notifyMonitor();
+            controller.sendJsonSettings()
             ws.on('message', function incoming(message) {
                 const json_monitor = JSON.parse(message)
                 const type = json_monitor['type']
-                if (type == "launch_experiment") server_model.launchExperiment()
-                else if (type == "stop_experiment") server_model.stopExperiment()
-                else if (type == "pause_experiment") server_model.pauseExperiment()
-                else if (type == "resume_experiment") server_model.resumeExperiment()
-                else if (type == "try_connection") server_model.connectGama()
-                else if (type == "add_every_players") server_model.addEveryPlayers()
-                else if (type == "remove_every_players") server_model.removeEveryPlayers()
-                else if (type == "add_player_headset") server_model.addPlayer(json_monitor["id"])
-                else if (type == "remove_player_headset") server_model.removePlayer(json_monitor["id"])
-                else if (type == "json_settings") server_model.changeJsonSettings(json_monitor)
-                else if (type == "clean_all") server_model.clean_all()
+                if (type == "launch_experiment") controller.launchExperiment()
+                else if (type == "stop_experiment") controller.stopExperiment()
+                else if (type == "pause_experiment") controller.pauseExperiment()
+                else if (type == "resume_experiment") controller.resumeExperiment()
+                else if (type == "try_connection") controller.connectGama()
+                else if (type == "add_every_players") controller.addEveryPlayers()
+                else if (type == "remove_every_players") controller.removeEveryPlayers()
+                else if (type == "add_player_headset") controller.addPlayer(json_monitor["id"])
+                else if (type == "remove_player_headset") controller.removePlayer(json_monitor["id"])
+                else if (type == "json_settings") controller.changeJsonSettings(json_monitor)
+                else if (type == "clean_all") controller.clean_all()
             })
         });
     }
@@ -46,7 +46,7 @@ class MonitorServer {
      */
     sendMonitorJsonState() {
         if (monitor_socket_clients != undefined) monitor_socket_clients.forEach((client) => {
-            client.send(JSON.stringify(this.server_model.json_state));
+            client.send(JSON.stringify(this.controller.json_state));
         })
     }
 
@@ -55,7 +55,7 @@ class MonitorServer {
      */
     sendMonitorJsonSettings() {
         if (monitor_socket_clients != undefined) monitor_socket_clients.forEach((client) => {
-            client.send(JSON.stringify(this.server_model.json_settings));
+            client.send(JSON.stringify(this.controller.json_settings));
         })
     }
     
