@@ -113,7 +113,7 @@ class ConnectorGamaServer {
                     console.log("Waiting for the answer (if any)...")
                 }
                 else gama_socket.send(JSON.stringify(list_messages[index_messages]));
-                console.log(JSON.stringify(list_messages[index_messages]));
+              //  console.log(JSON.stringify(list_messages[index_messages]));
                 continue_sending = false;
                 index_messages = index_messages + 1;
             }
@@ -316,10 +316,10 @@ class ConnectorGamaServer {
         gama_socket.onmessage = function(event) {
             try {
                 const message = JSON.parse(event.data)
-                
+              //  console.log(message)
                 if (message.type == "SimulationStatus") {
                     console.log("Message received from Gama Server:");
-                    console.log(message);
+                 //   console.log(message);
                     controller.model.setGamaExperimentId(message.exp_id)
                     if (['NONE','NOTREADY'].includes(message.content) && ['RUNNING','PAUSED','NOTREADY'].includes(controller.model.getGama().experiment_state)) {
                         controller.model.setRemoveInGameEveryPlayers();
@@ -329,7 +329,7 @@ class ConnectorGamaServer {
                 }
                 if (message.type == "SimulationOutput") {
                     try {
-                        controller.broadcastSimulationOutput(message.content);
+                        controller.broadcastSimulationOutput(JSON.parse(message.content));
                     }
                     catch (error) {
                         console.log("\x1b[41m-> Unable to parse recived message:\x1b[0m");
@@ -338,7 +338,7 @@ class ConnectorGamaServer {
                 }
                 if (message.type == "CommandExecutedSuccessfully") {
                     console.log("Message received from Gama Server:");
-                    console.log(message);
+                 //   console.log(message);
                     controller.model.setGamaContentError('')
                     if (message.command != undefined && message.command.type == "load") controller.model.setGamaExperimentName(message.content)
                     continue_sending = true

@@ -71,12 +71,12 @@ class PlayerServer {
                 }
                 else if (json_player.type =="expression") {
                     const id_player = getIdClient(ws)
-                    console.log('-> Sending expression for the player '+id_player+':')
+                //    console.log('-> Sending expression for the player '+id_player+':')
                     controller.sendExpression(id_player, json_player.expr);
                 }
                 else if (json_player.type =="ask") {
                     const id_player = getIdClient(ws)
-                    console.log('-> Sending ask for the player '+id_player+':')
+                 //   console.log('-> Sending ask for the player '+id_player+':')
                     controller.sendAsk(json_player);
                 }
                 else if (json_player.type =="disconnect_properly") {
@@ -109,16 +109,20 @@ class PlayerServer {
      */
     broadcastSimulationOutput(json_output) {
         if (json_output.contents == undefined) return
+	//console.log('PRENVOI')
+	//console.log(player_socket_clients_id)
+	
         try {
             json_output.contents.forEach((element) => {
                 element.id.forEach((id_player) => {
                     const index = player_socket_clients_id.indexOf(id_player)
                     if (index != -1) {
+			//console.log('ENVOI')
                         const json_output_player = {}
                         json_output_player.contents = element.contents
                         json_output_player.type = "json_output"
                         player_socket_clients[index].send(JSON.stringify(json_output_player))
-                        //console.log(json_simulation_player);
+                      //  console.log(JSON.stringify(json_output_player));
                     }
                 })
             });
