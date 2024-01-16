@@ -56,7 +56,7 @@ class PlayerServer {
                         player_socket_clients[index] = ws
                         controller.model.setPlayerConnection(json_player.id, true, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
                         if (json_player.set_heartbeat != undefined && json_player.set_heartbeat) player_server.sendPing(json_player.id)
-                        console.log('-> Reconnection of the id: '+json_player.id);
+                        console.log('-> Reconnection of the player of id '+json_player.id);
                     }
                     //Sinon
                     else {
@@ -66,7 +66,7 @@ class PlayerServer {
                         controller.model.setPlayerConnection(json_player.id, true, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
                         if (json_player.enable_ping_pong != undefined && json_player.enable_ping_pong) player_server.sendPing(json_player.id)
                         controller.notifyMonitor();
-                        console.log('-> New connection of the id: '+json_player.id);
+                        console.log('-> New connection of the player of id '+json_player.id);
                     }
                 }
                 else if (json_player.type =="expression") {
@@ -90,14 +90,14 @@ class PlayerServer {
                 const id_player = getIdClient(ws)
                 if (controller.model.getPlayerState(id_player) != undefined) {
                     controller.model.setPlayerConnection(id_player, false, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
-                    console.log("-> The player: "+getIdClient(ws)+" disconnected");
+                    console.log("-> The player "+getIdClient(ws)+" disconnected");
                 }
             })
         
             ws.on('error', (error) => {
                 const id_player = getIdClient(ws)
                 controller.model.setPlayerConnection(json_player.id, false, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
-                console.log("-> The player: "+getIdClient(ws)+" disconnected");
+                console.log("-> The player "+getIdClient(ws)+" disconnected");
             });
         
         });
@@ -142,7 +142,7 @@ class PlayerServer {
                 if (ws.readyState === WebSocket.OPEN) {
                     // Fermer la connexion si le pong n'est pas reçu dans les temps
                     ws.terminate();
-                    console.log('-> The connection with: '+id_player+" has been interrupted due to pong non-response");
+                    console.log('-> The connection with player '+id_player+" has been interrupted due to pong non-response");
                 }
             }, 3000);
         }

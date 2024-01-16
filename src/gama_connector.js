@@ -108,9 +108,12 @@ class ConnectorGamaServer {
                 //console.log("--> Sending message " + index_messages)
                 if (typeof list_messages[index_messages] == "function") {
                     gama_socket.send(JSON.stringify(list_messages[index_messages]()))
-                    console.log("Message sent to Gama-Server:");
-                    console.log(list_messages[index_messages]());
-                    console.log("Waiting for the answer (if any)...")
+                    if (list_messages[index_messages]().expr != undefined) {
+                        console.log("Expression sent to Gama Server: "+'\''+list_messages[index_messages]().expr+'\'' + " Waiting for the answer (if any)...");
+                    }
+                    else {
+                        console.log("Message sent to Gama-Server: type "+list_messages[index_messages]().type+ ". Waiting for the answer (if any)...");
+                    }
                 }
                 else gama_socket.send(JSON.stringify(list_messages[index_messages]));
               //  console.log(JSON.stringify(list_messages[index_messages]));
@@ -206,7 +209,7 @@ class ConnectorGamaServer {
         do_sending = true;
         continue_sending = true;
         function_to_call = () => {
-            console.log("The Player: "+id_player+" has been added to Gama");
+            console.log("-> The Player "+id_player+" has been added to Gama");
             this.controller.model.setPlayerInGame(id_player, true)
         }
         this.sendMessages()
@@ -227,7 +230,7 @@ class ConnectorGamaServer {
         do_sending = true;
         continue_sending = true;
         function_to_call = () => {
-            console.log("The Player: "+id_player+" has been removed from Gama");
+            console.log("-> The Player: "+id_player+" has been removed from Gama");
             this.controller.model.setPlayerInGame(id_player, false)
         }
         this.sendMessages()
@@ -240,8 +243,9 @@ class ConnectorGamaServer {
     addInGameEveryPlayers() {
         var index = 0
         for(var id_player in this.controller.model.getAllPlayers()) {
-            if (this.controller.model.getPlayer(id_player).connected && !this.controller.model.getPlayer(id_player).in_game) {
-                setTimeout(() => {this.addInGamePlayer(id_player)},500*index);
+            if (this.controller.model.getPlayerState(id_player).connected && !this.controller.model.getPlayerState(id_player).in_game) {
+                const id_player_copy = id_player
+                setTimeout(() => {this.addInGamePlayer(id_player_copy)},500*index);
                 index = index + 1
             }
         }
@@ -254,8 +258,9 @@ class ConnectorGamaServer {
         if (["RUNNING",'PAUSED'].includes(this.controller.model.getGama().experiment_state)){
             var index = 0
             for(var id_player in this.controller.model.getAllPlayers()) {
-                if (this.controller.model.getPlayer(id_player).in_game) {
-                    setTimeout(() => {this.removeInGamePlayer(id_player)},500*index);
+                if (this.controller.model.getPlayerState(id_player).in_game) {
+                    const id_player_copy = id_player
+                    setTimeout(() => {this.removeInGamePlayer(id_player_copy)},500*index);
                     index = index + 1
                 }
             }
@@ -281,7 +286,7 @@ class ConnectorGamaServer {
         do_sending = true;
         continue_sending = true;
         function_to_call = () => {
-            console.log("The Player: "+id_player+" called the function: "+expr+" successfully.");
+            console.log("-> The Player of id "+id_player+" called the function: "+expr+" successfully.");
         }
         this.sendMessages()
     }
@@ -293,7 +298,7 @@ class ConnectorGamaServer {
         do_sending = true;
         continue_sending = true;
         function_to_call = () => {
-            console.log("The ask: "+json.action+" was sent successfully");
+            console.log("-> The ask: "+json.action+" was sent successfully");
         }
         this.sendMessages()
     }
@@ -318,7 +323,7 @@ class ConnectorGamaServer {
                 const message = JSON.parse(event.data)
               //  console.log(message)
                 if (message.type == "SimulationStatus") {
-                    console.log("Message received from Gama Server:");
+                    console.log("Message received from Gama Server: SimulationStatus = "+message.content);
                  //   console.log(message);
                     controller.model.setGamaExperimentId(message.exp_id)
                     if (['NONE','NOTREADY'].includes(message.content) && ['RUNNING','PAUSED','NOTREADY'].includes(controller.model.getGama().experiment_state)) {
@@ -337,8 +342,8 @@ class ConnectorGamaServer {
                     }
                 }
                 if (message.type == "CommandExecutedSuccessfully") {
-                    console.log("Message received from Gama Server:");
                  //   console.log(message);
+                    console.log("Message received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ (message.command.expr!= undefined ? '\''+message.command.expr+'\'' : 'command'));
                     controller.model.setGamaContentError('')
                     if (message.command != undefined && message.command.type == "load") controller.model.setGamaExperimentName(message.content)
                     continue_sending = true
@@ -347,10 +352,11 @@ class ConnectorGamaServer {
                         const content = JSON.parse(message.content)
                         controller.broadcastSimulationOutput(content);
                     }
-                    catch (exception) {}
+                    catch (exception) {
+                    }
                 }
                 if (gama_error_messages.includes(message.type)) {
-                    console.log("Message received from Gama Server:");
+                    console.log("Error message received from Gama Server:");
                     console.log(message);
                     controller.model.setGamaContentError(message)
                     this.controller.model.setGamaLoading(false)

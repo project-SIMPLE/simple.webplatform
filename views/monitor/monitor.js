@@ -184,12 +184,14 @@ function createWebSocket(monitor_ws_port) {
                 player_info_div.appendChild(player_status)
                 player_info_div.appendChild(player_date)
 
+                player_button_add.id_player = element
                 player_button_add.addEventListener('click', () => {
-                    socket.send(JSON.stringify({"type":"add_player_headset","id":element}))
+                    socket.send(JSON.stringify({"type":"add_player_headset","id":player_button_add.id_player}))
                 })
 
+                player_button_remove.id_player = element
                 player_button_remove.addEventListener('click', () => {
-                    socket.send(JSON.stringify({"type":"remove_player_headset","id":element}))
+                    socket.send(JSON.stringify({"type":"remove_player_headset","id":player_button_remove.id_player}))
                 })
             }
         }

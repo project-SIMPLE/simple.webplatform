@@ -94,8 +94,10 @@ class Model {
 
     setRemoveInGameEveryPlayers() {
         for (var id_player in this.json_players) {
-            this.json_players[id_player].in_game = false
-            this.controller.notifyPlayerChange(id_player, this.json_players[id_player])
+            if (this.json_players[id_player] != undefined) {
+                this.json_players[id_player].in_game = false
+                this.controller.notifyPlayerChange(id_player, this.json_players[id_player])
+            }
         }
         this.controller.notifyMonitor()
     }
