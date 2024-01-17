@@ -183,7 +183,7 @@ class PlayerServer {
     cleanAll() {
         var to_remove = []
         for(var id_player in this.controller.model.getAllPlayers()) {
-            if (!this.controller.model.getPlayerState(id_player).connected && !this.controller.model.getPlayerState(id_player).in_game) {
+            if (this.controller.model.getPlayerState(id_player) != undefined && !this.controller.model.getPlayerState(id_player).connected && !this.controller.model.getPlayerState(id_player).in_game) {
                     const index = player_socket_clients_id.indexOf(id_player)
                     player_socket_clients_id.splice(index,1)
                     player_socket_clients.splice(index,1)

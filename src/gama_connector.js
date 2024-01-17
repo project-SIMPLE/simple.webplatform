@@ -202,7 +202,7 @@ class ConnectorGamaServer {
 
     addInGamePlayer(id_player) {
         if (['NONE',"NOTREADY"].includes(this.controller.model.getGama().experiment_state)) return
-        if (this.controller.model.getPlayerState(id_player).in_game) return
+        if (this.controller.model.getPlayerState(id_player) != undefined && this.controller.model.getPlayerState(id_player).in_game) return
         current_id_player = id_player
         list_messages = [this.add_player];
         index_messages = 0;
@@ -223,7 +223,7 @@ class ConnectorGamaServer {
 
     removeInGamePlayer(id_player) {
         if (['NONE',"NOTREADY"].includes(this.controller.model.getGama().experiment_state)) return
-        if (!this.controller.model.getPlayerState(id_player).in_game) return
+        if (this.controller.model.getPlayerState(id_player) != undefined && !this.controller.model.getPlayerState(id_player).in_game) return
         current_id_player = id_player
         list_messages = [this.remove_player];
         index_messages = 0;
@@ -243,9 +243,9 @@ class ConnectorGamaServer {
     addInGameEveryPlayers() {
         var index = 0
         for(var id_player in this.controller.model.getAllPlayers()) {
-            if (this.controller.model.getPlayerState(id_player).connected && !this.controller.model.getPlayerState(id_player).in_game) {
+            if (this.controller.model.getPlayerState(id_player) != undefined && this.controller.model.getPlayerState(id_player).connected && !this.controller.model.getPlayerState(id_player).in_game) {
                 const id_player_copy = id_player
-                setTimeout(() => {this.addInGamePlayer(id_player_copy)},500*index);
+                setTimeout(() => {this.addInGamePlayer(id_player_copy)},300*index);
                 index = index + 1
             }
         }
@@ -258,9 +258,9 @@ class ConnectorGamaServer {
         if (["RUNNING",'PAUSED'].includes(this.controller.model.getGama().experiment_state)){
             var index = 0
             for(var id_player in this.controller.model.getAllPlayers()) {
-                if (this.controller.model.getPlayerState(id_player).in_game) {
+                if (this.controller.model.getPlayerState(id_player) != undefined && this.controller.model.getPlayerState(id_player).in_game) {
                     const id_player_copy = id_player
-                    setTimeout(() => {this.removeInGamePlayer(id_player_copy)},500*index);
+                    setTimeout(() => {this.removeInGamePlayer(id_player_copy)},300*index);
                     index = index + 1
                 }
             }
@@ -347,7 +347,7 @@ class ConnectorGamaServer {
                     controller.model.setGamaContentError('')
                     if (message.command != undefined && message.command.type == "load") controller.model.setGamaExperimentName(message.content)
                     continue_sending = true
-                    setTimeout(sendMessages,300)
+                    setTimeout(sendMessages,100)
                     try {
                         const content = JSON.parse(message.content)
                         controller.broadcastSimulationOutput(content);
@@ -374,9 +374,9 @@ class ConnectorGamaServer {
             controller.model.setGamaLoading(false)
             controller.model.setRemoveInGameEveryPlayers()
             if (event.wasClean) {
-                console.log('-> The WebSocket connection with Gama Server was properly be closed');
+                console.log('-> The connection with Gama Server was properly be closed');
             } else {
-                console.log('-> The Websocket connection with Gama Server interruped suddenly');
+                console.log('-> The connection with Gama Server interruped suddenly');
             }
         })
         gama_socket.addEventListener('error', (error) => {

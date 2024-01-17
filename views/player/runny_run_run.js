@@ -51,7 +51,7 @@ function createWebSocket(player_ws_port) {
             document.querySelector("#authentification-state").innerHTML = in_game ? "&#10004; In game" : "&#x274C; Not yet in the game, please wait"
             document.querySelector("#authentification-state").style = in_game ? "color:green;" : "color:red;";
         }
-        else if (json.type == "json_simulation") {
+        else if (json.type == "json_output") {
             const json_simulation = json;
             document.querySelector("#himself-view").innerHTML =  json_simulation.contents.name == undefined ? "(enter your name)" : json_simulation.contents.name ;
             const color = "rgb("+ json_simulation.contents.color.red + ", "+ json_simulation.contents.color.green + ", "+ json_simulation.contents.color.blue + ");"
