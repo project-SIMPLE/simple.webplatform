@@ -18,7 +18,6 @@ class Controller {
         this.player_server = new PlayerServer(this);
         this.app = new App(this);
         this.gama_connector = new ConnectorGamaServer(this);
-        console.log('-> Gama Server Middleware launched sucessfully');
         console.log('Note: Refresh the webpage localhost:'+this.model.getJsonSettings().app_port+' if the connection failed');
     }
 

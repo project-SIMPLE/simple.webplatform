@@ -18,7 +18,17 @@ class MonitorServer {
         this.controller = controller;
         const monitor_server = this
         this.monitor_ws_port = controller.model.getJsonSettings().monitor_ws_port != undefined ?  controller.model.getJsonSettings().monitor_ws_port : DEFAULT_MONITOR_WS_PORT;
+        var monitor_ws_port = this.monitor_ws_port
         this.monitor_socket = new WebSocket.Server({ port: this.monitor_ws_port });
+
+        this.monitor_socket.on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                console.log(`\x1b[31m-> The port ${monitor_ws_port} is already in use. Choose a different port in settings.json.\x1b[0m`);
+            }
+            else {
+                console.log(`\x1b[31m-> An error occured for the player server, code: ${err.code}\x1b[0m`)
+            }
+        })
 
         this.monitor_socket.on('connection', function connection(ws) {
             monitor_socket_clients.push(ws)

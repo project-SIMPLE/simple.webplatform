@@ -17,7 +17,7 @@ class App {
     constructor(controller) {
         this.controller = controller;
         this.app_port = this.controller.model.getJsonSettings().app_port != undefined ? controller.model.getJsonSettings().app_port : DEFAULT_APP_PORT;
-        
+        var app_port = this.app_port
         this.app = express();
         this.app.set('view engine', 'ejs');
         this.app.use(express.static('views'));
@@ -66,6 +66,15 @@ class App {
 
         this.server = this.app.listen(this.app_port, () => {
             console.log(`-> Listening on port ${this.app_port}`)
+        });
+
+        this.server.on('error', (err) => {
+          if (err.code === 'EADDRINUSE') {
+            console.error(`\x1b[31m-> The port ${this.app_port} is already in use. Choose a different port in settings.json.\x1b[0m`);
+          } 
+          else {
+            console.log(`\x1b[31m-> An error occured for the app server, code: ${err.code}\x1b[0m`)
+          }
         });
     }
 }

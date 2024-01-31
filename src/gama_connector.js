@@ -337,7 +337,7 @@ class ConnectorGamaServer {
                         controller.broadcastSimulationOutput(JSON.parse(message.content));
                     }
                     catch (error) {
-                        console.log("\x1b[41m-> Unable to parse recived message:\x1b[0m");
+                        console.log("\x1b[31m-> Unable to parse recived message:\x1b[0m");
                         console.log(message.content);
                     }
                 }
@@ -364,7 +364,7 @@ class ConnectorGamaServer {
                 }
             }
             catch (error) {
-                console.log("\x1b[41m")
+                console.log("\x1b[31m")
                 console.log(error+" \x1b[0m");
             }
         }
@@ -380,7 +380,7 @@ class ConnectorGamaServer {
             }
         })
         gama_socket.addEventListener('error', (error) => {
-            console.log("-> Failed to connect with Gama Server")
+            console.log("-> Failed to connect with Gama Server");
             
         });
         controller.model.setGamaLoading(false)

@@ -30,8 +30,18 @@ class PlayerServer {
     constructor(controller) {
         this.controller = controller;
         this.player_ws_port = controller.model.getJsonSettings().player_ws_port != undefined ? controller.model.getJsonSettings().player_ws_port : DEFAULT_PLAYER_WS_PORT;
+        var player_ws_port = this.player_ws_port
         this.player_socket = new WebSocket.Server({ port: this.player_ws_port });
         const player_server = this;
+
+        this.player_socket.on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                console.log(`\x1b[31m-> The port ${player_ws_port} is already in use. Choose a different port in settings.json.\x1b[0m`);
+            }
+            else {
+                console.log(`\x1b[31m-> An error occured for the player server, code: ${err.code}\x1b[0m`)
+            }
+        })
 
         this.player_socket.on('connection', function connection(ws) {
             ws.on('message', function incoming(message) {
@@ -129,7 +139,7 @@ class PlayerServer {
         }
         catch (exception) {
             //Exception are written in red
-            console.log("\x1b[41m -> The following message hasn't the correct format:\x1b[0m");
+            console.log("\x1b[31m -> The following message hasn't the correct format:\x1b[0m");
             console.log(json_output);
         }
     }
@@ -147,7 +157,7 @@ class PlayerServer {
             }, 3000);
         }
         catch (error) {
-            console.log("\x1b[41m -> Error when sending ping message\x1b[0m");
+            console.log("\x1b[31m -> Error when sending ping message\x1b[0m");
         }
         
     }
