@@ -161,22 +161,6 @@ class PlayerServer {
         }
         
     }
-    /**
-     * Send the json_state to the player. It seperates the json to send only the necessary information to the players.
-     */
-
-    broadcastJsonStatePlayer() {
-        player_socket_clients.forEach((client) => {
-            const id_player = getIdClient(client)
-            const json_state = this.controller.json_state
-            const json_state_player = {}
-            json_state_player.type = json_state.type
-            json_state_player.gama = json_state.gama
-            json_state_player.player = {}
-            json_state_player.player[id_player] = json_state.player[id_player]
-            client.send(JSON.stringify(json_state_player));
-        })
-    }
 
     notifyPlayerChange(id_player, json_player) {
         const index = player_socket_clients_id.indexOf(id_player)
