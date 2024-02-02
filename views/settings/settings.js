@@ -34,6 +34,7 @@ function createWebSocket(monitor_ws_port) {
             jsonDisplay.elements.experiment_name.value = json_settings.experiment_name;
             jsonDisplay.elements.ip_address_gama_server.value = json_settings.ip_address_gama_server;
             jsonDisplay.elements.model_file_path_type.value = json_settings.type_model_file_path == "absolute" ? "Absolute" : "Relative"
+            jsonDisplay.elements.enable_verbose.checked = json_settings.verbose;
         }
         const player_web_interface = document.querySelector("#player-web-interface")
         document.getElementById("player-html-file-label").style = player_web_interface.checked ? "color: black;" : "color: #C5C5C5;";
@@ -60,7 +61,8 @@ function createWebSocket(monitor_ws_port) {
                 ip_address_gama_server: document.getElementById("ip-address-gama-server").value,
                 player_web_interface: document.getElementById("player-web-interface").checked,
                 player_html_file: document.getElementById("player-html-file-input").value,
-                type_model_file_path: type_path
+                type_model_file_path: type_path,
+                verbose: document.getElementById("enable-verbose").checked
             };
             console.log(json_settings);
             // Display updated JSON data

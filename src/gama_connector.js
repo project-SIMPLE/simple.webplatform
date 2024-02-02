@@ -109,7 +109,9 @@ class ConnectorGamaServer {
                 if (typeof list_messages[index_messages] == "function") {
                     gama_socket.send(JSON.stringify(list_messages[index_messages]()))
                     if (list_messages[index_messages]().expr != undefined) {
-                        console.log("Expression sent to Gama Server: "+'\''+list_messages[index_messages]().expr+'\'' + " Waiting for the answer (if any)...");
+                        if (this.controller.model.getJsonSettings().verbose) {
+                            console.log("Expression sent to Gama Server: "+'\''+list_messages[index_messages]().expr+'\'' + " Waiting for the answer (if any)...");
+                        }
                     }
                     else {
                         console.log("Message sent to Gama-Server: type "+list_messages[index_messages]().type+ ". Waiting for the answer (if any)...");
@@ -342,8 +344,9 @@ class ConnectorGamaServer {
                     }
                 }
                 if (message.type == "CommandExecutedSuccessfully") {
-                 //   console.log(message);
-                    console.log("Message received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ (message.command.expr!= undefined ? '\''+message.command.expr+'\'' : 'command'));
+                    if (controller.model.getJsonSettings().verbose) {
+                        console.log("Message received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ (message.command.expr!= undefined ? '\''+message.command.expr+'\'' : 'command'));
+                    }
                     controller.model.setGamaContentError('')
                     if (message.command != undefined && message.command.type == "load") controller.model.setGamaExperimentName(message.content)
                     continue_sending = true

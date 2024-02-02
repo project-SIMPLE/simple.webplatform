@@ -1,6 +1,6 @@
 {
   "type": "json_settings",
-  "gama_ws_port": 6968,
+  "gama_ws_port": 1000,
   "monitor_ws_port": 8001,
   "player_ws_port": 8080,
   "app_port": 8000,
@@ -9,5 +9,6 @@
   "ip_address_gama_server": "localhost",
   "player_web_interface": true,
   "player_html_file": "runny_run_run.html",
-  "type_model_file_path": "relative"
+  "type_model_file_path": "relative",
+  "verbose": true
 }
