@@ -7,8 +7,8 @@
   "model_file_path": "models/runny_run_run.gaml",
   "experiment_name": "Battle",
   "ip_address_gama_server": "localhost",
-  "player_web_interface": true,
+  "player_web_interface": false,
   "player_html_file": "runny_run_run.html",
   "type_model_file_path": "relative",
-  "verbose": true
+  "verbose": false
 }

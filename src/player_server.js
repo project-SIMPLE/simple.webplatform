@@ -148,6 +148,12 @@ class PlayerServer {
         const ws = getWsClient(id_player)
         try {
             ws.send("{\"type\":\"ping\"}");
+            setTimeout(() => {
+                ws.send("{\"type\":\"ping\"}");
+            }, 1000)
+            setTimeout(() => {
+                ws.send("{\"type\":\"ping\"}");
+            }, 2000)
             pongTimeoutId = setTimeout(() => {
                 if (ws.readyState === WebSocket.OPEN) {
                     // Fermer la connexion si le pong n'est pas reçu dans les temps

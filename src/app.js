@@ -40,7 +40,7 @@ class App {
             res.sendFile(this.controller.model.getJsonSettings().player_html_file, { root: 'views/player' });
           }
           else {
-            res.sendFile('404.html', { root: 'views/public' });
+            res.status(404).sendFile('404_player.html', { root: 'views/public' });
           }
         });
       
@@ -63,6 +63,9 @@ class App {
           res.redirect('https://github.com/project-SIMPLE/GamaServerMiddleware');
         });
 
+        this.app.use((req, res) => {
+          res.status(404).sendFile('404_common.html', { root: 'views/public' });
+        });
 
         this.server = this.app.listen(this.app_port, () => {
             console.log(`-> Listening on port ${this.app_port}`)

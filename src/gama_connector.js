@@ -108,13 +108,15 @@ class ConnectorGamaServer {
                 //console.log("--> Sending message " + index_messages)
                 if (typeof list_messages[index_messages] == "function") {
                     gama_socket.send(JSON.stringify(list_messages[index_messages]()))
-                    if (list_messages[index_messages]().expr != undefined) {
-                        if (this.controller.model.getJsonSettings().verbose) {
-                            console.log("Expression sent to Gama Server: "+'\''+list_messages[index_messages]().expr+'\'' + " Waiting for the answer (if any)...");
-                        }
+                    if (this.controller.model.getJsonSettings().verbose) {
+                        if (list_messages[index_messages]().expr != undefined) 
+                            console.log("Expression sent to Gama Server: "+'\''+list_messages[index_messages]().expr+'\'' +" Waiting for the answer (if any)...");
+                        else console.log("Message sent to Gama-Server: type "+list_messages[index_messages]().type+ ". Waiting for the answer (if any)...");
                     }
                     else {
-                        console.log("Message sent to Gama-Server: type "+list_messages[index_messages]().type+ ". Waiting for the answer (if any)...");
+                        if( list_messages[index_messages]().expr != undefined && (list_messages[index_messages]().expr.includes('create_player') || list_messages[index_messages]().expr.includes('remove_player'))) {
+                            console.log("Expression sent to Gama Server: "+'\''+list_messages[index_messages]().expr+'\'' +" Waiting for the answer (if any)...");
+                        }
                     }
                 }
                 else gama_socket.send(JSON.stringify(list_messages[index_messages]));
@@ -300,7 +302,9 @@ class ConnectorGamaServer {
         do_sending = true;
         continue_sending = true;
         function_to_call = () => {
-            console.log("-> The ask: "+json.action+" was sent successfully");
+            if (this.controller.model.getJsonSettings().verbose) {
+                console.log("-> The ask: "+json.action+" was sent successfully");
+            }
         }
         this.sendMessages()
     }
@@ -345,7 +349,10 @@ class ConnectorGamaServer {
                 }
                 if (message.type == "CommandExecutedSuccessfully") {
                     if (controller.model.getJsonSettings().verbose) {
-                        console.log("Message received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ (message.command.expr!= undefined ? '\''+message.command.expr+'\'' : 'command'));
+                        console.log("\x1b[32mMessage received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ (message.command.expr!= undefined ? '\''+message.command.expr+'\'' : 'command') + '\x1b[0m');
+                    }
+                    else if(message.command.expr != undefined && (message.command.expr.includes('create_player') ||message.command.expr.includes('remove_player'))) {
+                        console.log("\x1b[32mMessage received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ (message.command.expr!= undefined ? '\''+message.command.expr+'\'' : 'command') + '\x1b[0m');
                     }
                     controller.model.setGamaContentError('')
                     if (message.command != undefined && message.command.type == "load") controller.model.setGamaExperimentName(message.content)
