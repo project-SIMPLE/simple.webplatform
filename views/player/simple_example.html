@@ -175,21 +175,30 @@ p {
             const socket = new WebSocket('ws://'+hostname+':'+ player_ws_port);
 
             socket.onopen = function() {
+                console.log("Sending message:");
                 document.querySelector("#connection-state").innerHTML = "&#10004; Connected to central Server"
-                message = {type:"connection", id:id_unique}
+                message = {type:"connection", id:id_unique, set_heartbeat: true}
+                console.log(message);
                 socket.send(JSON.stringify(message))
             };
 
             socket.onmessage = function(event) {
 
                 var json = JSON.parse(event.data)
+                console.log("Reception of message:");
                 console.log(json);
+                if (json.type == "ping") {
+                    console.log("Sending message:");
+                    console.log({type:"pong"});
+                    socket.send(JSON.stringify({type:"pong"}))
+                }
+                
                 if (json.type == "json_state") {
                     
                     json_state = json;
-                    const authentified = json_state.player[id_unique].authentified;
-                    document.querySelector("#authentification-state").innerHTML = authentified ? "&#10004; Authentified to Gama Server" : "&#x274C; Unauthentified to Gama Server, please wait"
-                    document.querySelector("#authentification-state").style = authentified ? "color:green;" : "color:red;";
+                    const in_game = json_state.in_game;
+                    document.querySelector("#authentification-state").innerHTML = in_game ? "&#10004; Authentified to Gama Server" : "&#x274C; Unauthentified to Gama Server, please wait"
+                    document.querySelector("#authentification-state").style = in_game ? "color:green;" : "color:red;";
                 }
                 else if (json.type == "json_simulation") {
                     const json_simulation = json;

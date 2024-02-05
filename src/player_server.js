@@ -7,7 +7,7 @@ const DEFAULT_PLAYER_WS_PORT = 8080;
 const player_socket_clients = []
 const player_socket_clients_id = []
 
-var pongTimeoutId;
+var pongTimeoutId = {};
 
 function getIdClient(ws) {
     const index = player_socket_clients.indexOf(ws)
@@ -47,7 +47,7 @@ class PlayerServer {
             ws.on('message', function incoming(message) {
                 const json_player = JSON.parse(message)
                 if (json_player.type == "pong") {
-                    clearTimeout(pongTimeoutId);
+                    clearTimeout(pongTimeoutId[getIdClient(ws)]);
                     setTimeout(() => {
                         player_server.sendPing(getIdClient(ws))
                     }, 5000);
@@ -74,7 +74,7 @@ class PlayerServer {
                         player_socket_clients_id.push(json_player.id)
                         controller.model.insertPlayer(json_player.id)
                         controller.model.setPlayerConnection(json_player.id, true, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
-                        if (json_player.enable_ping_pong != undefined && json_player.enable_ping_pong) player_server.sendPing(json_player.id)
+                        if (json_player.set_heartbeat != undefined && json_player.set_heartbeat) player_server.sendPing(json_player.id)
                         controller.notifyMonitor();
                         console.log('-> New connection of the player of id '+json_player.id);
                     }
@@ -148,19 +148,13 @@ class PlayerServer {
         const ws = getWsClient(id_player)
         try {
             ws.send("{\"type\":\"ping\"}");
-            setTimeout(() => {
-                ws.send("{\"type\":\"ping\"}");
-            }, 1000)
-            setTimeout(() => {
-                ws.send("{\"type\":\"ping\"}");
-            }, 2000)
-            pongTimeoutId = setTimeout(() => {
+            pongTimeoutId[id_player] = setTimeout(() => {
                 if (ws.readyState === WebSocket.OPEN) {
                     // Fermer la connexion si le pong n'est pas reçu dans les temps
                     ws.terminate();
                     console.log('-> The connection with player '+id_player+" has been interrupted due to pong non-response");
                 }
-            }, 3000);
+            }, 5000);
         }
         catch (error) {
             console.log("\x1b[31m -> Error when sending ping message\x1b[0m");
