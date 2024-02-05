@@ -8,6 +8,8 @@
 
 **The full documentation is available in the [wiki page](https://github.com/project-SIMPLE/GamaServerMiddleware/wiki)**
 
+![Gama Server Middleware](https://github.com/project-SIMPLE/GamaServerMiddleware/assets/104212258/0537f360-0c30-41b4-9b96-74e85d6ae5c2)
+
 ## Launching
 
 **For more information, please see the [wiki page](https://github.com/project-SIMPLE/GamaServerMiddleware/wiki)**
