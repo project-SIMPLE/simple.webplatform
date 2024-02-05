@@ -60,7 +60,7 @@ class App {
         });
 
         this.app.get('/help', (req, res) => {
-          res.redirect('https://github.com/project-SIMPLE/GamaServerMiddleware');
+          res.redirect('https://github.com/project-SIMPLE/GamaServerMiddleware/wiki');
         });
 
         this.app.use((req, res) => {
