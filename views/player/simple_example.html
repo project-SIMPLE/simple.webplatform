@@ -5,124 +5,125 @@
     <!-- Incluez la bibliothèque D3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f2f2f2;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-}
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
 
-h1 {
-    background-color: #0074d9;
-    color: #fff;
-    padding: 20px;
-    text-align: center;
-    margin: 0;
-    width: 100%; /* Barre bleue sur toute la largeur */
-}
+        h1 {
+            background-color: #0074d9;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            margin: 0;
+            width: 100%; /* Barre bleue sur toute la largeur */
+        }
 
-h2 {
-    color: #0074d9;
-    text-align: center;
-}
+        h2 {
+            color: #0074d9;
+            text-align: center;
+        }
 
-p {
-    margin: 10px 0;
-    text-align: center;
-    width: 100%; /* Texte sur toute la largeur */
-}
-
-
-#connection-state {
-    font-weight: bold;
-    font-size: 18px;
-    color: #4CAF50;
-}
-
-#authentification-state {
-    font-weight: bold;
-    font-size: 16px;
-}
-
-#authentification-state.success {
-    color: #4CAF50;
-}
-
-#authentification-state.error {
-    color: #FF5733;
-}
-
-#id-view {
-    font-weight: bold;
-}
-
-#x-coordinate, #y-coordinate {
-    font-weight: bold;
-    font-size: 18px;
-}
-
-#graph-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-#graph-frame {
-    fill: none;
-    stroke: #000;
-    stroke-width: 2;
-}
+        p {
+            margin: 10px 0;
+            text-align: center;
+            width: 100%; /* Texte sur toute la largeur */
+        }
 
 
-#new_x, #new_y {
-    width: 50px;
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    font-size: 14px;
-    margin: 5px;
-}
+        #connection-state {
+            font-weight: bold;
+            font-size: 18px;
+            color: #4CAF50;
+        }
 
-#new_x:focus, #new_y:focus {
-    outline: none;
-    border-color: #0074d9;
-}
+        #authentification-state {
+            font-weight: bold;
+            font-size: 16px;
+        }
 
-/* Réponses aux tailles d'écran spécifiques */
+        #authentification-state.success {
+            color: #4CAF50;
+        }
 
-@media (max-width: 768px) {
-    h1 {
-        font-size: 24px;
-    }
-    h2 {
-        font-size: 18px;
-    }
-    p {
-        font-size: 16px;
-    }
-}
+        #authentification-state.error {
+            color: #FF5733;
+        }
 
-/* Pour les tablettes Samsung en mode portrait */
-@media (max-width: 768px) and (orientation: portrait) {
-    #graph-container {
-        padding: 10px;
-    }
-}
+        #id-view {
+            font-weight: bold;
+        }
 
-/* Pour les tablettes Samsung en mode paysage et les écrans d'ordinateur */
-@media (min-width: 769px) {
-    #graph-container {
-        padding: 20px;
-    }
-}
+        #x-coordinate, #y-coordinate {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        #graph-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #graph-frame {
+            fill: none;
+            stroke: #000;
+            stroke-width: 2;
+        }
+
+
+        #new_x, #new_y {
+            width: 50px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 14px;
+            margin: 5px;
+        }
+
+        #new_x:focus, #new_y:focus {
+            outline: none;
+            border-color: #0074d9;
+        }
+
+        /* Réponses aux tailles d'écran spécifiques */
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 24px;
+            }
+            h2 {
+                font-size: 18px;
+            }
+            p {
+                font-size: 16px;
+            }
+        }
+
+        /* Pour les tablettes Samsung en mode portrait */
+        @media (max-width: 768px) and (orientation: portrait) {
+            #graph-container {
+                padding: 10px;
+            }
+        }
+
+        /* Pour les tablettes Samsung en mode paysage et les écrans d'ordinateur */
+        @media (min-width: 769px) {
+            #graph-container {
+                padding: 20px;
+            }
+        }
 
     </style>
 </head>
+
 <body>
     <h1>Gama Server Middleware - Simple Example</h1>
 
@@ -148,6 +149,7 @@ p {
         const id_unique = generateGuid();
         document.querySelector("#id-view").innerHTML = id_unique;
         const hostname = window.location.hostname;
+        var color;
 
         function generateGuid() {
             return 'xxxx'.replace(/[xy]/g, function(c) {
@@ -200,7 +202,7 @@ p {
                     document.querySelector("#authentification-state").innerHTML = in_game ? "&#10004; Authentified to Gama Server" : "&#x274C; Unauthentified to Gama Server, please wait"
                     document.querySelector("#authentification-state").style = in_game ? "color:green;" : "color:red;";
                 }
-                else if (json.type == "json_simulation") {
+                else if (json.type == "json_output") {
                     const json_simulation = json;
                     var position = json_simulation.contents.position
                     var x = position.x;
@@ -210,12 +212,13 @@ p {
 
                     svg.selectAll(".temp-circles").remove();
 
+                    color = "rgb("+ json_simulation.contents.color.red + ", "+ json_simulation.contents.color.green + ", "+ json_simulation.contents.color.blue + ")"
                     svg.append("circle")
                         .attr("cx", x*graph_size/100)
                         .attr("class", "temp-circles")
                         .attr("cy", y*graph_size/100)
                         .attr("r", 8) // Rayon du cercle
-                        .style("fill", "blue"); // Couleur de remplissage du cercle
+                        .style("fill", color); // Couleur de remplissage du cercle
                 }
             };
             

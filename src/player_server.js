@@ -7,7 +7,8 @@ const DEFAULT_PLAYER_WS_PORT = 8080;
 const player_socket_clients = []
 const player_socket_clients_id = []
 
-var pongTimeoutId = {};
+var pongTimeout1Attempt = {};
+var pongTimeout2Attempt = {};
 
 function getIdClient(ws) {
     const index = player_socket_clients.indexOf(ws)
@@ -46,8 +47,13 @@ class PlayerServer {
         this.player_socket.on('connection', function connection(ws) {
             ws.on('message', function incoming(message) {
                 const json_player = JSON.parse(message)
+                if (controller.model.getJsonSettings().verbose) {
+                    console.log("Reception of this following message from the player " + getIdClient(ws));
+                    console.log(json_player);
+                }
                 if (json_player.type == "pong") {
-                    clearTimeout(pongTimeoutId[getIdClient(ws)]);
+                    clearTimeout(pongTimeout1Attempt[getIdClient(ws)]);
+                    clearTimeout(pongTimeout2Attempt[getIdClient(ws)])
                     setTimeout(() => {
                         player_server.sendPing(getIdClient(ws))
                     }, 5000);
@@ -65,7 +71,10 @@ class PlayerServer {
                         const index = player_socket_clients_id.indexOf(json_player.id)
                         player_socket_clients[index] = ws
                         controller.model.setPlayerConnection(json_player.id, true, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
-                        if (json_player.set_heartbeat != undefined && json_player.set_heartbeat) player_server.sendPing(json_player.id)
+                        if (json_player.set_heartbeat != undefined && json_player.set_heartbeat){
+                            const id = json_player.id
+                            setTimeout(() => {player_server.sendPing(id)}, 4000)
+                        } 
                         console.log('-> Reconnection of the player of id '+json_player.id);
                     }
                     //Sinon
@@ -74,7 +83,10 @@ class PlayerServer {
                         player_socket_clients_id.push(json_player.id)
                         controller.model.insertPlayer(json_player.id)
                         controller.model.setPlayerConnection(json_player.id, true, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
-                        if (json_player.set_heartbeat != undefined && json_player.set_heartbeat) player_server.sendPing(json_player.id)
+                        if (json_player.set_heartbeat != undefined && json_player.set_heartbeat){
+                            const id = json_player.id
+                            setTimeout(() => {player_server.sendPing(id)}, 4000)
+                        } 
                         controller.notifyMonitor();
                         console.log('-> New connection of the player of id '+json_player.id);
                     }
@@ -139,7 +151,7 @@ class PlayerServer {
         }
         catch (exception) {
             //Exception are written in red
-            console.log("\x1b[31m -> The following message hasn't the correct format:\x1b[0m");
+            console.log("\x1b[31m-> The following message hasn't the correct format:\x1b[0m");
             console.log(json_output);
         }
     }
@@ -148,16 +160,18 @@ class PlayerServer {
         const ws = getWsClient(id_player)
         try {
             ws.send("{\"type\":\"ping\"}");
-            pongTimeoutId[id_player] = setTimeout(() => {
+            pongTimeout1Attempt[id_player] = setTimeout(() => {
+                ws.send("{\"type\":\"ping\"}");
+            }, 2000);
+            pongTimeout2Attempt[id_player] = setTimeout(() => {
                 if (ws.readyState === WebSocket.OPEN) {
-                    // Fermer la connexion si le pong n'est pas reçu dans les temps
                     ws.terminate();
-                    console.log('-> The connection with player '+id_player+" has been interrupted due to pong non-response");
+                    console.log('\x1b[31m-> The connection with player '+id_player+" has been interrupted due to pong non-response\x1b[0m");
                 }
-            }, 5000);
+            }, 4000);
         }
         catch (error) {
-            console.log("\x1b[31m -> Error when sending ping message\x1b[0m");
+            console.log("\x1b[31m-> Error when sending ping message\x1b[0m");
         }
         
     }

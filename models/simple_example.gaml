@@ -27,6 +27,7 @@ global {
 				location_json["x"] <- player.location.x;
 				location_json["y"] <- player.location.y;
 				contents_json["position"] <- location_json;
+				contents_json["color"] <- player.color;
 				info_json["id"] <- [player.id];
 				info_json["contents"] <- contents_json;		
 				contents <+ info_json;			

@@ -327,7 +327,11 @@ class ConnectorGamaServer {
         gama_socket.onmessage = function(event) {
             try {
                 const message = JSON.parse(event.data)
-              //  console.log(message)
+                if (controller.model.getJsonSettings().verbose) {
+                    console.log("Message received from Gama:");
+                    console.log(message)
+                }
+              
                 if (message.type == "SimulationStatus") {
                     console.log("Message received from Gama Server: SimulationStatus = "+message.content);
                  //   console.log(message);
