@@ -159,16 +159,18 @@ class PlayerServer {
     sendPing(id_player) {
         const ws = getWsClient(id_player)
         try {
+            console.log("Sending ping to "+id_player);
             ws.send("{\"type\":\"ping\"}");
             pongTimeout1Attempt[id_player] = setTimeout(() => {
+                console.log("Sending ping to "+id_player);
                 ws.send("{\"type\":\"ping\"}");
-            }, 2000);
+            }, 3000);
             pongTimeout2Attempt[id_player] = setTimeout(() => {
                 if (ws.readyState === WebSocket.OPEN) {
                     ws.terminate();
                     console.log('\x1b[31m-> The connection with player '+id_player+" has been interrupted due to pong non-response\x1b[0m");
                 }
-            }, 4000);
+            }, 6000);
         }
         catch (error) {
             console.log("\x1b[31m-> Error when sending ping message\x1b[0m");
