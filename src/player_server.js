@@ -159,10 +159,10 @@ class PlayerServer {
     sendPing(id_player) {
         const ws = getWsClient(id_player)
         try {
-            console.log("Sending ping to "+id_player);
+            if (this.controller.model.getJsonSettings().verbose) console.log("Sending ping to "+id_player);
             ws.send("{\"type\":\"ping\"}");
             pongTimeout1Attempt[id_player] = setTimeout(() => {
-                console.log("Sending ping to "+id_player);
+                if (this.controller.model.getJsonSettings().verbose) console.log("Sending ping to "+id_player);
                 ws.send("{\"type\":\"ping\"}");
             }, 3000);
             pongTimeout2Attempt[id_player] = setTimeout(() => {

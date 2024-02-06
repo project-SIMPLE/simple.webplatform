@@ -10,5 +10,5 @@
   "player_web_interface": true,
   "player_html_file": "simple_example.html",
   "type_model_file_path": "relative",
-  "verbose": true
+  "verbose": false
 }

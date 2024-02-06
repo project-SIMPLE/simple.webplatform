@@ -33,7 +33,6 @@ class App {
         this.app.get('/settings', (req, res) => {
           res.sendFile('settings.html', { root: 'views/settings' });
         });
-
         
         this.app.get('/player', (req, res) => {
           if (this.controller.model.getJsonSettings().player_web_interface){
@@ -44,9 +43,6 @@ class App {
           }
         });
       
-
-        //Some getters
-
         this.app.get('/getWsMonitorPort', (req, res) => {
           res.json({ "monitor_ws_port" : controller.model.getJsonSettings().monitor_ws_port });
         });
