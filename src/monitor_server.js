@@ -12,7 +12,7 @@ var monitor_socket_clients = []
 class MonitorServer {
     /**
      * Creates the websocket server
-     * @param {Controller} controller - The server model of the project
+     * @param {Controller} controller - The controller of the project
      */
     constructor(controller) {
         this.controller = controller;

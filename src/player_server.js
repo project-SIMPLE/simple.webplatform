@@ -26,7 +26,7 @@ function getWsClient(id) {
 class PlayerServer {
     /**
      * Creates a Websocket Server
-     * @param {Controller} controller - The server model of the project
+     * @param {Controller} controller - The controller of the project
      */
     constructor(controller) {
         this.controller = controller;
@@ -156,6 +156,10 @@ class PlayerServer {
         }
     }
 
+    /**
+     * Send ping messages for Heartbeat
+     * @param {int} id_player - The id of the player that needs heartbeat
+     */
     sendPing(id_player) {
         const ws = getWsClient(id_player)
         try {
@@ -178,6 +182,12 @@ class PlayerServer {
         
     }
 
+    /**
+     * Notifies players about a change about it state
+     * @param {int} id_player - The id of the player that need to be informed about a change
+     * @param {JSON} json_player - His json_player to be sent
+     */
+
     notifyPlayerChange(id_player, json_player) {
         const index = player_socket_clients_id.indexOf(id_player)
         if (index != -1) {
@@ -189,6 +199,10 @@ class PlayerServer {
             //console.log(json_simulation_player);
         }
     }
+
+    /**
+     * Cleans from the display all the players that are disconnected and not in game
+     */
 
     cleanAll() {
         var to_remove = []

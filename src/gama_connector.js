@@ -33,7 +33,7 @@ const gama_error_messages = ["SimulationStatusError",
 class ConnectorGamaServer {
     /**
      * Constructor of the websocket client
-     * @param {Controller} controller - The model of the project
+     * @param {Controller} controller - The controller of the project
      */
     constructor(controller) {
         this.controller = controller;
@@ -44,6 +44,8 @@ class ConnectorGamaServer {
         experiment_name = this.controller.model.getJsonSettings().experiment_name;
         this.gama_socket = this.connectGama();
     }
+
+    // -------------------
 
     /* Protocol messages about Gama Server */
     
@@ -99,6 +101,9 @@ class ConnectorGamaServer {
             "expr": current_expression
         }
     }
+
+    // --------------------
+
     /**
      * Sends the message contained in the list @var list_messages at the index @var index_messages.
      */
@@ -130,6 +135,7 @@ class ConnectorGamaServer {
             }
         }
     }
+
     /**
      * Asks Gama to launch the experiment
      */
@@ -146,6 +152,7 @@ class ConnectorGamaServer {
             this.sendMessages()
         }
     }
+
     /**
      * Asks Gama to stop the experiment
      */
@@ -295,6 +302,11 @@ class ConnectorGamaServer {
         this.sendMessages()
     }
 
+    /**
+     * Sends an ask to GAMA
+     * @param {JSON} json - The JSON containing the information of the ask
+     * @returns 
+     */
     sendAsk(json) {
         if (['NONE',"NOTREADY"].includes(this.controller.model.getGama().experiment_state)) return
         list_messages = [json];
@@ -308,6 +320,7 @@ class ConnectorGamaServer {
         }
         this.sendMessages()
     }
+    
     /**
      * Connects the websocket client with gama server and manage the messages received
      * @returns 

@@ -1,6 +1,12 @@
 const fs = require('fs');
 
 class Model {
+
+    /**
+     * Creates the model
+     * @param {Controller} controller - The controller of the server project
+     */
+
     constructor(controller) {
         this.controller = controller
         this.json_gama = {  
@@ -15,6 +21,8 @@ class Model {
         this.json_settings = JSON.parse(fs.readFileSync('settings.json', 'utf-8'));
     }
 
+    // Getter all
+
     getAll() {
         return {
             type:"json_state",
@@ -22,6 +30,8 @@ class Model {
             player : this.json_players
         }
     }
+
+    // GAMA
 
     getGama() {
         return this.json_gama
@@ -55,6 +65,8 @@ class Model {
         this.json_gama.experiment_name = experiment_name
         this.controller.notifyMonitor()
     }
+
+    // Players
 
     getAllPlayers() {
         return this.json_players
@@ -101,6 +113,8 @@ class Model {
         }
         this.controller.notifyMonitor()
     }
+
+    //Settings
 
     getJsonSettings() {
         return this.json_settings

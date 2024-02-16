@@ -47,6 +47,11 @@ class Controller {
     notifyMonitor() {
         this.monitor_server.sendMonitorJsonState();
     }
+    /**
+     * Sends a message to a player containing json_player whan a change about him occured.
+     * @param {int} id_player - The is of the player that needs to be informed
+     * @param {JSON} json_player - The new json_player to be sent
+     */
 
     notifyPlayerChange(id_player, json_player) {
         this.player_server.notifyPlayerChange(id_player, json_player)
@@ -90,6 +95,9 @@ class Controller {
         this.gama_connector.removeInGamePlayer(id_player);
     }
 
+    /**
+     * Cleans from the display all the players that are disconnected and not in game
+     */
     cleanAll() {
         this.player_server.cleanAll();
     }
