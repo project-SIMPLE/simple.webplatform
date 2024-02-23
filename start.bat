@@ -1,5 +1,5 @@
-npm install
+call npm install
 
-node index.js
+call node index.js
 
 set /p input="Press enter to quit..."

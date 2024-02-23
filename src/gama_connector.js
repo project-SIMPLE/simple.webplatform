@@ -346,7 +346,7 @@ class ConnectorGamaServer {
                 }
               
                 if (message.type == "SimulationStatus") {
-                    console.log("Message received from Gama Server: SimulationStatus = "+message.content);
+                    if (controller.model.getJsonSettings().verbose) console.log("Message received from Gama Server: SimulationStatus = "+message.content);
                  //   console.log(message);
                     controller.model.setGamaExperimentId(message.exp_id)
                     if (['NONE','NOTREADY'].includes(message.content) && ['RUNNING','PAUSED','NOTREADY'].includes(controller.model.getGama().experiment_state)) {
