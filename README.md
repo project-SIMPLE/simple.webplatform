@@ -1,5 +1,7 @@
 # Gama Server Middleware
 
+**The full documentation is available in the [wiki page](https://github.com/project-SIMPLE/GamaServerMiddleware/wiki)**
+
 ## Introduction
 
 **Gama Server Middleware is a tool made for creating multiplayer games using Gama.** It requires the parallel use of Gama Server in order to function. **Gama Server Middleware** server that can **connect to Gama Server** and allows **players to play** to a **Gama modelized game**. This server can **monitor** every **connections**. Thanks to the latter, **Gama model doesn't need to manage connections** with the players, it simply needs to **implement** in the simulation the commands of **what a player can do** and indicate which **outputs need to be retrieved** at each simulation cycle.
