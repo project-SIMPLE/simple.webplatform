@@ -93,12 +93,10 @@ class PlayerServer {
                     }
                     else if (json_player.type =="expression") {
                         const id_player = getIdClient(ws)
-                    //    console.log('-> Sending expression for the player '+id_player+':')
                         controller.sendExpression(id_player, json_player.expr);
                     }
                     else if (json_player.type =="ask") {
                         const id_player = getIdClient(ws)
-                    //   console.log('-> Sending ask for the player '+id_player+':')
                         controller.sendAsk(json_player);
                     }
                     else if (json_player.type =="disconnect_properly") {
