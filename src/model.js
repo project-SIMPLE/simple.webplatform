@@ -82,7 +82,6 @@ class Model {
             in_game : false,
             date_connection : ""
         }
-        this.controller.notifyPlayerChange(id_player, this.json_players[id_player])
         this.controller.notifyMonitor()
     }
 
@@ -91,9 +90,9 @@ class Model {
         this.controller.notifyMonitor()
     }
 
-    setPlayerConnection(id_player, connected, date_connection) {
+    setPlayerConnection(id_player, connected) {
         this.json_players[id_player].connected = connected
-        this.json_players[id_player].date_connection = date_connection
+        this.json_players[id_player].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
         this.controller.notifyPlayerChange(id_player, this.json_players[id_player])
         this.controller.notifyMonitor()
     }

@@ -391,8 +391,7 @@ class ConnectorGamaServer {
                 }
             }
             catch (error) {
-                console.log("\x1b[31m")
-                console.log(error+" \x1b[0m");
+                console.log("\x1b[31m" + error +" \x1b[0m");
             }
         }
         gama_socket.addEventListener('close', (event) => {

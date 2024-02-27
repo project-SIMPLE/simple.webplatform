@@ -46,65 +46,72 @@ class PlayerServer {
 
         this.player_socket.on('connection', function connection(ws) {
             ws.on('message', function incoming(message) {
-                const json_player = JSON.parse(message)
-                if (controller.model.getJsonSettings().verbose) {
-                    console.log("Reception of this following message from the player " + getIdClient(ws));
-                    console.log(json_player);
-                }
-                if (json_player.type == "pong") {
-                    clearTimeout(pongTimeout1Attempt[getIdClient(ws)]);
-                    clearTimeout(pongTimeout2Attempt[getIdClient(ws)])
-                    setTimeout(() => {
-                        player_server.sendPing(getIdClient(ws))
-                    }, 5000);
-                }
-                if (json_player.type == "ping") {
-                    ws.send(JSON.stringify({
-                        "type": "pong",
-                        "id": json_player.id,
-                        "message": json_player.message
-                    }));
-                }
-                else if (json_player.type == "connection") {
-                    //Si le casque a déjà été connecté
-                    if (controller.model.getPlayerState(json_player.id) != undefined) {
-                        const index = player_socket_clients_id.indexOf(json_player.id)
-                        player_socket_clients[index] = ws
-                        controller.model.setPlayerConnection(json_player.id, true, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
-                        if (json_player.set_heartbeat != undefined && json_player.set_heartbeat){
-                            const id = json_player.id
-                            setTimeout(() => {player_server.sendPing(id)}, 4000)
-                        } 
-                        console.log('-> Reconnection of the player of id '+json_player.id);
+                try {
+                    const json_player = JSON.parse(message)
+                    if (controller.model.getJsonSettings().verbose) {
+                        console.log("Reception of this following message from the player " + getIdClient(ws));
+                        console.log(json_player);
                     }
-                    //Sinon
+                    else if (json_player.type == "pong") {
+                        clearTimeout(pongTimeout1Attempt[getIdClient(ws)]);
+                        clearTimeout(pongTimeout2Attempt[getIdClient(ws)])
+                        setTimeout(() => {
+                            player_server.sendPing(getIdClient(ws))
+                        }, 5000);
+                    }
+                    else if (json_player.type == "ping") {
+                        ws.send(JSON.stringify({
+                            "type": "pong",
+                            "id": json_player.id,
+                            "message": json_player.message
+                        }));
+                    }
+                    else if (json_player.type == "connection") {
+                        //Si le casque a déjà été connecté
+                        if (controller.model.getPlayerState(json_player.id) != undefined) {
+                            const index = player_socket_clients_id.indexOf(json_player.id)
+                            player_socket_clients[index] = ws
+                            controller.model.setPlayerConnection(json_player.id, true, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
+                            if (json_player.set_heartbeat != undefined && json_player.set_heartbeat){
+                                const id = json_player.id
+                                setTimeout(() => {player_server.sendPing(id)}, 4000)
+                            } 
+                            console.log('-> Reconnection of the player of id '+json_player.id);
+                        }
+                        //Sinon
+                        else {
+                            player_socket_clients.push(ws)
+                            player_socket_clients_id.push(json_player.id)
+                            controller.model.insertPlayer(json_player.id)
+                            controller.model.setPlayerConnection(json_player.id, true)
+                            if (json_player.set_heartbeat != undefined && json_player.set_heartbeat){
+                                const id = json_player.id
+                                setTimeout(() => {player_server.sendPing(id)}, 4000)
+                            }
+                            console.log('-> New connection of the player of id '+json_player.id);
+                        }
+                    }
+                    else if (json_player.type =="expression") {
+                        const id_player = getIdClient(ws)
+                    //    console.log('-> Sending expression for the player '+id_player+':')
+                        controller.sendExpression(id_player, json_player.expr);
+                    }
+                    else if (json_player.type =="ask") {
+                        const id_player = getIdClient(ws)
+                    //   console.log('-> Sending ask for the player '+id_player+':')
+                        controller.sendAsk(json_player);
+                    }
+                    else if (json_player.type =="disconnect_properly") {
+                        const id_player = getIdClient(ws)
+                        controller.removeInGamePlayer(id_player)
+                        ws.close()
+                    }
                     else {
-                        player_socket_clients.push(ws)
-                        player_socket_clients_id.push(json_player.id)
-                        controller.model.insertPlayer(json_player.id)
-                        controller.model.setPlayerConnection(json_player.id, true, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
-                        if (json_player.set_heartbeat != undefined && json_player.set_heartbeat){
-                            const id = json_player.id
-                            setTimeout(() => {player_server.sendPing(id)}, 4000)
-                        } 
-                        controller.notifyMonitor();
-                        console.log('-> New connection of the player of id '+json_player.id);
+                        console.log("\x1b[31m-> The last message received from " + getIdClient(ws) + " had an unknown type.\x1b[0m");
                     }
                 }
-                else if (json_player.type =="expression") {
-                    const id_player = getIdClient(ws)
-                //    console.log('-> Sending expression for the player '+id_player+':')
-                    controller.sendExpression(id_player, json_player.expr);
-                }
-                else if (json_player.type =="ask") {
-                    const id_player = getIdClient(ws)
-                 //   console.log('-> Sending ask for the player '+id_player+':')
-                    controller.sendAsk(json_player);
-                }
-                else if (json_player.type =="disconnect_properly") {
-                    const id_player = getIdClient(ws)
-                    controller.removeInGamePlayer(id_player)
-                    ws.close()
+                catch(exception) {
+                    console.log("\x1b[31m-> The last message received from " + getIdClient(ws) + " created an internal error.\x1b[0m");
                 }
             });
         
