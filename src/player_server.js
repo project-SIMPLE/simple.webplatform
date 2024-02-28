@@ -71,7 +71,7 @@ class PlayerServer {
                         if (controller.model.getPlayerState(json_player.id) != undefined) {
                             const index = player_socket_clients_id.indexOf(json_player.id)
                             player_socket_clients[index] = ws
-                            controller.model.setPlayerConnection(json_player.id, true, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
+                            controller.model.setPlayerConnection(json_player.id, true)
                             if (json_player.set_heartbeat != undefined && json_player.set_heartbeat){
                                 const id = json_player.id
                                 setTimeout(() => {player_server.sendPing(id)}, 4000)

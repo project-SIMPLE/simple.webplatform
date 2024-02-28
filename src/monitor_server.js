@@ -2,7 +2,7 @@
 const WebSocket = require('ws');
 
 // Default values
-const DEFAULT_MONITOR_WS_PORT = 80;
+const DEFAULT_MONITOR_WS_PORT = 8001;
 
 var monitor_socket_clients = []
 
@@ -26,7 +26,7 @@ class MonitorServer {
                 console.log(`\x1b[31m-> The port ${monitor_ws_port} is already in use. Choose a different port in settings.json.\x1b[0m`);
             }
             else {
-                console.log(`\x1b[31m-> An error occured for the player server, code: ${err.code}\x1b[0m`)
+                console.log(`\x1b[31m-> An error occured for the monitor server, code: ${err.code}\x1b[0m`)
             }
         })
 
@@ -51,9 +51,9 @@ class MonitorServer {
                     else if (type == "clean_all") controller.cleanAll()
                     else console.log("\x1b[31m-> The last message received from the monitor had an unknown type.\x1b[0m");
                 }
-            catch (exception) {
-                console.log("\x1b[31m-> The last message received from the monitor created an internal error.\x1b[0m");
-            }
+                catch (exception) {
+                    console.log("\x1b[31m-> The last message received from the monitor created an internal error.\x1b[0m");
+                }
             })
         });
     }
