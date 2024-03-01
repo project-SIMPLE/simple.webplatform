@@ -52,7 +52,7 @@ class PlayerServer {
                         console.log("Reception of this following message from the player " + getIdClient(ws));
                         console.log(json_player);
                     }
-                    else if (json_player.type == "pong") {
+                    if (json_player.type == "pong") {
                         clearTimeout(pongTimeout1Attempt[getIdClient(ws)]);
                         clearTimeout(pongTimeout2Attempt[getIdClient(ws)])
                         setTimeout(() => {
@@ -73,8 +73,8 @@ class PlayerServer {
                             player_socket_clients[index] = ws
                             controller.model.setPlayerConnection(json_player.id, true)
                             if (json_player.set_heartbeat != undefined && json_player.set_heartbeat){
-                                const id = json_player.id
-                                setTimeout(() => {player_server.sendPing(id)}, 4000)
+                                //const id = json_player.id
+                                //setTimeout(() => {player_server.sendPing(id)}, 4000)
                             } 
                             console.log('-> Reconnection of the player of id '+json_player.id);
                         }
@@ -85,8 +85,8 @@ class PlayerServer {
                             controller.model.insertPlayer(json_player.id)
                             controller.model.setPlayerConnection(json_player.id, true)
                             if (json_player.set_heartbeat != undefined && json_player.set_heartbeat){
-                                const id = json_player.id
-                                setTimeout(() => {player_server.sendPing(id)}, 4000)
+                                //const id = json_player.id
+                                //setTimeout(() => {player_server.sendPing(id)}, 4000)
                             }
                             console.log('-> New connection of the player of id '+json_player.id);
                         }
