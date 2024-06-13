@@ -73,8 +73,8 @@ class PlayerServer {
                             player_socket_clients[index] = ws
                             controller.model.setPlayerConnection(json_player.id, true)
                             if (json_player.set_heartbeat != undefined && json_player.set_heartbeat){
-                                //const id = json_player.id
-                                //setTimeout(() => {player_server.sendPing(id)}, 4000)
+                                const id = json_player.id
+                                setTimeout(() => {player_server.sendPing(id)}, 4000)
                             } 
                             console.log('-> Reconnection of the player of id '+json_player.id);
                         }
@@ -85,8 +85,8 @@ class PlayerServer {
                             controller.model.insertPlayer(json_player.id)
                             controller.model.setPlayerConnection(json_player.id, true)
                             if (json_player.set_heartbeat != undefined && json_player.set_heartbeat){
-                                //const id = json_player.id
-                                //setTimeout(() => {player_server.sendPing(id)}, 4000)
+                                const id = json_player.id
+                                setTimeout(() => {player_server.sendPing(id)}, 4000)
                             }
                             console.log('-> New connection of the player of id '+json_player.id);
                         }
