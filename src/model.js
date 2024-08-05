@@ -11,7 +11,7 @@ class Model {
 
     constructor(controller, settingsPath) {
         this.controller = controller
-        this.json_gama = {  
+        this.jsonGama = {
             connected:false,
             experiment_state:"NONE",
             loading:false,
@@ -19,9 +19,9 @@ class Model {
             experiment_id:"",
             experiment_name:""
         }
-        this.json_players = {}
-        this.json_settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
-        this.modelFilePath = path.join(path.dirname(settingsPath),this.json_settings.model_file_path);
+        this.jsonPlayers = {}
+        this.jsonSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+        this.modelFilePath = path.join(path.dirname(settingsPath),this.jsonSettings.model_file_path);
     }
 
     // Getter all
@@ -29,58 +29,58 @@ class Model {
     getAll() {
         return {
             type:"json_state",
-            gama: this.json_gama,
-            player : this.json_players
+            gama: this.jsonGama,
+            player : this.jsonPlayers
         }
     }
 
     // GAMA
 
     getGama() {
-        return this.json_gama
+        return this.jsonGama
     }
 
     setGamaConnection(connected) {
-        this.json_gama.connected = connected
+        this.jsonGama.connected = connected
         this.controller.notifyMonitor()
     }
 
-    setGamaExperimentState(experiment_state) {
-        this.json_gama.experiment_state = experiment_state
+    setGamaExperimentState(experimentState) {
+        this.jsonGama.experiment_state = experimentState
         this.controller.notifyMonitor()
     }
 
     setGamaLoading(loading) {
-        this.json_gama.loading = loading
+        this.jsonGama.loading = loading
         this.controller.notifyMonitor()
     }
 
-    setGamaContentError(content_error) {
-        this.json_gama.content_error = content_error
+    setGamaContentError(contentError) {
+        this.jsonGama.content_error = contentError
         this.controller.notifyMonitor()
     }
 
-    setGamaExperimentId(experiment_id) {
-        this.json_gama.experiment_id = experiment_id
+    setGamaExperimentId(experimentId) {
+        this.jsonGama.experiment_id = experimentId
     }
 
-    setGamaExperimentName(experiment_name) {
-        this.json_gama.experiment_name = experiment_name
+    setGamaExperimentName(experimentName) {
+        this.jsonGama.experiment_name = experimentName
         this.controller.notifyMonitor()
     }
 
     // Players
 
     getAllPlayers() {
-        return this.json_players
+        return this.jsonPlayers
     }
 
-    getPlayerState(id_player) {
-        return this.json_players[id_player]
+    getPlayerState(idPlayer) {
+        return this.jsonPlayers[idPlayer]
     }
 
-    insertPlayer(id_player) {
-        this.json_players[id_player] = {
+    insertPlayer(idPlayer) {
+        this.jsonPlayers[idPlayer] = {
             connected : false,
             in_game : false,
             date_connection : ""
@@ -88,29 +88,29 @@ class Model {
         this.controller.notifyMonitor()
     }
 
-    withdrawPlayer(id_player) {
-        this.json_players[id_player] = undefined
+    withdrawPlayer(idPlayer) {
+        this.jsonPlayers[idPlayer] = undefined
         this.controller.notifyMonitor()
     }
 
-    setPlayerConnection(id_player, connected) {
-        this.json_players[id_player].connected = connected
-        this.json_players[id_player].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
-        this.controller.notifyPlayerChange(id_player, this.json_players[id_player])
+    setPlayerConnection(idPlayer, connected) {
+        this.jsonPlayers[idPlayer].connected = connected
+        this.jsonPlayers[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
+        this.controller.notifyPlayerChange(idPlayer, this.jsonPlayers[idPlayer])
         this.controller.notifyMonitor()
     }
 
-    setPlayerInGame(id_player, in_game) {
-        this.json_players[id_player].in_game = in_game
-        this.controller.notifyPlayerChange(id_player, this.json_players[id_player])
+    setPlayerInGame(idPlayer, inGame) {
+        this.jsonPlayers[idPlayer].in_game = inGame
+        this.controller.notifyPlayerChange(idPlayer, this.jsonPlayers[idPlayer])
         this.controller.notifyMonitor()
     }
 
     setRemoveInGameEveryPlayers() {
-        for (var id_player in this.json_players) {
-            if (this.json_players[id_player] != undefined) {
-                this.json_players[id_player].in_game = false
-                this.controller.notifyPlayerChange(id_player, this.json_players[id_player])
+        for (let idPlayer in this.jsonPlayers) {
+            if (this.jsonPlayers[idPlayer] !== undefined) {
+                this.jsonPlayers[idPlayer].in_game = false
+                this.controller.notifyPlayerChange(idPlayer, this.jsonPlayers[idPlayer])
             }
         }
         this.controller.notifyMonitor()
@@ -123,24 +123,17 @@ class Model {
     }
 
     getJsonSettings() {
-        return this.json_settings
+        return this.jsonSettings
     }
 
     /**
      * Changes the json_settings
-     * @param {JSON} json_settings - The new json
+     * @param {JSON} jsonSettings - The new json
      */
-    setJsonSettings(json_settings){
-        this.json_settings = json_settings
-        fs.writeFileSync('settings.json', JSON.stringify(json_settings,null, 2), 'utf-8')
+    setJsonSettings(jsonSettings){
+        this.jsonSettings = jsonSettings
+        fs.writeFileSync('settings.json', JSON.stringify(jsonSettings,null, 2), 'utf-8')
         this.controller.restart()
-    }
-
-    /**
-     * Sends the json_settings to the monitor
-     */
-    sendJsonSettings() {
-        this.monitor_server.sendMonitorJsonSettings();
     }
 }
 
