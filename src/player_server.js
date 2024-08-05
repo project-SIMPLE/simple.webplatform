@@ -6,9 +6,6 @@ const { useVerbose } = require('../index.js');
 const player_socket_clients = []
 const player_socket_clients_id = []
 
-var pongTimeout1Attempt = {};
-var pongTimeout2Attempt = {};
-
 function getIdClient(ws) {
     const index = player_socket_clients.indexOf(ws)
     return player_socket_clients_id[index]
@@ -32,6 +29,10 @@ class PlayerServer {
         this.playerSocket = new WebSocket.Server({ port: process.env.HEADSET_WS_PORT });
 
         this.playerSocket.on('connection', (ws) => {
+
+            // Heartbeat is alive
+            ws.isAlive = true;
+
             ws.on('message', (message) => {
                 try {
                     const jsonPlayer = JSON.parse(message)
@@ -42,18 +43,13 @@ class PlayerServer {
                     }
                     switch (type){
                         case "pong":
-                            clearTimeout(pongTimeout1Attempt[getIdClient(ws)]);
-                            clearTimeout(pongTimeout2Attempt[getIdClient(ws)])
-                            setTimeout(() => {
-                                this.sendPing(getIdClient(ws))
-                            }, 5000);
+                            socket.isAlive = true;
                             break;
 
                         case "ping":
                             ws.send(JSON.stringify({
                                 "type": "pong",
-                                "id": jsonPlayer.id,
-                                "message": jsonPlayer.message
+                                "id": jsonPlayer.id
                             }));
                             break;
 
@@ -63,10 +59,6 @@ class PlayerServer {
                                 const index = player_socket_clients_id.indexOf(jsonPlayer.id)
                                 player_socket_clients[index] = ws
                                 this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(jsonPlayer.id, true)
-                                if (jsonPlayer.set_heartbeat !== undefined && jsonPlayer.set_heartbeat){
-                                    const id = jsonPlayer.id
-                                    setTimeout(() => {player_server.sendPing(id)}, 4000)
-                                }
                                 console.log('-> Reconnection of the player of id '+jsonPlayer.id);
                             }
                             // First connection of the headset
@@ -75,10 +67,6 @@ class PlayerServer {
                                 player_socket_clients_id.push(jsonPlayer.id)
                                 this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].insertPlayer(jsonPlayer.id)
                                 this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(jsonPlayer.id, true)
-                                if (jsonPlayer.set_heartbeat !== undefined && jsonPlayer.set_heartbeat){
-                                    const id = jsonPlayer.id
-                                    setTimeout(() => {player_server.sendPing(id)}, 4000)
-                                }
                                 console.log('-> New connection of the player of id '+jsonPlayer.id);
                             }
                             break;
@@ -133,6 +121,26 @@ class PlayerServer {
                 console.error(err)
             }
         })
+
+        // Enable heartbeat timeout every 5 seconds
+        this.pingInterval = setInterval(this.sendHeartbeat.bind(this), 5000);
+    }
+
+    /**
+     * Automatically send Heartbeat ping message to every player's open websocket
+     */
+    sendHeartbeat() {
+        this.playerSocket.clients.forEach((socket) => {
+            if (socket.isAlive === false) {
+                console.warn('Terminating dead socket from player '+ getWsClient(socket));
+                return socket.terminate();
+            }
+
+            // Reset heartbeat and re-send a ping message
+            socket.isAlive = false;
+            socket.ping();
+            if (useVerbose) console.log("Sending ping to "+ getWsClient(socket));
+        });
     }
 
     /**
@@ -163,33 +171,6 @@ class PlayerServer {
             console.error("\x1b[31m-> The following message hasn't the correct format:\x1b[0m");
             console.error(jsonOutput);
         }
-    }
-
-    /**
-     * Send ping messages for Heartbeat
-     * @param {int} idPlayer - The id of the player that needs heartbeat
-     */
-    sendPing(idPlayer) {
-        const ws = getWsClient(idPlayer)
-        try {
-            if (useVerbose) console.log("Sending ping to "+idPlayer);
-            ws.send("{\"type\":\"ping\"}");
-            pongTimeout1Attempt[idPlayer] = setTimeout(() => {
-                if (useVerbose) console.log("Sending ping to "+idPlayer);
-                ws.send("{\"type\":\"ping\"}");
-            }, 3000);
-            pongTimeout2Attempt[idPlayer] = setTimeout(() => {
-                if (ws.readyState === WebSocket.OPEN) {
-                    ws.terminate();
-                    console.log('\x1b[31m-> The connection with player '+idPlayer+" has been interrupted due to pong non-response\x1b[0m");
-                }
-            }, 6000);
-        }
-        catch (error) {
-            console.error("\x1b[31m-> Error when sending ping message to "+idPlayer+"\x1b[0m");
-            console.error(error);
-        }
-        
     }
 
     /**
