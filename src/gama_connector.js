@@ -1,6 +1,8 @@
 //Imports
 const WebSocket = require('ws');
 
+const { useVerbose } = require('../index.js');
+
 //Global variables about the state of the connector. This is only for internal purposes.
 var gama_socket
 var index_messages;
@@ -110,7 +112,7 @@ class ConnectorGamaServer {
                 //console.log("--> Sending message " + index_messages)
                 if (typeof list_messages[index_messages] == "function") {
                     gama_socket.send(JSON.stringify(list_messages[index_messages]()))
-                    if (process.env.VERBOSE) {
+                    if (useVerbose) {
                         if (list_messages[index_messages]().expr != undefined) 
                             console.log("Expression sent to Gama Server: "+'\''+list_messages[index_messages]().expr+'\'' +" Waiting for the answer (if any)...");
                         else console.log("Message sent to Gama-Server: type "+list_messages[index_messages]().type+ ". Waiting for the answer (if any)...");
@@ -311,7 +313,7 @@ class ConnectorGamaServer {
         do_sending = true;
         continue_sending = true;
         function_to_call = () => {
-            if (process.env.VERBOSE) {
+            if (useVerbose) {
                 console.log("-> The ask: "+json.action+" was sent successfully");
             }
         }
@@ -337,13 +339,13 @@ class ConnectorGamaServer {
         gama_socket.onmessage = function(event) {
             try {
                 const message = JSON.parse(event.data)
-                if (process.env.VERBOSE) {
+                if (useVerbose) {
                     console.log("Message received from Gama:");
                     console.log(message)
                 }
               
                 if (message.type == "SimulationStatus") {
-                    if (process.env.VERBOSE) console.log("Message received from Gama Server: SimulationStatus = "+message.content);
+                    if (useVerbose) console.log("Message received from Gama Server: SimulationStatus = "+message.content);
                  //   console.log(message);
                     controller.model.setGamaExperimentId(message.exp_id)
                     if (['NONE','NOTREADY'].includes(message.content) && ['RUNNING','PAUSED','NOTREADY'].includes(controller.model.getGama().experiment_state)) {
@@ -362,7 +364,7 @@ class ConnectorGamaServer {
                     }
                 }
                 if (message.type == "CommandExecutedSuccessfully") {
-                    if (process.env.VERBOSE) {
+                    if (useVerbose) {
                         console.log("\x1b[32mMessage received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ (message.command.expr!= undefined ? '\''+message.command.expr+'\'' : 'command') + '\x1b[0m');
                     }
                     else if(message.command.expr != undefined && (message.command.expr.includes('create_player') ||message.command.expr.includes('remove_player'))) {

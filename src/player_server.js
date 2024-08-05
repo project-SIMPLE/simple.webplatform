@@ -1,6 +1,8 @@
 //Imports
 const WebSocket = require('ws');
 
+const { useVerbose } = require('../index.js');
+
 const player_socket_clients = []
 const player_socket_clients_id = []
 
@@ -45,7 +47,7 @@ class PlayerServer {
             ws.on('message', function incoming(message) {
                 try {
                     const json_player = JSON.parse(message)
-                    if (process.env.VERBOSE) {
+                    if (useVerbose) {
                         console.log("Reception of this following message from the player " + getIdClient(ws));
                         console.log(json_player);
                     }
@@ -165,10 +167,10 @@ class PlayerServer {
     sendPing(id_player) {
         const ws = getWsClient(id_player)
         try {
-            if (this.process.env.VERBOSE) console.log("Sending ping to "+id_player);
+            if (useVerbose) console.log("Sending ping to "+id_player);
             ws.send("{\"type\":\"ping\"}");
             pongTimeout1Attempt[id_player] = setTimeout(() => {
-                if (this.process.env.VERBOSE) console.log("Sending ping to "+id_player);
+                if (useVerbose) console.log("Sending ping to "+id_player);
                 ws.send("{\"type\":\"ping\"}");
             }, 3000);
             pongTimeout2Attempt[id_player] = setTimeout(() => {
