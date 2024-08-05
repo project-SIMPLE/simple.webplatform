@@ -67,10 +67,10 @@ class PlayerServer {
                     }
                     else if (json_player.type == "connection") {
                         //Si le casque a déjà été connecté
-                        if (controller.model.getPlayerState(json_player.id) != undefined) {
+                        if (this.controller.ModelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(json_player.id) != undefined) {
                             const index = player_socket_clients_id.indexOf(json_player.id)
                             player_socket_clients[index] = ws
-                            controller.model.setPlayerConnection(json_player.id, true)
+                            this.controller.ModelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(json_player.id, true)
                             if (json_player.set_heartbeat != undefined && json_player.set_heartbeat){
                                 const id = json_player.id
                                 setTimeout(() => {player_server.sendPing(id)}, 4000)
@@ -81,8 +81,8 @@ class PlayerServer {
                         else {
                             player_socket_clients.push(ws)
                             player_socket_clients_id.push(json_player.id)
-                            controller.model.insertPlayer(json_player.id)
-                            controller.model.setPlayerConnection(json_player.id, true)
+                            this.controller.ModelManager.getModelList()[this.controller.choosedLearningPackageIndex].insertPlayer(json_player.id)
+                            this.controller.ModelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(json_player.id, true)
                             if (json_player.set_heartbeat != undefined && json_player.set_heartbeat){
                                 const id = json_player.id
                                 setTimeout(() => {player_server.sendPing(id)}, 4000)
@@ -114,15 +114,15 @@ class PlayerServer {
         
             ws.on('close', () => {
                 const id_player = getIdClient(ws)
-                if (controller.model.getPlayerState(id_player) != undefined) {
-                    controller.model.setPlayerConnection(id_player, false, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
+                if (this.controller.ModelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(id_player) != undefined) {
+                    this.controller.ModelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(id_player, false, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
                     console.log("-> The player "+getIdClient(ws)+" disconnected");
                 }
             })
         
             ws.on('error', (error) => {
                 const id_player = getIdClient(ws)
-                controller.model.setPlayerConnection(json_player.id, false, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
+                this.controller.ModelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(json_player.id, false, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
                 console.log("-> The player "+getIdClient(ws)+" disconnected");
             });
         
@@ -210,12 +210,12 @@ class PlayerServer {
 
     cleanAll() {
         var to_remove = []
-        for(var id_player in this.controller.model.getAllPlayers()) {
-            if (this.controller.model.getPlayerState(id_player) != undefined && !this.controller.model.getPlayerState(id_player).connected && !this.controller.model.getPlayerState(id_player).in_game) {
+        for(var id_player in this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getAllPlayers()) {
+            if (this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(id_player) != undefined && !this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(id_player).connected && !this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(id_player).in_game) {
                     const index = player_socket_clients_id.indexOf(id_player)
                     player_socket_clients_id.splice(index,1)
                     player_socket_clients.splice(index,1)
-                    this.controller.model.withdrawPlayer(id_player)
+                    this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].withdrawPlayer(id_player)
                 }
         }
     }

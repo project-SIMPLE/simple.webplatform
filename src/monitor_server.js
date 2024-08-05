@@ -60,7 +60,7 @@ class MonitorServer {
      */
     sendMonitorJsonState() {
         if (monitor_socket_clients != undefined) monitor_socket_clients.forEach((client) => {
-            client.send(JSON.stringify(this.controller.model.getAll()));
+            client.send(JSON.stringify(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getAll()));
         })
     }
 
@@ -69,7 +69,7 @@ class MonitorServer {
      */
     sendMonitorJsonSettings() {
         if (monitor_socket_clients != undefined) monitor_socket_clients.forEach((client) => {
-            client.send(JSON.stringify(this.controller.model.getJsonSettings()));
+            client.send(JSON.stringify(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getJsonSettings()));
         })
     }
     

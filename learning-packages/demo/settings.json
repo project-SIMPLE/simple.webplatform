@@ -1,0 +1,10 @@
+{
+  "type": "json_settings",
+  "name": "LinkToUnity",
+  "splashscreen": "./path/to/file.jpg",
+  "model_file_path": "./Models/Demo/Simple Player Game/DemoModelVR.gaml",
+  "experiment_name": "vr_xp",
+  "player_html_file": "simple_example.html",
+  "type_model_file_path": "relative",
+  "player_web_interface": true
+}

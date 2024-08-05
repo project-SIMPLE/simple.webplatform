@@ -13,6 +13,8 @@ process.env.MONITOR_WS_PORT = process.env.MONITOR_WS_PORT !== undefined ? proces
 process.env.HTTP_PORT = process.env.HTTP_PORT !== undefined ? process.env.HTTP_PORT : 8000;
 process.env.APP_IP_ADDRESS = process.env.APP_IP_ADDRESS !== undefined ? process.env.APP_IP_ADDRESS : localhost;
 
+process.env.LEARNING_PACKAGE_PATH = process.env.LEARNING_PACKAGE_PATH !== undefined ? process.env.LEARNING_PACKAGE_PATH : "./learning-packages";
+
 // Make verbose parameter a boolean
 const useVerbose = process.env.VERBOSE !== undefined ? process.env.VERBOSE && ['true', '1', 'yes'].includes(process.env.VERBOSE.toLowerCase()) : false;
 

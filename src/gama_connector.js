@@ -139,14 +139,14 @@ class ConnectorGamaServer {
      * Asks Gama to launch the experiment
      */
     launchExperiment() {
-        if (this.controller.model.getGama().connected == true && this.controller.model.getGama().experiment_state == 'NONE') {
-            list_messages = [this.load_experiment];
+        if (this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().connected == true && this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().experiment_state == 'NONE') {
+            list_messages = [this.loadExperiment];
             index_messages = 0;
             do_sending = true;
             continue_sending = true;
-            this.controller.model.setGamaLoading(true)
+            this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaLoading(true)
             function_to_call = () => {
-                this.controller.model.setGamaLoading(false)
+                this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaLoading(false)
             }
             this.sendMessages()
         }
@@ -156,15 +156,15 @@ class ConnectorGamaServer {
      * Asks Gama to stop the experiment
      */
     stopExperiment() {
-        if (['RUNNING','PAUSED','NOTREADY'].includes(this.controller.model.getGama().experiment_state)) {
-            list_messages = [this.stop_experiment];
+        if (['RUNNING','PAUSED','NOTREADY'].includes(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().experiment_state)) {
+            list_messages = [this.controllGamaExperiment("stop")];
             index_messages = 0;
             do_sending = true;
             continue_sending = true;
-            this.controller.model.setGamaLoading(true)
+            this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaLoading(true)
             function_to_call = () => {
-                this.controller.model.setGamaLoading(false)
-                this.controller.model.setRemoveInGameEveryPlayers()
+                this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaLoading(false)
+                this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setRemoveInGameEveryPlayers()
             }
             this.sendMessages()
         }
@@ -174,14 +174,14 @@ class ConnectorGamaServer {
      * Asks Gama to pause the experiment
      */
     pauseExperiment() {
-        if (['RUNNING'].includes(this.controller.model.getGama().experiment_state)) {
-            list_messages = [this.pause_experiment];
+        if (['RUNNING'].includes(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().experiment_state)) {
+            list_messages = [this.controllGamaExperiment("pause")];
             index_messages = 0;
             do_sending = true;
             continue_sending = true;
-            this.controller.model.setGamaLoading(true)
+            this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaLoading(true)
             function_to_call = () => {
-                this.controller.model.setGamaLoading(false)
+                this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaLoading(false)
             }
             this.sendMessages()
         }
@@ -191,14 +191,14 @@ class ConnectorGamaServer {
      * Asks Gama to play the experiment
      */
     resumeExperiment() {
-        if (this.controller.model.getGama().experiment_state == 'PAUSED') {
-            list_messages = [this.play_experiment];
+        if (this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().experiment_state == 'PAUSED') {
+            list_messages = [this.controllGamaExperiment("play")];
             index_messages = 0;
             do_sending = true;
             continue_sending = true;
-            this.controller.model.setGamaLoading(true)
+            this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaLoading(true)
             function_to_call = () => {
-                this.controller.model.setGamaLoading(false)
+                this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaLoading(false)
             }
             this.sendMessages()
         }
@@ -211,16 +211,16 @@ class ConnectorGamaServer {
      */
 
     addInGamePlayer(id_player) {
-        if (['NONE',"NOTREADY"].includes(this.controller.model.getGama().experiment_state)) return
-        if (this.controller.model.getPlayerState(id_player) != undefined && this.controller.model.getPlayerState(id_player).in_game) return
+        if (['NONE',"NOTREADY"].includes(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().experiment_state)) return
+        if (this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(id_player) != undefined && this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(id_player).in_game) return
         current_id_player = id_player
-        list_messages = [this.add_player];
+        list_messages = [this.togglePlayer("add")];
         index_messages = 0;
         do_sending = true;
         continue_sending = true;
         function_to_call = () => {
             console.log("-> The Player "+id_player+" has been added to Gama");
-            this.controller.model.setPlayerInGame(id_player, true)
+            this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerInGame(id_player, true)
         }
         this.sendMessages()
     }
@@ -232,16 +232,16 @@ class ConnectorGamaServer {
      */
 
     removeInGamePlayer(id_player) {
-        if (['NONE',"NOTREADY"].includes(this.controller.model.getGama().experiment_state)) return
-        if (this.controller.model.getPlayerState(id_player) != undefined && !this.controller.model.getPlayerState(id_player).in_game) return
+        if (['NONE',"NOTREADY"].includes(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().experiment_state)) return
+        if (this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(id_player) != undefined && !this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(id_player).in_game) return
         current_id_player = id_player
-        list_messages = [this.remove_player];
+        list_messages = [this.togglePlayer("remove")];
         index_messages = 0;
         do_sending = true;
         continue_sending = true;
         function_to_call = () => {
             console.log("-> The Player: "+id_player+" has been removed from Gama");
-            this.controller.model.setPlayerInGame(id_player, false)
+            this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerInGame(id_player, false)
         }
         this.sendMessages()
     }
@@ -252,8 +252,8 @@ class ConnectorGamaServer {
 
     addInGameEveryPlayers() {
         var index = 0
-        for(var id_player in this.controller.model.getAllPlayers()) {
-            if (this.controller.model.getPlayerState(id_player) != undefined && this.controller.model.getPlayerState(id_player).connected && !this.controller.model.getPlayerState(id_player).in_game) {
+        for(var id_player in this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getAllPlayers()) {
+            if (this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(id_player) != undefined && this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(id_player).connected && !this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(id_player).in_game) {
                 const id_player_copy = id_player
                 setTimeout(() => {this.addInGamePlayer(id_player_copy)},300*index);
                 index = index + 1
@@ -265,10 +265,10 @@ class ConnectorGamaServer {
      * Removes all the players which are authenticated
      */
     removeInGameEveryPlayers() {
-        if (["RUNNING",'PAUSED'].includes(this.controller.model.getGama().experiment_state)){
+        if (["RUNNING",'PAUSED'].includes(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().experiment_state)){
             var index = 0
-            for(var id_player in this.controller.model.getAllPlayers()) {
-                if (this.controller.model.getPlayerState(id_player) != undefined && this.controller.model.getPlayerState(id_player).in_game) {
+            for(var id_player in this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getAllPlayers()) {
+                if (this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(id_player) != undefined && this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(id_player).in_game) {
                     const id_player_copy = id_player
                     setTimeout(() => {this.removeInGamePlayer(id_player_copy)},300*index);
                     index = index + 1
@@ -276,7 +276,7 @@ class ConnectorGamaServer {
             }
         }
         else {
-            this.controller.model.setRemoveInGameEveryPlayers();
+            this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setRemoveInGameEveryPlayers();
         }
     }
 
@@ -288,7 +288,7 @@ class ConnectorGamaServer {
      */
 
     sendExpression(id_player, expr) {
-        if (['NONE',"NOTREADY"].includes(this.controller.model.getGama().experiment_state)) return
+        if (['NONE',"NOTREADY"].includes(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().experiment_state)) return
         expr = expr.replace('$id', "\"" + id_player + "\"")
         current_expression = expr
         list_messages = [this.send_expression];
@@ -307,7 +307,7 @@ class ConnectorGamaServer {
      * @returns 
      */
     sendAsk(json) {
-        if (['NONE',"NOTREADY"].includes(this.controller.model.getGama().experiment_state)) return
+        if (['NONE',"NOTREADY"].includes(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().experiment_state)) return
         list_messages = [json];
         index_messages = 0;
         do_sending = true;
@@ -325,18 +325,17 @@ class ConnectorGamaServer {
      * @returns 
      */
     connectGama() {
-        this.controller.model.setGamaLoading(true)
-        const controller = this.controller;
+        this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaLoading(true)
         const sendMessages = this.sendMessages;
         gama_socket = new WebSocket("ws://"+process.env.GAMA_IP_ADDRESS+":"+this.gama_ws_port);
-    
-        gama_socket.onopen = function() {
+
+        gama_socket.onopen = ()=> {
             console.log("-> Connected to Gama Server");
-            controller.model.setGamaConnection(true)
-            controller.model.setGamaExperimentState('NONE')
+            this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaConnection(true)
+            this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaExperimentState('NONE')
         };
     
-        gama_socket.onmessage = function(event) {
+        gama_socket.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data)
                 if (useVerbose) {
@@ -347,12 +346,12 @@ class ConnectorGamaServer {
                 if (message.type == "SimulationStatus") {
                     if (useVerbose) console.log("Message received from Gama Server: SimulationStatus = "+message.content);
                  //   console.log(message);
-                    controller.model.setGamaExperimentId(message.exp_id)
-                    if (['NONE','NOTREADY'].includes(message.content) && ['RUNNING','PAUSED','NOTREADY'].includes(controller.model.getGama().experiment_state)) {
-                        controller.model.setRemoveInGameEveryPlayers();
+                    this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaExperimentId(message.exp_id)
+                    if (['NONE','NOTREADY'].includes(message.content) && ['RUNNING','PAUSED','NOTREADY'].includes(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().experiment_state)) {
+                        this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setRemoveInGameEveryPlayers();
                         
                     }
-                    controller.model.setGamaExperimentState(message.content)
+                    this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaExperimentState(message.content)
                 }
                 if (message.type == "SimulationOutput") {
                     try {
@@ -370,8 +369,8 @@ class ConnectorGamaServer {
                     else if(message.command.expr != undefined && (message.command.expr.includes('create_player') ||message.command.expr.includes('remove_player'))) {
                         console.log("\x1b[32mMessage received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ (message.command.expr!= undefined ? '\''+message.command.expr+'\'' : 'command') + '\x1b[0m');
                     }
-                    controller.model.setGamaContentError('')
-                    if (message.command != undefined && message.command.type == "load") controller.model.setGamaExperimentName(message.content)
+                    this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaContentError('')
+                    if (message.command != undefined && message.command.type == "load") this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaExperimentName(message.content)
                     continue_sending = true
                     setTimeout(sendMessages,100)
                     try {
@@ -384,8 +383,8 @@ class ConnectorGamaServer {
                 if (gama_error_messages.includes(message.type)) {
                     console.log("Error message received from Gama Server:");
                     console.log(message);
-                    controller.model.setGamaContentError(message)
-                    this.controller.model.setGamaLoading(false)
+                    this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaContentError(message)
+                    this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaLoading(false)
                     throw "A problem appeared in the last message. Please check the response from the Server"
                 }
             }
@@ -394,10 +393,10 @@ class ConnectorGamaServer {
             }
         }
         gama_socket.addEventListener('close', (event) => {
-            controller.model.setGamaConnection(false)
-            controller.model.setGamaExperimentState("NONE")
-            controller.model.setGamaLoading(false)
-            controller.model.setRemoveInGameEveryPlayers()
+            this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaConnection(false)
+            this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaExperimentState("NONE")
+            this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaLoading(false)
+            this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setRemoveInGameEveryPlayers()
             if (event.wasClean) {
                 console.log('-> The connection with Gama Server was properly be closed');
             } else {
@@ -408,7 +407,7 @@ class ConnectorGamaServer {
             console.log("-> Failed to connect with Gama Server");
             
         });
-        controller.model.setGamaLoading(false)
+        this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setGamaLoading(false)
         return gama_socket
     }
     close(){

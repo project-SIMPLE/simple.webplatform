@@ -1,13 +1,15 @@
 const fs = require('fs');
+const path = require('path');
 
 class Model {
 
     /**
      * Creates the model
      * @param {Controller} controller - The controller of the server project
+     * @param {string} settingsPath
      */
 
-    constructor(controller) {
+    constructor(controller, settingsPath) {
         this.controller = controller
         this.json_gama = {  
             connected:false,
@@ -18,7 +20,8 @@ class Model {
             experiment_name:""
         }
         this.json_players = {}
-        this.json_settings = JSON.parse(fs.readFileSync('settings.json', 'utf-8'));
+        this.json_settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+        this.modelFilePath = path.join(path.dirname(settingsPath),this.json_settings.model_file_path);
     }
 
     // Getter all
@@ -114,6 +117,10 @@ class Model {
     }
 
     //Settings
+
+    getModelFilePath() {
+        return this.modelFilePath;
+    }
 
     getJsonSettings() {
         return this.json_settings

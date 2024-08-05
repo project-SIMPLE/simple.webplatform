@@ -2,7 +2,7 @@ const ConnectorGamaServer = require('./gama_connector.js');
 const MonitorServer = require('./monitor_server.js');
 const PlayerServer = require('./player_server.js');
 const App = require('./app.js');
-const Model = require('./model.js')
+const ModelManager = require('./model-manager.js')
 
 
 /**
@@ -13,7 +13,9 @@ class Controller {
      * Instanciates all the components of the server
      */
     constructor() {
-        this.model = new Model(this)
+        this.choosedLearningPackageIndex = 0;
+
+        this.modelManager = new ModelManager(this);
         this.monitor_server = new MonitorServer(this);
         this.player_server = new PlayerServer(this);
         this.app = new App(this);

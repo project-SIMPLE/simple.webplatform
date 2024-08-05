@@ -33,8 +33,8 @@ class App {
         });
         
         this.app.get('/player', (req, res) => {
-          if (this.controller.model.getJsonSettings().player_web_interface){
-            res.sendFile(this.controller.model.getJsonSettings().player_html_file, { root: 'views/player' });
+          if (this.controller.modelManager.getModelList()[0].getJsonSettings().player_web_interface){
+            res.sendFile(this.controller.modelManager.getModelList()[0].getJsonSettings().player_html_file, { root: 'views/player' });
           }
           else {
             res.status(404).sendFile('404_player.html', { root: 'views/public' });
