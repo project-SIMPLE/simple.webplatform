@@ -49,7 +49,8 @@ class MonitorServer {
                     else console.log("\x1b[31m-> The last message received from the monitor had an unknown type.\x1b[0m");
                 }
                 catch (exception) {
-                    console.log("\x1b[31m-> The last message received from the monitor created an internal error.\x1b[0m");
+                    console.error("\x1b[31m-> The last message received from the monitor created an internal error.\x1b[0m");
+                    console.error(exception);
                 }
             })
         });

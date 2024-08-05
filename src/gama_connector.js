@@ -13,7 +13,6 @@ var function_to_call;
 var current_id_player;
 var current_expression;
 
-var controller_copy;
 var model_file;
 var experiment_name
 
@@ -36,11 +35,11 @@ class ConnectorGamaServer {
      */
     constructor(controller) {
         this.controller = controller;
-        controller_copy = controller;
         this.gama_ws_port = process.env.GAMA_WS_PORT;
         this.gama_error_messages = gama_error_messages;
-        model_file = this.controller.model.getJsonSettings().type_model_file_path == "absolute" ? this.controller.model.getJsonSettings().model_file_path : process.cwd() + "/" + this.controller.model.getJsonSettings().model_file_path
-        experiment_name = this.controller.model.getJsonSettings().experiment_name;
+        model_file = this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getModelFilePath();
+
+        experiment_name = this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getJsonSettings().experiment_name;
         this.gama_socket = this.connectGama();
     }
 
@@ -50,53 +49,40 @@ class ConnectorGamaServer {
     
     //You can add here new protocol messages
 
-    load_experiment() {
+    loadExperiment() {
         return {
         "type": "load",
         "model": model_file,
         "experiment": experiment_name
         }
     }
-    play_experiment() {
-        return {
-            "type": "play",
-            "exp_id": controller_copy.model.getGama().experiment_id,
-        }
-    } 
-    stop_experiment() {
-        return  {
-            "type": "stop",
-            "exp_id": controller_copy.model.getGama().experiment_id,
-        }
-    }
-    pause_experiment() {
-        return {
-            "type": "pause",
-            "exp_id": controller_copy.model.getGama().experiment_id,
-        }
-    }
-    add_player() {
-        return  {
-            "type": "expression",
-            "content": "Add a new VR headset", 
-            "exp_id": controller_copy.model.getGama().experiment_id,
-            "expr": "do create_player(\""+current_id_player+"\");"
-        }
-    }
-    remove_player() {
-        return  {
-            "type": "expression",
-            "content": "Remove a VR ", 
-            "exp_id": controller_copy.model.getGama().experiment_id,
-            "expr": "do remove_player(\""+current_id_player+"\");"
-        }
-    }
+
+    /**
+     * Allow to control gama execution
+     * @param {String} type - Only accepted values : [stop, pause, play]
+     * @returns {{exp_id: (string|*), type}}
+     */
+    controllGamaExperiment = type => ({
+        "type": type,
+        "exp_id": this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().experiment_id,
+    });
+
+    /**
+     * Create or remove player from simulation
+     * @param {String} toggle - Only accepted values : [create, remove]
+     * @returns json
+     */
+    togglePlayer = toggle => ({
+        "type": "expression",
+        "exp_id": this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().experiment_id,
+        "expr": `do ${toggle}_player("${current_id_player}");`
+    })
 
     send_expression() {
         return  {
             "type": "expression",
             "content": "Send an expression", 
-            "exp_id": controller_copy.model.getGama().experiment_id,
+            "exp_id": this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getGama().experiment_id,
             "expr": current_expression
         }
     }
