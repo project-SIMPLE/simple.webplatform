@@ -1,6 +1,5 @@
 //Imports
 const WebSocket = require('ws');
-const {useVerbose} = require("../index");
 
 /**
  * Creates a Websocket Server for handling monitor connections
@@ -13,16 +12,16 @@ class MonitorServer {
     constructor(controller) {
         this.controller = controller;
         const monitor_server = this
-        this.monitor_socket = new WebSocket.Server({ port: process.env.MONITOR_WS_PORT });
+        this.monitorSocket = new WebSocket.Server({ port: process.env.MONITOR_WS_PORT });
 
-        this.monitor_socket_clients = [];
+        this.monitorSocketClients = [];
 
         /*
             Handling middleware socket connections and message routing
          */
 
-        this.monitor_socket.on('connection', (socket) => {
-            this.monitor_socket_clients.push(socket)
+        this.monitorSocket.on('connection', (socket) => {
+            this.monitorSocketClients.push(socket)
             this.sendMonitorJsonState();
             this.sendMonitorJsonSettings();
             socket.on('message', (message) => {
@@ -74,7 +73,7 @@ class MonitorServer {
             });
         });
 
-        this.monitor_socket.on('error', (err) => {
+        this.monitorSocket.on('error', (err) => {
             if (err.code === 'EADDRINUSE') {
                 console.log(`\x1b[31m-> The port ${process.env.MONITOR_WS_PORT} is already in use. Choose a different port in settings.json.\x1b[0m`);
             }
@@ -88,7 +87,7 @@ class MonitorServer {
      * Sends the json_state to the monitor
      */
     sendMonitorJsonState() {
-        if (this.monitor_socket_clients !== undefined) this.monitor_socket_clients.forEach((client) => {
+        if (this.monitorSocketClients !== undefined) this.monitorSocketClients.forEach((client) => {
             client.send(JSON.stringify(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getAll()));
         })
     }
@@ -97,7 +96,7 @@ class MonitorServer {
      * Send the json_setting to the monitor
      */
     sendMonitorJsonSettings() {
-        if (this.monitor_socket_clients !== undefined) this.monitor_socket_clients.forEach((client) => {
+        if (this.monitorSocketClients !== undefined) this.monitorSocketClients.forEach((client) => {
             client.send(JSON.stringify(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getJsonSettings()));
         })
     }
@@ -106,7 +105,7 @@ class MonitorServer {
      * Closes the websocket server
      */
     close() {
-        this.monitor_socket.close()
+        this.monitorSocket.close()
     }
     
 }
