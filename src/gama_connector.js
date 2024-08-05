@@ -1,9 +1,6 @@
 //Imports
 const WebSocket = require('ws');
 
-// Default values
-const DEFAULT_GAMA_WS_PORT = 6868
-
 //Global variables about the state of the connector. This is only for internal purposes.
 var gama_socket
 var index_messages;
@@ -38,7 +35,7 @@ class ConnectorGamaServer {
     constructor(controller) {
         this.controller = controller;
         controller_copy = controller;
-        this.gama_ws_port = this.controller.model.getJsonSettings().gama_ws_port != undefined ? this.controller.model.getJsonSettings().gama_ws_port : DEFAULT_GAMA_WS_PORT;
+        this.gama_ws_port = process.env.GAMA_WS_PORT;
         this.gama_error_messages = gama_error_messages;
         model_file = this.controller.model.getJsonSettings().type_model_file_path == "absolute" ? this.controller.model.getJsonSettings().model_file_path : process.cwd() + "/" + this.controller.model.getJsonSettings().model_file_path
         experiment_name = this.controller.model.getJsonSettings().experiment_name;
@@ -113,7 +110,7 @@ class ConnectorGamaServer {
                 //console.log("--> Sending message " + index_messages)
                 if (typeof list_messages[index_messages] == "function") {
                     gama_socket.send(JSON.stringify(list_messages[index_messages]()))
-                    if (this.controller.model.getJsonSettings().verbose) {
+                    if (process.env.VERBOSE) {
                         if (list_messages[index_messages]().expr != undefined) 
                             console.log("Expression sent to Gama Server: "+'\''+list_messages[index_messages]().expr+'\'' +" Waiting for the answer (if any)...");
                         else console.log("Message sent to Gama-Server: type "+list_messages[index_messages]().type+ ". Waiting for the answer (if any)...");
@@ -314,7 +311,7 @@ class ConnectorGamaServer {
         do_sending = true;
         continue_sending = true;
         function_to_call = () => {
-            if (this.controller.model.getJsonSettings().verbose) {
+            if (process.env.VERBOSE) {
                 console.log("-> The ask: "+json.action+" was sent successfully");
             }
         }
@@ -329,7 +326,7 @@ class ConnectorGamaServer {
         this.controller.model.setGamaLoading(true)
         const controller = this.controller;
         const sendMessages = this.sendMessages;
-        gama_socket = new WebSocket("ws://"+this.controller.model.getJsonSettings().ip_address_gama_server+":"+this.gama_ws_port);
+        gama_socket = new WebSocket("ws://"+process.env.GAMA_IP_ADDRESS+":"+this.gama_ws_port);
     
         gama_socket.onopen = function() {
             console.log("-> Connected to Gama Server");
@@ -340,13 +337,13 @@ class ConnectorGamaServer {
         gama_socket.onmessage = function(event) {
             try {
                 const message = JSON.parse(event.data)
-                if (controller.model.getJsonSettings().verbose) {
+                if (process.env.VERBOSE) {
                     console.log("Message received from Gama:");
                     console.log(message)
                 }
               
                 if (message.type == "SimulationStatus") {
-                    if (controller.model.getJsonSettings().verbose) console.log("Message received from Gama Server: SimulationStatus = "+message.content);
+                    if (process.env.VERBOSE) console.log("Message received from Gama Server: SimulationStatus = "+message.content);
                  //   console.log(message);
                     controller.model.setGamaExperimentId(message.exp_id)
                     if (['NONE','NOTREADY'].includes(message.content) && ['RUNNING','PAUSED','NOTREADY'].includes(controller.model.getGama().experiment_state)) {
@@ -365,7 +362,7 @@ class ConnectorGamaServer {
                     }
                 }
                 if (message.type == "CommandExecutedSuccessfully") {
-                    if (controller.model.getJsonSettings().verbose) {
+                    if (process.env.VERBOSE) {
                         console.log("\x1b[32mMessage received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ (message.command.expr!= undefined ? '\''+message.command.expr+'\'' : 'command') + '\x1b[0m');
                     }
                     else if(message.command.expr != undefined && (message.command.expr.includes('create_player') ||message.command.expr.includes('remove_player'))) {

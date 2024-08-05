@@ -1,9 +1,6 @@
 //Imports
 const WebSocket = require('ws');
 
-// Default values
-const DEFAULT_PLAYER_WS_PORT = 8080;
-
 const player_socket_clients = []
 const player_socket_clients_id = []
 
@@ -30,7 +27,7 @@ class PlayerServer {
      */
     constructor(controller) {
         this.controller = controller;
-        this.player_ws_port = controller.model.getJsonSettings().player_ws_port != undefined ? controller.model.getJsonSettings().player_ws_port : DEFAULT_PLAYER_WS_PORT;
+        this.player_ws_port = process.env.HEADSET_WS_PORT;
         var player_ws_port = this.player_ws_port
         this.player_socket = new WebSocket.Server({ port: this.player_ws_port });
         const player_server = this;
@@ -48,7 +45,7 @@ class PlayerServer {
             ws.on('message', function incoming(message) {
                 try {
                     const json_player = JSON.parse(message)
-                    if (controller.model.getJsonSettings().verbose) {
+                    if (process.env.VERBOSE) {
                         console.log("Reception of this following message from the player " + getIdClient(ws));
                         console.log(json_player);
                     }
@@ -168,10 +165,10 @@ class PlayerServer {
     sendPing(id_player) {
         const ws = getWsClient(id_player)
         try {
-            if (this.controller.model.getJsonSettings().verbose) console.log("Sending ping to "+id_player);
+            if (this.process.env.VERBOSE) console.log("Sending ping to "+id_player);
             ws.send("{\"type\":\"ping\"}");
             pongTimeout1Attempt[id_player] = setTimeout(() => {
-                if (this.controller.model.getJsonSettings().verbose) console.log("Sending ping to "+id_player);
+                if (this.process.env.VERBOSE) console.log("Sending ping to "+id_player);
                 ws.send("{\"type\":\"ping\"}");
             }, 3000);
             pongTimeout2Attempt[id_player] = setTimeout(() => {

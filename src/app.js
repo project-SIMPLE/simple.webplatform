@@ -1,10 +1,8 @@
 //Imports
 const express = require('express');
 const fs = require('fs');
-const Controller = require('./controller');
 
-// Default values
-const DEFAULT_APP_PORT = 80;
+const Controller = require('./controller');
 
 /**
  * Creates the server application to get all the html pages required
@@ -16,7 +14,7 @@ class App {
      */
     constructor(controller) {
         this.controller = controller;
-        this.app_port = this.controller.model.getJsonSettings().app_port != undefined ? controller.model.getJsonSettings().app_port : DEFAULT_APP_PORT;
+        this.app_port = process.env.HTTP_PORT;
         var app_port = this.app_port
         this.app = express();
         this.app.set('view engine', 'ejs');
@@ -44,11 +42,11 @@ class App {
         });
       
         this.app.get('/getWsMonitorPort', (req, res) => {
-          res.json({ "monitor_ws_port" : controller.model.getJsonSettings().monitor_ws_port });
+          res.json({ "monitor_ws_port" : process.env.MONITOR_WS_PORT });
         });
 
         this.app.get('/getWsGamePort', (req, res) => {
-          res.json({ "player_ws_port" : controller.model.getJsonSettings().player_ws_port });
+          res.json({ "player_ws_port" : process.env.HEADSET_WS_PORT });
         });
         
         this.app.get('/favicon.ico', (req, res) => {

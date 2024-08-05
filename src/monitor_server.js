@@ -1,9 +1,6 @@
 //Imports
 const WebSocket = require('ws');
 
-// Default values
-const DEFAULT_MONITOR_WS_PORT = 8001;
-
 var monitor_socket_clients = []
 
 /**
@@ -17,7 +14,7 @@ class MonitorServer {
     constructor(controller) {
         this.controller = controller;
         const monitor_server = this
-        this.monitor_ws_port = controller.model.getJsonSettings().monitor_ws_port != undefined ?  controller.model.getJsonSettings().monitor_ws_port : DEFAULT_MONITOR_WS_PORT;
+        this.monitor_ws_port = process.env.MONITOR_WS_PORT;
         var monitor_ws_port = this.monitor_ws_port
         this.monitor_socket = new WebSocket.Server({ port: this.monitor_ws_port });
 
