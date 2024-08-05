@@ -26,8 +26,8 @@ class MonitorServer {
             this.sendMonitorJsonSettings();
             socket.on('message', (message) => {
                 try {
-                    const json_monitor = JSON.parse(message)
-                    const type = json_monitor['type']
+                    const jsonMonitor = JSON.parse(message)
+                    const type = jsonMonitor['type']
                     switch (type){
                         case "launch_experiment":
                             this.controller.launchExperiment();
@@ -51,19 +51,20 @@ class MonitorServer {
                             this.controller.removeInGameEveryPlayers();
                             break;
                         case "add_player_headset":
-                            this.controller.addInGamePlayer(json_monitor["id"]);
+                            this.controller.addInGamePlayer(jsonMonitor["id"]);
                             break;
                         case "remove_player_headset":
-                            this.controller.removeInGamePlayer(json_monitor["id"]);
+                            this.controller.removeInGamePlayer(jsonMonitor["id"]);
                             break;
                         case "json_settings":
-                            this.controller.changeJsonSettings(json_monitor);
+                            this.controller.changeJsonSettings(jsonMonitor);
                             break;
                         case "clean_all":
                             this.controller.cleanAll();
                             break;
                         default:
-                            console.log("\x1b[31m-> The last message received from the monitor had an unknown type.\x1b[0m");
+                            console.warn("\x1b[31m-> The last message received from the monitor had an unknown type.\x1b[0m");
+                            console.warn(jsonMonitor);
                     }
                 }
                 catch (exception) {
