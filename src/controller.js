@@ -1,4 +1,4 @@
-const ConnectorGamaServer = require('./gama_connector.js');
+const GamaConnector = require('./gama_connector.js');
 const MonitorServer = require('./monitor-server.js');
 const PlayerServer = require('./player-server.js');
 const App = require('./app.js');
@@ -19,7 +19,7 @@ class Controller {
         this.monitor_server = new MonitorServer(this);
         this.player_server = new PlayerServer(this);
         this.app = new App(this);
-        this.gama_connector = new ConnectorGamaServer(this);
+        this.gama_connector = new GamaConnector(this);
         console.log('Note: Refresh the webpage http://'+process.env.APP_IP_ADDRESS+':'+process.env.HTTP_PORT+' if the connection failed');
     }
 
@@ -31,7 +31,7 @@ class Controller {
         this.gama_connector.close()
         this.monitor_server.close()
         this.player_server = new PlayerServer(this);
-        this.gama_connector = new ConnectorGamaServer(this);
+        this.gama_connector = new GamaConnector(this);
         this.monitor_server = new MonitorServer(this);
     }
 

@@ -122,6 +122,10 @@ class Model {
         return this.modelFilePath;
     }
 
+    getExperimentName() {
+        return this.jsonSettings.experiment_name;
+    }
+
     getJsonSettings() {
         return this.jsonSettings
     }
