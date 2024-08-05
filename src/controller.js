@@ -1,6 +1,6 @@
 const ConnectorGamaServer = require('./gama_connector.js');
 const MonitorServer = require('./monitor-server.js');
-const PlayerServer = require('./player_server.js');
+const PlayerServer = require('./player-server.js');
 const App = require('./app.js');
 const ModelManager = require('./model-manager.js')
 

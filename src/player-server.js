@@ -3,19 +3,6 @@ const WebSocket = require('ws');
 
 const { useVerbose } = require('../index.js');
 
-const player_socket_clients = []
-const player_socket_clients_id = []
-
-function getIdClient(ws) {
-    const index = player_socket_clients.indexOf(ws)
-    return player_socket_clients_id[index]
-}
-
-function getWsClient(id) {
-    const index = player_socket_clients_id.indexOf(id)
-    return player_socket_clients[index]
-}
-
 /**
  * Creates a websocket server to handle player connections
  */
@@ -28,9 +15,13 @@ class PlayerServer {
         this.controller = controller;
         this.playerSocket = new WebSocket.Server({ port: process.env.HEADSET_WS_PORT });
 
+        // Logging connected clients to seamlessly allow client's reconnection
+        this.playerSocketClients = [];
+        this.playerSocketClientsId = [];
+
         this.playerSocket.on('connection', (ws) => {
 
-            // Heartbeat is alive
+            // Make heartbeat valid on each message received
             ws.isAlive = true;
 
             ws.on('message', (message) => {
@@ -38,12 +29,12 @@ class PlayerServer {
                     const jsonPlayer = JSON.parse(message)
                     const type = jsonPlayer['type']
                     if (useVerbose) {
-                        console.log("Reception of this following message from the player " + getIdClient(ws));
+                        console.log("Reception of this following message from the player " + this.getIdClient(ws));
                         console.log(jsonPlayer);
                     }
                     switch (type){
                         case "pong":
-                            socket.isAlive = true;
+                            ws.isAlive = true;
                             break;
 
                         case "ping":
@@ -56,15 +47,15 @@ class PlayerServer {
                         case "connection":
                             // Reconnection of the headset
                             if (this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(jsonPlayer.id) !== undefined) {
-                                const index = player_socket_clients_id.indexOf(jsonPlayer.id)
-                                player_socket_clients[index] = ws
+                                const index = this.playerSocketClientsId.indexOf(jsonPlayer.id)
+                                this.playerSocketClients[index] = ws
                                 this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(jsonPlayer.id, true)
                                 console.log('-> Reconnection of the player of id '+jsonPlayer.id);
                             }
                             // First connection of the headset
                             else {
-                                player_socket_clients.push(ws)
-                                player_socket_clients_id.push(jsonPlayer.id)
+                                this.playerSocketClients.push(ws)
+                                this.playerSocketClientsId.push(jsonPlayer.id)
                                 this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].insertPlayer(jsonPlayer.id)
                                 this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(jsonPlayer.id, true)
                                 console.log('-> New connection of the player of id '+jsonPlayer.id);
@@ -72,20 +63,20 @@ class PlayerServer {
                             break;
 
                         case "expression":
-                            controller.sendExpression(getIdClient(ws), jsonPlayer.expr);
+                            this.controller.sendExpression(this.getIdClient(ws), jsonPlayer.expr);
                             break;
 
                         case "ask":
-                            controller.sendAsk(jsonPlayer);
+                            this.controller.sendAsk(jsonPlayer);
                             break;
 
                         case "disconnect_properly":
-                            controller.removeInGamePlayer(getIdClient(ws))
+                            this.controller.removeInGamePlayer(this.getIdClient(ws))
                             ws.close()
                             break;
 
                         default:
-                            console.warn("\x1b[31m-> The last message received from " + getIdClient(ws) + " had an unknown type.\x1b[0m");
+                            console.warn("\x1b[31m-> The last message received from " + this.getIdClient(ws) + " had an unknown type.\x1b[0m");
                             console.warn(jsonPlayer);
                     }
                 }
@@ -96,17 +87,17 @@ class PlayerServer {
             });
         
             ws.on('close', () => {
-                const idPlayer = getIdClient(ws)
+                const idPlayer = this.getIdClient(ws)
                 if (this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(idPlayer) !== undefined) {
                     this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(idPlayer, false, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
-                    console.log("-> The player "+getIdClient(ws)+" disconnected");
+                    console.log("-> The player "+idPlayer+" disconnected");
                 }
             })
         
             ws.on('error', (error) => {
-                const idPlayer = getIdClient(ws)
+                const idPlayer = this.getIdClient(ws)
                 this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(idPlayer, false, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
-                console.error("-> The player "+getIdClient(ws)+" disconnected");
+                console.error("-> The player "+idPlayer+" had an error and disconnected");
                 console.error(error);
             });
         
@@ -126,20 +117,29 @@ class PlayerServer {
         this.pingInterval = setInterval(this.sendHeartbeat.bind(this), 5000);
     }
 
+    // Getters
+    getIdClient(ws) {
+        return this.playerSocketClientsId[ this.playerSocketClients.indexOf(ws) ];
+    }
+
+    getWsClient(id) {
+        return this.playerSocketClients[ this.playerSocketClientsId.indexOf(id) ];
+    }
+
     /**
      * Automatically send Heartbeat ping message to every player's open websocket
      */
     sendHeartbeat() {
         this.playerSocket.clients.forEach((socket) => {
             if (socket.isAlive === false) {
-                console.warn('Terminating dead socket from player '+ getWsClient(socket));
+                console.warn('Terminating dead socket from player '+ this.getWsClient(socket));
                 return socket.terminate();
             }
 
             // Reset heartbeat and re-send a ping message
             socket.isAlive = false;
             socket.ping();
-            if (useVerbose) console.log("Sending ping to "+ getWsClient(socket));
+            if (useVerbose) console.log("Sending ping to "+ this.getWsClient(socket));
         });
     }
 
@@ -150,18 +150,18 @@ class PlayerServer {
     broadcastSimulationOutput(jsonOutput) {
         if (jsonOutput.contents === undefined) return
         //console.log('PRENVOI')
-        //console.log(player_socket_clients_id)
+        //console.log(this.player_socket_clients_id)
 	
         try {
             jsonOutput.contents.forEach((element) => {
                 element.id.forEach((idPlayer) => {
-                    const index = player_socket_clients_id.indexOf(idPlayer)
+                    const index = this.playerSocketClientsId.indexOf(idPlayer)
                     if (index !== -1) {
             			//console.log('ENVOI')
                         const jsonOutputPlayer = {}
                         jsonOutputPlayer.contents = element.contents
                         jsonOutputPlayer.type = "json_output"
-                        player_socket_clients[index].send(JSON.stringify(jsonOutputPlayer))
+                        this.playerSocketClients[index].send(JSON.stringify(jsonOutputPlayer))
                         //  console.log(JSON.stringify(jsonOutputPlayer));
                     }
                 })
@@ -180,7 +180,7 @@ class PlayerServer {
      */
 
     notifyPlayerChange(idPlayer, jsonPlayer) {
-        const index = player_socket_clients_id.indexOf(idPlayer)
+        const index = this.playerSocketClientsId.indexOf(idPlayer)
         if (index !== -1) {
             // Preparing JSON
             const jsonStatePlayer = {}
@@ -188,7 +188,7 @@ class PlayerServer {
             jsonStatePlayer.id_player = idPlayer
 
             // Sending JSON
-            player_socket_clients[index].send(JSON.stringify({ ...jsonStatePlayer, ...jsonPlayer }))
+            this.playerSocketClients[index].send(JSON.stringify({ ...jsonStatePlayer, ...jsonPlayer }))
             if(useVerbose) console.log("[DEBUG Player "+idPlayer+"] Receiving state update " + JSON.stringify({ ...jsonStatePlayer, ...jsonPlayer }));
         }
     }
@@ -202,9 +202,9 @@ class PlayerServer {
             if (this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(idPlayer) !== undefined
                 && !this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(idPlayer).connected
                 && !this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(idPlayer).in_game) {
-                    const index = player_socket_clients_id.indexOf(idPlayer)
-                    player_socket_clients_id.splice(index,1)
-                    player_socket_clients.splice(index,1)
+                    const index = this.playerSocketClientsId.indexOf(idPlayer)
+                    this.playerSocketClientsId.splice(index,1)
+                    this.playerSocketClients.splice(index,1)
                     this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].withdrawPlayer(idPlayer)
                 }
         }
