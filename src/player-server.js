@@ -24,6 +24,8 @@ class PlayerServer {
             // Make heartbeat valid on each message received
             ws.isAlive = true;
 
+            let model = this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex];
+
             ws.on('message', (message) => {
                 try {
                     const jsonPlayer = JSON.parse(message)
@@ -46,18 +48,18 @@ class PlayerServer {
 
                         case "connection":
                             // Reconnection of the headset
-                            if (this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(jsonPlayer.id) !== undefined) {
+                            if (model.getPlayerState(jsonPlayer.id) !== undefined) {
                                 const index = this.playerSocketClientsId.indexOf(jsonPlayer.id)
                                 this.playerSocketClients[index] = ws
-                                this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(jsonPlayer.id, true)
+                                model.setPlayerConnection(jsonPlayer.id, true)
                                 console.log('-> Reconnection of the player of id '+jsonPlayer.id);
                             }
                             // First connection of the headset
                             else {
                                 this.playerSocketClients.push(ws)
                                 this.playerSocketClientsId.push(jsonPlayer.id)
-                                this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].insertPlayer(jsonPlayer.id)
-                                this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(jsonPlayer.id, true)
+                                model.insertPlayer(jsonPlayer.id)
+                                model.setPlayerConnection(jsonPlayer.id, true)
                                 console.log('-> New connection of the player of id '+jsonPlayer.id);
                             }
                             break;
@@ -88,15 +90,23 @@ class PlayerServer {
         
             ws.on('close', () => {
                 const idPlayer = this.getIdClient(ws)
-                if (this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(idPlayer) !== undefined) {
-                    this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(idPlayer, false, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
+                if (model.getPlayerState(idPlayer) !== undefined) {
+                    model.setPlayerConnection(
+                        idPlayer,
+                        false,
+                        `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
+                    )
                     console.log("-> The player "+idPlayer+" disconnected");
                 }
             })
         
             ws.on('error', (error) => {
                 const idPlayer = this.getIdClient(ws)
-                this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].setPlayerConnection(idPlayer, false, `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`)
+                model.setPlayerConnection(
+                    idPlayer,
+                    false,
+                    `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
+                )
                 console.error("-> The player "+idPlayer+" had an error and disconnected");
                 console.error(error);
             });
@@ -198,14 +208,15 @@ class PlayerServer {
      */
 
     cleanAll() {
-        for(var idPlayer in this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getAllPlayers()) {
-            if (this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(idPlayer) !== undefined
-                && !this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(idPlayer).connected
-                && !this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getPlayerState(idPlayer).in_game) {
+        let model = this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex];
+        for(var idPlayer in model.getAllPlayers()) {
+            if (model.getPlayerState(idPlayer) !== undefined
+                && !model.getPlayerState(idPlayer).connected
+                && !model.getPlayerState(idPlayer).in_game) {
                     const index = this.playerSocketClientsId.indexOf(idPlayer)
                     this.playerSocketClientsId.splice(index,1)
                     this.playerSocketClients.splice(index,1)
-                    this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].withdrawPlayer(idPlayer)
+                    model.withdrawPlayer(idPlayer)
                 }
         }
     }
