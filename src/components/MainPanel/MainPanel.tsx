@@ -9,19 +9,16 @@ import {useWebSocket} from '../WebSocketManager/WebSocketManager';
 
 const MainPanel: React.FC = () => {
 
-  const { gama } = useWebSocket();
+  const { ws, gama } = useWebSocket();
 
   const [status, setStatus] = useState<boolean[]>([false, false, false, false]);
 
   const handleLaunch = () => {
-    console.log('Launch button clicked');
-    axios.post('http://localhost:3001/launch-experiment')
-      .then(response => {
-        console.log(response.data);
-      })
-      .catch(error => {
-        console.error('There was an error launching the experiment!', error);
-      });
+    if(ws !== null){
+      ws.send(JSON.stringify({"type": "launch_experiment"}));
+    }else{
+      console.error("WS is null");
+    }
   };
 
   const handleLoad = () => {
@@ -30,18 +27,27 @@ const MainPanel: React.FC = () => {
   };
 
   const handlePlayPause = () => {
-    console.log('Play/Pause button clicked');
-    // Logic for play/pause button
+    if(ws !== null){
+      ws.send(JSON.stringify({"type": gama.experiment_state != "RUNNING" ? "launch_experiment" : "pause_experiment" }));
+    }else{
+      console.error("WS is null");
+    }
   };
 
   const handleEnd = () => {
-    console.log('End button clicked');
-    // Logic for end button
+    if(ws !== null){
+      ws.send(JSON.stringify({"type": "stop_experiment"}));
+    }else{
+      console.error("WS is null");
+    }
   };
 
   const handleRemove = (index: number) => {
-    console.log(`Remove button clicked for headset ${index}`);
-    // Logic for remove button
+    if(ws !== null){
+      ws.send(JSON.stringify({"type": "remove_player_headset", "id": index}));
+    }else{
+      console.error("WS is null");
+    }
   };
 
   const handleRestart = (index: number) => {
@@ -50,8 +56,11 @@ const MainPanel: React.FC = () => {
   };
 
   const handleTryConnection = () => {
-    console.log('Try Connection button clicked');
-    // Logic for try connection button
+    if(ws !== null){
+      ws.send(JSON.stringify({"type": "try_connection"}));
+    }else{
+      console.error("WS is null");
+    }
   };
 
   return (
