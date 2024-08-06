@@ -98,14 +98,10 @@ class GamaConnector {
             try {
                 const message = JSON.parse(event.data)
                 const type = message.type;
-                if (useVerbose) {
-                    console.log("Message received from Gama:");
-                    console.log(message)
-                }
 
                 switch (type){
                     case "SimulationStatus":
-                        if (useVerbose) console.log("Message received from Gama Server: SimulationStatus = "+message.content);
+                        if (useVerbose) console.log("[DEBUG] Message received from Gama Server: SimulationStatus = "+message.content);
 
                         this.model.setGamaExperimentId(message.exp_id)
                         if (['NONE','NOTREADY'].includes(message.content) && ['RUNNING','PAUSED','NOTREADY'].includes(this.model.getGama().experiment_state)) {
@@ -117,7 +113,6 @@ class GamaConnector {
 
                     case "SimulationOutput":
                         try {
-                            if (useVerbose) console.log("Message received from Gama Server: SimulationOutput = "+message.content);
                             this.controller.broadcastSimulationOutput(JSON.parse(message.content));
                         }
                         catch (error) {
