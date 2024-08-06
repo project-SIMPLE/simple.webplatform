@@ -4,7 +4,7 @@ import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import axios from 'axios';
 import Navigation from '../navigation/navigation';
-import {useWebSocket} from '../WebSocketManager/web-socket-manager';
+import {useWebSocket} from '../WebSocketManager/WebSocketManager';
 
 
 const MainPanel: React.FC = () => {

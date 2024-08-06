@@ -5,7 +5,7 @@ import './index.css';
 import MainPanel from './components/MainPanel/MainPanel';
 import Navigation from './components/navigation/navigation';
 import SelectorSimulations from './components/SelectorSimulations/SelectorSimulations';
-import WebSocketManager from './components/WebSocketManager/web-socket-manager';
+import WebSocketManager from './components/WebSocketManager/WebSocketManager';
 
 
 const App: React.FC = () => {
