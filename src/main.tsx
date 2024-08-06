@@ -27,6 +27,3 @@ root.render(
   </React.StrictMode>
 );
 
-
-
-
