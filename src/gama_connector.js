@@ -128,14 +128,15 @@ class GamaConnector {
 
                     case "CommandExecutedSuccessfully":
                         if (useVerbose) {
-                            console.log("\x1b[32mMessage received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ (message.command.expr !== undefined ? '\''+message.command.expr+'\'' : 'command') + '\x1b[0m');
+                            console.log("\x1b[32m[DEBUG GamaConnector] Message received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ (message.command.experiment !== undefined ? '\''+message.command.experiment+'\'' : 'command') + '\x1b[0m');
+                            console.log(message);
                         }
                         else if(
-                            message.command.expr !== undefined
-                            && (message.command.expr.includes('create_player')
-                                || message.command.expr.includes('remove_player'))
+                            message.command.experiment !== undefined
+                            && (message.command.experiment.includes('create_player')
+                                || message.command.experiment.includes('remove_player'))
                         ) {
-                            console.log("\x1b[32mMessage received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ '\''+message.command.expr+'\'' + '\x1b[0m');
+                            console.log("\x1b[32mMessage received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ '\''+message.command.experiment+'\'' + '\x1b[0m');
                         }
 
                         this.model.setGamaContentError('')
@@ -145,8 +146,7 @@ class GamaConnector {
                         setTimeout(sendMessages,100)
 
                         try {
-                            const content = JSON.parse(message.content)
-                            this.controller.broadcastSimulationOutput(content);
+                            this.controller.broadcastSimulationOutput(message);
                         }
                         catch (exception) {
                             console.error(exception);
