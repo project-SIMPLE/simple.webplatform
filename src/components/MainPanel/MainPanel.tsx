@@ -106,22 +106,7 @@ const MainPanel: React.FC = () => {
           } showText={true} />
         </div>
         <div className="flex justify-center space-x-2">
-          {/* <Button onClick={handleLaunch} text="Launch" bgColor="bg-red-500" icon={
-            <svg
-              className="w-6 h-6 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M14.752 11.168l-6.5-3.75A1 1 0 007 8.25v7.5a1 1 0 001.252.832l6.5-3.75a1 1 0 000-1.664z"
-              />
-            </svg>
-          } showText={true} /> */}
+          
              <Button onClick={handleLoad} text="Load" bgColor="bg-blue-500" icon={
                <svg
                  className="w-6 h-6 mr-2"
