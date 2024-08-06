@@ -1,32 +1,30 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-import { BrowserRouter, Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import './index.css';
+import MainPanel from './components/MainPanel/MainPanel';
+import Navigation from './components/navigation/navigation';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const App: React.FC = () => {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<MainPanel />} />
+        <Route path="navigation" element={<Navigation />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
+
+const container = document.getElementById('root')!;
+const root = ReactDOM.createRoot(container);
+
+root.render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>,
-)
+  </React.StrictMode>
+);
 
-// const container = document.getElementById('root')!;
-// const root = createRoot(container);
 
-// export default function App() {
-//     return (
-//       <BrowserRouter>
-//     <Routes>
-//             <Route path='/' element={<Layout/>}>
-//                 <Route index element={<Accueil />} />
-//                 <Route path="clients" element={<DisplayClients />} />
-//                 {/* <Route path="articles" element={<DisplayArticles/>} />          
-//                 <Route path="/BCN1" element={<CommandeNouveautes />} />
-//                 <Route path="*" element={<Error404 />} /> */}
-//             </Route>
 
-//         </Routes>
-        
-//     </BrowserRouter>
-// );
-// }
+

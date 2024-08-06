@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import axios from 'axios';
+import Navigation from '../navigation/navigation';
 
 const MainPanel: React.FC = () => {
   const [status, setStatus] = useState<boolean[]>([false, false, false, false]);
@@ -49,8 +50,7 @@ const MainPanel: React.FC = () => {
   };
 
   return (
-   
-   <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <div className="w-2/3 bg-white p-8 shadow-lg rounded-lg text-center">
         <div className="text-3xl mb-4">Waiting..</div>
         <div className="flex justify-center mb-4">
