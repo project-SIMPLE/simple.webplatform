@@ -148,7 +148,7 @@ class PlayerServer {
 
             // Reset heartbeat and re-send a ping message
             socket.isAlive = false;
-            socket.ping();
+            socket.send("{\"type\":\"ping\"}");
             if (useVerbose) console.log("Sending ping to "+ this.getWsClient(socket));
         });
     }
