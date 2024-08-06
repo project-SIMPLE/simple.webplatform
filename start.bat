@@ -1,6 +1,0 @@
-@echo off
-echo Installing node.js packages...
-call npm install
-echo Packages installed !
-echo Launching Gama Server Middleware...
-node index.js

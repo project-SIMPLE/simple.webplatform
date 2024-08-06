@@ -1,8 +1,0 @@
-{
-  "type": "json_settings",
-  "model_file_path": "/Applications/Gama.app/Contents/Eclipse/configuration/org.eclipse.osgi/243/0/.cp/models/LinkToUnity/Demo/DemoModelVR.gaml",
-  "experiment_name": "vr_xp",
-  "player_html_file": "simple_example.html",
-  "type_model_file_path": "absolute",
-  "player_web_interface": true
-}
