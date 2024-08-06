@@ -10,12 +10,22 @@ class MonitorServer {
      */
     constructor(controller) {
         this.controller = controller;
-        this.monitorSocket = new WebSocketServer({ port: process.env.MONITOR_WS_PORT });
-
+        this.monitorSocket = null;
         this.monitorSocketClients = [];
+
+        try {
+            const host = process.env.WEB_APPLICATION_HOST || 'localhost';
+            const port = parseInt(process.env.MONITOR_WS_PORT || '8080', 10);
+
+            this.monitorSocket = new WebSocket.Server({ host, port });
+            console.log(`[MONITOR SERVER] Creating monitor server on: ws://${host}:${port}`);
+        }catch (e) {
+            console.error("[MONITOR SERVER] Failed to create WebSocket server", e);
+        }
 
         this.monitorSocket.on('connection', (socket) => {
             this.monitorSocketClients.push(socket);
+            console.log("[MONITOR SERVER] Connected to monitor server");
             this.sendMonitorJsonState();
             this.sendMonitorJsonSettings();
             socket.on('message', (message) => {
