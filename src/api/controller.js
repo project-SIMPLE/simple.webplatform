@@ -1,14 +1,6 @@
-// const GamaConnector = require('./gama_connector.js');
-// const MonitorServer = require('./monitor-server.js');
-// const PlayerServer = require('./player-server.js');
-// const App = require('./app.js');
-// const ModelManager = require('./model-manager.js')
-
-
 import GamaConnector from './gama_connector.js';
 import MonitorServer from './monitor-server.js';
 import PlayerServer from './player-server.js';
-import App from './app.js';
 import ModelManager from './model-manager.js';
 
 /**
@@ -20,13 +12,10 @@ class Controller {
      */
     constructor() {
         this.choosedLearningPackageIndex = 0;
-
         this.modelManager = new ModelManager(this);
         this.monitor_server = new MonitorServer(this);
         this.player_server = new PlayerServer(this);
-        this.app = new App(this);
         this.gama_connector = new GamaConnector(this);
-        console.log('Note: Refresh the webpage http://'+process.env.APP_IP_ADDRESS+':'+process.env.HTTP_PORT+' if the connection failed');
     }
 
     /**
