@@ -41,7 +41,7 @@ class GamaConnector {
     
     //You can add here new protocol messages
 
-    jsonLoadExperiment() {
+    jsonLoadExperiment = () => {
         return {
         "type": "load",
         "model": this.model.getModelFilePath(),
