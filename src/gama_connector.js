@@ -308,7 +308,7 @@ class GamaConnector {
         if (this.model.getPlayerState(idPlayer) !== undefined && this.model.getPlayerState(idPlayer).in_game) return
 
         current_id_player = idPlayer
-        list_messages = [this.jsonTogglePlayer("add")];
+        list_messages = [this.jsonTogglePlayer("create")];
         index_messages = 0;
         do_sending = true;
         continue_sending = true;
