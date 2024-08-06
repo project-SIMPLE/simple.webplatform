@@ -1,8 +1,14 @@
-const fs = require('fs');
-const path = require('path');
+// const fs = require('fs');
+// const path = require('path');
 
-const Model = require('./model.js');
-const {useVerbose} = require("../index");
+// const Model = require('./model.js');
+// const {useVerbose} = require("../index");
+
+import fs from 'fs';
+import path from 'path';
+import Model from './model.js';
+import { useVerbose } from './index.js';
+
 
 class ModelManager {
 
@@ -52,4 +58,5 @@ class ModelManager {
     }
 }
 
-module.exports = ModelManager;
+// module.exports = ModelManager;
+export default ModelManager;

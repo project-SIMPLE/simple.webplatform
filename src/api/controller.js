@@ -1,9 +1,15 @@
-const GamaConnector = require('./gama_connector.js');
-const MonitorServer = require('./monitor-server.js');
-const PlayerServer = require('./player-server.js');
-const App = require('./app.js');
-const ModelManager = require('./model-manager.js')
+// const GamaConnector = require('./gama_connector.js');
+// const MonitorServer = require('./monitor-server.js');
+// const PlayerServer = require('./player-server.js');
+// const App = require('./app.js');
+// const ModelManager = require('./model-manager.js')
 
+
+import GamaConnector from './gama_connector.js';
+import MonitorServer from './monitor-server.js';
+import PlayerServer from './player-server.js';
+import App from './app.js';
+import ModelManager from './model-manager.js';
 
 /**
  * Creates the model of the project
@@ -24,7 +30,7 @@ class Controller {
     }
 
     /**
-     * Restarts all the components whcih needs to be restarted
+     * Restarts all tVoicihe components whcih needs to be restarted
      */
     restart(){
         this.player_server.close()
@@ -160,4 +166,5 @@ class Controller {
 
 }
 
-module.exports = Controller;
+// module.exports = Controller;
+export default Controller;

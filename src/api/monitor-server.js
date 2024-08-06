@@ -1,5 +1,4 @@
-//Imports
-const WebSocket = require('ws');
+import { WebSocketServer } from 'ws';
 
 /**
  * Creates a Websocket Server for handling monitor connections
@@ -11,24 +10,19 @@ class MonitorServer {
      */
     constructor(controller) {
         this.controller = controller;
-        const monitor_server = this
-        this.monitorSocket = new WebSocket.Server({ port: process.env.MONITOR_WS_PORT });
+        this.monitorSocket = new WebSocketServer({ port: process.env.MONITOR_WS_PORT });
 
         this.monitorSocketClients = [];
 
-        /*
-            Handling middleware socket connections and message routing
-         */
-
         this.monitorSocket.on('connection', (socket) => {
-            this.monitorSocketClients.push(socket)
+            this.monitorSocketClients.push(socket);
             this.sendMonitorJsonState();
             this.sendMonitorJsonSettings();
             socket.on('message', (message) => {
                 try {
-                    const jsonMonitor = JSON.parse(message)
-                    const type = jsonMonitor['type']
-                    switch (type){
+                    const jsonMonitor = JSON.parse(message);
+                    const type = jsonMonitor['type'];
+                    switch (type) {
                         case "launch_experiment":
                             this.controller.launchExperiment();
                             break;
@@ -66,8 +60,7 @@ class MonitorServer {
                             console.warn("\x1b[31m-> The last message received from the monitor had an unknown type.\x1b[0m");
                             console.warn(jsonMonitor);
                     }
-                }
-                catch (exception) {
+                } catch (exception) {
                     console.error("\x1b[31m-> The last message received from the monitor created an internal error.\x1b[0m");
                     console.error(exception);
                 }
@@ -77,38 +70,40 @@ class MonitorServer {
         this.monitorSocket.on('error', (err) => {
             if (err.code === 'EADDRINUSE') {
                 console.log(`\x1b[31m-> The port ${process.env.MONITOR_WS_PORT} is already in use. Choose a different port in settings.json.\x1b[0m`);
+            } else {
+                console.log(`\x1b[31m-> An error occured for the monitor server, code: ${err.code}\x1b[0m`);
             }
-            else {
-                console.log(`\x1b[31m-> An error occured for the monitor server, code: ${err.code}\x1b[0m`)
-            }
-        })
+        });
     }
 
     /**
      * Sends the json_state to the monitor
      */
     sendMonitorJsonState() {
-        if (this.monitorSocketClients !== undefined) this.monitorSocketClients.forEach((client) => {
-            client.send(JSON.stringify(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getAll()));
-        })
+        if (this.monitorSocketClients !== undefined) {
+            this.monitorSocketClients.forEach((client) => {
+                client.send(JSON.stringify(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getAll()));
+            });
+        }
     }
 
     /**
      * Send the json_setting to the monitor
      */
     sendMonitorJsonSettings() {
-        if (this.monitorSocketClients !== undefined) this.monitorSocketClients.forEach((client) => {
-            client.send(JSON.stringify(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getJsonSettings()));
-        })
+        if (this.monitorSocketClients !== undefined) {
+            this.monitorSocketClients.forEach((client) => {
+                client.send(JSON.stringify(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getJsonSettings()));
+            });
+        }
     }
-    
+
     /**
      * Closes the websocket server
      */
     close() {
-        this.monitorSocket.close()
+        this.monitorSocket.close();
     }
-    
 }
 
-module.exports = MonitorServer;
+export default MonitorServer;

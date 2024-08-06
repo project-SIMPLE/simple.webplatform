@@ -1,7 +1,9 @@
 //Imports
-const WebSocket = require('ws');
+// const WebSocket = require('ws');
+// const { useVerbose } = require('../index.js');
+import WebSocket from 'ws';
+import { useVerbose } from './index.js';
 
-const { useVerbose } = require('../index.js');
 
 //Global variables about the state of the connector. This is only for internal purposes.
 var gama_socket
@@ -424,4 +426,6 @@ class GamaConnector {
     }
 }
 
-module.exports = GamaConnector;
+// module.exports = GamaConnector;
+
+export default GamaConnector;

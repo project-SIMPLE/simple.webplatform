@@ -1,5 +1,8 @@
-const fs = require('fs');
-const path = require('path');
+// const fs = require('fs');
+// const path = require('path');
+
+import fs from 'fs';
+import path from 'path';
 
 class Model {
 
@@ -141,4 +144,6 @@ class Model {
     }
 }
 
-module.exports = Model;
+// module.exports = Model;
+
+export default Model;

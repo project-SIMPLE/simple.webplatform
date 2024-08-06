@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
+import axios from 'axios';
 
 const MainPanel: React.FC = () => {
   const [status, setStatus] = useState<boolean[]>([false, false, false, false]);
@@ -9,6 +10,13 @@ const MainPanel: React.FC = () => {
   const handleLaunch = () => {
     // Logic for launch button
     console.log('Launch button clicked');
+    axios.post('http://localhost:3001/launch-experiment')
+    .then(response => {
+      console.log(response.data);
+    })
+    .catch(error => {
+      console.error('There was an error launching the experiment!', error);
+    });
   };
 
   return (
