@@ -15,20 +15,23 @@ const MainPanel: React.FC = () => {
 
   const handleLaunch = () => {
     if(ws !== null){
-      ws.send(JSON.stringify({"type": "launch_experiment"}));
+      ws.send(JSON.stringify({"type": "resume_experiment"}));
     }else{
       console.error("WS is null");
     }
   };
 
   const handleLoad = () => {
-    console.log('Load button clicked');
-    // Logic for load button
+    if(ws !== null){
+      ws.send(JSON.stringify({"type": "launch_experiment"}));
+    }else{
+      console.error("WS is null");
+    }
   };
 
   const handlePlayPause = () => {
     if(ws !== null){
-      ws.send(JSON.stringify({"type": gama.experiment_state != "RUNNING" ? "launch_experiment" : "pause_experiment" }));
+      ws.send(JSON.stringify({"type": gama.experiment_state == "NONE" ? "launch_experiment" : (gama.experiment_state != "RUNNING" ? "resume_experiment" : "pause_experiment") }));
     }else{
       console.error("WS is null");
     }
