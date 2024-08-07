@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
+interface Player {
+    connected: boolean;
+    date_connection: string;
+    in_game: boolean
+}
+
 // Define types for the WebSocket context
 interface WebSocketContextType {
     ws: WebSocket | null;
@@ -8,7 +14,7 @@ interface WebSocketContextType {
         loading: 'hidden' | 'visible';
         experiment_state: string;
     };
-    playerList: any[]; // Replace `any` with a more specific type if available
+    playerList: Player[];
 }
 
 // Initialize context with a default value of `null` for WebSocket and default values for other states
@@ -40,12 +46,17 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
 
         socket.onmessage = (event: MessageEvent) => {
             const data = JSON.parse(event.data);
-            if (data.type === 'json_state') {
-                console.log('Do something', data);
-                setGama(data.gama);
-                setPlayerList(data.player);
-            } else {
-                console.log('Do something else...', data);
+            switch (data.type) {
+                case 'json_state':
+                    console.log('Do something', data);
+                    setGama(data.gama);
+                    setPlayerList(data.player);
+                    break;
+                case '':
+                    console.log("toto");
+                    break;
+                default:
+                    console.warn('[WebSocketManager] Message not processed', data);
             }
         };
 
