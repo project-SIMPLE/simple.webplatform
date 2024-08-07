@@ -35,28 +35,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
         loading: 'hidden' as 'hidden' | 'visible',
         experiment_state: 'NONE'
     });
-    const [playerList, setPlayerList] = useState<PlayerList>({
-        "Player_123": {
-            connected: true,
-            date_connection: '09:58',
-            in_game: false
-        },
-        "Player_23": {
-            connected: false,
-            date_connection: '09:58',
-            in_game: false
-        },
-        "Player_125": {
-            connected: true,
-            date_connection: '09:58',
-            in_game: false
-        },
-        "Player_122": {
-            connected: false,
-            date_connection: '09:58',
-            in_game: false
-        }
-    });
+    const [playerList, setPlayerList] = useState<PlayerList>({});
 
     useEffect(() => {
         const host = import.meta.env.WEB_APPLICATION_HOST || 'localhost';
@@ -76,7 +55,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
                 case 'json_state':
                     console.log('Do something', data);
                     setGama(data.gama);
-                    // setPlayerList(data.player); reactivate after real vrHeadset
+                    setPlayerList(data.player);
                     break;
                 case '':
                     console.log("toto");
