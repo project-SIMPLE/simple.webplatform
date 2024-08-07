@@ -3,7 +3,11 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 interface Player {
     connected: boolean;
     date_connection: string;
-    in_game: boolean
+    in_game: boolean;
+}
+
+interface PlayerList {
+    [key: string]: Player;
 }
 
 // Define types for the WebSocket context
@@ -14,7 +18,7 @@ interface WebSocketContextType {
         loading: 'hidden' | 'visible';
         experiment_state: string;
     };
-    playerList: Player[];
+    playerList: PlayerList;
 }
 
 // Initialize context with a default value of `null` for WebSocket and default values for other states
@@ -31,7 +35,28 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
         loading: 'hidden' as 'hidden' | 'visible',
         experiment_state: 'NONE'
     });
-    const [playerList, setPlayerList] = useState<any[]>([]); // Replace `any` with a more specific type if available
+    const [playerList, setPlayerList] = useState<PlayerList>({
+        "Player_123": {
+            connected: true,
+            date_connection: '09:58',
+            in_game: false
+        },
+        "Player_23": {
+            connected: false,
+            date_connection: '09:58',
+            in_game: false
+        },
+        "Player_125": {
+            connected: true,
+            date_connection: '09:58',
+            in_game: false
+        },
+        "Player_122": {
+            connected: false,
+            date_connection: '09:58',
+            in_game: false
+        }
+    });
 
     useEffect(() => {
         const host = import.meta.env.WEB_APPLICATION_HOST || 'localhost';
@@ -46,11 +71,12 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
 
         socket.onmessage = (event: MessageEvent) => {
             const data = JSON.parse(event.data);
+            console.log('[WebSocketManager] Data received:', data); // Log data received
             switch (data.type) {
                 case 'json_state':
                     console.log('Do something', data);
                     setGama(data.gama);
-                    setPlayerList(data.player);
+                    // setPlayerList(data.player); reactivate after real vrHeadset
                     break;
                 case '':
                     console.log("toto");
