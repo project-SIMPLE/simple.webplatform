@@ -17,6 +17,8 @@ interface WebSocketContextType {
         connected: boolean;
         loading: 'hidden' | 'visible';
         experiment_state: string;
+        experiment_name: string;
+        content_error: string
     };
     playerList: PlayerList;
 }

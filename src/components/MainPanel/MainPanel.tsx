@@ -14,6 +14,11 @@ const MainPanel: React.FC = () => {
     console.log('gama', gama);
   }, [gama]);
 
+  useEffect(() => {
+    console.log('ws', ws);
+  }, [ws]);
+
+
   const handleLaunch = () => {
     if(ws !== null){
         ws.send(JSON.stringify({"type": "resume_experiment"}));
@@ -136,7 +141,7 @@ const MainPanel: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <div className="w-2/3 bg-white p-8 shadow-lg rounded-lg text-center">
-        <div className="text-3xl mb-4">Waiting..</div>
+        <div className="text-3xl mb-4">Waiting {gama.experiment_name} .. </div> 
         <div className="flex justify-center mb-4">
           <svg
             className={`w-6 h-6 mr-2 ${gama.connected ? 'text-green-500' : 'text-gray-500'}`}
@@ -286,7 +291,7 @@ const MainPanel: React.FC = () => {
           );
         })}
       </div>
-    </div>
+          </div>
   );
 };
 
