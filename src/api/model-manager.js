@@ -20,6 +20,7 @@ class ModelManager {
     constructor(controller) {
         this.controller = controller;
         this.models = this.initModelsList();
+        console.log("cocuocu"+JSON.stringify(this.models)+"cocuocu");
     }
 
     initModelsList() {
