@@ -29,10 +29,9 @@ class Model {
 
     toJSON() {
         return {
-            jsonGama: this.jsonGama,
-            jsonPlayers: this.jsonPlayers,
+            type:"json_simulation_list",
             jsonSettings: this.jsonSettings,
-            modelFilePath: this.modelFilePath
+            modelFilePath: this.modelFilePath   
         };
     }
     

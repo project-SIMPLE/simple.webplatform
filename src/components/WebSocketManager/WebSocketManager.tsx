@@ -10,17 +10,34 @@ interface PlayerList {
     [key: string]: Player;
 }
 
+interface Simulation {
+    experiment_name: string;
+    model_file_path: string;
+    name: string;
+    player_html_file: string;
+    player_web_interface: string;
+    splashscreen: string;
+    type: string;
+    type_model_file_path: string;
+}
+
+interface SimulationList {
+    [key: string]: Simulation;
+}
+
 // Define types for the WebSocket context
 interface WebSocketContextType {
     ws: WebSocket | null;
+    isWsConnected: boolean;
     gama: {
         connected: boolean;
         loading: 'hidden' | 'visible';
         experiment_state: string;
         experiment_name: string;
-        content_error: string
+        content_error: string;
     };
     playerList: PlayerList;
+    simulationList: Simulation[];
 }
 
 // Initialize context with a default value of `null` for WebSocket and default values for other states
@@ -30,54 +47,53 @@ interface WebSocketManagerProps {
     children: ReactNode;
 }
 
-// The webSocketManager component
 const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
-    
-    // Initialize states for WebSocket, gama and playerList
     const [ws, setWs] = useState<WebSocket | null>(null);
+    const [isWsConnected, setIsWsConnected] = useState<boolean>(false);
     const [gama, setGama] = useState({
         connected: false,
         loading: 'hidden' as 'hidden' | 'visible',
-        experiment_state: 'NONE'
+        experiment_state: 'NONE',
     });
     const [playerList, setPlayerList] = useState<PlayerList>({});
+    const [simulationList, setSimulationList] = useState<Simulation[]>([]);
 
-    // useEffect hook to connect to the WebSocket server
     useEffect(() => {
-        const host = import.meta.env.WEB_APPLICATION_HOST || 'localhost';
-        const port = import.meta.env.MONITOR_WS_PORT || '8001';
+        const host = import.meta.env.VITE_WEB_APPLICATION_HOST || 'localhost';
+        const port = import.meta.env.VITE_MONITOR_WS_PORT || '8001';
 
         const socket = new WebSocket(`ws://${host}:${port}`);
         setWs(socket);
 
-        // event handle for the WebSocket connection
         socket.onopen = () => {
             console.log('[WebSocketManager] WebSocket connected to backend');
+            setIsWsConnected(true);
         };
 
-        // event handler for messages received from the server
         socket.onmessage = (event: MessageEvent) => {
-            
-            // convert the data received to JSON
             const data = JSON.parse(event.data);
-            console.log('[WebSocketManager] Data received:', data); // Log data received
-            switch (data.type) {
-                
-                case 'json_state':
-                    console.log('data retrieved ', data);
-                    setGama(data.gama);
-                    setPlayerList(data.player);
-                    break;
-                case 'json_settings':
-                    console.log("json_settings data:",data);
-                    break; 
-                default:
-                    console.warn('[WebSocketManager] Message not processed', data);
+            console.log('[WebSocketManager] Data received:', data);
+
+            if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
+                setSimulationList(data.map(sim => sim.jsonSettings));
+            } else {
+                switch (data.type) {
+                    case 'json_state':
+                        setGama(data.gama);
+                        setPlayerList(data.player);
+                        break;
+                    case 'json_settings':
+                        console.log('json_settings data:', data);
+                        break;
+                    default:
+                        console.warn('[WebSocketManager] Message not processed', data);
+                }
             }
         };
 
         socket.onclose = () => {
-            console.log('WebSocket disconnected');
+            console.log('[WebSocketManager] WebSocket disconnected');
+            setIsWsConnected(false);
         };
 
         return () => {
@@ -87,9 +103,8 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
         };
     }, []);
 
-    // Return the WebSocket context provider with the WebSocket, gama and playerList states for all its children
     return (
-        <WebSocketContext.Provider value={{ ws, gama, playerList }}>
+        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList }}>
             {children}
         </WebSocketContext.Provider>
     );
