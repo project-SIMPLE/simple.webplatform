@@ -27,8 +27,16 @@ class Model {
         this.modelFilePath = path.join(path.dirname(settingsPath),this.jsonSettings.model_file_path);
     }
 
+    toJSON() {
+        return {
+            jsonGama: this.jsonGama,
+            jsonPlayers: this.jsonPlayers,
+            jsonSettings: this.jsonSettings,
+            modelFilePath: this.modelFilePath
+        };
+    }
+    
     // Getter all
-
     getAll() {
         return {
             type:"json_state",

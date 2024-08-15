@@ -54,6 +54,11 @@ class ModelManager {
         return modelList;
     }
 
+    getModelListJSON() {
+        const jsonSafeModels = this.models.map(model => model.toJSON());
+        return JSON.stringify(jsonSafeModels);   
+    }
+
     getModelList() {
         return this.models;
     }

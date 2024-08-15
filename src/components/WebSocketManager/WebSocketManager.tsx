@@ -30,7 +30,10 @@ interface WebSocketManagerProps {
     children: ReactNode;
 }
 
+// The webSocketManager component
 const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
+    
+    // Initialize states for WebSocket, gama and playerList
     const [ws, setWs] = useState<WebSocket | null>(null);
     const [gama, setGama] = useState({
         connected: false,
@@ -39,6 +42,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
     });
     const [playerList, setPlayerList] = useState<PlayerList>({});
 
+    // useEffect hook to connect to the WebSocket server
     useEffect(() => {
         const host = import.meta.env.WEB_APPLICATION_HOST || 'localhost';
         const port = import.meta.env.MONITOR_WS_PORT || '8001';
@@ -46,22 +50,27 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
         const socket = new WebSocket(`ws://${host}:${port}`);
         setWs(socket);
 
+        // event handle for the WebSocket connection
         socket.onopen = () => {
             console.log('[WebSocketManager] WebSocket connected to backend');
         };
 
+        // event handler for messages received from the server
         socket.onmessage = (event: MessageEvent) => {
+            
+            // convert the data received to JSON
             const data = JSON.parse(event.data);
             console.log('[WebSocketManager] Data received:', data); // Log data received
             switch (data.type) {
+                
                 case 'json_state':
-                    console.log('Do something', data);
+                    console.log('data retrieved ', data);
                     setGama(data.gama);
                     setPlayerList(data.player);
                     break;
-                case '':
-                    console.log("toto");
-                    break;
+                case 'json_settings':
+                    console.log("json_settings data:",data);
+                    break; 
                 default:
                     console.warn('[WebSocketManager] Message not processed', data);
             }
@@ -78,6 +87,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
         };
     }, []);
 
+    // Return the WebSocket context provider with the WebSocket, gama and playerList states for all its children
     return (
         <WebSocketContext.Provider value={{ ws, gama, playerList }}>
             {children}

@@ -67,6 +67,10 @@ class MonitorServer {
                         case "clean_all":
                             this.controller.cleanAll();
                             break;
+                        case "get_simulation_informations":
+                            // send to the Web socket Manager
+                            socket.send(this.controller.getSimulationInformations());
+                            break;
                         default:
                             console.warn("\x1b[31m-> The last message received from the monitor had an unknown type.\x1b[0m");
                             console.warn(jsonMonitor);

@@ -27,7 +27,7 @@ class Controller {
         this.monitor_server.close()
         this.player_server = new PlayerServer(this);
         this.gama_connector = new GamaConnector(this);
-        this.monitor_server = new MonitorServer(this);
+        this.monitor_server = new MonitorServer(this);  
     }
 
     /**
@@ -36,6 +36,16 @@ class Controller {
      */
     changeJsonSettings(json_settings){
         this.model.setJsonSettings(json_settings)
+    }
+
+     /**
+     * get simulations infos, appeler model-manager pas le model directement
+     * @returns {JSON} - The json of the simulation
+     * tester l'appel de la méthode 
+     *   
+     */
+     getSimulationInformations(){
+        return this.modelManager.getModelListJSON();
     }
 
     /**
@@ -152,7 +162,7 @@ class Controller {
     connectGama() {
         this.gama_connector.connectGama();
     }
-
+   
 }
 
 // module.exports = Controller;
