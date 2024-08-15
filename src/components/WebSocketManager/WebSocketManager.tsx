@@ -38,6 +38,7 @@ interface WebSocketContextType {
     };
     playerList: PlayerList;
     simulationList: Simulation[];
+    selectedSimulation: Simulation | null;
 }
 
 // Initialize context with a default value of `null` for WebSocket and default values for other states
@@ -57,6 +58,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
     });
     const [playerList, setPlayerList] = useState<PlayerList>({});
     const [simulationList, setSimulationList] = useState<Simulation[]>([]);
+    const [selectedSimulation, setSelectedSimulation] = useState<Simulation | null>(null);
 
     useEffect(() => {
         const host = import.meta.env.VITE_WEB_APPLICATION_HOST || 'localhost';
@@ -85,6 +87,10 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
                     case 'json_settings':
                         console.log('json_settings data:', data);
                         break;
+                    case 'get_simulation_by_index':
+                        // console.log('get_simulation_by_index data:', data);
+                        setSelectedSimulation(data.simulation);
+                        break;
                     default:
                         console.warn('[WebSocketManager] Message not processed', data);
                 }
@@ -104,7 +110,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
     }, []);
 
     return (
-        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList }}>
+        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList, selectedSimulation }}>
             {children}
         </WebSocketContext.Provider>
     );

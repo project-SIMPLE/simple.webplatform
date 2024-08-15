@@ -4,21 +4,17 @@ import VRHeadset from '../VRHeadset/VRHeadset';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 
 const MainPanel: React.FC = () => {
-  const { ws, gama, playerList } = useWebSocket();
+  const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket();
 
+  // test the value of selectedSimulation if change it after each click 
   useEffect(() => {
-    console.log('Player List:', playerList);
-  }, [playerList]);
+    if (isWsConnected && ws !== null) {
+      console.log('Selected simulation:', selectedSimulation);
+    }
 
-  useEffect(() => {
-    console.log('gama', gama);
-  }, [gama]);
+  }, [selectedSimulation]);
 
-  useEffect(() => {
-    console.log('ws', ws);
-  }, [ws]);
-
-
+  
   const handleLaunch = () => {
     if(ws !== null){
         ws.send(JSON.stringify({"type": "resume_experiment"}));
@@ -141,8 +137,12 @@ const MainPanel: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <div className="w-2/3 bg-white p-8 shadow-lg rounded-lg text-center">
-        <div className="text-3xl mb-4">Waiting {gama.experiment_name} .. </div> 
-        <div className="flex justify-center mb-4">
+      {selectedSimulation ? (
+      <div className="text-3xl mb-4">Waiting {selectedSimulation.name} .. </div> 
+      ) : (
+          <div className="text-3xl mb-4">No simulation selected</div> 
+      )}
+      <div className="flex justify-center mb-4">
           <svg
             className={`w-6 h-6 mr-2 ${gama.connected ? 'text-green-500' : 'text-gray-500'}`}
             fill="none"

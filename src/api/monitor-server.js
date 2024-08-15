@@ -71,6 +71,23 @@ class MonitorServer {
                             // send to the Web socket Manager
                             socket.send(this.controller.getSimulationInformations());
                             break;
+                        case "get_simulation_by_index":
+                            const index = jsonMonitor['simulationIndex'];  // Extract the index from the received message
+                            
+                            if (index !== undefined && index >= 0 && index < this.controller.modelManager.getModelList().length) {
+                                // Retrieve the simulation based on the index
+                                const selectedSimulation = this.controller.modelManager.getModelList()[index]; 
+                                
+                                socket.send(JSON.stringify({ 
+                                    type: "get_simulation_by_index", 
+                                    simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
+                                }));
+
+                            } else {
+                                console.error("Invalid index received or out of bounds");
+                            }
+
+                            break;
                         default:
                             console.warn("\x1b[31m-> The last message received from the monitor had an unknown type.\x1b[0m");
                             console.warn(jsonMonitor);

@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import Button from '../Button/Button';
 
 const SelectorSimulations = () => {
-  const { ws, isWsConnected, simulationList } = useWebSocket();
+  const { ws, isWsConnected, simulationList, selectedSimulation } = useWebSocket();
 
   useEffect(() => {
     if (isWsConnected && ws !== null) {
@@ -12,6 +12,14 @@ const SelectorSimulations = () => {
     }
   }, [isWsConnected, ws]);
 
+  const handleSimulation = (index: number) => {
+    if (isWsConnected && ws !== null) {
+      // we send the message to the WebSocket server 
+      ws.send(JSON.stringify({ type: 'get_simulation_by_index', simulationIndex: index }));
+    } else {                          
+      console.error('WebSocket is not connected');
+    }
+  }
 
   if (isWsConnected) {
     return (
@@ -21,7 +29,7 @@ const SelectorSimulations = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {simulationList.map((simulation, index) => (
             <Link to="/" className="text-black" key={index}>
-              <div className="bg-white shadow-lg rounded-lg p-6 flex flex-col items-center h-64">
+              <div onClick={() => handleSimulation(index)} key={index} className="bg-white shadow-lg rounded-lg p-6 flex flex-col items-center h-64">
                 <h2 className="text-2xl font-semibold mb-4">{simulation.name}</h2>
                 <p className="text-gray-500">experiment name: {simulation.experiment_name}</p>
                 <p className="text-gray-500">File path simulation: </p>
