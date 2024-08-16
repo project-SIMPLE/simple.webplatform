@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import React, { useEffect } from 'react';
 import Button from '../Button/Button';
+import Navigation from '../Navigation/Navigation';
 
 const SelectorSimulations = () => {
   const { ws, isWsConnected, simulationList, selectedSimulation } = useWebSocket();
@@ -24,7 +25,8 @@ const SelectorSimulations = () => {
   if (isWsConnected) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8">
-        <h1 className="text-4xl font-bold mb-8">Simulations</h1>
+        <Navigation />
+        <h1 className="text-2xl font-bold mb-4">Select a simulation </h1>
   
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {simulationList.map((simulation, index) => (

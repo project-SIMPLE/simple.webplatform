@@ -4,6 +4,7 @@ import VRHeadset from '../VRHeadset/VRHeadset';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import SimulationState from './SimulationState';
 import SimulationManagerButtons from './SimulationManagerButtons';
+import Navigation from '../Navigation/Navigation';
 
 const SimulationManager : React.FC = () => {
   const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket();
@@ -32,7 +33,9 @@ const SimulationManager : React.FC = () => {
 
 
   return (
+    
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+      <Navigation />
       <div className="w-2/3 bg-white p-8 shadow-lg rounded-lg text-center">
       {/* case Simulation Selected */}
       {selectedSimulation ? (

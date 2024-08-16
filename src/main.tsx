@@ -15,7 +15,7 @@ const App: React.FC = () => {
     <BrowserRouter>
         <WebSocketManager>
             <Routes>
-                <Route path="/" element={<SelectorSimulations />} />
+                <Route index element={<SelectorSimulations />} />
                 <Route path="navigation" element={<Navigation />} />
                 <Route path="simulationManager" element={<SimulationManager />} />
                 <Route path="streamPlayerScreen" element={ <StreamPlayerScreen /> } />

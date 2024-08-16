@@ -1,35 +1,21 @@
 // src/components/navigation.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import logoSimple from '../../../public/images/SIMPLE_Logo_Complet_Sticker.png'; // Replace with the correct path to your image
 
 const Navigation: React.FC = () => {
   return (
-    <nav className="bg-blue-500 p-4 text-white">
-      <ul className="flex space-x-4">
+    <nav className=" bg-opacity-50 p-2">
+      <ul className="flex items-center space-x-4">
+        <Link to="/" className="text-white hover:text-gray-400">
+          <li>
+            <img src={logoSimple} alt="Logo" className="h-10 w-10 mr-4" style={{ height: 'auto', width: '290px' }} /> {/* Adjust the size as needed */}
+          </li>
+        </Link>
         <li>
-          <Link to="/" className="hover:text-gray-200 text-white">
-            Home
-          </Link>
-        </li>
-        <li>
-          <Link to="/monitor" className="hover:text-gray-200 text-white">
-            Monitor
-          </Link>
-        </li>
-        <li>
-          <Link to="/monitorV2" className="hover:text-gray-200 text-white">
-            Monitor V2
-          </Link>
-        </li>
-        <li>
-          <Link to="/settings" className="hover:text-gray-200 text-white">
-            Settings
-          </Link>
-        </li>
-        <li>
-          <Link to="/player" className="hover:text-gray-200 text-white">
-            Player
-          </Link>
+          {/* <Link to="/" className="text-white hover:text-gray-400">
+            Simulations
+          </Link> */}
         </li>
       </ul>
     </nav>
