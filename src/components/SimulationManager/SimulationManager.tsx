@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
+import SimulationState from './SimulationState';
 
 const SimulationManager : React.FC = () => {
   const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket();
@@ -68,72 +69,6 @@ const SimulationManager : React.FC = () => {
     }
   };
 
-  // change & display state of the simulation
-  const renderExperimentState = () => {
-    switch (gama.experiment_state) {
-      case 'RUNNING':
-        return (
-          <div className="flex justify-center mb-4">
-            <svg
-              className="w-6 h-6 mr-2 text-green-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            <span className="text-green-500">Simulation is running</span>
-          </div>
-        );
-      case 'PAUSED':
-        return (
-          <div className="flex justify-center mb-4">
-            <svg
-              className="w-6 h-6 mr-2 text-orange-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M10 9v6m4-6v6"
-              />
-            </svg>
-            <span className="text-orange-400">Simulation is paused</span>
-          </div>
-        );
-      case 'NONE':
-      default:
-        return (
-          <div className="flex justify-center mb-4">
-            <svg
-              className="w-6 h-6 mr-2 text-red-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-            <span className="text-red-500">Simulation not launched</span>
-          </div>
-        );
-    }
-  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
@@ -162,8 +97,9 @@ const SimulationManager : React.FC = () => {
             </span>
           </div>
         
-          {/*should create a component for this function*/}
-          {renderExperimentState()}
+
+          {/* Display the state of the simulation */}
+          <SimulationState experiment_state={gama.experiment_state} />
         
           {/* Display Buttons to monitor the simulation */}
           <div className="flex justify-center mb-4">
