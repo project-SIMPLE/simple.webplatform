@@ -28,7 +28,7 @@ const SelectorSimulations = () => {
   
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {simulationList.map((simulation, index) => (
-            <Link to="/" className="text-black" key={index}>
+            <Link to="/simulationManager" className="text-black" key={index}>
               <div onClick={() => handleSimulation(index)} key={index} className="bg-white shadow-lg rounded-lg p-6 flex flex-col items-center h-64">
                 <h2 className="text-2xl font-semibold mb-4">{simulation.name}</h2>
                 <p className="text-gray-500">experiment name: {simulation.experiment_name}</p>

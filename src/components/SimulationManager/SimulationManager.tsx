@@ -3,7 +3,7 @@ import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 
-const MainPanel: React.FC = () => {
+const SimulationManager : React.FC = () => {
   const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket();
 
   // test the value of selectedSimulation if change it after each click 
@@ -308,4 +308,4 @@ const MainPanel: React.FC = () => {
   );
 };
 
-export default MainPanel;
+export default SimulationManager;
