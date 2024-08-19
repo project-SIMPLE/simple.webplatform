@@ -84,22 +84,30 @@ const SimulationManagerButtons : React.FC = () => {
                     />
                 </svg>
                 } showText={true} />
-                <Button onClick={handlePlayPause} text="Play/Pause" bgColor="bg-green-500" icon={
-                <svg
-                    className="w-6 h-6 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M10 9v6m4-6v6"
-                    />
-                </svg>
-                } showText={true} />
+                
+                <Button
+                  onClick={handlePlayPause}
+                  text={gama.experiment_state === 'RUNNING' ? 'Pause' : 'Resume'}
+                  bgColor="bg-green-500"
+                  icon={
+                    <svg
+                      className="w-6 h-6 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth="2"
+                        d="M10 9v6m4-6v6" 
+                      />
+                    </svg>
+                  }
+                  showText={true}
+                />
+
                 <Button onClick={handleEnd} text="End" bgColor="bg-red-500" icon={
                 <svg
                     className="w-6 h-6 mr-2"
