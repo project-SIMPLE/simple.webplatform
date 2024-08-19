@@ -16,6 +16,15 @@ const SimulationManager : React.FC = () => {
     }
   }, [selectedSimulation]);
 
+  
+  // UseEffect to add players when playerList changes
+  useEffect(() => {
+    if (isWsConnected && ws !== null) {
+      Object.keys(playerList).forEach((key, index) => {
+        ws.send(JSON.stringify({ type: "add_player_headset", id: key }));
+      });
+    }
+  }, [playerList, isWsConnected, ws]);
 
   //  Handler for players 
   const handleRemove = (index: number) => {
@@ -32,7 +41,7 @@ const SimulationManager : React.FC = () => {
   };
 
 
-
+  
   return (
     
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
