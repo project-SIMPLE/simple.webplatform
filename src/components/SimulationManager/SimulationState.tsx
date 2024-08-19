@@ -11,7 +11,7 @@ const SimulationState : FC<SimulationStateProps> = ({experiment_state}) => {
   
     const renderExperimentState = () => {
         
-        console.log(experiment_state);
+        // console.log(experiment_state);
         
         switch (experiment_state) {
           case 'RUNNING':

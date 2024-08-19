@@ -74,7 +74,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
 
         socket.onmessage = (event: MessageEvent) => {
             const data = JSON.parse(event.data);
-            console.log('[WebSocketManager] Data received:', data);
+            // console.log('[WebSocketManager] Data received:', data);
 
             if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
                 setSimulationList(data.map(sim => sim.jsonSettings));
@@ -85,7 +85,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
                         setPlayerList(data.player);
                         break;
                     case 'json_settings':
-                        console.log('json_settings data:', data);
+                        // console.log('json_settings data:', data);
                         break;
                     case 'get_simulation_by_index':
                         // console.log('get_simulation_by_index data:', data);

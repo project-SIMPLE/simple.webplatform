@@ -9,14 +9,15 @@ import Navigation from '../Navigation/Navigation';
 const SimulationManager : React.FC = () => {
   const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket();
 
-  // test the value of selectedSimulation if change it after each click 
+ 
   useEffect(() => {
     if (isWsConnected && ws !== null) {
-      console.log('Selected simulation:', selectedSimulation);
+      // console.log('Selected simulation:', selectedSimulation);
     }
-
   }, [selectedSimulation]);
 
+
+  //  Handler for players 
   const handleRemove = (index: number) => {
     if(ws !== null){
         ws.send(JSON.stringify({"type": "remove_player_headset", "id": index}));
@@ -27,7 +28,7 @@ const SimulationManager : React.FC = () => {
 
   const handleRestart = (index: number) => {
     console.log(`Restart button clicked for headset ${index}`);
-    // Logic for restart button
+    // Logic for restart button ...
   };
 
 
