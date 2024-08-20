@@ -1,7 +1,7 @@
 // src/components/navigation.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import logoSimple from '../../../public/images/SIMPLE_Logo_Complet_Sticker.png'; // Replace with the correct path to your image
+import logoSimple from '/images/SIMPLE_Logo_Complet_Sticker.png'; // Replace with the correct path to your image
 
 const Navigation: React.FC = () => {
   return (
