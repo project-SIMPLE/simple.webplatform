@@ -6,13 +6,13 @@ import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 const SimulationManagerButtons : React.FC = () => {
     const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket();
 
-    const handleLaunch = () => {
-        if(ws !== null){
-            ws.send(JSON.stringify({"type": "resume_experiment"}));
-          }else{
-          console.error("WS is null");
-        }
-      };
+
+      // Faire le useEffect pour load automatiquement après que connecté  
+      // gama.connected && useEffect(() => {
+      //     if (isWsConnected && ws !== null) {
+      //       ws.send(JSON.stringify({"type": "launch_experiment"}));
+      //     }
+      //   }, [gama.connected]);
     
       const handleLoad = () => {
         if(ws !== null){
