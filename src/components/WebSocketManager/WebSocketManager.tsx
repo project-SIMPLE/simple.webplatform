@@ -61,7 +61,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
     const [selectedSimulation, setSelectedSimulation] = useState<Simulation | null>(null);
 
     useEffect(() => {
-        const host = import.meta.env.VITE_WEB_APPLICATION_HOST || 'localhost';
+        const host = window.location.hostname; // getCurrentPageDomain(); -> "10.0.153.184";
         const port = import.meta.env.VITE_MONITOR_WS_PORT || '8001';
 
         const socket = new WebSocket(`ws://${host}:${port}`);
