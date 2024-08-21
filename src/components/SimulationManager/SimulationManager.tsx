@@ -5,9 +5,11 @@ import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import SimulationState from './SimulationState';
 import SimulationManagerButtons from './SimulationManagerButtons';
 import Navigation from '../Navigation/Navigation';
+import { useNavigate } from 'react-router-dom';
 
 const SimulationManager : React.FC = () => {
   const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket();
+  const navigate = useNavigate();
 
  
   useEffect(() => {
@@ -25,6 +27,13 @@ const SimulationManager : React.FC = () => {
       });
     }
   }, [playerList, isWsConnected, ws]);
+
+   // Redirect to main page if no simulation is selected
+   useEffect(() => {
+    if (!selectedSimulation) {
+      navigate('/'); 
+    }
+  }, [selectedSimulation, navigate]);
 
   //  Handler for players 
   const handleRemove = (index: number) => {
@@ -142,7 +151,7 @@ const SimulationManager : React.FC = () => {
       </div>
 
       ) : (
-          // case No Simulation Selected
+          // case No Simulation Selected, (not displayed anymore) 
           <div className="text-3xl mb-4">No simulation selected</div> 
       )}
       </div>
