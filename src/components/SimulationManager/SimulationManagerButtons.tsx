@@ -69,7 +69,7 @@ const SimulationManagerButtons : React.FC = () => {
               </div>
             )}
             <div className="flex justify-center space-x-2">
-                <Button onClick={handleLoad} text="Load" bgColor="bg-blue-500" icon={
+                {/* <Button onClick={handleLoad} text="Load" bgColor="bg-blue-500" icon={
                 <svg
                     className="w-6 h-6 mr-2"
                     fill="none"
@@ -84,7 +84,7 @@ const SimulationManagerButtons : React.FC = () => {
                     d="M12 4v16m8-8H4"
                     />
                 </svg>
-                } showText={true} />
+                } showText={true} /> */}
                 
                 <Button
                   onClick={handlePlayPause}
