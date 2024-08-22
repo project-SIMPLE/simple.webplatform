@@ -7,40 +7,59 @@ import Navigation from '../Navigation/Navigation';
 const SelectorSimulations = () => {
   const { ws, isWsConnected, simulationList, selectedSimulation } = useWebSocket();
   const [directoryPath, setDirectoryPath] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     if (isWsConnected && ws !== null) {
       ws.send(JSON.stringify({ type: 'get_simulation_informations' }));
+      setLoading(true);
     }
   }, [isWsConnected, ws]);
+
+  useEffect(() => {
+    if (simulationList.length > 0) {
+      setLoading(false);
+    }
+  }, [simulationList]);
 
   const handleSimulation = (index: number) => {
     if (isWsConnected && ws !== null) {
       ws.send(JSON.stringify({ type: 'get_simulation_by_index', simulationIndex: index }));
-    } else {                          
+    } else {
       console.error('WebSocket is not connected');
     }
-  }
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8">
       <Navigation />
       <h1 className="text-2xl font-bold mb-4">Select a simulation </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {simulationList.map((simulation, index) => (
-          <Link to="/simulationManager" className="text-black" key={index}>
-            <div onClick={() => handleSimulation(index)} key={index} className="bg-white shadow-lg rounded-lg p-6 flex flex-col items-center h-64">
-              <h2 className="text-2xl font-semibold mb-4">{simulation.name}</h2>
-              <p className="text-gray-500">experiment name: {simulation.experiment_name}</p>
-              <p className="text-gray-500">File path simulation: </p>
-              <p className="text-gray-500">{simulation.model_file_path}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
+      {loading ? (
+        <div className="text-center">
+          {/* Spinner loading */}
+          <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4"></div>
+          <h2 className="text-gray-700">Loading simulations...</h2>
+        </div>
+      ) : (
+        <div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {simulationList.map((simulation, index) => (
+            <Link to="/simulationManager" className="text-black" key={index}>
+              <div onClick={() => handleSimulation(index)} key={index} className="bg-white shadow-lg rounded-lg p-6 flex flex-col items-center h-64">
+                <h2 className="text-2xl font-semibold mb-4">{simulation.name}</h2>
+                <p className="text-gray-500">experiment name: {simulation.experiment_name}</p>
+                <p className="text-gray-500">File path simulation: </p>
+                <p className="text-gray-500">{simulation.model_file_path}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+          
+          <div className="flex flex-col items-center justify-center">
 
-      <Button
+        <Button
         onClick={() => {
           if (isWsConnected && ws !== null) {
             ws.send(JSON.stringify({ type: 'get_simulation_informations' }));
@@ -57,6 +76,7 @@ const SelectorSimulations = () => {
         }
         showText={true}
       />
+      </div>
 
       <div className="mt-8">
         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="directoryPath">
@@ -88,6 +108,8 @@ const SelectorSimulations = () => {
         }
         showText={true}
       />
+      </div>
+      )}
     </div>
   );
 };
