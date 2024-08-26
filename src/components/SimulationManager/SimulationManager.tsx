@@ -18,7 +18,7 @@ const SimulationManager : React.FC = () => {
     }
   }, [selectedSimulation]);
 
-  
+
   // UseEffect to add players when playerList changes
   useEffect(() => {
     if (isWsConnected && ws !== null) {
@@ -59,7 +59,7 @@ const SimulationManager : React.FC = () => {
       {/* case Simulation Selected */}
       {selectedSimulation ? (
       <div> 
-        <div className="text-3xl mb-4">Waiting {selectedSimulation.name} .. </div> 
+        <div className="text-3xl mb-4">{selectedSimulation.name}</div> 
         <div className="flex justify-center mb-4">
             <svg
               className={`w-6 h-6 mr-2 ${gama.connected ? 'text-green-500' : 'text-gray-500'}`}
