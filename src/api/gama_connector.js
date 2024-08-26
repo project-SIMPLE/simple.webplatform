@@ -239,39 +239,58 @@ class GamaConnector {
             console.warn("GAMA is not connected or an experiment is already running...");
         }
     }
-
     /**
      * Asks Gama to stop the experiment
      */
     stopExperiment() {
-        if (['RUNNING','PAUSED','NOTREADY'].includes(this.model.getGama().experiment_state)) {
-            list_messages = [this.jsonControlGamaExperiment("stop")];
-            index_messages = 0;
-            do_sending = true;
-            continue_sending = true;
-            this.model.setGamaLoading(true)
-            function_to_call = () => {
-                this.model.setGamaLoading(false)
-                this.model.setRemoveInGameEveryPlayers()
-            }
-            this.sendMessages()
+        const currentState = this.model.getGama().experiment_state;
+    
+        // If the simulation is running, pause it first, then stop it
+        if (currentState === 'RUNNING') {
+            console.log("Pausing the simulation before stopping...");
+            this.pauseExperiment(() => {
+                console.log("Simulation paused. Now stopping...");
+                this.executeStopExperiment();
+            });
+        } else if (['PAUSED', 'NOTREADY'].includes(currentState)) {
+            // If already paused or not ready, directly stop the experiment
+            this.executeStopExperiment();
         }
     }
-
+    
+    // Helper function to execute the stop operation
+    executeStopExperiment() {
+        list_messages = [this.jsonControlGamaExperiment("stop")];
+        index_messages = 0;
+        do_sending = true;
+        continue_sending = true;
+        
+        this.model.setGamaLoading(true);
+        function_to_call = () => {
+            this.model.setGamaLoading(false);
+            this.model.setRemoveInGameEveryPlayers();
+        };
+    
+        this.sendMessages();
+    }
     /**
      * Asks Gama to pause the experiment
      */
-    pauseExperiment() {
+    pauseExperiment(callback) {
         if (this.model.getGama().experiment_state === 'RUNNING') {
             list_messages = [this.jsonControlGamaExperiment("pause")];
             index_messages = 0;
             do_sending = true;
             continue_sending = true;
-            this.model.setGamaLoading(true)
+            this.model.setGamaLoading(true);
+    
             function_to_call = () => {
-                this.model.setGamaLoading(false)
-            }
-            this.sendMessages()
+                this.model.setGamaLoading(false);
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            };
+            this.sendMessages();
         }
     }
 

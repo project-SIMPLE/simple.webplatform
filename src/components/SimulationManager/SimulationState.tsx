@@ -11,7 +11,7 @@ const SimulationState : FC<SimulationStateProps> = ({experiment_state}) => {
   
     const renderExperimentState = () => {
         
-        // console.log(experiment_state);
+        // console.log("EXPIREMENT STATE Right Now: ",experiment_state);
         
         switch (experiment_state) {
           case 'RUNNING':
@@ -54,7 +54,7 @@ const SimulationState : FC<SimulationStateProps> = ({experiment_state}) => {
                 <span className="text-orange-400">Simulation is paused</span>
               </div>
             );
-          case 'NONE':
+
           default:
             return (
               <div className="flex justify-center mb-4">
