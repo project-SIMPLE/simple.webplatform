@@ -88,6 +88,7 @@ const SimulationManager : React.FC = () => {
               return (
                 <div key={index} className="flex flex-col items-center">
                   <VRHeadset isConnected={player.connected} />
+                  <p style={{marginTop:"3px"}}>id player: {key}</p>
                   <p>{player.connected ? 'Connected' : 'Waiting for connection..'}</p>
                   
                   {/* Buttons under each players */}
