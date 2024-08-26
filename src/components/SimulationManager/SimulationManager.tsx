@@ -61,25 +61,18 @@ const SimulationManager : React.FC = () => {
       <div> 
         <div className="text-3xl mb-4">{selectedSimulation.name}</div> 
         <div className="flex justify-center mb-4">
-            <svg
-              className={`w-6 h-6 mr-2 ${gama.connected ? 'text-green-500' : 'text-gray-500'}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+            
+            <div
+              style={{ marginTop: '7.5px', marginRight: '15.2px' }}
+              className={`w-3 h-3 rounded-full  ${
+                gama.connected ? 'bg-green-500' : 'bg-gray-500'
+              }`}
+            ></div>
+            
             <span className={gama.connected ? 'text-green-500' : 'text-gray-500'}>
               {gama.connected ? 'Connected' : 'Waiting for connection'}
             </span>
           </div>
-        
 
           {/* Display the state of the simulation */}
           <SimulationState experiment_state={gama.experiment_state} />
