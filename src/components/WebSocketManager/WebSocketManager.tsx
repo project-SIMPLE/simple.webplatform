@@ -78,6 +78,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
 
             if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
                 setSimulationList(data.map(sim => sim.jsonSettings));
+                console.log('[WebSocketManager] Simulation list:', data);
             } else {
                 switch (data.type) {
                     case 'json_state':
