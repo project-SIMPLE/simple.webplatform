@@ -3,9 +3,11 @@ import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import React, { useEffect, useState } from 'react';
 import Button from '../Button/Button';
 import Navigation from '../Navigation/Navigation';
+import VRHeadset from '../VRHeadset/VRHeadset';
+
 
 const SelectorSimulations = () => {
-  const { ws, isWsConnected, simulationList, selectedSimulation } = useWebSocket();
+  const { ws, isWsConnected, simulationList, selectedSimulation, playerList } = useWebSocket();
   const [directoryPath, setDirectoryPath] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -28,6 +30,20 @@ const SelectorSimulations = () => {
     } else {
       console.error('WebSocket is not connected');
     }
+  };
+
+  // for headsets : 
+  const handleRemove = (index: number) => {
+    if(ws !== null){
+        ws.send(JSON.stringify({"type": "remove_player_headset", "id": index}));
+      }else{
+      console.error("WS is null");
+    }
+  };
+
+  const handleRestart = (index: number) => {
+    console.log(`Restart button clicked for headset ${index}`);
+    // Logic for restart button ...
   };
 
   return (
@@ -77,6 +93,68 @@ const SelectorSimulations = () => {
         showText={true}
       />
       </div>
+      
+      <h1 className="text-2xl font-bold mb-4">HeadSet connected : </h1>
+      <div className="flex justify-center mt-8 space-x-4">
+            
+            {Object.keys(playerList).map((key, index) => {
+              const player = playerList[key];
+              return (
+                <div key={index} className="flex flex-col items-center">
+                  <VRHeadset isConnected={player.connected} />
+                  <p>{player.connected ? 'Connected' : 'Waiting for connection..'}</p>
+                  
+                  {/* Buttons under each players */}
+                  <div className="flex mt-4 space-x-2">
+                    <Button
+                      onClick={() => handleRemove(index)}
+                      text="Remove"
+                      bgColor="bg-red-500"
+                      icon={
+                        <svg
+                          className="w-6 h-6 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      }
+                      showText={false}
+                    />
+                    <Button
+                      onClick={() => handleRestart(index)}
+                      text="Restart"
+                      bgColor="bg-orange-500"
+                      icon={
+                        <svg
+                          className="w-6 h-6 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M4 4v6h6M20 20v-6h-6M4 10c1.5-2 4-3 6-3h4c2 0 4 1 5 3M4 14c1.5 2 4 3 6 3h4c2 0 4-1 5-3"
+                          />
+                        </svg>
+                      }
+                      showText={false}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
       <div className="mt-8">
         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="directoryPath">
