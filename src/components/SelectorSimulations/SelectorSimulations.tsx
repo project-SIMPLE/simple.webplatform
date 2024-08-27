@@ -48,7 +48,7 @@ const SelectorSimulations = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8">
       <Navigation />
-      <h1 className="text-2xl font-bold mb-4">Select a simulation </h1>
+      <h1 className="text-3xl font-bold mb-4">Select a simulation </h1>
 
       {loading ? (
         <div className="text-center">
@@ -83,26 +83,7 @@ const SelectorSimulations = () => {
           ))}
         </div>
           
-          <div className="flex flex-col items-center justify-center">
-
-        <Button
-        onClick={() => {
-          if (isWsConnected && ws !== null) {
-            ws.send(JSON.stringify({ type: 'get_simulation_informations' }));
-          } else {
-            console.error('WebSocket is not connected');
-          }
-        }}
-        text="Get Simulations Informations"
-        bgColor="bg-green-500"
-        icon={
-          <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 9v6m4-6v6" />
-          </svg>
-        }
-        showText={true}
-      />
-      </div>
+         
       
       <h1 className="text-2xl font-bold mb-4">HeadSet connected : </h1>
       <div className="flex justify-center mt-8 space-x-4">
@@ -168,9 +149,9 @@ const SelectorSimulations = () => {
           </div>
 
       <div className="mt-8">
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="directoryPath">
-          Enter Project Directory Path:
-        </label>
+        <h1 className="text-2xl font-bold mb-4">Enter Project Directory Path: </h1>
+
+
         <input
           id="directoryPath"
           type="text"
@@ -199,6 +180,30 @@ const SelectorSimulations = () => {
       />
       </div>
       )}
+
+      <div className="flex flex-col items-center justify-center mt-8">
+        
+        <h1 className="text-2xl font-bold mb-4">Get simulation informations: </h1>
+        <Button
+          onClick={() => {
+            if (isWsConnected && ws !== null) {
+              ws.send(JSON.stringify({ type: 'get_simulation_informations' }));
+            } else {
+              console.error('WebSocket is not connected');
+            }
+          }}
+          text="Get Simulations Informations"
+          bgColor="bg-green-500"
+          icon={
+            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 9v6m4-6v6" />
+            </svg>
+          }
+          showText={true}
+        />
+      </div>
+
+
     </div>
   );
 };
