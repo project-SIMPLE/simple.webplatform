@@ -5,7 +5,6 @@ import Button from '../Button/Button';
 import Navigation from '../Navigation/Navigation';
 import VRHeadset from '../VRHeadset/VRHeadset';
 
-
 const SelectorSimulations = () => {
   const { ws, isWsConnected, simulationList, selectedSimulation, playerList } = useWebSocket();
   const [directoryPath, setDirectoryPath] = useState<string>('');
@@ -63,11 +62,22 @@ const SelectorSimulations = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {simulationList.map((simulation, index) => (
             <Link to="/simulationManager" className="text-black" key={index}>
-              <div onClick={() => handleSimulation(index)} key={index} className="bg-white shadow-lg rounded-lg p-6 flex flex-col items-center h-64">
+              
+              <div onClick={() => {handleSimulation(index);}} key={index} className="bg-white shadow-lg rounded-lg p-6 flex flex-col items-center h-64"
+                style={{
+                  backgroundImage: `url(${simulation.splashscreen})`,
+                  backgroundSize: 'cover', 
+                  width:"429px",
+                  height:"250px",
+                  // backgroundPosition: 'center' 
+                }}
+                
+>               
                 <h2 className="text-2xl font-semibold mb-4">{simulation.name}</h2>
-                <p className="text-gray-500">experiment name: {simulation.experiment_name}</p>
+                {/*<p className="text-gray-500">experiment name: {simulation.experiment_name}</p>
                 <p className="text-gray-500">File path simulation: </p>
                 <p className="text-gray-500">{simulation.model_file_path}</p>
+                <p className="text-gray-500">{simulation.splashscreen}</p> */}
               </div>
             </Link>
           ))}
