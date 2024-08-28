@@ -13,7 +13,7 @@ const SimulationManagerButtons : React.FC = () => {
       //       ws.send(JSON.stringify({"type": "launch_experiment"}));
       //     }
       //   }, [gama.connected]);
-    
+      
       const handleLoad = () => {
         if(ws !== null){
             ws.send(JSON.stringify({"type": "launch_experiment"}));
@@ -86,6 +86,8 @@ const SimulationManagerButtons : React.FC = () => {
                 </svg>
                 } showText={true} /> */}
                 
+
+                {/* add a new button */}
                 <Button
                   onClick={handlePlayPause}
                   text={gama.experiment_state === 'RUNNING' ? 'Pause' : 'Resume'}

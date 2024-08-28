@@ -49,7 +49,7 @@ const SimulationManager : React.FC = () => {
     // Logic for restart button ...
   };
 
-
+  console.log(selectedSimulation);
   
   return (
     
