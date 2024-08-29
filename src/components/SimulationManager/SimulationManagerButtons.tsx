@@ -45,7 +45,56 @@ const SimulationManagerButtons : React.FC = () => {
           console.error("WS is null");
         }
       };
-      
+      // console.log(gama.experiment_state);
+
+
+      const icon = gama.experiment_state === 'LAUNCHING'  ? (
+        <svg
+          className="w-6 h-6 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth="2"
+            d="M10 9v6m4-6v6" // Verticals bars for "pause"
+          />
+        </svg>
+
+      ) : gama.experiment_state === 'NONE' || gama.experiment_state === 'NOTREADY' || gama.experiment_state === 'PAUSED' ? (
+        <svg
+          className="w-6 h-6 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth="2"
+            d="M5 3l14 9-14 9V3z" // triangle for "play"
+          />
+        </svg>
+      ) : (
+        <svg
+          className="w-6 h-6 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth="2"
+            d="M10 9v6m4-6v6" 
+          />
+        </svg>
+      );
     return (
         <div>
             {!gama.connected && (
@@ -69,45 +118,22 @@ const SimulationManagerButtons : React.FC = () => {
               </div>
             )}
             <div className="flex justify-center space-x-2">
-                {/* <Button onClick={handleLoad} text="Load" bgColor="bg-blue-500" icon={
-                <svg
-                    className="w-6 h-6 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 4v16m8-8H4"
-                    />
-                </svg>
-                } showText={true} /> */}
-                
-
+            
                 {/* add a new button */}
                 <Button
                   onClick={handlePlayPause}
-                  text={gama.experiment_state === 'RUNNING' ? 'Pause' : 'Resume'}
-                  bgColor="bg-green-500"
-                  icon={
-                    <svg
-                      className="w-6 h-6 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth="2"
-                        d="M10 9v6m4-6v6" 
-                      />
-                    </svg>
+                  text={ 
+                    gama.experiment_state === 'NONE' ? 'Launch' :
+                    gama.experiment_state === 'RUNNING' ? 'Pause' :
+                    gama.experiment_state === 'NOTREADY' ? 'Not Ready' : 'Resume'
                   }
+                  bgColor={
+                    gama.experiment_state === 'RUNNING'
+                    ? 'bg-orange-500' 
+                    : 'bg-green-500'
+                  }                  
+                icon={ icon
+                }
                   showText={true}
                 />
 

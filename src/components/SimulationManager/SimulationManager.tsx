@@ -75,7 +75,7 @@ const SimulationManager : React.FC = () => {
           </div>
 
           {/* Display the state of the simulation */}
-          <SimulationState experiment_state={gama.experiment_state} />
+          {/* <SimulationState experiment_state={gama.experiment_state} /> */}
         
           {/* Display Buttons to monitor the simulation */}
           <SimulationManagerButtons />
