@@ -81,67 +81,73 @@ const SelectorSimulations = () => {
             ))}
           </div>
 
-          <h1 className="text-2xl font-bold mb-4">HeadSet connected:</h1>
-          <div className="flex justify-center mt-8 space-x-4">
-            {Object.keys(playerList).map((key, index) => {
-              const player = playerList[key];
-              return (
-                <div key={index} className="flex flex-col items-center">
-                  <VRHeadset isConnected={player.connected} />
-                  <p style={{ marginTop: "3px" }}>id player: {key}</p>
-                  <p>{player.connected ? 'Connected' : 'Waiting for connection..'}</p>
+          
+          {playerList && Object.keys(playerList).length > 0 && (
+            <>
+              <h1 className="text-2xl font-bold mb-4">HeadSet connected:</h1>
+              <div className="flex justify-center mt-8 space-x-4">
+                {Object.keys(playerList).map((key, index) => {
+                  const player = playerList[key];
+                  return (
+                    <div key={index} className="flex flex-col items-center">
+                      <VRHeadset isConnected={player.connected} />
+                      <p style={{ marginTop: "3px" }}>id player: {key}</p>
+                      <p>{player.connected ? 'Connected' : 'Waiting for connection..'}</p>
 
-                  {/* Buttons under each players */}
-                  <div className="flex mt-4 space-x-2">
-                    <Button
-                      onClick={() => handleRemove(index)}
-                      text="Remove"
-                      bgColor="bg-red-500"
-                      icon={
-                        <svg
-                          className="w-6 h-6 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      }
-                      showText={false}
-                    />
-                    <Button
-                      onClick={() => handleRestart(index)}
-                      text="Restart"
-                      bgColor="bg-orange-500"
-                      icon={
-                        <svg
-                          className="w-6 h-6 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M4 4v6h6M20 20v-6h-6M4 10c1.5-2 4-3 6-3h4c2 0 4 1 5 3M4 14c1.5 2 4 3 6 3h4c2 0 4-1 5-3"
-                          />
-                        </svg>
-                      }
-                      showText={false}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                      {/* Buttons under each player */}
+                      <div className="flex mt-4 space-x-2">
+                        <Button
+                          onClick={() => handleRemove(index)}
+                          text="Remove"
+                          bgColor="bg-red-500"
+                          icon={
+                            <svg
+                              className="w-6 h-6 mr-2"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          }
+                          showText={false}
+                        />
+                        <Button
+                          onClick={() => handleRestart(index)}
+                          text="Restart"
+                          bgColor="bg-orange-500"
+                          icon={
+                            <svg
+                              className="w-6 h-6 mr-2"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M4 4v6h6M20 20v-6h-6M4 10c1.5-2 4-3 6-3h4c2 0 4 1 5 3M4 14c1.5 2 4 3 6 3h4c2 0 4-1 5-3"
+                              />
+                            </svg>
+                          }
+                          showText={false}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
 
           <div className="mt-8">
             <h1 className="text-2xl font-bold mb-4">Enter Project Directory Path:</h1>
