@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
-import SimulationState from './SimulationState';
+
 import SimulationManagerButtons from './SimulationManagerButtons';
 import Navigation from '../Navigation/Navigation';
 import { useNavigate } from 'react-router-dom';
@@ -10,8 +10,8 @@ import { useNavigate } from 'react-router-dom';
 const SimulationManager : React.FC = () => {
   const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket();
   const navigate = useNavigate();
+  
 
- 
   useEffect(() => {
     if (isWsConnected && ws !== null) {
       // console.log('Selected simulation:', selectedSimulation);

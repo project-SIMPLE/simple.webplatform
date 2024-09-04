@@ -63,7 +63,7 @@ const SelectorSimulations = () => {
         </div>
       ) : (
         <div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md-lg:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
             {simulationList.map((simulation, index) => (
               <div 
                 className="bg-white shadow-lg rounded-lg p-6 flex flex-col items-center h-64 cursor-pointer"
