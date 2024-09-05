@@ -39,6 +39,7 @@ interface WebSocketContextType {
     playerList: PlayerList;
     simulationList: Simulation[];
     selectedSimulation: Simulation | null;
+    removePlayer: (id: string) => void; // Define removePlayer here
 }
 
 // Initialize context with a default value of `null` for WebSocket and default values for other states
@@ -60,8 +61,17 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
     const [simulationList, setSimulationList] = useState<Simulation[]>([]);
     const [selectedSimulation, setSelectedSimulation] = useState<Simulation | null>(null);
 
+    // Function to remove a player from the playerList
+    const removePlayer = (id: string) => {
+        setPlayerList(prevPlayerList => {
+            const updatedPlayerList = { ...prevPlayerList };
+            delete updatedPlayerList[id]; // Remove the player with the given id
+            return updatedPlayerList;
+        });
+    };
+
     useEffect(() => {
-        const host = window.location.hostname; // getCurrentPageDomain(); -> "10.0.153.184";
+        const host = window.location.hostname;
         const port = import.meta.env.VITE_MONITOR_WS_PORT || '8001';
 
         const socket = new WebSocket(`ws://${host}:${port}`);
@@ -74,7 +84,6 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
 
         socket.onmessage = (event: MessageEvent) => {
             const data = JSON.parse(event.data);
-            // console.log('[WebSocketManager] Data received:', data);
 
             if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
                 setSimulationList(data.map(sim => sim.jsonSettings));
@@ -86,11 +95,13 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
                         setPlayerList(data.player);
                         break;
                     case 'json_settings':
-                        // console.log('json_settings data:', data);
                         break;
                     case 'get_simulation_by_index':
-                        // console.log('get_simulation_by_index data:', data);
                         setSelectedSimulation(data.simulation);
+                        break;
+                    case 'remove_player_headset':
+                        removePlayer(data.id);
+                        console.log(`[WebSocketManager] Player ${data.id} removed`);
                         break;
                     default:
                         console.warn('[WebSocketManager] Message not processed', data);
@@ -111,7 +122,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
     }, []);
 
     return (
-        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList, selectedSimulation }}>
+        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList, selectedSimulation, removePlayer }}>
             {children}
         </WebSocketContext.Provider>
     );

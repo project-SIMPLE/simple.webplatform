@@ -60,6 +60,9 @@ class PlayerServer {
                                 model.setPlayerConnection(jsonPlayer.id, true)
                                 console.log('-> New connection of the player of id '+jsonPlayer.id);
                             }
+                            break;               
+                        // restart the headet
+                        case "restart":
                             break;
 
                         case "expression":

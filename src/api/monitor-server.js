@@ -59,7 +59,12 @@ class MonitorServer {
                             this.controller.addInGamePlayer(jsonMonitor["id"]);
                             break;
                         case "remove_player_headset":
+                            // remove the player from the simulation
                             this.controller.removeInGamePlayer(jsonMonitor["id"]);
+                            socket.send(JSON.stringify({ 
+                                type: "remove_player_headset", 
+                                id: jsonMonitor["id"] // Assuming getJsonSettings returns the relevant data
+                            }));
                             break;
                         case "json_settings":
                             this.controller.changeJsonSettings(jsonMonitor);

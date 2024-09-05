@@ -341,12 +341,14 @@ class GamaConnector {
      * @returns 
      */
     removeInGamePlayer(idPlayer) {
-        // Is simulation running ?
+        // console.log("start removeInGamePlayer");
+        // Is simulation running ? Not return anything
         if (['NONE',"NOTREADY"].includes(this.model.getGama().experiment_state)) return
+        // console.log("cant remove player because simulation is not running");
 
         // Is player already removed from the simulation ?
         if (this.model.getPlayerState(idPlayer) !== undefined && !this.model.getPlayerState(idPlayer).in_game) return
-
+        // console.log("already "+idPlayer+" remove from the simulation");
         current_id_player = idPlayer
         list_messages = [this.jsonTogglePlayer("remove")];
         index_messages = 0;
@@ -356,6 +358,7 @@ class GamaConnector {
             console.log("-> The Player: "+idPlayer+" has been removed from Gama");
             this.model.setPlayerInGame(idPlayer, false)
         }
+        // console.log("All players : "+this.model.getAllPlayers());
         this.sendMessages()
     }
 
