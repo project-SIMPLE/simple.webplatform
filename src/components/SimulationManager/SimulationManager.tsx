@@ -1,14 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
-
 import SimulationManagerButtons from './SimulationManagerButtons';
 import Navigation from '../Navigation/Navigation';
 import { useNavigate } from 'react-router-dom';
 
-const SimulationManager : React.FC = () => {
-  const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket();
+const SimulationManager: React.FC = () => {
+  const { ws, gama, playerList, selectedSimulation, isWsConnected, removePlayer } = useWebSocket(); // `removePlayer` is now available
   const navigate = useNavigate();
   
 
