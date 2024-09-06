@@ -188,12 +188,12 @@ const SimulationManager: React.FC = () => {
 
         {/* Column 2 */}
         <div>
-          { userInfos && clickedUserInfos ? (
+          { userInfos && clickedUserInfos && playerList ? (
           <div>
             <div className="text-xl mt-3 mb-3">Informations Player:</div>
-            <p>State : {String(userInfos.connected)}</p>
-            <p>Status in game : {userInfos.date_connection}</p>
-            <p>hour connection : {String(userInfos.in_game)}</p>
+            <p>Connected ? : {String(userInfos.connected)}</p>
+            <p>Hour of connection : {userInfos.date_connection}</p>
+            <p>Connected in game ? : {String(userInfos.in_game)}</p>
           </div>
 
           ) : null }
