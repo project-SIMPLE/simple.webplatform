@@ -6,10 +6,17 @@ import SimulationManagerButtons from './SimulationManagerButtons';
 import Navigation from '../Navigation/Navigation';
 import { useNavigate } from 'react-router-dom';
 
+interface Player {
+  connected: boolean;
+  date_connection: string;
+  in_game: boolean;
+}
+
 const SimulationManager: React.FC = () => {
   const { ws, gama, playerList, selectedSimulation, isWsConnected, removePlayer } = useWebSocket(); // `removePlayer` is now available
   const navigate = useNavigate();
-  
+  const [userInfos, setUserInfos] = useState<Player | null>(null);
+  const [clickedUserInfos, setClickedUserInfos] = useState<boolean>(false);
 
   useEffect(() => {
     if (isWsConnected && ws !== null) {
@@ -54,6 +61,16 @@ const SimulationManager: React.FC = () => {
   const handleRestart = (id: string) => {
     console.log(`Restart button clicked for headset ${id}`);
     // Logic for restart button
+  };
+
+  const handleGetInformation = (id: string) => {
+    if (clickedUserInfos === true){
+      setClickedUserInfos(false);
+    }else{
+      setClickedUserInfos(true);
+    }
+    setUserInfos(playerList[id]);
+    // console.log("Infos user : ",userInfos);
   };
 
   return (
@@ -129,6 +146,28 @@ const SimulationManager: React.FC = () => {
                         }
                         showText={false}
                       />
+                      <Button
+                        onClick={() => handleGetInformation(key)}
+                        text="Get Information"
+                        bgColor="bg-yellow-500"
+                        icon={
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-6 h-6 mr-2"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                           >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M12 8v4m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20zm0 4h.01"
+                            />
+                          </svg>             
+                        }
+                        showText={false}
+                      />
                     </div>
                   </div>
                 );
@@ -139,8 +178,27 @@ const SimulationManager: React.FC = () => {
           <div className="text-3xl mb-4">No simulation selected</div>
         )}
       </div>
-      <div className="text-xl mt-3 mb-3">Get Players connected:</div>
-      <Button onClick={handleGetPlayers} text="Get Player list" bgColor="bg-purple-500" showText={true} />
+
+      <div className="w-2/3 mt-8 grid grid-cols-2 gap-4">
+        {/* Column 1 */}
+        <div>
+          <div className="text-xl mt-3 mb-3">Get Players connected:</div>
+          <Button onClick={handleGetPlayers} text="Get Player list" bgColor="bg-purple-500" showText={true} />
+        </div>
+
+        {/* Column 2 */}
+        <div>
+          { userInfos && clickedUserInfos ? (
+          <div>
+            <div className="text-xl mt-3 mb-3">Informations Player:</div>
+            <p>State : {String(userInfos.connected)}</p>
+            <p>Status in game : {userInfos.date_connection}</p>
+            <p>hour connection : {String(userInfos.in_game)}</p>
+          </div>
+
+          ) : null }
+        </div>
+      </div>
     </div>
   );
 };
