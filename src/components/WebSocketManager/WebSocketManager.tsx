@@ -66,8 +66,11 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
         setPlayerList(prevPlayerList => {
             const updatedPlayerList = { ...prevPlayerList };
             delete updatedPlayerList[id]; // Remove the player with the given id
+            // console.log("Before updating: ", prevPlayerList);
+            // console.log("After updating: ", updatedPlayerList);
             return updatedPlayerList;
         });
+        // console.log(" This player have been removed from playerList : ", id);
     };
 
     useEffect(() => {
@@ -89,9 +92,12 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
                 setSimulationList(data.map(sim => sim.jsonSettings));
                 console.log('[WebSocketManager] Simulation list:', data);
             } else {
+                // console.log("Just the list of players :", playerList); // should show list of players 
                 switch (data.type) {
+                    // this case is launch too much time
                     case 'json_state':
                         setGama(data.gama);
+                        // console.log('Liste des playeyrs', data.player);
                         setPlayerList(data.player);
                         break;
                     case 'json_settings':
@@ -100,14 +106,17 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
                         setSelectedSimulation(data.simulation);
                         break;
                     case 'remove_player_headset':
+                        // console.log("playerList Before remove", playerList); // should show list of players 
                         removePlayer(data.id);
-                        console.log(`[WebSocketManager] Player ${data.id} removed`);
+                        // console.log(` Player ${data.id} removed and in_game set to false.`);
+                        // console.log("playerList after remove", playerList);
                         break;
                     default:
                         console.warn('[WebSocketManager] Message not processed', data);
                 }
             }
         };
+        console.log("playerList", playerList);
 
         socket.onclose = () => {
             console.log('[WebSocketManager] WebSocket disconnected');

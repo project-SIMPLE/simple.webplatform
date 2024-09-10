@@ -25,14 +25,8 @@ const SimulationManager: React.FC = () => {
   }, [isWsConnected, ws]);
 
   // Add players to the WebSocket server automatically when the WebSocket connection is established
-  useEffect(() => {
-    if (isWsConnected && ws !== null) {
-      Object.keys(playerList).forEach((key) => {
-        ws.send(JSON.stringify({ type: 'add_player_headset', id: key }));
-      });
-    }
-  }, [playerList, isWsConnected, ws]);
 
+  // Not add Player List When player has been removed, add again if relaunch the application
   // Redirect to the main page if no simulation is selected
   useEffect(() => {
     if (!selectedSimulation) {
@@ -40,11 +34,25 @@ const SimulationManager: React.FC = () => {
     }
   }, [selectedSimulation, navigate]);
 
+  useEffect(() => {
+    if (isWsConnected && ws !== null) {
+      Object.keys(playerList).forEach((key) => {
+        // const player = playerList[key];
+
+        // reconnect player only if in game , if not mean that player has been removed
+        // if (player.in_game === true) {
+          ws.send(JSON.stringify({ type: 'add_player_headset', id: key }));
+        // }
+      });
+    }
+  }, [playerList, isWsConnected, ws]);
+
   // Handler for removing players
   const handleRemove = (id: string) => {
     if (ws !== null) {
-      ws.send(JSON.stringify({ type: 'remove_player_headset', id }));
-      removePlayer(id);  // Remove the player from the playerList in WebSocketManager
+      console.log(`ID headset ${id}`);
+      ws.send(JSON.stringify({ "type": "remove_player_headset", id }));
+     // removePlayer(id);  // already did in WebSocketManager
     } else {
       console.error('WebSocket is not connected');
     }

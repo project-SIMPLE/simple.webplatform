@@ -48,6 +48,10 @@ class Controller {
         return this.modelManager.getModelListJSON();
     }
 
+    getPlayerList(){ 
+        return this.modelManager.getListPlayers();
+    }
+
     /**
      * Sends to the monitor the updated json_state
      */

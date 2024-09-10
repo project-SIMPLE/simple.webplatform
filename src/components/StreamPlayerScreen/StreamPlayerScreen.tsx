@@ -2,43 +2,29 @@ import React from 'react';
 
 const StreamPlayerScreen: React.FC = () => {
   return (
-    <div className="relative w-full h-screen bg-gray-100">
+    <div className="relative w-full h-screen bg-gray-100 flex">
 
-      {/* Top Left Rectangle */}
-      <div className="absolute top-0 left-0 w-1/4 h-1/4 bg-gray-600 flex items-center justify-center">
-        <div className="absolute top-2 left-2">
-          <button className="bg-green-500 text-white px-4 py-2 rounded">Play</button>
-          <button className="bg-red-500 text-white px-4 py-2 rounded ml-2">Stop</button>
-        </div>
-      </div>
+      {/* Left Column (Top Left + Bottom Left Rectangles) */}
+      <div className="w-[30%] h-full flex flex-col justify-between">
+        {/* Top Left Rectangle */}
+        <div className="w-full h-1/2 bg-gray-600 flex items-center justify-center border-t border-l border-b border-black"></div>
 
-      {/* Top Right Rectangle */}
-      <div className="absolute top-0 right-0 w-1/4 h-1/4 bg-gray-600 flex items-center justify-center">
-        <div className="absolute top-2 right-2">
-          <button className="bg-green-500 text-white px-4 py-2 rounded">Play</button>
-          <button className="bg-red-500 text-white px-4 py-2 rounded ml-2">Stop</button>
-        </div>
-      </div>
-
-      {/* Bottom Left Rectangle */}
-      <div className="absolute bottom-0 left-0 w-1/4 h-1/4 bg-gray-600 flex items-center justify-center">
-        <div className="absolute bottom-2 left-2">
-          <button className="bg-green-500 text-white px-4 py-2 rounded">Play</button>
-          <button className="bg-red-500 text-white px-4 py-2 rounded ml-2">Stop</button>
-        </div>
-      </div>
-
-      {/* Bottom Right Rectangle */}
-      <div className="absolute bottom-0 right-0 w-1/4 h-1/4 bg-gray-600 flex items-center justify-center">
-        <div className="absolute bottom-2 right-2">
-          <button className="bg-green-500 text-white px-4 py-2 rounded">Play</button>
-          <button className="bg-red-500 text-white px-4 py-2 rounded ml-2">Stop</button>
-        </div>
+        {/* Bottom Left Rectangle */}
+        <div className="w-full h-1/2 bg-gray-600 flex items-center justify-center border-l border-b border-black"></div>
       </div>
 
       {/* Center Rectangle */}
-      <div className="absolute inset-0 m-auto w-3/5 h-3/5 bg-gray-400 flex items-center justify-center">
+      <div className="w-[40%] h-full bg-gray-400 flex items-center justify-center border-t border-b border-black">
         {/* Center Content Here */}
+      </div>
+
+      {/* Right Column (Top Right + Bottom Right Rectangles) */}
+      <div className="w-[30%] h-full flex flex-col justify-between">
+        {/* Top Right Rectangle */}
+        <div className="w-full h-1/2 bg-gray-600 flex items-center justify-center border-t border-r border-b border-black"></div>
+
+        {/* Bottom Right Rectangle */}
+        <div className="w-full h-1/2 bg-gray-600 flex items-center justify-center border-r border-b border-black"></div>
       </div>
 
     </div>

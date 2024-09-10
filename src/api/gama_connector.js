@@ -341,25 +341,34 @@ class GamaConnector {
      * @returns 
      */
     removeInGamePlayer(idPlayer) {
-        // console.log("start removeInGamePlayer");
-        // Is simulation running ? Not return anything
-        if (['NONE',"NOTREADY"].includes(this.model.getGama().experiment_state)) return
-        // console.log("cant remove player because simulation is not running");
-
-        // Is player already removed from the simulation ?
-        if (this.model.getPlayerState(idPlayer) !== undefined && !this.model.getPlayerState(idPlayer).in_game) return
-        // console.log("already "+idPlayer+" remove from the simulation");
-        current_id_player = idPlayer
+        console.log("Start removing player from game: " + idPlayer);
+        
+        // Vérifier si la simulation est en cours
+        if (['NONE', "NOTREADY"].includes(this.model.getGama().experiment_state)) {
+            console.log("Gama Simulation is not running, cannot remove player");
+            return;
+        }
+        
+        // Vérifier si le joueur est déjà hors jeu
+        const playerState = this.model.getPlayerState(idPlayer);
+        if (playerState !== undefined && !playerState.in_game) {
+            console.log("Player " + idPlayer + " is already out of the game");
+            return;
+        }
+        // Cas normal
+        current_id_player = idPlayer;
         list_messages = [this.jsonTogglePlayer("remove")];
         index_messages = 0;
         do_sending = true;
         continue_sending = true;
         function_to_call = () => {
-            console.log("-> The Player: "+idPlayer+" has been removed from Gama");
-            this.model.setPlayerInGame(idPlayer, false)
-        }
-        // console.log("All players : "+this.model.getAllPlayers());
-        this.sendMessages()
+            // console.log("-> The Player: " + idPlayer + " has been removed from Gama");
+            this.model.setPlayerInGame(idPlayer, false); // Assure que l'attribut in_game est bien mis à jour
+            // console.log("Player " + idPlayer + " is now set to in_game: false");
+        };
+
+        // console.log("Sending removal messages for player: " + idPlayer);
+        this.sendMessages();
     }
 
     /**

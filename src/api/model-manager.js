@@ -20,7 +20,7 @@ class ModelManager {
     constructor(controller) {
         this.controller = controller;
         this.models = this.initModelsList();
-        console.log("cocuocu"+JSON.stringify(this.models)+"cocuocu");
+        // console.log("cocuocu"+JSON.stringify(this.models)+"cocuocu");
     }
 
     initModelsList() {
@@ -52,6 +52,18 @@ class ModelManager {
         })
 
         return modelList;
+    }
+    
+    getListPlayers() {
+        if (this.models.length > 0) {
+            console.log("this.models : ",this.models);
+            const players = this.models[0].getAllPlayers();  // Appelle getAllPlayers() sur la première instance de Model
+            console.log("MODEL MANAGER, les playeurs :",players);
+            return players;
+        } else {
+            console.log('No models available.');
+            return null;
+        }
     }
 
     getModelListJSON() {

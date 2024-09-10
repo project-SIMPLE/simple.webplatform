@@ -61,9 +61,12 @@ class MonitorServer {
                         case "remove_player_headset":
                             // remove the player from the simulation
                             this.controller.removeInGamePlayer(jsonMonitor["id"]);
+                            // Send message to socket Manager 
+                            console.log("les joueurs après delete ::: ",this.controller.getPlayerList());
                             socket.send(JSON.stringify({ 
                                 type: "remove_player_headset", 
-                                id: jsonMonitor["id"] // Assuming getJsonSettings returns the relevant data
+                                id: jsonMonitor["id"], 
+                                player: this.controller.getPlayerList() // list of player to udpdate in the webSocket -> web interface (seems not to render the accurate liste)
                             }));
                             break;
                         case "json_settings":
