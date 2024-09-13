@@ -1,0 +1,7 @@
+{
+    "type": "json_settings",
+    "name": "RAC",
+    "splashscreen": "learning-packages/RAC2/images/splashscreen.png",
+    "model_file_path": "./Models/Demo/Simple Player Game/DemoModelVR.gaml",
+    "experiment_name": "rac_experiment"
+}

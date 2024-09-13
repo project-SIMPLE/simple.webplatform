@@ -61,7 +61,7 @@ const SelectorSimulations = () => {
       ) : (
        
         // Display simulations cards
-       <div className="grid grid-cols-3 gap-6 mt-5 mb-8">
+       <div className="grid grid-cols-3 mt-5 mb-8" style={{ gap: '65px' }} >
           {simulationList.map((simulation, index) => (
             <div 
               className="bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer"
@@ -90,7 +90,7 @@ const SelectorSimulations = () => {
       {showCustomInput && (
         
         // Section: path to start a simulation
-        <div className="mt-4 w-full">
+        <div className="mt-4 w-full" style={{ marginTop: '20px', marginBottom: '-25px' }} >
           
           <h1 className="text-lg font-bold mb-4">Enter a simulation path:</h1>
           <input
@@ -208,7 +208,7 @@ const SelectorSimulations = () => {
       )}
 
       {/* Footer of the page */}
-      <footer className="flex justify-between items-center p-4 border-t border-gray-300 mt-8 w-full">
+      <footer className="flex justify-between items-center p-4 border-t border-gray-300  w-full" style={{ marginTop: '100px' }} >
         <img src="/images/global-gateway-euro.png" alt="Global Gateway" className="h-8 mr-4" />
 
         {/* Info Button */}
