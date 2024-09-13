@@ -9,6 +9,7 @@ const SelectorSimulations = () => {
   const { ws, isWsConnected, simulationList, selectedSimulation, playerList } = useWebSocket();
   const [directoryPath, setDirectoryPath] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
+  const [showCustomInput, setShowCustomInput] = useState<boolean>(false); 
   const navigate = useNavigate(); 
 
   useEffect(() => {
@@ -27,8 +28,6 @@ const SelectorSimulations = () => {
   const handleSimulation = (index: number) => {
     if (isWsConnected && ws !== null) {
       ws.send(JSON.stringify({ type: 'get_simulation_by_index', simulationIndex: index }));
-      
-      // Navigate to the simulation manager page after selecting a simulation
       setTimeout(() => {
         navigate('/simulationManager');
       }, 100); 
@@ -51,116 +50,56 @@ const SelectorSimulations = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-8">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-white p-8">
       <Navigation />
-      <h1 className="text-3xl font-bold mb-4">Select a simulation </h1>
 
       {loading ? (
         <div className="text-center">
-          {/* Spinner loading */}
           <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4"></div>
           <h2 className="text-gray-700">Loading simulations...</h2>
         </div>
       ) : (
-        <div>
-          <div className="grid grid-cols-1 md-lg:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
-            {simulationList.map((simulation, index) => (
-              <div 
-                className="bg-white shadow-lg rounded-lg p-6 flex flex-col items-center h-64 cursor-pointer"
-                style={{
-                  backgroundImage: `url(${simulation.splashscreen})`,
-                  backgroundSize: 'cover', 
-                  width: "429px",
-                  height: "250px",
+       
+        // Display simulations cards
+       <div className="grid grid-cols-3 gap-6 mt-5 mb-8">
+          {simulationList.map((simulation, index) => (
+            <div 
+              className="bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer"
+              style={{
+                backgroundImage: `url(${simulation.splashscreen})`,
+                backgroundSize: 'cover',
+                width: "100px",
+                height: "100px",
+              }}
+              key={index}
+              onClick={() => handleSimulation(index)}
+            >
+                <h2 className="text-gray-500 text-sm text-center"
+                 style={{
+                marginTop: "80px",
                 }}
-                key={index} 
-                onClick={() => handleSimulation(index)}
-              >    
-                <h2 className="text-2xl font-semibold mb-4">{simulation.name}</h2>
-              </div>
-            ))}
-          </div>
+                >{simulation.name}
+                </h2>
+            </div>
+          ))}
+        </div>
+      )}
 
+      
+      {/* Show hidden sections*/}
+      {showCustomInput && (
+        
+        // Section: path to start a simulation
+        <div className="mt-4 w-full">
           
-          {playerList && Object.keys(playerList).length > 0 && (
-            <>
-              <h1 className="text-2xl font-bold mb-4">HeadSet connected:</h1>
-              <div className="flex justify-center mt-8 space-x-4">
-                {Object.keys(playerList).map((key, index) => {
-                  const player = playerList[key];
-                  return (
-                    <div key={index} className="flex flex-col items-center">
-                      <VRHeadset isConnected={player.connected} />
-                      <p style={{ marginTop: "3px" }}>id player: {key}</p>
-                      <p>{player.connected ? 'Connected' : 'Waiting for connection..'}</p>
-
-                      {/* Buttons under each player */}
-                      <div className="flex mt-4 space-x-2">
-                        <Button
-                          onClick={() => handleRemove(index)}
-                          text="Remove"
-                          bgColor="bg-red-500"
-                          icon={
-                            <svg
-                              className="w-6 h-6 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          }
-                          showText={false}
-                        />
-                        <Button
-                          onClick={() => handleRestart(index)}
-                          text="Restart"
-                          bgColor="bg-orange-500"
-                          icon={
-                            <svg
-                              className="w-6 h-6 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M4 4v6h6M20 20v-6h-6M4 10c1.5-2 4-3 6-3h4c2 0 4 1 5 3M4 14c1.5 2 4 3 6 3h4c2 0 4-1 5-3"
-                              />
-                            </svg>
-                          }
-                          showText={false}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-
-          <div className="mt-8">
-            <h1 className="text-2xl font-bold mb-4">Enter Project Directory Path:</h1>
-            <input
-              id="directoryPath"
-              type="text"
-              value={directoryPath}
-              onChange={(e) => setDirectoryPath(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              placeholder="C:/path/to/your/project"
-            />
-          </div>
-
+          <h1 className="text-lg font-bold mb-4">Enter a simulation path:</h1>
+          <input
+            type="text"
+            value={directoryPath}
+            onChange={(e) => setDirectoryPath(e.target.value)}
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
+            placeholder="C:/path/to/your/project"
+          />
           <Button
             onClick={() => {
               if (isWsConnected && ws !== null) {
@@ -169,38 +108,136 @@ const SelectorSimulations = () => {
                 console.error('WebSocket is not connected');
               }
             }}
-            text="Launch Selected Simulation"
+            text="Launch"
             bgColor="bg-green-500"
-            icon={
-              <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 9v6m4-6v6" />
-              </svg>
-            }
+            showText={true}
+          />
+
+
+        {/* // Section: Get simulation informations */}
+        <div className="mt-7">
+         <h1 className="text-lg font-bold mb-5">Get simulation informations:</h1>
+         <Button
+            onClick={() => {
+              if (isWsConnected && ws !== null) {
+                ws.send(JSON.stringify({ type: 'get_simulation_informations' }));
+              } else {
+                console.error('WebSocket is not connected');
+              }
+            }}
+            text="Get Simulations Informations"
+            bgColor="bg-green-500"
             showText={true}
           />
         </div>
+        
+
+        { /* 
+           *Section display headsets 
+           */
+        }
+        {playerList && Object.keys(playerList).length > 0 && (
+          <>
+            <h1 className="text-2xl font-bold mb-4">HeadSet connected:</h1>
+            <div className="flex justify-center mt-8 space-x-4">
+              {Object.keys(playerList).map((key, index) => {
+                const player = playerList[key];
+                return (
+                  <div key={index} className="flex flex-col items-center">
+                    <VRHeadset isConnected={player.connected} />
+                    <p style={{ marginTop: "3px" }}>id player: {key}</p>
+                    <p>{player.connected ? 'Connected' : 'Waiting for connection..'}</p>
+
+                    {/* Buttons under each player */}
+                    <div className="flex mt-4 space-x-2">
+                      <Button
+                        onClick={() => handleRemove(index)}
+                        text="Remove"
+                        bgColor="bg-red-500"
+                        icon={
+                          <svg
+                            className="w-6 h-6 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        }
+                        showText={false}
+                      />
+                      <Button
+                        onClick={() => handleRestart(index)}
+                        text="Restart"
+                        bgColor="bg-orange-500"
+                        icon={
+                          <svg
+                            className="w-6 h-6 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M4 4v6h6M20 20v-6h-6M4 10c1.5-2 4-3 6-3h4c2 0 4 1 5 3M4 14c1.5 2 4 3 6 3h4c2 0 4-1 5-3"
+                            />
+                          </svg>
+                        }
+                        showText={false}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+
+      </div>
+        
       )}
 
-      <div className="flex flex-col items-center justify-center mt-8">
-        <h1 className="text-2xl font-bold mb-4">Get simulation informations:</h1>
+      {/* Footer of the page */}
+      <footer className="flex justify-between items-center p-4 border-t border-gray-300 mt-8 w-full">
+        <img src="/images/global-gateway-euro.png" alt="Global Gateway" className="h-8 mr-4" />
+
+        {/* Info Button */}
         <Button
-          onClick={() => {
-            if (isWsConnected && ws !== null) {
-              ws.send(JSON.stringify({ type: 'get_simulation_informations' }));
-            } else {
-              console.error('WebSocket is not connected');
-            }
-          }}
-          text="Get Simulations Informations"
-          bgColor="bg-green-500"
+          onClick={() => setShowCustomInput(!showCustomInput)}
+          text="Info"
           icon={
-            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 9v6m4-6v6" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-6 h-6 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
+              />
             </svg>
           }
+          bgColor="bg-blue-500"
           showText={true}
         />
-      </div>
+
+        <img src="images/IRD-logo.png" alt="IRD" className="h-8" />
+      </footer>
+
     </div>
   );
 };

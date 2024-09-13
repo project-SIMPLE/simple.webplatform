@@ -52,7 +52,7 @@ const SimulationManager: React.FC = () => {
     if (ws !== null) {
       console.log(`ID headset ${id}`);
       ws.send(JSON.stringify({ "type": "remove_player_headset", id }));
-     // removePlayer(id);  // already did in WebSocketManager
+     // removePlayer(id);  // already did in WebSocketManagers
     } else {
       console.error('WebSocket is not connected');
     }
@@ -80,6 +80,12 @@ const SimulationManager: React.FC = () => {
     setUserInfos(playerList[id]);
     // console.log("Infos user : ",userInfos);
   };
+
+  // useEffect((id : string) => {
+  //   console.log("Updated playerList in SimulationManager:", playerList);
+  //   ws.send(JSON.stringify({ type: 'add_player_headset', id }));
+
+  // }, [playerList]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
