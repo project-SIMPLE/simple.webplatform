@@ -2,7 +2,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
-import MainPanel from './components/SimulationManager/SimulationManager';
 import SimulationManager from './components/SimulationManager/SimulationManager';
 import Navigation from './components/Navigation/Navigation';
 import SelectorSimulations from './components/SelectorSimulations/SelectorSimulations';

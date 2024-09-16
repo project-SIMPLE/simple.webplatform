@@ -13,7 +13,7 @@ interface Player {
 }
 
 const SimulationManager: React.FC = () => {
-  const { ws, gama, playerList, selectedSimulation, isWsConnected, removePlayer } = useWebSocket(); // `removePlayer` is now available
+  const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket(); // `removePlayer` is now available
   const navigate = useNavigate();
   const [userInfos, setUserInfos] = useState<Player | null>(null);
   const [clickedUserInfos, setClickedUserInfos] = useState<boolean>(false);
@@ -107,7 +107,7 @@ const SimulationManager: React.FC = () => {
             <SimulationManagerButtons />
 
             <div className="flex justify-center mt-8 space-x-4">
-              {Object.keys(playerList).map((key, index) => {
+              {Object.keys(playerList).map((key) => {
                 const player = playerList[key];
                 return (
                   <div key={key} className="flex flex-col items-center">
@@ -196,6 +196,9 @@ const SimulationManager: React.FC = () => {
       {/* Get Player */}
       <div className="w-2/3 mt-8 grid grid-cols-2 gap-4">
         {/* Column 1 */}
+        
+        {
+        import.meta.env.VITE_APP_ENV === 'development' && (  
         <div>
           {/* <div className="text-lg mt-3 mb-3">Get Players connected:</div> */}
           <Button onClick={handleGetPlayers} text="Get Player list logs" bgColor="bg-purple-500" showText={true} 
@@ -208,6 +211,7 @@ const SimulationManager: React.FC = () => {
             }
           />
         </div>
+        )}
 
         {/* Column 2 */}
         <div>

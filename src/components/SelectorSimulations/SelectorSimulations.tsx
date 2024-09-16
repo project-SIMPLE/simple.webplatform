@@ -1,12 +1,12 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Button from '../Button/Button';
 import Navigation from '../Navigation/Navigation';
 import VRHeadset from '../VRHeadset/VRHeadset';
 
 const SelectorSimulations = () => {
-  const { ws, isWsConnected, simulationList, selectedSimulation, playerList } = useWebSocket();
+  const { ws, isWsConnected, simulationList, playerList } = useWebSocket();
   const [directoryPath, setDirectoryPath] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [showCustomInput, setShowCustomInput] = useState<boolean>(false); 
@@ -211,29 +211,32 @@ const SelectorSimulations = () => {
       <footer className="flex justify-between items-center p-4 border-t border-gray-300  w-full" style={{ marginTop: '100px' }} >
         <img src="/images/global-gateway-euro.png" alt="Global Gateway" className="h-8 mr-4" />
 
-        {/* Info Button */}
-        <Button
-          onClick={() => setShowCustomInput(!showCustomInput)}
-          text="Info"
-          icon={
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-6 h-6 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
-              />
-            </svg>
-          }
-          bgColor="bg-blue-500"
-          showText={true}
-        />
+        {
+          import.meta.env.VITE_APP_ENV === 'development' && (  
+            <Button
+              onClick={() => setShowCustomInput(!showCustomInput)}
+              text="Info"
+              icon={
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-6 h-6 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
+                  />
+                </svg>
+              }
+              bgColor="bg-blue-500"
+              showText={true}
+            />    
+        )}
+        
 
         <img src="images/IRD-logo.png" alt="IRD" className="h-8" />
       </footer>

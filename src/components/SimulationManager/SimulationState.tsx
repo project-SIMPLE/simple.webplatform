@@ -1,5 +1,5 @@
 
-import React, {FC, useEffect } from 'react';
+import  {FC } from 'react';
 
 
 // define props type 

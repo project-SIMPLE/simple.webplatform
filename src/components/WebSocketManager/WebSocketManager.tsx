@@ -21,9 +21,9 @@ interface Simulation {
     type_model_file_path: string;
 }
 
-interface SimulationList {
-    [key: string]: Simulation;
-}
+// interface SimulationList {
+//     [key: string]: Simulation;
+// }
 
 // Define types for the WebSocket context
 interface WebSocketContextType {
@@ -56,6 +56,8 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
         connected: false,
         loading: 'hidden' as 'hidden' | 'visible',
         experiment_state: 'NONE',
+        experiment_name: '',
+        content_error: '',
     });
     const [playerList, setPlayerList] = useState<PlayerList>({});
     const [simulationList, setSimulationList] = useState<Simulation[]>([]);
