@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from '../Button/Button';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import { Link } from 'react-router-dom';
 
 const SimulationManagerButtons : React.FC = () => {
     const { ws, gama} = useWebSocket();
-
+    const [showPopUp, setshowPopUp] = useState(false);
 
       // Faire le useEffect pour load automatiquement après que connecté  
       // gama.connected && useEffect(() => {
@@ -13,15 +13,12 @@ const SimulationManagerButtons : React.FC = () => {
       //       ws.send(JSON.stringify({"type": "launch_experiment"}));
       //     }
       //   }, [gama.connected]);
-      
-      // const handleLoad = () => {
-      //   if(ws !== null){
-      //       ws.send(JSON.stringify({"type": "launch_experiment"}));
-      //     }else{
-      //     console.error("WS is null");
-      //   }
-      // };
     
+      const togglePopUp = () => {
+        setshowPopUp(!showPopUp);
+      };
+
+
       const handlePlayPause = () => {
         if(ws !== null){
             ws.send(JSON.stringify({"type": gama.experiment_state == "NONE" ? "launch_experiment" : (gama.experiment_state != "RUNNING" ? "resume_experiment" : "pause_experiment") }));
@@ -96,7 +93,7 @@ const SimulationManagerButtons : React.FC = () => {
         </svg>
       );
     return (
-        <div>
+      <div>
             {!gama.connected && (
               <div className="flex justify-center mb-4">
                   <Button onClick={handleTryConnection} text="Try Connection" bgColor="bg-gray-500" icon={
@@ -157,32 +154,62 @@ const SimulationManagerButtons : React.FC = () => {
                 />
                 
             </div>
+            
+        <div className='flex justify-center mt-3'>
+          <Button
+            text="Monitoring"
+            bgColor="bg-blue-500"
+            showText={true}
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="35" height="35">
+                <rect x="5" y="5" width="30" height="20" rx="2" ry="2" fill="#d1d1d1" stroke="#333" strokeWidth="1"/>
+                <rect x="7" y="7" width="26" height="16" fill="#fff" stroke="#333" strokeWidth="1"/>
+                <line x1="7" y1="15" x2="33" y2="15" stroke="#333" strokeWidth="1"/>
+                <line x1="20" y1="7" x2="20" y2="23" stroke="#333" strokeWidth="1"/>
+                <rect x="18" y="26" width="4" height="4" fill="#333"/>
+                <rect x="16" y="30" width="8" height="2" fill="#333"/>
+              </svg>
+            }
+            onClick={togglePopUp}
+          />
 
-            <div className='flex justify-center mt-3'>
-                <Link to="/streamPlayerScreen" target="_blank" rel="noopener noreferrer">
-                  <Button text="Monitoring" bgColor="bg-blue-500" 
-                    showText={true}
-                     icon={
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="35" height="35">
-                      {/* <!-- Outer rectangle for the screen --> */}
-                      <rect x="5" y="5" width="30" height="20" rx="2" ry="2" fill="#d1d1d1" stroke="#333" stroke-width="1"/>
-                      
-                      {/* <!-- Inner screen content representation --> */}
-                      <rect x="7" y="7" width="26" height="16" fill="#fff" stroke="#333" stroke-width="1"/>
-                      
-                      {/* <!-- Divider lines in the screen for monitoring interface --> */}
-                      <line x1="7" y1="15" x2="33" y2="15" stroke="#333" stroke-width="1"/>
-                      <line x1="20" y1="7" x2="20" y2="23" stroke="#333" stroke-width="1"/>
-                      
-                      {/* <!-- Stand for the monitor --> */}
-                      <rect x="18" y="26" width="4" height="4" fill="#333"/>
-                      <rect x="16" y="30" width="8" height="2" fill="#333"/>
-                    </svg>
-}
+          {showPopUp && (
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg w-64 text-center">
+                <h2 className="text-lg font-semibold mb-4">Choose an Option</h2>
+
+                <div className="flex flex-col space-y-4">
+                  <Button
+                    text="Shared Screen"
+                    bgColor="bg-green-500 hover:bg-green-600"
+                    onClick={
+                      togglePopUp
+                      // add logic 
+                    }
                   />
-                </Link>
+                  <Button
+                    text="Full Screen"
+                    bgColor="bg-blue-500 hover:bg-blue-600"
+                    onClick={
+                      togglePopUp
+                    
+                    }
+                  />
+                </div>
+
+                <button
+                  className="bg-red-500 mt-4 text-white hover:underline"
+                  onClick={togglePopUp}
+                >
+                  Cancel
+                </button>
+              
+              </div>
             </div>
-          </div>
+          )}
+       </div>
+
+    </div>
           
     );
 };
