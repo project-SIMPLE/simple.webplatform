@@ -163,7 +163,7 @@ const SimulationManagerButtons : React.FC = () => {
                   <Button text="Monitoring" bgColor="bg-blue-500" 
                     showText={true}
                      icon={
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="35" height="35">
                       {/* <!-- Outer rectangle for the screen --> */}
                       <rect x="5" y="5" width="30" height="20" rx="2" ry="2" fill="#d1d1d1" stroke="#333" stroke-width="1"/>
                       

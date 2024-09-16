@@ -193,11 +193,20 @@ const SimulationManager: React.FC = () => {
         )}
       </div>
 
+      {/* Get Player */}
       <div className="w-2/3 mt-8 grid grid-cols-2 gap-4">
         {/* Column 1 */}
         <div>
-          <div className="text-xl mt-3 mb-3">Get Players connected:</div>
-          <Button onClick={handleGetPlayers} text="Get Player list" bgColor="bg-purple-500" showText={true} />
+          {/* <div className="text-lg mt-3 mb-3">Get Players connected:</div> */}
+          <Button onClick={handleGetPlayers} text="Get Player list logs" bgColor="bg-purple-500" showText={true} 
+            icon= {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="white" stroke-width="2"/>
+                <line x1="12" y1="17" x2="12" y2="12" stroke="white" stroke-width="2"/>
+                <circle cx="12" cy="8.5" r="1" fill="white"/>
+              </svg>
+            }
+          />
         </div>
 
         {/* Column 2 */}
@@ -213,6 +222,8 @@ const SimulationManager: React.FC = () => {
           ) : null }
         </div>
       </div>
+    
+    
     </div>
   );
 };
