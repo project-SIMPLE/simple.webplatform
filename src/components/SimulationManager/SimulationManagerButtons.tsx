@@ -1,7 +1,7 @@
 import React, {FC, useEffect } from 'react';
 import Button from '../Button/Button';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
-
+import { Link } from 'react-router-dom';
 
 const SimulationManagerButtons : React.FC = () => {
     const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket();
@@ -137,22 +137,50 @@ const SimulationManagerButtons : React.FC = () => {
                   showText={true}
                 />
 
-                <Button onClick={handleEnd} text="End" bgColor="bg-red-500" icon={
-                <svg
-                    className="w-6 h-6 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                    />
-                </svg>
-                } showText={true} />
+                <Button onClick={handleEnd} text="End" bgColor="bg-red-500" 
+                  icon={
+                    <svg
+                        className="w-6 h-6 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M6 18L18 6M6 6l12 12"
+                        />
+                    </svg>
+                  } showText={true} 
+                />
+                
+            </div>
+
+            <div className='flex justify-center mt-3'>
+                <Link to="/streamPlayerScreen" target="_blank" rel="noopener noreferrer">
+                  <Button text="Monitoring" bgColor="bg-blue-500" 
+                    showText={true}
+                     icon={
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+                      {/* <!-- Outer rectangle for the screen --> */}
+                      <rect x="5" y="5" width="30" height="20" rx="2" ry="2" fill="#d1d1d1" stroke="#333" stroke-width="1"/>
+                      
+                      {/* <!-- Inner screen content representation --> */}
+                      <rect x="7" y="7" width="26" height="16" fill="#fff" stroke="#333" stroke-width="1"/>
+                      
+                      {/* <!-- Divider lines in the screen for monitoring interface --> */}
+                      <line x1="7" y1="15" x2="33" y2="15" stroke="#333" stroke-width="1"/>
+                      <line x1="20" y1="7" x2="20" y2="23" stroke="#333" stroke-width="1"/>
+                      
+                      {/* <!-- Stand for the monitor --> */}
+                      <rect x="18" y="26" width="4" height="4" fill="#333"/>
+                      <rect x="16" y="30" width="8" height="2" fill="#333"/>
+                    </svg>
+}
+                  />
+                </Link>
             </div>
           </div>
           
