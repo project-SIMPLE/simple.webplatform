@@ -95,7 +95,26 @@ class MonitorServer {
                                 console.error("Invalid index received or out of bounds");
                             }
 
+                        break;
+
+                        // in the component that displays the monitoring screens, create a useEffect that listens to this variable
+                        // directly use the variable in the component with conditional rendering
+                        
+                        case "set_gama_screen":
+                            socket.send(JSON.stringify({ 
+                                type: "setMonitorScreen", 
+                                mode: 'gama_screen'
+                            }));
                             break;
+
+                        case "set_shared_screen":
+                            console.log("shared screen !");
+                            socket.send(JSON.stringify({ 
+                                type: "setMonitorScreen", 
+                                mode: 'shared_screen'
+                            }));      
+                            break;
+
                         default:
                             console.warn("\x1b[31m-> The last message received from the monitor had an unknown type.\x1b[0m");
                             console.warn(jsonMonitor);

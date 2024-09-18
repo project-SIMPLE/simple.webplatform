@@ -106,6 +106,8 @@ const SimulationManager: React.FC = () => {
 
             <SimulationManagerButtons />
 
+
+
             <div className="flex justify-center mt-8 space-x-4">
               {Object.keys(playerList).map((key) => {
                 const player = playerList[key];

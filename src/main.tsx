@@ -7,7 +7,8 @@ import Navigation from './components/Navigation/Navigation';
 import SelectorSimulations from './components/SelectorSimulations/SelectorSimulations';
 import WebSocketManager from './components/WebSocketManager/WebSocketManager';
 import StreamPlayerScreen from './components/StreamPlayerScreen/StreamPlayerScreen';
-
+import store from './redux/store';
+import {Provider} from 'react-redux';
 
 const App: React.FC = () => {
   return (
@@ -28,8 +29,10 @@ const container = document.getElementById('root')!;
 const root = ReactDOM.createRoot(container);
 
 root.render(
-  <React.StrictMode>
+  // <React.StrictMode>
+  <Provider store={store}>  
     <App />
-  </React.StrictMode>
+  </Provider>
+  // </React.StrictMode>
 );
 

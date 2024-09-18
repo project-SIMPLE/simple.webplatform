@@ -39,7 +39,9 @@ interface WebSocketContextType {
     playerList: PlayerList;
     simulationList: Simulation[];
     selectedSimulation: Simulation | null;
+    screenMode: string;
     removePlayer: (id: string) => void; // Define removePlayer here
+    setscreenMode: React.Dispatch<React.SetStateAction<string>>; 
 }
 
 // Initialize context with a default value of `null` for WebSocket and default values for other states
@@ -63,6 +65,8 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
     const [simulationList, setSimulationList] = useState<Simulation[]>([]);
     const [selectedSimulation, setSelectedSimulation] = useState<Simulation | null>(null);
 
+    const [screenMode, setscreenMode] = useState<string>("");
+
     // Function to remove a player from the playerList
     const removePlayer = (id: string) => {
         setPlayerList(prevPlayerList => {
@@ -74,6 +78,13 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
         });
         // console.log(" This player have been removed from playerList : ", id);
     };
+
+
+    // This useEffect will log the updated screenMode value
+    useEffect(() => {
+        console.log("The screenMode has changed to :", screenMode);
+    }, [screenMode]);
+
 
     useEffect(() => {
         const host = window.location.hostname;
@@ -102,6 +113,8 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
                         // console.log('Liste des playeyrs', data.player);
                         setPlayerList(data.player);
                         break;
+
+                        
                     case 'json_settings':
                         break;
                     case 'get_simulation_by_index':
@@ -113,12 +126,25 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
                         // console.log(` Player ${data.id} removed and in_game set to false.`);
                         // console.log("playerList after remove", playerList);
                         break;
+                    
+
+                    case 'setMonitorScreen': 
+                        
+                        // Asynchronus ! so doesnt immediately change the value of screenMode, cant have it after next lines 
+                        setscreenMode(data.mode);
+
+                        // the setScreenMode doesnt change the value immediately, so we need to wait for it to change
+                        // the setScreenMode doesnt works  
+                        
+                        break;
+                    
                     default:
                         console.warn('[WebSocketManager] Message not processed', data);
                 }
             }
         };
-        console.log("playerList", playerList);
+
+        console.log("screenMode", screenMode);
 
         socket.onclose = () => {
             console.log('[WebSocketManager] WebSocket disconnected');
@@ -131,9 +157,13 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
             }
         };
     }, []);
+    
+    
 
-    return (
-        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList, selectedSimulation, removePlayer }}>
+    
+    
+        return (
+        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList, selectedSimulation, screenMode, setscreenMode ,removePlayer }}>
             {children}
         </WebSocketContext.Provider>
     );

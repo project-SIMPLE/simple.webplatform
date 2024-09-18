@@ -2,10 +2,19 @@ import React, { useState } from 'react';
 import Button from '../Button/Button';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import { Link } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { setScreenMode } from '../../redux/screenModeSlice';
+
+
 
 const SimulationManagerButtons : React.FC = () => {
     const { ws, gama} = useWebSocket();
     const [showPopUp, setshowPopUp] = useState(false);
+    const dispatch = useDispatch();
+
+
+
+    // const [modeScreen, setModeScreen] = useState<string>("gama_screen");
 
       // Faire le useEffect pour load automatiquement après que connecté  
       // gama.connected && useEffect(() => {
@@ -14,7 +23,26 @@ const SimulationManagerButtons : React.FC = () => {
       //     }
       //   }, [gama.connected]);
     
-      const togglePopUp = () => {
+      const togglePopUp = (mode: string) => {
+        // setModeScreen(mode);
+        // if (mode === "gama_screen" && ws !== null) {
+        //   // envoi un json au monitor serveur 
+        //   ws.send(JSON.stringify({ type: 'set_gama_screen' }));
+        //   // console.log("salut1");
+        // }
+
+        // if (mode === "shared_screen" && ws !== null) {
+        //   // envoi un json au monitor server  
+        //   ws.send(JSON.stringify({ type: 'set_shared_screen' }));
+        //   // console.log("salut2");
+        // }
+        if(mode === ""){
+        }else{
+          dispatch(setScreenMode(mode));
+          console.log(mode);
+          // dispatch(setScreenMode(mode)); // update redux store with the action
+          // setscreenMode(mode);
+        }
         setshowPopUp(!showPopUp);
       };
 
@@ -155,6 +183,7 @@ const SimulationManagerButtons : React.FC = () => {
                 
             </div>
             
+
         <div className='flex justify-center mt-3'>
           <Button
             text="Monitoring"
@@ -170,7 +199,7 @@ const SimulationManagerButtons : React.FC = () => {
                 <rect x="16" y="30" width="8" height="2" fill="#333"/>
               </svg>
             }
-            onClick={togglePopUp}
+            onClick={() => togglePopUp("")}
           />
 
           {showPopUp && (
@@ -178,28 +207,33 @@ const SimulationManagerButtons : React.FC = () => {
               <div className="bg-white p-6 rounded-lg shadow-lg w-64 text-center">
                 <h2 className="text-lg font-semibold mb-4">Choose an Option</h2>
 
+                
                 <div className="flex flex-col space-y-4">
                   <Button
-                    text="Shared Screen"
+                    text="Gama Screen"
                     bgColor="bg-green-500 hover:bg-green-600"
-                    onClick={
-                      togglePopUp
-                      // add logic 
-                    }
+                    onClick={() => {
+                      // setModeScreen("full_screen");
+                      // console.log(modeScreen);
+                      togglePopUp("gama_screen");
+                    }}
                   />
+
                   <Button
-                    text="Full Screen"
-                    bgColor="bg-blue-500 hover:bg-blue-600"
-                    onClick={
-                      togglePopUp
-                    
-                    }
+                    text="Shared Screen"
+                    bgColor="bg-blue-500 hover:bg-blue-600 "
+                    onClick={() => {
+                        // setModeScreen("shared_screen");
+                        // console.log(modeScreen);
+                        togglePopUp("shared_screen");
+                    }}
                   />
+                  
                 </div>
 
                 <button
                   className="bg-red-500 mt-4 text-white hover:underline"
-                  onClick={togglePopUp}
+                  onClick={() => {togglePopUp("")}}
                 >
                   Cancel
                 </button>
@@ -208,6 +242,7 @@ const SimulationManagerButtons : React.FC = () => {
             </div>
           )}
        </div>
+
 
     </div>
           
