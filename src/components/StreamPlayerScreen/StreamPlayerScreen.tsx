@@ -1,39 +1,33 @@
-import React, { useEffect } from 'react';
-import { useWebSocket } from '../WebSocketManager/WebSocketManager';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../redux/store';
+import React, { useEffect, useState } from 'react';
+import { useScreenModeState } from '../ScreenModeContext/ScreenModeContext';
 
 const StreamPlayerScreen: React.FC = () => {
-  // const {screenMode} = useWebSocket();
+  // Récupération de l'état global screenModeDisplay à partir du contexte
+  const screenModeDisplay = useScreenModeState();
+  const [, setTrigger] = useState(false);
 
-  const screenMode = useSelector((state: RootState) => state.screenMode.screenMode); // Accéder à l'état global
- 
+  // Effet qui se déclenche chaque fois que screenModeDisplay change
+  useEffect(() => {
+    console.log("Screen Mode Display updated:", screenModeDisplay);
 
-  // const [mode, setMode] = useState<string>("");
-  // here take the value variable from the websocketManager 
-  
-   useEffect(() => {
-      console.log("Screen Mode updated :", screenMode);
-   }, [screenMode]);
+    // Si vous souhaitez forcer un re-render périodique, décommentez ci-dessous.
+    // const interval = setInterval(() => {
+    //   setTrigger((prev) => !prev);
+    // }, 4000);
+    // return () => clearInterval(interval);
+  }, [screenModeDisplay]);
 
-  // console.log(screenMode);
-
+  // Rendu basé sur la valeur de screenModeDisplay
   return (
     <>
-      {screenMode === 'shared_screen' && (
+      {screenModeDisplay === 'shared_screen' && (
         <div className="relative w-full h-screen bg-gray-100 flex">
-
           {/* Left Column (Top Left + Bottom Left Rectangles) */}
           <div className="w-[30%] h-full flex flex-col justify-between">
             {/* Top Left Rectangle */}
-            <div className="w-full h-1/2 bg-gray-600 flex items-center justify-center border-t border-l border-b border-black">
-            
-            </div>
-
+            <div className="w-full h-1/2 bg-gray-600 flex items-center justify-center border-t border-l border-b border-black"></div>
             {/* Bottom Left Rectangle */}
-            <div className="w-full h-1/2 bg-gray-600 flex items-center justify-center border-l border-b border-black">
-            
-            </div>
+            <div className="w-full h-1/2 bg-gray-600 flex items-center justify-center border-l border-b border-black"></div>
           </div>
 
           {/* Center Rectangle */}
@@ -45,17 +39,21 @@ const StreamPlayerScreen: React.FC = () => {
           <div className="w-[30%] h-full flex flex-col justify-between">
             {/* Top Right Rectangle */}
             <div className="w-full h-1/2 bg-gray-600 flex items-center justify-center border-t border-r border-b border-black"></div>
-
             {/* Bottom Right Rectangle */}
             <div className="w-full h-1/2 bg-gray-600 flex items-center justify-center border-r border-b border-black"></div>
           </div>
-
         </div>
       )}
 
-      {screenMode === 'gama_screen' && (
+      {screenModeDisplay === 'gama_screen' && (
         <div className='bg-gray-400 relative w-full h-screen flex'>
-          
+          {/* Your content for gama_screen */}
+        </div>
+      )}
+
+      {screenModeDisplay !== 'gama_screen' && screenModeDisplay !== 'shared_screen' && (
+        <div className='bg-red-400 relative w-full h-screen flex items-center justify-center'>
+          <p>Unknown screen mode: {screenModeDisplay}</p>
         </div>
       )}
     </>

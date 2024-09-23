@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Button from '../Button/Button';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
-import { Link } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { setScreenMode } from '../../redux/screenModeSlice';
-
-
+// import { useDispatch } from 'react-redux';
+// import { setScreenMode } from '../../redux/screenModeSlice';
+// import { useScreenMode } from '../ScreenModeContext/ScreenModeContext';
 
 const SimulationManagerButtons : React.FC = () => {
     const { ws, gama} = useWebSocket();
-    const [showPopUp, setshowPopUp] = useState(false);
-    const dispatch = useDispatch();
+    // const [showPopUp, setshowPopUp] = useState(false);
 
+    // screenMode context 
+    // const {setScreenModeDisplay, screenModeDisplay } = useScreenMode();
+
+    // useEffect(() => {
+    //   console.log("Screen Mode Display updated :", screenModeDisplay);
+
+    // }, [screenModeDisplay]);
+
+    // const dispatch = useDispatch();
 
 
     // const [modeScreen, setModeScreen] = useState<string>("gama_screen");
@@ -23,28 +29,51 @@ const SimulationManagerButtons : React.FC = () => {
       //     }
       //   }, [gama.connected]);
     
-      const togglePopUp = (mode: string) => {
+
+      // const popPup = () => {  
+      //   setshowPopUp(!showPopUp);
+      // };
+
+      // const togglePopUp = (mode: string) => {
+        
+      //   setScreenModeDisplay(mode); // update screenModeDisplay from the context 
+        
+
+        // console.log("in paramaeter: "+ mode+ " screenModeDisplay: "+ screenModeDisplay);
         // setModeScreen(mode);
         // if (mode === "gama_screen" && ws !== null) {
         //   // envoi un json au monitor serveur 
+        //   // envoi un json au websocket manager 
         //   ws.send(JSON.stringify({ type: 'set_gama_screen' }));
-        //   // console.log("salut1");
+        //   console.log("salut1");
+        //   setscreenMode(mode);
         // }
 
         // if (mode === "shared_screen" && ws !== null) {
         //   // envoi un json au monitor server  
         //   ws.send(JSON.stringify({ type: 'set_shared_screen' }));
-        //   // console.log("salut2");
+        //   setscreenMode(mode);
+          
+        //  console.log("salut2");
         // }
-        if(mode === ""){
-        }else{
-          dispatch(setScreenMode(mode));
-          console.log(mode);
-          // dispatch(setScreenMode(mode)); // update redux store with the action
-          // setscreenMode(mode);
-        }
-        setshowPopUp(!showPopUp);
-      };
+        
+        // if(mode === ""){
+          
+        // }
+        
+        // else{
+        //   setscreenMode(mode);
+        //   // dispatch(setScreenMode(mode));
+        //   // console.log(mode);
+        //   // dispatch(setScreenMode(mode)); // update redux store with the action
+        //   // setscreenMode(mode);
+        // }
+
+
+
+      //   setshowPopUp(!showPopUp);
+      // };
+
 
 
       const handlePlayPause = () => {
@@ -184,64 +213,7 @@ const SimulationManagerButtons : React.FC = () => {
             </div>
             
 
-        <div className='flex justify-center mt-3'>
-          <Button
-            text="Monitoring"
-            bgColor="bg-blue-500"
-            showText={true}
-            icon={
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="35" height="35">
-                <rect x="5" y="5" width="30" height="20" rx="2" ry="2" fill="#d1d1d1" stroke="#333" strokeWidth="1"/>
-                <rect x="7" y="7" width="26" height="16" fill="#fff" stroke="#333" strokeWidth="1"/>
-                <line x1="7" y1="15" x2="33" y2="15" stroke="#333" strokeWidth="1"/>
-                <line x1="20" y1="7" x2="20" y2="23" stroke="#333" strokeWidth="1"/>
-                <rect x="18" y="26" width="4" height="4" fill="#333"/>
-                <rect x="16" y="30" width="8" height="2" fill="#333"/>
-              </svg>
-            }
-            onClick={() => togglePopUp("")}
-          />
-
-          {showPopUp && (
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-              <div className="bg-white p-6 rounded-lg shadow-lg w-64 text-center">
-                <h2 className="text-lg font-semibold mb-4">Choose an Option</h2>
-
-                
-                <div className="flex flex-col space-y-4">
-                  <Button
-                    text="Gama Screen"
-                    bgColor="bg-green-500 hover:bg-green-600"
-                    onClick={() => {
-                      // setModeScreen("full_screen");
-                      // console.log(modeScreen);
-                      togglePopUp("gama_screen");
-                    }}
-                  />
-
-                  <Button
-                    text="Shared Screen"
-                    bgColor="bg-blue-500 hover:bg-blue-600 "
-                    onClick={() => {
-                        // setModeScreen("shared_screen");
-                        // console.log(modeScreen);
-                        togglePopUp("shared_screen");
-                    }}
-                  />
-                  
-                </div>
-
-                <button
-                  className="bg-red-500 mt-4 text-white hover:underline"
-                  onClick={() => {togglePopUp("")}}
-                >
-                  Cancel
-                </button>
-              
-              </div>
-            </div>
-          )}
-       </div>
+        
 
 
     </div>

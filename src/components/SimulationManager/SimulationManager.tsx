@@ -5,6 +5,7 @@ import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import SimulationManagerButtons from './SimulationManagerButtons';
 import Navigation from '../Navigation/Navigation';
 import { useNavigate } from 'react-router-dom';
+import { useScreenModeState, useScreenModeSetter } from '../ScreenModeContext/ScreenModeContext';
 
 interface Player {
   connected: boolean;
@@ -17,12 +18,32 @@ const SimulationManager: React.FC = () => {
   const navigate = useNavigate();
   const [userInfos, setUserInfos] = useState<Player | null>(null);
   const [clickedUserInfos, setClickedUserInfos] = useState<boolean>(false);
+  const [showPopUp, setShowPopUp] = useState(false);
 
-  useEffect(() => {
-    if (isWsConnected && ws !== null) {
-      console.log('WebSocket connected');
+  // const {setScreenModeDisplay, screenModeDisplay } = useScreenMode();
+  // Separate hooks for reading and updating screenModeDisplay
+  const screenModeDisplay = useScreenModeState();
+  const setScreenModeDisplay = useScreenModeSetter();
+
+
+  const popPup = () => {  
+    setShowPopUp(!showPopUp);
+  };
+
+  const togglePopUp = (mode?: string) => {
+    if (mode) {
+      setScreenModeDisplay(mode); // Update screenModeDisplay from the context
+      console.log(`Selected mode: ${mode}, current screenModeDisplay: ${screenModeDisplay}`);
     }
-  }, [isWsConnected, ws]);
+    setShowPopUp(!showPopUp); // Toggle pop-up visibility
+  };
+
+
+  // useEffect(() => {
+  //   if (isWsConnected && ws !== null) {
+  //     // console.log('WebSocket connected');
+  //   }
+  // }, [isWsConnected, ws]);
 
   // Add players to the WebSocket server automatically when the WebSocket connection is established
 
@@ -106,7 +127,71 @@ const SimulationManager: React.FC = () => {
 
             <SimulationManagerButtons />
 
+            {/* AJOUTER LE BOUTON MONOTORING ICI */}
+            {/* + Déplacer la logique ici : les functions, appels du context*/}
+            
+            {/* Monitoring Button */}
+            <div className='flex justify-center mt-3'>
+              <Button
+                text="Monitoring"
+                bgColor="bg-blue-500"
+                showText={true}
+                icon={
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="35" height="35">
+                    <rect x="5" y="5" width="30" height="20" rx="2" ry="2" fill="#d1d1d1" stroke="#333" strokeWidth="1"/>
+                    <rect x="7" y="7" width="26" height="16" fill="#fff" stroke="#333" strokeWidth="1"/>
+                    <line x1="7" y1="15" x2="33" y2="15" stroke="#333" strokeWidth="1"/>
+                    <line x1="20" y1="7" x2="20" y2="23" stroke="#333" strokeWidth="1"/>
+                    <rect x="18" y="26" width="4" height="4" fill="#333"/>
+                    <rect x="16" y="30" width="8" height="2" fill="#333"/>
+                  </svg>
+                }
+                onClick={() => togglePopUp()}
+              />
 
+              {/* The PopUp */}
+              {showPopUp && (
+                <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+                  <div className="bg-white p-6 rounded-lg shadow-lg w-64 text-center">
+                    <h2 className="text-lg font-semibold mb-4">Choose an Option</h2>
+
+                    
+                    <div className="flex flex-col space-y-4">
+                      
+                      <Button
+                        text="Gama Screen"
+                        bgColor="bg-green-500 hover:bg-green-600"
+                        onClick={() => {
+                          // setModeScreen("full_screen");
+                          // console.log(modeScreen);
+                          togglePopUp("gama_screen");
+                        }}
+                      />
+
+                      <Button
+                        text="Shared Screen"
+                        bgColor="bg-blue-500 hover:bg-blue-600 "
+                        onClick={() => {
+                            // setModeScreen("shared_screen");
+                            // console.log(modeScreen);
+                            togglePopUp("shared_screen");
+                        }}
+                      />
+                      
+                    </div>
+
+                    <button
+                      className="bg-red-500 mt-4 text-white hover:underline"
+                      onClick={() => {togglePopUp()}}
+                    >
+                      Cancel
+                    </button>
+                  
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* End Monotoring button */}
 
             <div className="flex justify-center mt-8 space-x-4">
               {Object.keys(playerList).map((key) => {
@@ -206,8 +291,8 @@ const SimulationManager: React.FC = () => {
           <Button onClick={handleGetPlayers} text="Get Player list logs" bgColor="bg-purple-500" showText={true} 
             icon= {
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
-                <circle cx="12" cy="12" r="10" fill="none" stroke="white" stroke-width="2"/>
-                <line x1="12" y1="17" x2="12" y2="12" stroke="white" stroke-width="2"/>
+                <circle cx="12" cy="12" r="10" fill="none" stroke="white" strokeWidth="2"/>
+                <line x1="12" y1="17" x2="12" y2="12" stroke="white" strokeWidth="2"/>
                 <circle cx="12" cy="8.5" r="1" fill="white"/>
               </svg>
             }
