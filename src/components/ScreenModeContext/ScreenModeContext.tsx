@@ -16,7 +16,7 @@ const ScreenModeContext = createContext<ScreenModeContextType | undefined>(undef
 
 // Provider component
 export const ScreenModeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [screenModeDisplay, setScreenModeDisplay] = useState<string>('gama_screen'); 
+  const [screenModeDisplay, setScreenModeDisplay] = useState<string>('shared_screen'); 
 
   return (
     <ScreenModeContext.Provider value={{ screenModeDisplay, setScreenModeDisplay }}>

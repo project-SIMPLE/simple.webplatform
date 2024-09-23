@@ -7,11 +7,11 @@ interface VRHeadsetProps {
 
 const VRHeadset: React.FC<VRHeadsetProps> = ({ isConnected }) => {
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center grayscale">
       <img
         src="/images/virtual-reality-headset-removebg-preview.png" // Placeholder image for VR headset
         alt="VR Headset"
-        className="w-32 h-32 object-cover mb-2"
+        className="w-32 h-32 object-cover mb-2 "
       />
       <div
         className={`w-4 h-4 rounded-full ${
