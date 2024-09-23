@@ -60,7 +60,7 @@ const SelectorSimulations = () => {
       interval = setInterval(() => {
         ws.send(JSON.stringify({ type: 'try_connection' }));
         console.log('Tentative de connexion à Gama...');
-      }, 4000); 
+      }, 3000); 
     }
 
     return () => {
@@ -95,15 +95,19 @@ const SelectorSimulations = () => {
           <div className="grid grid-cols-3 mt-5 mb-8" style={{ gap: '55px' }}>
             {simulationList.map((simulation, index) => (
               <div
-                className="bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer"
-                style={{
+              className={`bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer ${
+                !gama.connected ? 'opacity-50 cursor-not-allowed' : ''
+              }`}                
+              
+              style={{
                   backgroundImage: `url(${simulation.splashscreen})`,
                   backgroundSize: 'cover',
                   width: '100px',
                   height: '100px',
                 }}
                 key={index}
-                onClick={() => handleSimulation(index)}
+                onClick={ gama.connected ? () => handleSimulation(index) : () => {} }
+                
               >
                 <h2
                   className="text-gray-500 text-sm text-center"
