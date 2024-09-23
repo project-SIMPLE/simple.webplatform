@@ -6,10 +6,12 @@ import Navigation from '../Navigation/Navigation';
 import VRHeadset from '../VRHeadset/VRHeadset';
 
 const SelectorSimulations = () => {
-  const { ws, isWsConnected, simulationList, playerList } = useWebSocket();
+  const { ws, isWsConnected, simulationList, playerList, gama } = useWebSocket();
   const [directoryPath, setDirectoryPath] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [showCustomInput, setShowCustomInput] = useState<boolean>(false); 
+  const [connectionStatus, setConnectionStatus] = useState<string>('Waiting for connection ...'); 
+
   const navigate = useNavigate(); 
 
   useEffect(() => {
@@ -48,6 +50,32 @@ const SelectorSimulations = () => {
     console.log(`Restart button clicked for headset ${index}`);
     // Logic for restart button ...
   };
+
+
+  // Loop which try to connect to Gama
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (ws && !gama.connected) {
+      interval = setInterval(() => {
+        ws.send(JSON.stringify({ type: 'try_connection' }));
+        console.log('Tentative de connexion à Gama...');
+      }, 4000); 
+    }
+
+    return () => {
+      clearInterval(interval); 
+    };
+  }, [ws, gama.connected]);
+
+  // Display connexion statue
+  useEffect(() => {
+    if (gama.connected) {
+      setConnectionStatus('Connected');
+    } else {
+      setConnectionStatus('Please launch Gama...');
+    }
+  }, [gama.connected]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white p-8">
@@ -118,8 +146,22 @@ const SelectorSimulations = () => {
             </div>
           )}
         </div>
+        {/* Display the statue*/}
+      <div className='flex gap-2 mt-6'>
+
+        {/* Display here the conditional rendering  */}
+        {/* // if gama.connected : afficher connecter
+        // sinon afficher en attente du lancement de Gama */}
+        <img src='images/gama-logo.png' className='w-6'/>
+        :
+        <span className={gama.connected ? 'text-green-500'  : 'text-red-500'}>    
+           {connectionStatus}
+        </span>
+
+      </div>
       </div>
       
+
       )}
 
       
@@ -245,6 +287,8 @@ const SelectorSimulations = () => {
         
       )}
 
+      
+
       {/* Footer of the page */}
       <footer className="flex justify-between items-center p-4 border-t border-gray-300  w-full" style={{ marginTop: '100px' }} >
         <div className='flex'>
@@ -257,8 +301,6 @@ const SelectorSimulations = () => {
           <img src="images/nstda-logo.png" alt="CTU" className="h-8" />
           <img src="images/ctu-logo.png" alt="NSTDA" className="h-8" />
         </div>
-
-
       </footer>
 
     </div>
