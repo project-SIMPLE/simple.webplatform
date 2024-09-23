@@ -61,28 +61,65 @@ const SelectorSimulations = () => {
       ) : (
        
         // Display simulations cards
-       <div className="grid grid-cols-3 mt-5 mb-8" style={{ gap: '65px' }} >
-          {simulationList.map((simulation, index) => (
-            <div 
-              className="bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer"
-              style={{
-                backgroundImage: `url(${simulation.splashscreen})`,
-                backgroundSize: 'cover',
-                width: "100px",
-                height: "100px",
-              }}
-              key={index}
-              onClick={() => handleSimulation(index)}
-            >
-                <h2 className="text-gray-500 text-sm text-center"
-                 style={{
-                marginTop: "80px",
+        <div className="flex flex-col items-center justify-center bg-white p-8">
+        <div className="flex items-center justify-between ">
+          
+          <div className="grid grid-cols-3 mt-5 mb-8" style={{ gap: '55px' }}>
+            {simulationList.map((simulation, index) => (
+              <div
+                className="bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer"
+                style={{
+                  backgroundImage: `url(${simulation.splashscreen})`,
+                  backgroundSize: 'cover',
+                  width: '100px',
+                  height: '100px',
                 }}
-                >{simulation.name}
+                key={index}
+                onClick={() => handleSimulation(index)}
+              >
+                <h2
+                  className="text-gray-500 text-sm text-center"
+                  style={{
+                    marginTop: '80px',
+                  }}
+                >
+                  {simulation.name}
                 </h2>
+              </div>
+            ))}
+          </div>
+      
+          {/* Right Button from the grid */}
+          {import.meta.env.VITE_APP_ENV === 'development' && (
+            <div className="ml-20 ">
+              <Button
+                onClick={() => setShowCustomInput(!showCustomInput)}
+                text="Dev Mode"
+                className='bg-green-700'
+                icon={
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-6 h-6 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
+                    />
+                  </svg>
+                }
+                bgColor="bg-blue-500"
+                showText={true}
+              />
             </div>
-          ))}
+          )}
         </div>
+      </div>
+      
       )}
 
       
@@ -115,7 +152,7 @@ const SelectorSimulations = () => {
 
 
         {/* // Section: Get simulation informations */}
-        <div className="mt-7">
+        {/* <div className="mt-7">
          <h1 className="text-lg font-bold mb-5">Get simulation informations:</h1>
          <Button
             onClick={() => {
@@ -129,7 +166,7 @@ const SelectorSimulations = () => {
             bgColor="bg-green-500"
             showText={true}
           />
-        </div>
+        </div> */}
         
 
         { /* 
@@ -138,7 +175,8 @@ const SelectorSimulations = () => {
         }
         {playerList && Object.keys(playerList).length > 0 && (
           <>
-            <h1 className="text-2xl font-bold mb-4">HeadSet connected:</h1>
+            <h1 className="text-lg  font-bold mb-4 mt-4">HeadSet connected:</h1>
+
             <div className="flex justify-center mt-8 space-x-4">
               {Object.keys(playerList).map((key, index) => {
                 const player = playerList[key];
@@ -214,32 +252,6 @@ const SelectorSimulations = () => {
           <img src="/images/funded-by-ue.png" alt="Global Gateway" className="h-8" />
         </div>
 
-        {
-          import.meta.env.VITE_APP_ENV === 'development' && (  
-            <Button
-              onClick={() => setShowCustomInput(!showCustomInput)}
-              text="Info"
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-6 h-6 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
-                  />
-                </svg>
-              }
-              bgColor="bg-blue-500"
-              showText={true}
-            />    
-        )}
-        
         <div className='flex gap-3' >
           <img src="images/IRD-logo.png" alt="IRD" className="h-8" />
           <img src="images/nstda-logo.png" alt="CTU" className="h-8" />
