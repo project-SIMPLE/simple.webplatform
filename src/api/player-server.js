@@ -18,9 +18,9 @@ class PlayerServer {
         this.playerSocketClientsId = [];
 
         this.playerSocket.on('connection', (ws) => {
-
             // Make heartbeat valid on each message received
             ws.isAlive = true;
+            ws.lastPing = Date.now();
 
             let model = this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex];
 
@@ -60,6 +60,8 @@ class PlayerServer {
                                 model.setPlayerConnection(jsonPlayer.id, true)
                                 console.log('-> New connection of the player of id '+jsonPlayer.id);
                             }
+                            // Set client-specific timeout
+                            ws.heartbeatTimeout = jsonPlayer.heartbeat || 5000; // Default to 5 seconds if not provided
                             break;               
                         // restart the headet
                         case "restart":
@@ -83,7 +85,7 @@ class PlayerServer {
                             console.warn(jsonPlayer);
                     }
                 } catch (exception) {
-                    console.error("\x1b[31m-> The last message received from " + getIdClient(ws) + " created an internal error.\x1b[0m");
+                    console.error("\x1b[31m-> The last message received from " + this.getIdClient(ws) + " created an internal error.\x1b[0m");
                     console.error(exception);
                 }
             });
@@ -121,7 +123,7 @@ class PlayerServer {
             }
         });
 
-        this.pingInterval = setInterval(this.sendHeartbeat.bind(this), 5000);
+        this.pingInterval = setInterval(this.checkHeartbeats.bind(this), 1000); // Check is alive every 1 seconds
     }
 
     // Getters
@@ -134,18 +136,20 @@ class PlayerServer {
     }
 
     /**
-     * Automatically send Heartbeat ping message to every player's open websocket
+     * Check heartbeats for all connected clients
      */
-    sendHeartbeat() {
-        this.playerSocket.clients.forEach((socket) => {
-            if (socket.isAlive === false) {
-                console.warn('Terminating dead socket from player ' + this.getWsClient(socket));
-                return socket.terminate();
+    checkHeartbeats() {
+        const now = Date.now();
+        this.playerSocket.clients.forEach((ws) => {
+            if (!ws.isAlive && (now - ws.lastPing > ws.heartbeatTimeout)) {
+                console.warn('Terminating dead socket from player ' + this.getIdClient(ws));
+                return ws.terminate();
             }
 
-            socket.isAlive = false;
-            socket.send("{\"type\":\"ping\"}");
-            if (useVerbose) console.log("Sending ping to "+ this.getWsClient(socket));
+            ws.isAlive = false;
+            ws.send(JSON.stringify({"type":"ping"}));
+            ws.lastPing = now;
+            if (useVerbose) console.log("Sending ping to "+ this.getIdClient(ws));
         });
     }
 
@@ -210,6 +214,7 @@ class PlayerServer {
     }
 
     close() {
+        clearInterval(this.pingInterval);
         this.playerSocket.close();
     }
 }
