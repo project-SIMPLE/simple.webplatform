@@ -307,10 +307,26 @@ const closePopUp = () => {
             {/* + Déplacer la logique ici : les functions, appels du context*/}
             
             {/* Monitoring Button */}
-            <div className='flex justify-center mt-3'>
+            <div className='flex justify-center mt-3 gap-4'>
               <Button
                 text="Monitoring"
-                bgColor="bg-blue-500"
+                bgColor="bg-white"
+                showText={true}
+                icon={
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="35" height="35">
+                    <rect x="5" y="5" width="30" height="20" rx="2" ry="2" fill="#d1d1d1" stroke="#333" strokeWidth="1"/>
+                    <rect x="7" y="7" width="26" height="16" fill="#fff" stroke="#333" strokeWidth="1"/>
+                    <line x1="7" y1="15" x2="33" y2="15" stroke="#333" strokeWidth="1"/>
+                    <line x1="20" y1="7" x2="20" y2="23" stroke="#333" strokeWidth="1"/>
+                    <rect x="18" y="26" width="4" height="4" fill="#333"/>
+                    <rect x="16" y="30" width="8" height="2" fill="#333"/>
+                  </svg>
+                }
+                onClick={() => togglePopUp()}
+              />
+              <Button
+                text="Shared Screen"
+                bgColor="bg-white"
                 showText={true}
                 icon={
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="35" height="35">
@@ -389,6 +405,7 @@ const closePopUp = () => {
         <div>
           {/* <div className="text-lg mt-3 mb-3">Get Players connected:</div> */}
           <Button onClick={handleGetPlayers} text="Get Player list logs" bgColor="bg-purple-500" showText={true} 
+            
             icon= {
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
                 <circle cx="12" cy="12" r="10" fill="none" stroke="white" strokeWidth="2"/>
@@ -416,7 +433,7 @@ const closePopUp = () => {
     
     
       {/* Footer of the page */}
-      <footer className="flex justify-between items-center p-4 border-t border-gray-300  w-full" style={{ marginTop: '100px' }} >
+      <footer className="flex justify-between items-center p-4 border-t border-gray-300  w-full" style={{ marginTop: '60px' }} >
         <div className='flex'>
           <img src="/images/global-gateway-euro.png" alt="Global Gateway" className="h-8" />
           <img src="/images/funded-by-ue.png" alt="Global Gateway" className="h-8" />
