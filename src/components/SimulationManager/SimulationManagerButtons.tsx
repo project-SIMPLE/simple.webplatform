@@ -104,7 +104,7 @@ const SimulationManagerButtons : React.FC = () => {
 
       const icon = gama.experiment_state === 'LAUNCHING'  ? (
         <svg
-          className="w-6 h-6 mr-2"
+          className="w-7 h-7"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -120,7 +120,7 @@ const SimulationManagerButtons : React.FC = () => {
 
       ) : gama.experiment_state === 'NONE' || gama.experiment_state === 'NOTREADY' || gama.experiment_state === 'PAUSED' ? (
         <svg
-          className="w-6 h-6 mr-2"
+          className="w-7 h-7 "
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -135,7 +135,7 @@ const SimulationManagerButtons : React.FC = () => {
         </svg>
       ) : (
         <svg
-          className="w-6 h-6 mr-2"
+          className="w-7 h-7"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -176,11 +176,11 @@ const SimulationManagerButtons : React.FC = () => {
                 {/* add a new button */}
                 <Button
                   onClick={handlePlayPause}
-                  text={ 
-                    gama.experiment_state === 'NONE' ? 'Launch' :
-                    gama.experiment_state === 'RUNNING' ? 'Pause' :
-                    gama.experiment_state === 'NOTREADY' ? 'Not Ready' : 'Resume'
-                  }
+                  // text={ 
+                  //   gama.experiment_state === 'NONE' ? 'Launch' :
+                  //   gama.experiment_state === 'RUNNING' ? 'Pause' :
+                  //   gama.experiment_state === 'NOTREADY' ? 'Not Ready' : 'Resume'
+                  // }
                   bgColor={
                     gama.experiment_state === 'RUNNING'
                     ? 'bg-orange-500' 
@@ -191,10 +191,13 @@ const SimulationManagerButtons : React.FC = () => {
                   showText={true}
                 />
 
-                <Button onClick={handleEnd} text="End" bgColor="bg-red-500" 
+                <Button 
+                  onClick={handleEnd} 
+                  // text="End"
+                  bgColor="bg-red-500" 
                   icon={
                     <svg
-                        className="w-6 h-6 mr-2"
+                        className="w-7 h-7 "
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -207,7 +210,8 @@ const SimulationManagerButtons : React.FC = () => {
                         d="M6 18L18 6M6 6l12 12"
                         />
                     </svg>
-                  } showText={true} 
+                  } 
+                  showText={true} 
                 />
                 
             </div>
