@@ -194,7 +194,7 @@ const closePopUp = () => {
                     
                     
                     {/* Boutons pour les casques connectés */}
-                    {player.connected && (
+                    {/* {player.connected && (
                       <div className="flex mt-4 space-x-2">
                         <Button
                           onClick={() => handleRemove(key)}
@@ -263,7 +263,7 @@ const closePopUp = () => {
                           showText={false}
                         />
                       </div>
-                    )}
+                    )} */}
                   </div>
                 );
               })}
@@ -309,34 +309,32 @@ const closePopUp = () => {
             {/* Monitoring Button */}
             <div className='flex justify-center mt-3 gap-4'>
               <Button
-                text="Monitoring"
+                text="Gama screen"
                 bgColor="bg-white"
                 showText={true}
+                className='border-1 border-black'
                 icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="35" height="35">
-                    <rect x="5" y="5" width="30" height="20" rx="2" ry="2" fill="#d1d1d1" stroke="#333" strokeWidth="1"/>
-                    <rect x="7" y="7" width="26" height="16" fill="#fff" stroke="#333" strokeWidth="1"/>
-                    <line x1="7" y1="15" x2="33" y2="15" stroke="#333" strokeWidth="1"/>
-                    <line x1="20" y1="7" x2="20" y2="23" stroke="#333" strokeWidth="1"/>
-                    <rect x="18" y="26" width="4" height="4" fill="#333"/>
-                    <rect x="16" y="30" width="8" height="2" fill="#333"/>
-                  </svg>
+                  <img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '90px', height: '90px' }} 
+                  />
+                  // <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="35" height="35">
+                  //   <rect x="5" y="5" width="30" height="20" rx="2" ry="2" fill="#d1d1d1" stroke="#333" strokeWidth="1"/>
+                  //   <rect x="7" y="7" width="26" height="16" fill="#fff" stroke="#333" strokeWidth="1"/>
+                  //   <line x1="7" y1="15" x2="33" y2="15" stroke="#333" strokeWidth="1"/>
+                  //   <line x1="20" y1="7" x2="20" y2="23" stroke="#333" strokeWidth="1"/>
+                  //   <rect x="18" y="26" width="4" height="4" fill="#333"/>
+                  //   <rect x="16" y="30" width="8" height="2" fill="#333"/>
+                  // </svg>
                 }
+
                 onClick={() => togglePopUp()}
               />
               <Button
                 text="Shared Screen"
                 bgColor="bg-white"
                 showText={true}
+                className='border-1 border-black'
                 icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="35" height="35">
-                    <rect x="5" y="5" width="30" height="20" rx="2" ry="2" fill="#d1d1d1" stroke="#333" strokeWidth="1"/>
-                    <rect x="7" y="7" width="26" height="16" fill="#fff" stroke="#333" strokeWidth="1"/>
-                    <line x1="7" y1="15" x2="33" y2="15" stroke="#333" strokeWidth="1"/>
-                    <line x1="20" y1="7" x2="20" y2="23" stroke="#333" strokeWidth="1"/>
-                    <rect x="18" y="26" width="4" height="4" fill="#333"/>
-                    <rect x="16" y="30" width="8" height="2" fill="#333"/>
-                  </svg>
+                  <img src='/images/shared_screen.png' alt="shared_screen" className="w-12" style={{ width: '90px', height: '90px' }} />
                 }
                 onClick={() => togglePopUp()}
               />

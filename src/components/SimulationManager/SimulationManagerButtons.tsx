@@ -175,11 +175,12 @@ const SimulationManagerButtons : React.FC = () => {
                   } showText={true} />
               </div>
             )} */}
-            <div className="flex justify-center space-x-2">
+            <div className="flex justify-center space-x-2 gap-10 mb-8 mt-8">
             
                 {/* add a new button */}
                 <Button
                   onClick={handlePlayPause}
+                  customStyle={{width: '100px', height:'50px'}}
                   // text={ 
                   //   gama.experiment_state === 'NONE' ? 'Launch' :
                   //   gama.experiment_state === 'RUNNING' ? 'Pause' :
@@ -189,7 +190,7 @@ const SimulationManagerButtons : React.FC = () => {
                     gama.experiment_state === 'RUNNING'
                     ? 'bg-orange-500' 
                     : 'bg-green-500'
-                  }                  
+                  }  
                 icon={ icon
                 }
                   showText={true}
@@ -197,7 +198,9 @@ const SimulationManagerButtons : React.FC = () => {
 
                 <Button 
                   onClick={handleEnd} 
-                  // text="End"
+                  className='w-20'                
+                  customStyle={{width: '100px', height:'50px'}}
+
                   bgColor="bg-red-500" 
                   icon={
                     <svg

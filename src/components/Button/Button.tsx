@@ -1,4 +1,3 @@
-// src/components/Button.tsx
 import React from 'react';
 
 interface ButtonProps {
@@ -8,18 +7,18 @@ interface ButtonProps {
   icon?: React.ReactNode;
   showText?: boolean;
   className?: string; 
+  customStyle?: React.CSSProperties;}
 
-}
-
-const Button: React.FC<ButtonProps> = ({ onClick, text, bgColor, icon, showText = true, className }) => {
+const Button: React.FC<ButtonProps> = ({ onClick, text, bgColor, icon, showText = true, className, customStyle }) => {
   return (
-    <div className="flex">
+    <div className="flex" >
   <button
     onClick={onClick}
-    className={`${bgColor} text-white py-1 px-1.5 rounded-lg flex flex-col items-center justify-center gap-1 ${className}`} // Utilisez flex-col pour une disposition verticale
+    className={`${bgColor} text-white py-1 px-1.5 rounded-lg flex flex-col items-center justify-center gap-1 ${className}`}
+    style={customStyle}
   >
     {icon}
-    <span className="text-black text-xs">{text}</span> 
+    <span className="text-black text-ls">{text}</span> 
   </button>
 </div>
 
