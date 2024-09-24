@@ -228,7 +228,12 @@ const SelectorSimulations = () => {
                 const player = playerList[key];
                 return (
                   <div key={index} className="flex flex-col items-center">
-                    <VRHeadset isConnected={player.connected} />
+                    
+                    <VRHeadset
+                      key={key}
+                      selectedPlayer={player}  // Pass the player data as props
+                    />
+                    
                     <p style={{ marginTop: "3px" }}>id player: {key}</p>
                     <p>{player.connected ? 'Connected' : 'Waiting for connection..'}</p>
 

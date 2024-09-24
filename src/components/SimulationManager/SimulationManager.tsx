@@ -173,11 +173,10 @@ const closePopUp = () => {
                     {/* <VRHeadset isConnected={player.connected} /> */}
                     <VRHeadset
                       key={key}
-                      isConnected={player.connected}
                       selectedPlayer={player}  // Pass the player data as props
                     />
                     
-                    <p style={{ marginTop: '3px' }}>id: {key}</p>
+                    <p style={{ marginTop: '3px' }}> {key} </p>
                     {/* <p>{player.connected ? 'Connected' : 'Waiting for connection...'}</p> */}
                     
                     
@@ -260,7 +259,7 @@ const closePopUp = () => {
               {/* Display remaining headsets in gray if the number of detected players is less than the maximum number */}
               {Array.from({ length: Number(maxPlayers) - Object.keys(playerList).length }).map((_, index) => (
                 <div key={`placeholder-${index}`} className="flex flex-col items-center opacity-50 cursor-not-allowed">
-                  <VRHeadset isConnected={false} />
+                  <VRHeadset  />
                   <p style={{ marginTop: '3px' }}>Empty slot</p>
                   {/* <p>Waiting for connection...</p> */}
                 </div>
