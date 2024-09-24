@@ -6,6 +6,7 @@ import SimulationManagerButtons from './SimulationManagerButtons';
 import Navigation from '../Navigation/Navigation';
 import { useNavigate } from 'react-router-dom';
 import { useScreenModeState, useScreenModeSetter } from '../ScreenModeContext/ScreenModeContext';
+import MiniNavigation from '../Navigation/MiniNavigation';
 
 interface Player {
   connected: boolean;
@@ -147,9 +148,10 @@ const closePopUp = () => {
   // }, [playerList]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <Navigation />
-      <div className="w-2/3 bg-white p-8 shadow-lg rounded-lg text-center">
+    <div className="flex flex-col min-h-screen bg-gray-100">
+      {/* <Navigation /> */}
+      <MiniNavigation />
+      <div className="flex flex-col items-center justify-center bg-gray-100 bg-white p-8 shadow-lg rounded-lg text-center mt-12" style={{marginRight:'60px', marginLeft:'60px', marginTop:'100px'}}>
         
         
         {selectedSimulation ? (
