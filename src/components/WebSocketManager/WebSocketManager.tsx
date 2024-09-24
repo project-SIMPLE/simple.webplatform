@@ -19,6 +19,8 @@ interface Simulation {
     splashscreen: string;
     type: string;
     type_model_file_path: string;
+    maximal_players: string,
+    minimal_players:string
 }
 
 // interface SimulationList {
@@ -106,9 +108,6 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
         socket.onmessage = (event: MessageEvent) => {
             const data = JSON.parse(event.data);
             
-            
-            console.log('Bonjour', data);
-
 
             if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
                 setSimulationList(data.map(sim => sim.jsonSettings));

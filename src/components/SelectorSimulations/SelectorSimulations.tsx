@@ -198,7 +198,7 @@ const SelectorSimulations = () => {
 
 
         {/* // Section: Get simulation informations */}
-        {/* <div className="mt-7">
+        <div className="mt-7">
          <h1 className="text-lg font-bold mb-5">Get simulation informations:</h1>
          <Button
             onClick={() => {
@@ -212,7 +212,7 @@ const SelectorSimulations = () => {
             bgColor="bg-green-500"
             showText={true}
           />
-        </div> */}
+        </div>
         
 
         { /* 
