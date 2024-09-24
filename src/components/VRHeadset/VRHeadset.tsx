@@ -22,7 +22,7 @@ const VRHeadset: React.FC<VRHeadsetProps> = ({ selectedPlayer, className }) => {
         style={{ transition: 'all 0.3s ease', cursor: isAvailable ? 'pointer' : 'not-allowed' }}
       >
         <img
-          src="/images/virtual-reality-headset-removebg-preview.png" 
+          src="/images/metaquestd3.png" 
           alt="VR Headset"
           className={`w-32 h-32 object-cover mb-2 ${isAvailable ? 'hover:scale-105' : ''}`} 
           onClick={() => {
