@@ -3,7 +3,6 @@ import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import SimulationManagerButtons from './SimulationManagerButtons';
-import Navigation from '../Navigation/Navigation';
 import { useNavigate } from 'react-router-dom';
 import { useScreenModeState, useScreenModeSetter } from '../ScreenModeContext/ScreenModeContext';
 import MiniNavigation from '../Navigation/MiniNavigation';
@@ -32,12 +31,19 @@ const SimulationManager: React.FC = () => {
   const maxPlayers = selectedSimulation?.maximal_players || 0;
   const minPlayers = selectedSimulation?.minimal_players || 0;
   
+  const [showPopUpManageHeadset, setshowPopUpManageHeadset] = useState(false);
+
   // Calcul du nombre de casques non détectés (casques vides)
   const remainingPlayers = Number(maxPlayers) - detectedPlayers.length;
 
+  const togglePopUpshowPopUpManageHeadset = () => {
+    setshowPopUpManageHeadset(!showPopUpManageHeadset);
+  };
+  
   const popPup = () => {  
     setShowPopUp(!showPopUp);
   };
+
 
   const togglePopUp = (mode?: string) => {
     if (mode) {
@@ -101,6 +107,7 @@ const playerHeadsets = [
       console.log(`ID headset ${id}`);
       ws.send(JSON.stringify({ "type": "remove_player_headset", id }));
      // removePlayer(id);  // already did in WebSocketManagers
+     togglePopUpshowPopUpManageHeadset();
     } else {
       console.error('WebSocket is not connected');
     }
@@ -178,6 +185,49 @@ const closePopUp = () => {
                       selectedPlayer={player}  // Pass the player data as props
                     />
                     
+                      {showPopUpManageHeadset && (
+                        <>
+                          {/* Grey Overley */}
+                          <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-50"></div>
+  
+                          <div className="fixed inset-0 flex items-center justify-center z-50">
+                            <div className="bg-white p-6 rounded-lg shadow-lg w-72 text-center">
+                              <h2 className="text-lg font-semibold mb-4"> 
+                                Do you really want to  disconnect and remove {key} ? 
+                              </h2>
+                              
+                              <div className='flex gap-5 ml-5'>
+                              
+                              <button
+                                className="bg-red-500 text-white px-4 py-2 mt-4 rounded"
+                                onClick={() => handleRemove(key)}
+                              >
+                                Remove
+                              </button>
+
+                              <button
+                                className="bg-orange-500 text-white px-4 py-2 mt-4 rounded"
+                                onClick={() => handleRestart(key)}
+                              >
+                                Relaunch
+                              </button>
+
+                              </div>
+
+                              {/* <p>Status : {String(selectedPlayer.connected)}</p>
+                              <p>Hour of connection : {selectedPlayer.date_connection}</p>
+                              <p>In game : {String(selectedPlayer.in_game)}</p> */}
+  
+                              <button
+                                className="bg-red-500 text-white px-4 py-2 mt-4 rounded"
+                                onClick={togglePopUpshowPopUpManageHeadset}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
                       {/* The trash */}
                     <div className='flex gap-3 mt-2'> 
                       <p style={{ marginTop: '3px' }}> {key} </p>
@@ -189,12 +239,13 @@ const closePopUp = () => {
                         </svg>
                         
                               } 
-                          onClick={() => handleRemove(key)}
+                          onClick={togglePopUpshowPopUpManageHeadset}
+                          // onClick={() => handleRemove(key)}
                       >
 
                       </Button>
                     </div>
-
+                    
                     {/* <p>{player.connected ? 'Connected' : 'Waiting for connection...'}</p> */}
                     
                     
@@ -288,7 +339,7 @@ const closePopUp = () => {
             </div>
               <p className='mb-5'>Waiting for {Number(maxPlayers) - Object.keys(playerList).length } players ...</p>
 
-            
+              
             
             
             
@@ -321,14 +372,6 @@ const closePopUp = () => {
                 icon={
                   <img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '90px', height: '90px' }} 
                   />
-                  // <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="35" height="35">
-                  //   <rect x="5" y="5" width="30" height="20" rx="2" ry="2" fill="#d1d1d1" stroke="#333" strokeWidth="1"/>
-                  //   <rect x="7" y="7" width="26" height="16" fill="#fff" stroke="#333" strokeWidth="1"/>
-                  //   <line x1="7" y1="15" x2="33" y2="15" stroke="#333" strokeWidth="1"/>
-                  //   <line x1="20" y1="7" x2="20" y2="23" stroke="#333" strokeWidth="1"/>
-                  //   <rect x="18" y="26" width="4" height="4" fill="#333"/>
-                  //   <rect x="16" y="30" width="8" height="2" fill="#333"/>
-                  // </svg>
                 }
 
                 onClick={() => togglePopUp()}
