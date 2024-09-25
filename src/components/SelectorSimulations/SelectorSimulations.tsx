@@ -124,7 +124,34 @@ const SelectorSimulations = () => {
           {/* Right Button from the grid */}
           {import.meta.env.VITE_APP_ENV === 'development' && (
             <div className="ml-20 ">
-              <Button
+
+              <div
+              className={`bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer ${
+                !gama.connected ? 'opacity-50 cursor-not-allowed' : ''
+              }`}                
+              
+              style={{
+                  backgroundImage: `url(/images/codecode.png)`,
+                  backgroundSize: 'cover',
+                  width: '100px',
+                  height: '100px',
+                  marginBottom:'13px'
+                }}
+                // key={index}
+                onClick={() => setShowCustomInput(!showCustomInput)}
+                
+              >
+                <h2
+                  className="text-gray-500 text-sm text-center "
+                  style={{
+                    marginTop: '80px',
+                  }}
+                >
+                  DevMode
+                </h2>
+              </div>
+
+              {/* <Button
                 onClick={() => setShowCustomInput(!showCustomInput)}
                 text="Dev Mode"
                 className='bg-green-700'
@@ -146,7 +173,7 @@ const SelectorSimulations = () => {
                 }
                 bgColor="bg-blue-500"
                 showText={true}
-              />
+              /> */}
             </div>
           )}
         </div>
@@ -233,7 +260,7 @@ const SelectorSimulations = () => {
                       key={key}
                       selectedPlayer={player}  // Pass the player data as props
                     />
-                    
+
                     <p style={{ marginTop: "3px" }}>id player: {key}</p>
                     <p>{player.connected ? 'Connected' : 'Waiting for connection..'}</p>
 
