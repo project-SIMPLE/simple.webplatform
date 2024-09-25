@@ -71,7 +71,7 @@ const SelectorSimulations = () => {
   // Display connexion statue
   useEffect(() => {
     if (gama.connected) {
-      setConnectionStatus('Connected');
+      setConnectionStatus('');
     } else {
       setConnectionStatus('Please launch Gama...');
     }
@@ -183,11 +183,11 @@ const SelectorSimulations = () => {
         {/* Display here the conditional rendering  */}
         {/* // if gama.connected : afficher connecter
         // sinon afficher en attente du lancement de Gama */}
-        <img src='images/gama-logo.png' className='w-6'/>
-        :
+        
         <span className={gama.connected ? 'text-green-500'  : 'text-red-500'}>    
-           {connectionStatus}
+           {gama.connected ? '' : connectionStatus }
         </span>
+        {/* <img src='images/gama-logo.png' className='w-6'/> */}
 
       </div>
       </div>
