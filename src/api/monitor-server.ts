@@ -1,18 +1,27 @@
-import { WebSocketServer } from 'ws';
+import { WebSocketServer, WebSocket } from 'ws';
+import { Controller } from './controller';
+
+interface JsonMonitor {
+    type: string;
+    id?: string;
+    simulationIndex?: number;
+}
 
 /**
  * Creates a Websocket Server for handling monitor connections
  */
-class MonitorServer {
+export class MonitorServer {
+    private controller: Controller;
+    private monitorSocketClients: WebSocket[];
+    private monitorSocket!: WebSocketServer;
+
     /**
      * Creates the websocket server
      * @param {Controller} controller - The controller of the project
      */
-    constructor(controller) {
+    constructor(controller: Controller) {
         this.controller = controller;
         this.monitorSocketClients = [];
-
-        this.monitorSocket = null;
 
         try {
             const host = process.env.WEB_APPLICATION_HOST || 'localhost';
@@ -20,19 +29,19 @@ class MonitorServer {
 
             this.monitorSocket = new WebSocketServer({ host, port });
             console.log(`[MONITOR SERVER] Creating monitor server on: ws://${host}:${port}`);
-        }catch (e) {
+        } catch (e) {
             console.error("[MONITOR SERVER] Failed to create WebSocket server", e);
         }
 
-        this.monitorSocket.on('connection', (socket) => {
+        this.monitorSocket.on('connection', (socket: WebSocket) => {
             this.monitorSocketClients.push(socket);
             console.log("[MONITOR SERVER] Connected to monitor server");
             this.sendMonitorJsonState();
             this.sendMonitorJsonSettings();
             socket.on('message', (message) => {
                 try {
-                    const jsonMonitor = JSON.parse(message);
-                    const type = jsonMonitor['type'];
+                    const jsonMonitor: JsonMonitor = JSON.parse(message.toString());
+                    const type = jsonMonitor.type;
                     switch (type) {
                         case "launch_experiment":
                             this.controller.launchExperiment();
@@ -56,18 +65,22 @@ class MonitorServer {
                             this.controller.removeInGameEveryPlayers();
                             break;
                         case "add_player_headset":
-                            this.controller.addInGamePlayer(jsonMonitor["id"]);
+                            if (jsonMonitor.id) {
+                                this.controller.addInGamePlayer(jsonMonitor.id);
+                            }
                             break;
                         case "remove_player_headset":
-                            // remove the player from the simulation
-                            this.controller.removeInGamePlayer(jsonMonitor["id"]);
-                            // Send message to socket Manager 
-                            console.log("les joueurs après delete ::: ",this.controller.getPlayerList());
-                            socket.send(JSON.stringify({ 
-                                type: "remove_player_headset", 
-                                id: jsonMonitor["id"], 
-                                player: this.controller.getPlayerList() // list of player to udpdate in the webSocket -> web interface (seems not to render the accurate liste)
-                            }));
+                            if (jsonMonitor.id) {
+                                // remove the player from the simulation
+                                this.controller.removeInGamePlayer(jsonMonitor.id);
+                                // Send message to socket Manager
+                                console.log("les joueurs après delete ::: ", this.controller.getPlayerList());
+                                socket.send(JSON.stringify({
+                                    type: "remove_player_headset",
+                                    id: jsonMonitor.id,
+                                    player: this.controller.getPlayerList() // list of player to update in the webSocket -> web interface (seems not to render the accurate list)
+                                }));
+                            }
                             break;
                         case "json_settings":
                             this.controller.changeJsonSettings(jsonMonitor);
@@ -80,41 +93,33 @@ class MonitorServer {
                             socket.send(this.controller.getSimulationInformations());
                             break;
                         case "get_simulation_by_index":
-                            const index = jsonMonitor['simulationIndex'];  // Extract the index from the received message
-                            
+                            const index = jsonMonitor.simulationIndex;
+
                             if (index !== undefined && index >= 0 && index < this.controller.modelManager.getModelList().length) {
                                 // Retrieve the simulation based on the index
-                                const selectedSimulation = this.controller.modelManager.getModelList()[index]; 
-                                
-                                socket.send(JSON.stringify({ 
-                                    type: "get_simulation_by_index", 
+                                const selectedSimulation = this.controller.modelManager.getModelList()[index];
+
+                                socket.send(JSON.stringify({
+                                    type: "get_simulation_by_index",
                                     simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
                                 }));
-
                             } else {
                                 console.error("Invalid index received or out of bounds");
                             }
-
-                        break;
-
-                        // in the component that displays the monitoring screens, create a useEffect that listens to this variable
-                        // directly use the variable in the component with conditional rendering
-                        
+                            break;
                         case "set_gama_screen":
-                            socket.send(JSON.stringify({ 
-                                type: "setMonitorScreen", 
+                            socket.send(JSON.stringify({
+                                type: "setMonitorScreen",
                                 mode: 'gama_screen'
                             }));
                             break;
-
                         case "set_shared_screen":
                             console.log("shared screen !");
-                            socket.send(JSON.stringify({ 
-                                type: "setMonitorScreen", 
+                            socket.send(JSON.stringify({
+                                type: "setMonitorScreen",
                                 mode: 'shared_screen'
-                            }));      
+                            }));
                             break;
-
                         default:
                             console.warn("\x1b[31m-> The last message received from the monitor had an unknown type.\x1b[0m");
                             console.warn(jsonMonitor);
@@ -126,11 +131,11 @@ class MonitorServer {
             });
         });
 
-        this.monitorSocket.on('error', (err) => {
-            if (err.code === 'EADDRINUSE') {
+        this.monitorSocket.on('error', (err: Error) => {
+            if ('code' in err && err.code === 'EADDRINUSE') {
                 console.log(`\x1b[31m-> The port ${process.env.MONITOR_WS_PORT} is already in use. Choose a different port in settings.json.\x1b[0m`);
             } else {
-                console.log(`\x1b[31m-> An error occured for the monitor server, code: ${err.code}\x1b[0m`);
+                console.log(`\x1b[31m-> An error occurred for the monitor server, code: ${(err as any).code}\x1b[0m`);
             }
         });
     }
@@ -138,9 +143,9 @@ class MonitorServer {
     /**
      * Sends the json_state to the monitor
      */
-    sendMonitorJsonState() {
+    sendMonitorJsonState(): void {
         if (this.monitorSocketClients !== undefined) {
-            this.monitorSocketClients.forEach((client) => {
+            this.monitorSocketClients.forEach((client: WebSocket) => {
                 client.send(JSON.stringify(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getAll()));
             });
         }
@@ -149,9 +154,9 @@ class MonitorServer {
     /**
      * Send the json_setting to the monitor
      */
-    sendMonitorJsonSettings() {
+    sendMonitorJsonSettings(): void {
         if (this.monitorSocketClients !== undefined) {
-            this.monitorSocketClients.forEach((client) => {
+            this.monitorSocketClients.forEach((client: WebSocket) => {
                 client.send(JSON.stringify(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getJsonSettings()));
             });
         }
@@ -160,7 +165,7 @@ class MonitorServer {
     /**
      * Closes the websocket server
      */
-    close() {
+    close(): void {
         this.monitorSocket.close();
     }
 }
