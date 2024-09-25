@@ -6,10 +6,12 @@ import Navigation from '../Navigation/Navigation';
 import VRHeadset from '../VRHeadset/VRHeadset';
 
 const SelectorSimulations = () => {
-  const { ws, isWsConnected, simulationList, playerList } = useWebSocket();
+  const { ws, isWsConnected, simulationList, playerList, gama } = useWebSocket();
   const [directoryPath, setDirectoryPath] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [showCustomInput, setShowCustomInput] = useState<boolean>(false); 
+  const [connectionStatus, setConnectionStatus] = useState<string>('Waiting for connection ...'); 
+
   const navigate = useNavigate(); 
 
   useEffect(() => {
@@ -49,6 +51,32 @@ const SelectorSimulations = () => {
     // Logic for restart button ...
   };
 
+
+  // Loop which try to connect to Gama
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (ws && !gama.connected) {
+      interval = setInterval(() => {
+        ws.send(JSON.stringify({ type: 'try_connection' }));
+        console.log('Tentative de connexion à Gama...');
+      }, 3000); 
+    }
+
+    return () => {
+      clearInterval(interval); 
+    };
+  }, [ws, gama.connected]);
+
+  // Display connexion statue
+  useEffect(() => {
+    if (gama.connected) {
+      setConnectionStatus('Connected');
+    } else {
+      setConnectionStatus('Please launch Gama...');
+    }
+  }, [gama.connected]);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white p-8">
       <Navigation />
@@ -61,28 +89,83 @@ const SelectorSimulations = () => {
       ) : (
        
         // Display simulations cards
-       <div className="grid grid-cols-3 mt-5 mb-8" style={{ gap: '65px' }} >
-          {simulationList.map((simulation, index) => (
-            <div 
-              className="bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer"
+        <div className="flex flex-col items-center justify-center bg-white p-8">
+        <div className="flex items-center justify-between ">
+          
+          <div className="grid grid-cols-3 mt-5 mb-8" style={{ gap: '55px' }}>
+            {simulationList.map((simulation, index) => (
+              <div
+              className={`bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer ${
+                !gama.connected ? 'opacity-50 cursor-not-allowed' : ''
+              }`}                
+              
               style={{
-                backgroundImage: `url(${simulation.splashscreen})`,
-                backgroundSize: 'cover',
-                width: "100px",
-                height: "100px",
-              }}
-              key={index}
-              onClick={() => handleSimulation(index)}
-            >
-                <h2 className="text-gray-500 text-sm text-center"
-                 style={{
-                marginTop: "80px",
+                  backgroundImage: `url(${simulation.splashscreen})`,
+                  backgroundSize: 'cover',
+                  width: '100px',
+                  height: '100px',
                 }}
-                >{simulation.name}
+                key={index}
+                onClick={ gama.connected ? () => handleSimulation(index) : () => {} }
+                
+              >
+                <h2
+                  className="text-gray-500 text-sm text-center"
+                  style={{
+                    marginTop: '80px',
+                  }}
+                >
+                  {simulation.name}
                 </h2>
+              </div>
+            ))}
+          </div>
+      
+          {/* Right Button from the grid */}
+          {import.meta.env.VITE_APP_ENV === 'development' && (
+            <div className="ml-20 ">
+              <Button
+                onClick={() => setShowCustomInput(!showCustomInput)}
+                text="Dev Mode"
+                className='bg-green-700'
+                icon={
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-6 h-6 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
+                    />
+                  </svg>
+                }
+                bgColor="bg-blue-500"
+                showText={true}
+              />
             </div>
-          ))}
+          )}
         </div>
+        {/* Display the statue*/}
+      <div className='flex gap-2 mt-6'>
+
+        {/* Display here the conditional rendering  */}
+        {/* // if gama.connected : afficher connecter
+        // sinon afficher en attente du lancement de Gama */}
+        <img src='images/gama-logo.png' className='w-6'/>
+        :
+        <span className={gama.connected ? 'text-green-500'  : 'text-red-500'}>    
+           {connectionStatus}
+        </span>
+
+      </div>
+      </div>
+      
+
       )}
 
       
@@ -138,13 +221,19 @@ const SelectorSimulations = () => {
         }
         {playerList && Object.keys(playerList).length > 0 && (
           <>
-            <h1 className="text-2xl font-bold mb-4">HeadSet connected:</h1>
+            <h1 className="text-lg  font-bold mb-4 mt-4">HeadSet connected:</h1>
+
             <div className="flex justify-center mt-8 space-x-4">
               {Object.keys(playerList).map((key, index) => {
                 const player = playerList[key];
                 return (
                   <div key={index} className="flex flex-col items-center">
-                    <VRHeadset isConnected={player.connected} />
+                    
+                    <VRHeadset
+                      key={key}
+                      selectedPlayer={player}  // Pass the player data as props
+                    />
+                    
                     <p style={{ marginTop: "3px" }}>id player: {key}</p>
                     <p>{player.connected ? 'Connected' : 'Waiting for connection..'}</p>
 
@@ -207,38 +296,20 @@ const SelectorSimulations = () => {
         
       )}
 
+      
+
       {/* Footer of the page */}
       <footer className="flex justify-between items-center p-4 border-t border-gray-300  w-full" style={{ marginTop: '100px' }} >
-        <img src="/images/global-gateway-euro.png" alt="Global Gateway" className="h-8 mr-4" />
+        <div className='flex'>
+          <img src="/images/global-gateway-euro.png" alt="Global Gateway" className="h-8" />
+          <img src="/images/funded-by-ue.png" alt="Global Gateway" className="h-8" />
+        </div>
 
-        {
-          import.meta.env.VITE_APP_ENV === 'development' && (  
-            <Button
-              onClick={() => setShowCustomInput(!showCustomInput)}
-              text="Info"
-              icon={
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-6 h-6 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
-                  />
-                </svg>
-              }
-              bgColor="bg-blue-500"
-              showText={true}
-            />    
-        )}
-        
-
-        <img src="images/IRD-logo.png" alt="IRD" className="h-8" />
+        <div className='flex gap-3' >
+          <img src="images/IRD-logo.png" alt="IRD" className="h-8" />
+          <img src="images/nstda-logo.png" alt="CTU" className="h-8" />
+          <img src="images/ctu-logo.png" alt="NSTDA" className="h-8" />
+        </div>
       </footer>
 
     </div>

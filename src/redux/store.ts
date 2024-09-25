@@ -1,13 +1,18 @@
-import { configureStore } from '@reduxjs/toolkit';
-import screenModeReducer from '../redux/screenModeSlice'; 
+import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
+import screenModeReducer from '../redux/screenModeSlice'; // Corriger le chemin si nécessaire
 
-const store = configureStore({
+export const store = configureStore({
   reducer: {
-    screenMode: screenModeReducer // Ici on combine le reducer
+    screenMode: screenModeReducer, // Assurez-vous d'ajouter tous les reducers dont vous avez besoin
   },
 });
 
-export default store;
-
-export type RootState = ReturnType<typeof store.getState>;
+// Typage pour l'utilisation dans le projet
 export type AppDispatch = typeof store.dispatch;
+export type RootState = ReturnType<typeof store.getState>;
+export type AppThunk<ReturnType = void> = ThunkAction<
+  ReturnType,
+  RootState,
+  unknown,
+  Action<string>
+>;

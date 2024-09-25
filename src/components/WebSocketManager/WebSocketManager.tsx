@@ -19,6 +19,8 @@ interface Simulation {
     splashscreen: string;
     type: string;
     type_model_file_path: string;
+    maximal_players: string,
+    minimal_players:string
 }
 
 // interface SimulationList {
@@ -39,9 +41,14 @@ interface WebSocketContextType {
     playerList: PlayerList;
     simulationList: Simulation[];
     selectedSimulation: Simulation | null;
-    screenMode: string;
+    // screenMode: string;
+
     removePlayer: (id: string) => void; // Define removePlayer here
-    setscreenMode: React.Dispatch<React.SetStateAction<string>>; 
+    // setscreenMode: React.Dispatch<React.SetStateAction<string>>; 
+    
+
+    // screenMode: string;
+    // setscreenMode: (mode: string) => void; 
 }
 
 // Initialize context with a default value of `null` for WebSocket and default values for other states
@@ -65,7 +72,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
     const [simulationList, setSimulationList] = useState<Simulation[]>([]);
     const [selectedSimulation, setSelectedSimulation] = useState<Simulation | null>(null);
 
-    const [screenMode, setscreenMode] = useState<string>("");
+    // const [screenMode, setscreenMode] = useState<string>("shared_screen");
 
     // Function to remove a player from the playerList
     const removePlayer = (id: string) => {
@@ -81,9 +88,9 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
 
 
     // This useEffect will log the updated screenMode value
-    useEffect(() => {
-        console.log("The screenMode has changed to :", screenMode);
-    }, [screenMode]);
+    // useEffect(() => {
+    //     console.log("The screenMode has changed to :", screenMode);
+    // }, [screenMode]);
 
 
     useEffect(() => {
@@ -100,6 +107,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
 
         socket.onmessage = (event: MessageEvent) => {
             const data = JSON.parse(event.data);
+            
 
             if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
                 setSimulationList(data.map(sim => sim.jsonSettings));
@@ -114,7 +122,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
                         setPlayerList(data.player);
                         break;
 
-                        
+
                     case 'json_settings':
                         break;
                     case 'get_simulation_by_index':
@@ -131,7 +139,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
                     case 'setMonitorScreen': 
                         
                         // Asynchronus ! so doesnt immediately change the value of screenMode, cant have it after next lines 
-                        setscreenMode(data.mode);
+                        // setscreenMode(data.mode);
 
                         // the setScreenMode doesnt change the value immediately, so we need to wait for it to change
                         // the setScreenMode doesnt works  
@@ -144,7 +152,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
             }
         };
 
-        console.log("screenMode", screenMode);
+        // console.log("screenMode", screenMode);
 
         socket.onclose = () => {
             console.log('[WebSocketManager] WebSocket disconnected');
@@ -158,12 +166,16 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
         };
     }, []);
     
-    
+    // methode that we will call from simulationManagerButtons.tsx
+    // export const setScreenMode = (mode: string) => {
+    //     setscreenMode(mode);
+    //     console.log("Screen Mode updated :", mode);
+    // };
 
     
     
         return (
-        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList, selectedSimulation, screenMode, setscreenMode ,removePlayer }}>
+        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList, selectedSimulation,removePlayer }}>
             {children}
         </WebSocketContext.Provider>
     );
