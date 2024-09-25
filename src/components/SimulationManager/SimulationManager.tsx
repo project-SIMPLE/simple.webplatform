@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
-import SimulationManagerButtons from './SimulationManagerButtons';
 import { useNavigate } from 'react-router-dom';
 import { useScreenModeState, useScreenModeSetter } from '../ScreenModeContext/ScreenModeContext';
 import MiniNavigation from '../Navigation/MiniNavigation';
@@ -36,6 +35,72 @@ const SimulationManager: React.FC = () => {
   // Calcul du nombre de casques non détectés (casques vides)
   const remainingPlayers = Number(maxPlayers) - detectedPlayers.length;
 
+
+  const handlePlayPause = () => {
+    if(ws !== null){
+        ws.send(JSON.stringify({"type": gama.experiment_state == "NONE" ? "launch_experiment" : (gama.experiment_state != "RUNNING" ? "resume_experiment" : "pause_experiment") }));
+      }else{
+      console.error("WS is null");
+    }
+  };
+
+  const handleEnd = () => {
+    if(ws !== null){
+        ws.send(JSON.stringify({"type": "stop_experiment"}));
+      }else{
+      console.error("WS is null");
+    }
+  };
+
+  // Choice for the ICON :
+  const icon = gama.experiment_state === 'LAUNCHING'  ? (
+    <svg
+      className="w-7 h-7"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        strokeWidth="2"
+        d="M10 9v6m4-6v6" // Verticals bars for "pause"
+      />
+    </svg>
+
+  ) : gama.experiment_state === 'NONE' || gama.experiment_state === 'NOTREADY' || gama.experiment_state === 'PAUSED' ? (
+    <svg
+      className="w-7 h-7 "
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        strokeWidth="2"
+        d="M5 3l14 9-14 9V3z" // triangle for "play"
+      />
+    </svg>
+  ) : (
+    <svg
+      className="w-7 h-7"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        strokeWidth="2"
+        d="M10 9v6m4-6v6" 
+      />
+    </svg>
+  );
+
   const togglePopUpshowPopUpManageHeadset = () => {
     setshowPopUpManageHeadset(!showPopUpManageHeadset);
   };
@@ -53,19 +118,6 @@ const SimulationManager: React.FC = () => {
     setShowPopUp(!showPopUp); // Toggle pop-up visibility
   };
   
-  
-
-  // useEffect(() => {
-  //   if (isWsConnected && ws !== null) {
-  //     // console.log('WebSocket connected');
-  //   }
-  // }, [isWsConnected, ws]);
-
-  // Add players to the WebSocket server automatically when the WebSocket connection is established
-
-  // Not add Player List When player has been removed, add again if relaunch the application
-  // Redirect to the main page if no simulation is selected
-  
   useEffect(() => {
     if (!selectedSimulation) {
       navigate('/');
@@ -73,8 +125,6 @@ const SimulationManager: React.FC = () => {
   }, [selectedSimulation, navigate]);
 
 
-
-  
 
 // Générer une liste complète de casques (connectés + vides)
 const playerHeadsets = [
@@ -84,8 +134,6 @@ const playerHeadsets = [
   })),
   ...Array(remainingPlayers).fill({ connected: false }), // Remplir les casques non détectés
 ];
-
-
 
 
   useEffect(() => {
@@ -113,6 +161,7 @@ const playerHeadsets = [
     }
   };
 
+  // Method launch button hide , at the bottom of this component 
   const handleGetPlayers = () => {
     if (ws !== null) {
       console.log('Player list:', playerList);
@@ -132,27 +181,6 @@ const handleGetInformation = (id: string) => {
   setShowPopUpHeadset(true);    
 };
 
-const closePopUp = () => {
-  setShowPopUpHeadset(false);   // close the pop-up
-};
-
-  // const handleGetInformation = (id: string) => {
-  //   if (clickedUserInfos === true){
-  //     setClickedUserInfos(false);
-  //     setShowPopUpHeadset(false);
-  //   }else{
-  //     setClickedUserInfos(true);
-  //     setShowPopUpHeadset(true);
-  //   }
-  //   setUserInfos(playerList[id]);
-  //   // console.log("Infos user : ",userInfos);
-  // };
-
-  // useEffect((id : string) => {
-  //   console.log("Updated playerList in SimulationManager:", playerList);
-  //   ws.send(JSON.stringify({ type: 'add_player_headset', id }));
-
-  // }, [playerList]);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
@@ -166,10 +194,7 @@ const closePopUp = () => {
           
           <div>
             
-            <div className="text-3xl mb-4">{selectedSimulation.name}</div>
-
-            {/* <span>Minimal Players: {minPlayers}</span>
-            <span>Maximal Players: {maxPlayers}</span> */}
+          <div className="text-3xl mb-4">{selectedSimulation.name}</div>
 
             <div className="flex justify-center mt-8 space-x-4 mb-7">
               
@@ -179,10 +204,9 @@ const closePopUp = () => {
                 return (
                   <div key={key} className="flex flex-col items-center">
                     
-                    {/* <VRHeadset isConnected={player.connected} /> */}
                     <VRHeadset
                       key={key}
-                      selectedPlayer={player}  // Pass the player data as props
+                      selectedPlayer={player}  
                     />
                     
                       {showPopUpManageHeadset && (
@@ -196,7 +220,7 @@ const closePopUp = () => {
                                 Do you really want to  disconnect and remove {key} ? 
                               </h2>
                               
-                              <div className='flex gap-5 ml-5'>
+                              <div className='flex gap-5 ml-3'>
                               
                               <button
                                 className="bg-red-500 text-white px-4 py-2 mt-4 rounded"
@@ -214,12 +238,10 @@ const closePopUp = () => {
 
                               </div>
 
-                              {/* <p>Status : {String(selectedPlayer.connected)}</p>
-                              <p>Hour of connection : {selectedPlayer.date_connection}</p>
-                              <p>In game : {String(selectedPlayer.in_game)}</p> */}
+
   
                               <button
-                                className="bg-red-500 text-white px-4 py-2 mt-4 rounded"
+                                className="bg-red-500 text-white px-4 py-2 mt-6 rounded"
                                 onClick={togglePopUpshowPopUpManageHeadset}
                               >
                                 Cancel
@@ -228,6 +250,7 @@ const closePopUp = () => {
                           </div>
                         </>
                       )}
+                      
                       {/* The trash */}
                     <div className='flex gap-3 mt-2'> 
                       <p style={{ marginTop: '3px' }}> {key} </p>
@@ -245,81 +268,6 @@ const closePopUp = () => {
 
                       </Button>
                     </div>
-                    
-                    {/* <p>{player.connected ? 'Connected' : 'Waiting for connection...'}</p> */}
-                    
-                    
-                    {/* Boutons pour les casques connectés */}
-                    {/* {player.connected && (
-                      <div className="flex mt-4 space-x-2">
-                        <Button
-                          onClick={() => handleRemove(key)}
-                          text="Remove"
-                          bgColor="bg-red-500"
-                          icon={
-                            <svg
-                              className="w-6 h-6 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          }
-                          showText={false}
-                        />
-                        <Button
-                          onClick={() => handleRestart(key)}
-                          text="Restart"
-                          bgColor="bg-orange-500"
-                          icon={
-                            <svg
-                              className="w-6 h-6 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M4 4v6h6M20 20v-6h-6M4 10c1.5-2 4-3 6-3h4c2 0 4 1 5 3M4 14c1.5 2 4 3 6 3h4c2 0 4-1 5-3"
-                              />
-                            </svg>
-                          }
-                          showText={false}
-                        />
-                        <Button
-                          onClick={() => handleGetInformation(key)}
-                          text="Get Information"
-                          bgColor="bg-yellow-500"
-                          icon={
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="w-6 h-6 mr-2"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M12 8v4m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20zm0 4h.01"
-                              />
-                            </svg>
-                          }
-                          showText={false}
-                        />
-                      </div>
-                    )} */}
                   </div>
                 );
               })}
@@ -340,29 +288,52 @@ const closePopUp = () => {
               <p className='mb-5'>Waiting for {Number(maxPlayers) - Object.keys(playerList).length } players ...</p>
 
               
-            
-            
-            
-            {/* Div display State toward Gama */}
-            {/* <div className="flex justify-center mb-4"> */}
-              {/* green circule */}
-              {/* <div
-                style={{ marginTop: '7.5px', marginRight: '15.2px' }}
-                className={`w-3 h-3 rounded-full ${gama.connected ? 'bg-green-500' : 'bg-gray-500'}`}
-              ></div> */}
-              
-              {/* <span className={gama.connected ? 'text-green-500' : 'text-gray-500'}>
-                {gama.connected ? 'Connected' : 'Waiting for connection'}
-              </span> */}
-            
-            {/* </div> */}
 
-            <SimulationManagerButtons />
+            {/* Play Button, Pause Button, Stop Button  */}
+          <div>
+            <div className="flex justify-center space-x-2 gap-10 mb-8 mt-8">
+                <Button
+                  onClick={handlePlayPause}
+                  customStyle={{width: '100px', height:'50px'}}
+                  bgColor={
+                    gama.experiment_state === 'RUNNING'
+                    ? 'bg-orange-500' 
+                    : 'bg-green-500'
+                  }  
+                icon={ icon
+                }
+                  showText={true}
+                />
 
-            {/* AJOUTER LE BOUTON MONOTORING ICI */}
-            {/* + Déplacer la logique ici : les functions, appels du context*/}
-            
-            {/* Monitoring Button */}
+                <Button 
+                  onClick={handleEnd} 
+                  className='w-20'                
+                  customStyle={{width: '100px', height:'50px'}}
+
+                  bgColor="bg-red-500" 
+                  icon={
+                    <svg
+                        className="w-7 h-7 "
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M6 18L18 6M6 6l12 12"
+                        />
+                    </svg>
+                  } 
+                  showText={true} 
+                />
+                
+            </div>
+          </div>
+
+            {/* Monitoring Buttons */}
             <div className='flex justify-center mt-3 gap-4'>
               <Button
                 text="Gama screen"
@@ -374,7 +345,7 @@ const closePopUp = () => {
                   />
                 }
 
-                onClick={() => togglePopUp()}
+                onClick={() => togglePopUp("gama_screen")}
               />
               <Button
                 text="Shared Screen"
@@ -384,57 +355,10 @@ const closePopUp = () => {
                 icon={
                   <img src='/images/shared_screen.png' alt="shared_screen" className="w-12" style={{ width: '90px', height: '90px' }} />
                 }
-                onClick={() => togglePopUp()}
+                onClick={() => togglePopUp("shared_screen")}
               />
 
-         
-
-
-
-              {/* The PopUp */}
-              {/* {showPopUp && (
-                <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-                  <div className="bg-white p-6 rounded-lg shadow-lg w-64 text-center">
-                    <h2 className="text-lg font-semibold mb-4">Choose an Option</h2>
-
-                    
-                    <div className="flex flex-col space-y-4">
-                      
-                      <Button
-                        text="Gama Screen"
-                        bgColor="bg-green-500 hover:bg-green-600"
-                        onClick={() => {
-                          // setModeScreen("full_screen");
-                          // console.log(modeScreen);
-                          togglePopUp("gama_screen");
-                        }}
-                      />
-
-                      <Button
-                        text="Shared Screen"
-                        bgColor="bg-blue-500 hover:bg-blue-600 "
-                        onClick={() => {
-                            // setModeScreen("shared_screen");
-                            // console.log(modeScreen);
-                            togglePopUp("shared_screen");
-                        }}
-                      />
-                      
-                    </div>
-
-                    <button
-                      className="bg-red-500 mt-4 text-white hover:underline"
-                      onClick={() => {togglePopUp()}}
-                    >
-                      Cancel
-                    </button>
-                  
-                  </div>
-                </div>
-              )} */}
             </div>
-            {/* End Monotoring button */}
-
             
           </div>
         ) : (
@@ -443,14 +367,12 @@ const closePopUp = () => {
       </div>
 
       {/* Get Player */}
-      <div className="w-2/3 mt-8 grid grid-cols-2 gap-4">
-        {/* Column 1 */}
-        
+      <div className="w-2/3 mt-8 grid grid-cols-2 gap-4">        
         {
         import.meta.env.VITE_APP_ENV === 'development' && (  
           <div></div>
 
-          // BUTTON get handletGetPlayerList
+        // BUTTON get handletGetPlayerList (debug)
         // <div>
         //   {/* <div className="text-lg mt-3 mb-3">Get Players connected:</div> */}
         //   <Button onClick={handleGetPlayers} text="Get Player list logs" bgColor="bg-purple-500" showText={true} 
