@@ -277,13 +277,7 @@ useEffect(() => {
               
             <div>  
 
-              <p className="flex items-center align-center" style={{marginLeft:'90px'}}>
-                Waiting for {Number(maxPlayers) - Object.keys(playerList).length} more players to reach maximum players 
-                <svg className="animate-spin ml-2 h-5 w-5 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                </svg>
-              </p>
+              
 
               {/* <p>Minimal players needed to launch the simulation: {minPlayers}</p> */}
 
@@ -298,15 +292,27 @@ useEffect(() => {
             <div>
               {gama.experiment_state === 'NONE' || gama.experiment_state === 'NOTREADY' ? (
                 Object.keys(playerList).length >= Number(minPlayers) ? (
-                  <div className="flex justify-center space-x-2 gap-10 mb-5 mt-5">
-                    <Button
-                      onClick={handlePlayPause}
-                      customStyle={{ width: '100px', height: '50px'}}
-                      bgColor="bg-green-500"
-                      showText={true}
-                      text="Begin Anyway"
-                    />
-                  </div>
+                  <>
+                    <p className="flex items-center align-center" style={{marginLeft:'90px'}}>
+                      Waiting for {Number(maxPlayers) - Object.keys(playerList).length} more players to reach maximum players 
+                      <svg className="animate-spin ml-2 h-5 w-5 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                      </svg>
+                    </p>
+                  
+                    <div className="flex justify-center space-x-2 gap-10 mb-5 mt-5">
+                      <Button
+                        onClick={handlePlayPause}
+                        customStyle={{ width: '100px', height: '50px'}}
+                        bgColor="bg-green-500"
+                        showText={true}
+                        text="Begin Anyway"
+                      />
+                    </div>
+                  </>
+                  
+
                 ) : null    
               ) : (
                   // If the state is "PAUSED", "LAUNCHING", or "RUNNING", display the buttons normally
