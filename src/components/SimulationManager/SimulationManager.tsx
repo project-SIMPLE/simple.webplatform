@@ -313,6 +313,8 @@ useEffect(() => {
                 gama.experiment_state === 'PAUSED' ||
                 gama.experiment_state === 'LAUNCHING' ||
                 gama.experiment_state === 'RUNNING' ? (
+                  <>
+                  
                   <div className="flex justify-center space-x-2 gap-10 mb-5 mt-5">
                     <Button
                       onClick={handlePlayPause}
@@ -348,39 +350,43 @@ useEffect(() => {
                       }
                       showText={true}
                     />
+                    
+
+
+                </div>
+                    <div className='flex justify-center mt-3 gap-4'>
+                    <Button
+                      text="Gama screen"
+                      bgColor="bg-white"
+                      showText={true}
+                      className='border-1 border-black'
+                      icon={
+                        <img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '90px', height: '90px' }} 
+                        />
+                      }
+
+                      onClick={() => togglePopUp("gama_screen")}
+                    />
+                    <Button
+                      text="Shared Screen"
+                      bgColor="bg-white"
+                      showText={true}
+                      className='border-1 border-black'
+                      icon={
+                        <img src='/images/shared_screen.png' alt="shared_screen" className="w-12" style={{ width: '90px', height: '90px' }} />
+                      }
+                      onClick={() => togglePopUp("shared_screen")}
+                    />
                   </div>
+
+                  </>
                   ) : null
                 )}
             </div>
           </div>
 
 
-            {/* Monitoring Buttons */}
-            <div className='flex justify-center mt-3 gap-4'>
-              <Button
-                text="Gama screen"
-                bgColor="bg-white"
-                showText={true}
-                className='border-1 border-black'
-                icon={
-                  <img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '90px', height: '90px' }} 
-                  />
-                }
-
-                onClick={() => togglePopUp("gama_screen")}
-              />
-              <Button
-                text="Shared Screen"
-                bgColor="bg-white"
-                showText={true}
-                className='border-1 border-black'
-                icon={
-                  <img src='/images/shared_screen.png' alt="shared_screen" className="w-12" style={{ width: '90px', height: '90px' }} />
-                }
-                onClick={() => togglePopUp("shared_screen")}
-              />
-
-            </div>
+            
             
           </div>
         ) : (
