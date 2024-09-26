@@ -105,11 +105,6 @@ const SimulationManager: React.FC = () => {
     setshowPopUpManageHeadset(!showPopUpManageHeadset);
   };
   
-  const popPup = () => {  
-    setShowPopUp(!showPopUp);
-  };
-
-
   const togglePopUp = (mode?: string) => {
     if (mode) {
       setScreenModeDisplay(mode); // Update screenModeDisplay from the context
@@ -135,19 +130,19 @@ const playerHeadsets = [
   ...Array(remainingPlayers).fill({ connected: false }), // Remplir les casques non détectés
 ];
 
+// add automatically player_headset
+useEffect(() => {
+  if (isWsConnected && ws !== null) {
+    Object.keys(playerList).forEach((key) => {
+      // const player = playerList[key];
 
-  useEffect(() => {
-    if (isWsConnected && ws !== null) {
-      Object.keys(playerList).forEach((key) => {
-        // const player = playerList[key];
-
-        // reconnect player only if in game , if not mean that player has been removed
-        // if (player.in_game === true) {
-          ws.send(JSON.stringify({ type: 'add_player_headset', id: key }));
-          // }
-      });
-    }
-  }, [playerList, isWsConnected, ws]);
+      // reconnect player only if in game , if not mean that player has been removed
+      // if (player.in_game === true) {
+        ws.send(JSON.stringify({ type: 'add_player_headset', id: key }));
+        // }
+    });
+  }
+}, [playerList, isWsConnected, ws]);
 
   // Handler for removing players
   const handleRemove = (id: string) => {
@@ -174,12 +169,6 @@ const playerHeadsets = [
     console.log(`Restart button clicked for headset ${id}`);
     // Logic for restart button
   };
-
-
-const handleGetInformation = (id: string) => {
-  setUserInfos(playerList[id]); 
-  setShowPopUpHeadset(true);    
-};
 
 
   return (
@@ -285,53 +274,86 @@ const handleGetInformation = (id: string) => {
             
             
             </div>
-              <p className='mb-5'>Waiting for {Number(maxPlayers) - Object.keys(playerList).length } players ...</p>
-
               
+            <div>  
 
-            {/* Play Button, Pause Button, Stop Button  */}
+              <p className="flex items-center align-center" style={{marginLeft:'90px'}}>
+                Waiting for {Number(maxPlayers) - Object.keys(playerList).length} more players to reach maximum players 
+                <svg className="animate-spin ml-2 h-5 w-5 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+              </p>
+
+              {/* <p>Minimal players needed to launch the simulation: {minPlayers}</p> */}
+
+              {/* <p className='b-2'>Waiting for {Number(maxPlayers) - Object.keys(playerList).length } more players ...</p> */}
+            </div>
+
+          {/* Buttons Simulations : Play Button, Pause Button, Stop Button  */}
+
+
           <div>
-            <div className="flex justify-center space-x-2 gap-10 mb-8 mt-8">
-                <Button
-                  onClick={handlePlayPause}
-                  customStyle={{width: '100px', height:'50px'}}
-                  bgColor={
-                    gama.experiment_state === 'RUNNING'
-                    ? 'bg-orange-500' 
-                    : 'bg-green-500'
-                  }  
-                icon={ icon
-                }
-                  showText={true}
-                />
-
-                <Button 
-                  onClick={handleEnd} 
-                  className='w-20'                
-                  customStyle={{width: '100px', height:'50px'}}
-
-                  bgColor="bg-red-500" 
-                  icon={
-                    <svg
-                        className="w-7 h-7 "
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M6 18L18 6M6 6l12 12"
-                        />
-                    </svg>
-                  } 
-                  showText={true} 
-                />
-                
+          
+            <div>
+              {gama.experiment_state === 'NONE' || gama.experiment_state === 'NOTREADY' ? (
+                Object.keys(playerList).length >= Number(minPlayers) ? (
+                  <div className="flex justify-center space-x-2 gap-10 mb-5 mt-5">
+                    <Button
+                      onClick={handlePlayPause}
+                      customStyle={{ width: '100px', height: '50px'}}
+                      bgColor="bg-green-500"
+                      showText={true}
+                      text="Begin Anyway"
+                    />
+                  </div>
+                ) : null    
+              ) : (
+                  // If the state is "PAUSED", "LAUNCHING", or "RUNNING", display the buttons normally
+                gama.experiment_state === 'PAUSED' ||
+                gama.experiment_state === 'LAUNCHING' ||
+                gama.experiment_state === 'RUNNING' ? (
+                  <div className="flex justify-center space-x-2 gap-10 mb-5 mt-5">
+                    <Button
+                      onClick={handlePlayPause}
+                      customStyle={{ width: '100px', height: '50px' }}
+                      bgColor={
+                        gama.experiment_state === 'RUNNING'
+                          ? 'bg-orange-500'
+                          : 'bg-green-500'
+                      }
+                      icon={icon}
+                      showText={true}
+                    />
+                    <Button
+                      onClick={handleEnd}
+                      className="w-20"
+                      customStyle={{ width: '100px', height: '50px' }}
+                      bgColor="bg-red-500"
+                      icon={
+                        <svg
+                          className="w-7 h-7"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      }
+                      showText={true}
+                    />
+                  </div>
+                  ) : null
+                )}
             </div>
           </div>
+
 
             {/* Monitoring Buttons */}
             <div className='flex justify-center mt-3 gap-4'>
