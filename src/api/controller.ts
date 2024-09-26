@@ -6,8 +6,10 @@ import PlayerServer from './player-server.js';
 // @ts-ignore
 import ModelManager from './model-manager.js';
 import {AdbManager} from "./adb/AdbManager.ts";
+import {AdbServerNodeTcpConnector}from '@yume-chan/adb-server-node-tcp'
 
 import {VideoStreamServer} from "./scrcpy/VideoStreamServer.ts";
+import { Adb, AdbServerClient } from "@yume-chan/adb";
 
 interface JsonSettings {
     // Define the structure of your JSON settings here
@@ -58,15 +60,24 @@ export class Controller {
         ADB MANAGER
     =============================
      */
-    async adbDummyClient(){
-        const ipAndroid: string = "192.168.1.137";//93";
-        await this.adb_manager.addDevice(ipAndroid);
-        console.log("Tablet added to android ===")
-        // @ts-ignore
-        const adbConnection: Adb = this.adb_manager.getAdbConnections().get(ipAndroid);
+  async adbDummyClient() {
+    const ipAndroid: string = "192.168.1.93";
+    await this.adb_manager.addDevice(ipAndroid);
+    console.log("Tablet added to android ===")
+    // @ts-ignore
+    const adbConnection: Adb = this.adb_manager.getAdbConnections().get(ipAndroid);
+      await this.video_stream_server.startStreaming(adbConnection);
 
-        await this.video_stream_server.startStreaming(adbConnection);
-    }
+    // const connector = new AdbServerNodeTcpConnector({ host: '127.0.0.1', port: 5037 });
+    // const client = new AdbServerClient(connector);
+    // const devices = await client.getDevices();
+    // if (devices.length) {
+    //   console.log('found device');
+    //   const transport = await client.createTransport(devices[0]);
+    //   const adb = new Adb(transport);
+    //   await this.video_stream_server.startStreaming(adb);
+    // }
+  }
 
     /*
     =============================
