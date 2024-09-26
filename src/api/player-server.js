@@ -28,7 +28,7 @@ class PlayerServer {
                 try {
                     const jsonPlayer = JSON.parse(message);
                     const type = jsonPlayer['type'];
-                    if (useVerbose) {
+                    if (false) {
                         console.log("Reception of this following message from the player " + this.getIdClient(ws));
                         console.log(jsonPlayer);
                     }

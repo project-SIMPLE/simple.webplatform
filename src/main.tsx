@@ -11,15 +11,13 @@ import SelectorSimulations from './components/SelectorSimulations/SelectorSimula
 import WebSocketManager from './components/WebSocketManager/WebSocketManager';
 import StreamPlayerScreen from './components/StreamPlayerScreen/StreamPlayerScreen';
 
-import {store} from './redux/store';
-import {Provider} from 'react-redux';
 import TestMonitoringScreen from './components/TestMonitoringScreen/TestMonitoringScreen';
 
 const App: React.FC = () => {
   return (
     <BrowserRouter>
             <WebSocketManager>
-              <ScreenModeProvider>
+                <ScreenModeProvider>
                 <Routes>
                     <Route index element={<SelectorSimulations />} />
                     <Route path="navigation" element={<Navigation />} />
@@ -38,9 +36,9 @@ const root = ReactDOM.createRoot(container);
 
 root.render(
   // <Provider store={store}>  
-  <React.StrictMode>
+//  <React.StrictMode>
       <App />
-  </React.StrictMode>
+//  </React.StrictMode>
     // </Provider>
 );
 

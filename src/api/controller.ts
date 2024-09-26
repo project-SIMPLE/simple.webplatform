@@ -1,15 +1,13 @@
 // @ts-ignore
 import GamaConnector from './gama_connector.js';
-// @ts-ignore
-import MonitorServer from './monitor-server.js';
+import {MonitorServer} from './monitor-server.ts';
 // @ts-ignore
 import PlayerServer from './player-server.js';
 // @ts-ignore
 import ModelManager from './model-manager.js';
-import AdbManager from "./adb/TCPSocket.ts";
+import {AdbManager} from "./adb/AdbManager.ts";
 
-
-import type { ReadableWritablePair } from "@yume-chan/stream-extra";
+import {VideoStreamServer} from "./scrcpy/VideoStreamServer.ts";
 
 interface JsonSettings {
     // Define the structure of your JSON settings here
@@ -23,34 +21,25 @@ interface JsonOutput {
     // Define the structure of your JSON output here
 }
 
-class Controller {
+export class Controller {
     choosedLearningPackageIndex: number;
     modelManager: ModelManager;
     monitor_server: MonitorServer;
     player_server: PlayerServer;
     gama_connector: GamaConnector;
     adb_manager: AdbManager;
+    video_stream_server: VideoStreamServer;
 
     constructor() {
         this.choosedLearningPackageIndex = 0;
-        /*this.modelManager = new ModelManager(this);
+        this.modelManager = new ModelManager(this);
         this.monitor_server = new MonitorServer(this);
         this.player_server = new PlayerServer(this);
-        this.gama_connector = new GamaConnector(this);*/
+        this.gama_connector = new GamaConnector(this);
+
         this.adb_manager = new AdbManager();
 
-        console.log("Connecting to tablet");
-        //this.adb_manager.connectDevice('192.168.1.93', '46205');
-
-        const device: AdbDaemonDirectSocketsDevice = new AdbDaemonDirectSocketsDevice({
-            host: "192.168.50.30",
-            port: 5555,
-        });
-
-        const connection: ReadableWritablePair<
-            AdbPacketData,
-            Consumable<AdbPacketInit>
-        > = await device.connect();
+        this.video_stream_server = new VideoStreamServer();
     }
 
     restart() {
@@ -60,7 +49,30 @@ class Controller {
         this.player_server = new PlayerServer(this);
         this.gama_connector = new GamaConnector(this);
         this.monitor_server = new MonitorServer(this);
+
+        this.adb_manager = new AdbManager();
     }
+
+    /*
+    =============================
+        ADB MANAGER
+    =============================
+     */
+    async adbDummyClient(){
+        const ipAndroid: string = "192.168.1.137";//93";
+        await this.adb_manager.addDevice(ipAndroid);
+        console.log("Tablet added to android ===")
+        // @ts-ignore
+        const adbConnection: Adb = this.adb_manager.getAdbConnections().get(ipAndroid);
+
+        await this.video_stream_server.startStreaming(adbConnection);
+    }
+
+    /*
+    =============================
+        MODEL MANAGER
+    =============================
+     */
 
     changeJsonSettings(json_settings: JsonSettings) {
         this.modelManager.setJsonSettings(json_settings);
@@ -74,9 +86,21 @@ class Controller {
         return this.modelManager.getListPlayers();
     }
 
+    /*
+    =============================
+        WS MONITOR
+    =============================
+     */
+
     notifyMonitor() {
         this.monitor_server.sendMonitorJsonState();
     }
+
+    /*
+    =============================
+        PLAYER SERVER
+    =============================
+     */
 
     notifyPlayerChange(id_player: number, json_player: JsonPlayer) {
         this.player_server.notifyPlayerChange(id_player, json_player);
@@ -85,6 +109,16 @@ class Controller {
     broadcastSimulationOutput(json_output: JsonOutput) {
         this.player_server.broadcastSimulationOutput(json_output);
     }
+
+    cleanAll() {
+        this.player_server.cleanAll();
+    }
+
+    /*
+    =============================
+        GAMA CONNECTOR
+    =============================
+     */
 
     removeInGameEveryPlayers() {
         this.gama_connector.removeInGameEveryPlayers();
@@ -100,10 +134,6 @@ class Controller {
 
     removeInGamePlayer(id_player: string) {
         this.gama_connector.removeInGamePlayer(id_player);
-    }
-
-    cleanAll() {
-        this.player_server.cleanAll();
     }
 
     sendExpression(id_player: string, expr: string) {
