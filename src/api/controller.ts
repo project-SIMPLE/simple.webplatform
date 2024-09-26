@@ -8,7 +8,7 @@ import ModelManager from './model-manager.js';
 import {AdbManager} from "./adb/AdbManager.ts";
 import {AdbServerNodeTcpConnector}from '@yume-chan/adb-server-node-tcp'
 
-import {VideoStreamServer} from "./scrcpy/VideoStreamServer.ts";
+import {ScrcpyServer} from "./scrcpy/ScrcpyServer.ts";
 import { Adb, AdbServerClient } from "@yume-chan/adb";
 
 interface JsonSettings {
@@ -30,7 +30,7 @@ export class Controller {
     player_server: PlayerServer;
     gama_connector: GamaConnector;
     adb_manager: AdbManager;
-    video_stream_server: VideoStreamServer;
+    video_stream_server: ScrcpyServer;
 
     constructor() {
         this.choosedLearningPackageIndex = 0;
@@ -41,7 +41,7 @@ export class Controller {
 
         this.adb_manager = new AdbManager();
 
-        this.video_stream_server = new VideoStreamServer();
+        this.video_stream_server = new ScrcpyServer();
     }
 
     restart() {

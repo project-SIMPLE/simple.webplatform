@@ -1,52 +1,66 @@
+import fs from "fs/promises";
+import { WebSocket, WebSocketServer } from 'ws';
+
+import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyOptions2_1 } from "@yume-chan/adb-scrcpy";
 import { BIN, VERSION } from "@yume-chan/fetch-scrcpy-server";
 import { DEFAULT_SERVER_PATH, ScrcpyMediaStreamPacket, ScrcpyOptions2_3 } from "@yume-chan/scrcpy";
-import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
-import { ReadableStream } from "@yume-chan/stream-extra";
-import fs from "fs/promises";
-import { WebSocket, WebSocketServer } from 'ws';
 
-export class VideoStreamServer {
-    private videoSocket: WebSocketServer;
-    private videoSocketClients: WebSocket[] = [];
-    private scrcpyClient: AdbScrcpyClient | null = null;
+export class ScrcpyServer {
+    // =======================
+    // WebSocket
+    private wsServer!: WebSocketServer;
+    private wsClients: WebSocket[] = [];
 
-    private scrcpyStreamConfig!: string;
-    private H264Capabilities;
-
+    // =======================
+    // Scrcpy server
     declare server: Buffer;
 
-    constructor() {
-        /*
-            =======================
-                ScrCpy
-         */
-        this.H264Capabilities = TinyH264Decoder.capabilities.h264;
-        console.log(this.H264Capabilities);
+    readonly scrcpyOptions = new AdbScrcpyOptions2_1(
+        new ScrcpyOptions2_3({
+            // Video settings
+            video: true,
+            maxSize: 600,
+            maxFps: 20,
+            videoBitRate: 200,
+            // Android soft settings
+            stayAwake: true,
+            // Clean feed
+            audio: false,
+            control: false,
+        })
+    )
 
+    // =======================
+    // Scrcpy stream
+    private scrcpyStreamConfig!: string;
+
+    constructor() {
         const host = process.env.WEB_APPLICATION_HOST || 'localhost';
         const port = parseInt(process.env.VIDEO_WS_PORT || '8082', 10);
 
-        /*
-            =======================
-                Web Socket
-         */
-        this.videoSocket = new WebSocketServer({ host, port });
-        console.log(`[VIDEO STREAM SERVER] Creating video stream server on: ws://${host}:${port}`);
+        try {
+            this.wsServer = new WebSocketServer({ host, port });
+            console.log(`[ScrcpyServer WS] Creating video stream server on: ws://${host}:${port}`);
+        } catch (e) {
+            console.error('[ScrcpyServer WS] Failed to create a new websocket', e);
+        }
 
-        this.videoSocket.on('connection', async (socket: WebSocket) => {
-            this.videoSocketClients.push(socket);
-            console.log("[VIDEO STREAM SERVER] Client connected");
+        this.wsServer.on('connection', async (socket: WebSocket) => {
+
+            this.wsClients.push(socket);
+            console.log("[ScrcpyServer WS] Client connected");
+
+            // Send configuration message if scrcpy is already started
+            if(this.scrcpyStreamConfig){
+                socket.send(this.scrcpyStreamConfig);
+            }
 
             socket.on('close', () => {
-                this.videoSocketClients = this.videoSocketClients.filter(client => client !== socket);
-                console.log("[VIDEO STREAM SERVER] Client disconnected");
+                this.wsClients = this.wsClients.filter(client => client !== socket);
+                console.log("[ScrcpyServer WS] Client disconnected");
             });
-
-            if(this.scrcpyStreamConfig){
-              socket.send(this.scrcpyStreamConfig);
-            }
         });
     }
 
@@ -54,16 +68,17 @@ export class VideoStreamServer {
         this.server = await fs.readFile(BIN)
     }
 
-    async startStreaming(scrcpyClient: Adb) {
+    async startStreaming(adbConnection: Adb) {
         try {
             if (this.server == null){
                 await this.loadScrcpyServer();
             }
-            const adbConnection: Adb = scrcpyClient;
+
+            console.log(`[ScrcpyServer] Starting scrcpy for ${adbConnection.serial} ===`)
 
             const myself = this;
 
-            console.log("Pushing scrcpy server to Android device ===");
+            console.log(`[ScrcpyServer] Pushing scrcpy server to ${adbConnection.serial} ===`);
             const sync = await adbConnection.sync();
             try {
                 await sync.write({
@@ -76,41 +91,24 @@ export class VideoStreamServer {
                     }),
                 });
             } catch (error) {
-                console.error("Error writing scrcpy server to device:", error);
-                throw error;
+                console.error(`[ScrcpyServer] Error writing scrcpy server to  ${adbConnection.serial}: ${error}`);
             } finally {
                 await sync.dispose();
             }
 
-            console.log("Starting server");
-
-            const option = new AdbScrcpyOptions2_1(
-                new ScrcpyOptions2_3({
-                    video: true,
-                    audio: false,
-                    control: false,
-                    // videoCodecOptions: new CodecOptions({
-                    //     profile: this.H264Capabilities.maxProfile,
-                    //     level: this.H264Capabilities.maxLevel,
-                    // })
-                })
-            )
-
+            console.log(`[ScrcpyServer] Starting scrcpy server from ${adbConnection.serial} ===`);
             const client: AdbScrcpyClient = await AdbScrcpyClient.start(
                 adbConnection,
                 DEFAULT_SERVER_PATH,
                 VERSION,
-                option
+                this.scrcpyOptions
             );
-
-            console.log("AdbScrcpyClient started successfully");
 
             if (client.videoStream) {
                 const { metadata, stream: videoPacketStream } = await client.videoStream;
+                console.log(metadata);
 
                 const myself = this;
-
-                console.log(metadata);
 
                 videoPacketStream
                     .pipeTo(
@@ -120,31 +118,41 @@ export class VideoStreamServer {
                                 switch (packet.type) {
                                     case "configuration":
                                         // Handle configuration packet
-                                        myself.scrcpyStreamConfig = JSON.stringify({
+                                        const newStreamConfig = JSON.stringify({
                                                 type: "configuration",
                                                 data: Buffer.from(packet.data).toString('base64'), // Convert Uint8Array to Base64 string
                                             });
-                                        myself.broadcastConfig();
+                                        myself.broadcastToClients(newStreamConfig);
+
+                                        // Save packet for clients after this first packet emission
+                                        // It is sent only once while opening the video stream and set the renderer
+                                        myself.scrcpyStreamConfig = newStreamConfig;
                                         break;
+
                                     case "data":
                                         // Handle data packet
                                         myself.broadcastToClients(
                                             JSON.stringify({
                                                 type: "data",
                                                 keyframe: packet.keyframe,
+                                                // @ts-ignore
                                                 pts: packet.pts.toString(), // Convert bigint to string
                                                 data: Buffer.from(packet.data).toString('base64'), // Convert Uint8Array to Base64 string
                                             })
                                         );
                                         break;
-
+                                    default:
+                                        console.warn("[ScrcpyServer] Unkown packet from video pipe: ", packet);
                                 }
                             },
                         }),
                     )
                     .catch((e) => {
+                        console.error(`[ScrcpyServer] Error while piping video stream of ${adbConnection.serial} ===`)
                         console.error(e);
                     });
+            } else {
+                console.error(`[ScrcpyServer] Couldn't find a video stream from ${adbConnection.serial}'s scrcpy server ===`)
             }
 
         } catch (error) {
@@ -154,24 +162,11 @@ export class VideoStreamServer {
         }
     }
 
-    broadcastConfig() {
-        if(this.scrcpyStreamConfig != null){
-            this.broadcastToClients(this.scrcpyStreamConfig);
-        }
-    }
-
     broadcastToClients(packet: any): void {
-        this.videoSocketClients.forEach((client) => {
+        this.wsClients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
                 client.send(packet);
             }
         });
-    }
-
-    stopStreaming() {
-        if (this.scrcpyClient) {
-            this.scrcpyClient.close();
-            this.scrcpyClient = null;
-        }
     }
 }
