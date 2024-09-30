@@ -7,10 +7,17 @@
     "get_sim_infos": "Obtenir les informations des simulations",
     "empty_slot": "Emplacement vide",
     "wait_minim_players_1": "En attente de",
-    "wait_minim_players_2": "autres joueurs pour atteindre le nombre minimum de joueurs",
+    "wait_minim_players_2": "d'autres joueurs pour atteindre le nombre minimum de joueurs",
+    "wait_maximum_players_1": "d'autres joueurs pour atteindre le nombre maximum de joueurs",
     "popop_question": "Voulez-vous vraiment vous déconnecter et supprimer",
     "remove": "Supprimer",
     "relaunch": "Relancer",
     "button_begin_anyway": "Commencer quand même",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "player_informations": "Informations du joueur",
+    "Status": "Statut",
+    "Hour of connection": "Heure de connexion",
+    "In game": "En jeu",
+    "Monitoring Screen": "Écran de gama",
+    "Shared Screen": "Écran partagé"
 }

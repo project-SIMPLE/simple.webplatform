@@ -343,7 +343,7 @@ useEffect(() => {
                   </div>
                   <div className="flex justify-center mt-3 gap-4">
                     <Button
-                      text="Gama screen"
+                      text= {t('Monitoring Screen')}
                       bgColor="bg-white"
                       showText={true}
                       className="border-1 border-black"
@@ -351,7 +351,7 @@ useEffect(() => {
                       onClick={() => togglePopUp("gama_screen")}
                     />
                     <Button
-                      text="Shared Screen"
+                      text= {t('Shared Screen')}
                       bgColor="bg-white"
                       showText={true}
                       className="border-1 border-black"

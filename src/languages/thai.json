@@ -8,9 +8,16 @@
     "empty_slot": "ช่องว่าง",
     "wait_minim_players_1": "รอ",
     "wait_minim_players_2": "ผู้เล่นเพิ่มเติมเพื่อให้ครบตามจำนวนขั้นต่ำ",
+    "wait_maximum_players_1": "ผู้เล่นเพิ่มเติมเพื่อให้ครบตามจำนวนสูงสุด",
     "popop_question": "คุณต้องการตัดการเชื่อมต่อและลบออกจริงหรือไม่",
     "remove": "ลบ",
     "relaunch": "เริ่มใหม่",
     "button_begin_anyway": "เริ่มต้นต่อไป",
-    "cancel": "ยกเลิก"
+    "cancel": "ยกเลิก",
+    "player_informations": "ข้อมูลผู้เล่น",
+    "Status": "สถานะ",
+    "Hour of connection": "เวลาที่เชื่อมต่อ",
+    "In game": "ในเกม",
+    "Monitoring Screen": "หน้าจอการเฝ้าระวัง",
+    "Shared Screen": "หน้าจอที่แชร์"
 }
