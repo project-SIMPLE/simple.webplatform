@@ -4,6 +4,14 @@
     "close": "Close", 
     "enter_path":"Enter the simulation path :", 
     "launch_path": "Launch", 
-    "get_sim_infos":"Get Simulations informations"
+    "get_sim_infos":"Get Simulations informations",
+    "empty_slot": "Empty_slot",
+    "wait_minim_players_1":"Waiting for",
+    "wait_minim_players_2":"more players to reach minimum players",
+    "popop_question": "Do you really want to disconnect and remove",
+    "remove": "Remove",
+    "relaunch": "Relaunch",
+    "button_begin_anyway": "Begin anyway",
+    "cancel": "Cancel"
   }
   

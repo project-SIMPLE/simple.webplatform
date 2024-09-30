@@ -1,7 +1,16 @@
 {
     "change_language": "เปลี่ยนภาษา",
     "select_language": "เลือกภาษา",
-    "close": "ปิด"
-    
-  }
-  
+    "close": "ปิด", 
+    "enter_path": "ใส่เส้นทางการจำลอง:",
+    "launch_path": "เริ่มต้น",
+    "get_sim_infos": "รับข้อมูลการจำลอง",
+    "empty_slot": "ช่องว่าง",
+    "wait_minim_players_1": "รอ",
+    "wait_minim_players_2": "ผู้เล่นเพิ่มเติมเพื่อให้ครบตามจำนวนขั้นต่ำ",
+    "popop_question": "คุณต้องการตัดการเชื่อมต่อและลบออกจริงหรือไม่",
+    "remove": "ลบ",
+    "relaunch": "เริ่มใหม่",
+    "button_begin_anyway": "เริ่มต้นต่อไป",
+    "cancel": "ยกเลิก"
+}

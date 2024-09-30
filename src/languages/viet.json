@@ -1,6 +1,16 @@
 {
     "change_language": "Thay đổi ngôn ngữ",
     "select_language": "Chọn ngôn ngữ",
-    "close": "Đóng"
-  }
-  
+    "close": "Đóng", 
+    "enter_path": "Nhập đường dẫn mô phỏng:",
+    "launch_path": "Khởi chạy",
+    "get_sim_infos": "Lấy thông tin mô phỏng",
+    "empty_slot": "Khe trống",
+    "wait_minim_players_1": "Đang chờ",
+    "wait_minim_players_2": "thêm người chơi để đạt số lượng người chơi tối thiểu",
+    "popop_question": "Bạn có thực sự muốn ngắt kết nối và xóa",
+    "remove": "Xóa",
+    "relaunch": "Khởi chạy lại",
+    "button_begin_anyway": "Bắt đầu dù sao", 
+    "cancel": "Hủy"
+}

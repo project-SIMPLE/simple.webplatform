@@ -5,7 +5,7 @@ import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import { useNavigate } from 'react-router-dom';
 import { useScreenModeState, useScreenModeSetter } from '../ScreenModeContext/ScreenModeContext';
 import MiniNavigation from '../Navigation/MiniNavigation';
-
+import { useTranslation } from 'react-i18next';
 interface Player {
   connected: boolean;
   date_connection: string;
@@ -19,7 +19,7 @@ const SimulationManager: React.FC = () => {
   const [clickedUserInfos, setClickedUserInfos] = useState<boolean>(false);
   const [showPopUp, setShowPopUp] = useState(false);
   const [showPopUpHeadset, setShowPopUpHeadset] = useState(false);
-
+  const { t } = useTranslation();
   // const {setScreenModeDisplay, screenModeDisplay } = useScreenMode();
   // Separate hooks for reading and updating screenModeDisplay
   const screenModeDisplay = useScreenModeState();
@@ -206,7 +206,7 @@ useEffect(() => {
                           <div className="fixed inset-0 flex items-center justify-center z-50">
                             <div className="bg-white p-6 rounded-lg shadow-lg w-72 text-center">
                               <h2 className="text-lg font-semibold mb-4"> 
-                                Do you really want to  disconnect and remove {key} ? 
+                              {t('popop_question')} {key} ? 
                               </h2>
                               
                               <div className='flex gap-5 ml-3'>
@@ -215,14 +215,14 @@ useEffect(() => {
                                 className="bg-red-500 text-white px-4 py-2 mt-4 rounded"
                                 onClick={() => handleRemove(key)}
                               >
-                                Remove
+                                {t('remove')}
                               </button>
 
                               <button
                                 className="bg-orange-500 text-white px-4 py-2 mt-4 rounded"
                                 onClick={() => handleRestart(key)}
                               >
-                                Relaunch
+                                 {t('relaunch')}
                               </button>
 
                               </div>
@@ -233,7 +233,7 @@ useEffect(() => {
                                 className="bg-red-500 text-white px-4 py-2 mt-6 rounded"
                                 onClick={togglePopUpshowPopUpManageHeadset}
                               >
-                                Cancel
+                                {t('cancel')}
                               </button>
                             </div>
                           </div>
@@ -266,7 +266,7 @@ useEffect(() => {
               {Array.from({ length: Number(maxPlayers) - Object.keys(playerList).length }).map((_, index) => (
                 <div key={`placeholder-${index}`} className="flex flex-col items-center opacity-50 cursor-not-allowed">
                   <VRHeadset  />
-                  <p style={{ marginTop: '3px' }}>Empty slot</p>
+                  <p style={{ marginTop: '3px' }}>{t('empty_slot')}</p>
                   {/* <p>Waiting for connection...</p> */}
                 </div>
               ))}
@@ -287,7 +287,7 @@ useEffect(() => {
                 Object.keys(playerList).length < Number(minPlayers) ? (
                   
                   <p className="flex items-center align-center" style={{ marginLeft: '90px' }}>
-                    Waiting for {Number(minPlayers) - Object.keys(playerList).length} more players to reach minimum players
+                    {t('wait_minim_players_1')} {Number(minPlayers) - Object.keys(playerList).length} {t('wait_minim_players_2')}
                     <svg className="animate-spin ml-2 h-5 w-5 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -298,7 +298,7 @@ useEffect(() => {
               ) : Object.keys(playerList).length >= Number(minPlayers) && Object.keys(playerList).length < Number(maxPlayers) ? (
                   <>
                     <p className="flex items-center align-center" style={{ marginLeft: '90px' }}>
-                      Waiting for {Number(maxPlayers) - Object.keys(playerList).length} more players to reach maximum players
+                    {t('wait_minim_players_1')} {Number(maxPlayers) - Object.keys(playerList).length} {t('wait_maximum_players_1')}
                       <svg className="animate-spin ml-2 h-5 w-5 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -311,7 +311,7 @@ useEffect(() => {
                         customStyle={{ width: '100px', height: '50px' }}
                         bgColor="bg-green-500"
                         showText={true}
-                        text="Begin Anyway"
+                        text= {t('button_begin_anyway')}
                       />
                     </div>
                   </>
