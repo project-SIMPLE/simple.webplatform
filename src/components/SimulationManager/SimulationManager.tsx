@@ -276,60 +276,55 @@ useEffect(() => {
             </div>
               
             <div>  
-
-              
-
-              {/* <p>Minimal players needed to launch the simulation: {minPlayers}</p> */}
-
-              {/* <p className='b-2'>Waiting for {Number(maxPlayers) - Object.keys(playerList).length } more players ...</p> */}
             </div>
 
           {/* Buttons Simulations : Play Button, Pause Button, Stop Button  */}
 
-
           <div>
-          
             <div>
-              {gama.experiment_state === 'NONE' || gama.experiment_state === 'NOTREADY' ? (
-                Object.keys(playerList).length >= Number(minPlayers) ? (
+            {gama.experiment_state === 'NONE' || gama.experiment_state === 'NOTREADY' ? (
+                
+                Object.keys(playerList).length < Number(minPlayers) ? (
+                  
+                  <p className="flex items-center align-center" style={{ marginLeft: '90px' }}>
+                    Waiting for {Number(minPlayers) - Object.keys(playerList).length} more players to reach minimum players
+                    <svg className="animate-spin ml-2 h-5 w-5 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                  </p>
+                
+              
+              ) : Object.keys(playerList).length >= Number(minPlayers) && Object.keys(playerList).length < Number(maxPlayers) ? (
                   <>
-                    <p className="flex items-center align-center" style={{marginLeft:'90px'}}>
-                      Waiting for {Number(maxPlayers) - Object.keys(playerList).length} more players to reach maximum players 
+                    <p className="flex items-center align-center" style={{ marginLeft: '90px' }}>
+                      Waiting for {Number(maxPlayers) - Object.keys(playerList).length} more players to reach maximum players
                       <svg className="animate-spin ml-2 h-5 w-5 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                       </svg>
                     </p>
-                  
+
                     <div className="flex justify-center space-x-2 gap-10 mb-5 mt-5">
                       <Button
                         onClick={handlePlayPause}
-                        customStyle={{ width: '100px', height: '50px'}}
+                        customStyle={{ width: '100px', height: '50px' }}
                         bgColor="bg-green-500"
                         showText={true}
                         text="Begin Anyway"
                       />
                     </div>
                   </>
-                  
-
-                ) : null    
-              ) : (
-                  // If the state is "PAUSED", "LAUNCHING", or "RUNNING", display the buttons normally
-                gama.experiment_state === 'PAUSED' ||
+                ) : null
+              ) : gama.experiment_state === 'PAUSED' ||
                 gama.experiment_state === 'LAUNCHING' ||
                 gama.experiment_state === 'RUNNING' ? (
-                  <>
-                  
+                <>
                   <div className="flex justify-center space-x-2 gap-10 mb-5 mt-5">
                     <Button
                       onClick={handlePlayPause}
                       customStyle={{ width: '100px', height: '50px' }}
-                      bgColor={
-                        gama.experiment_state === 'RUNNING'
-                          ? 'bg-orange-500'
-                          : 'bg-green-500'
-                      }
+                      bgColor={gama.experiment_state === 'RUNNING' ? 'bg-orange-500' : 'bg-green-500'}
                       icon={icon}
                       showText={true}
                     />
@@ -339,55 +334,34 @@ useEffect(() => {
                       customStyle={{ width: '100px', height: '50px' }}
                       bgColor="bg-red-500"
                       icon={
-                        <svg
-                          className="w-7 h-7"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
+                        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       }
                       showText={true}
                     />
-                    
-
-
-                </div>
-                    <div className='flex justify-center mt-3 gap-4'>
+                  </div>
+                  <div className="flex justify-center mt-3 gap-4">
                     <Button
                       text="Gama screen"
                       bgColor="bg-white"
                       showText={true}
-                      className='border-1 border-black'
-                      icon={
-                        <img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '90px', height: '90px' }} 
-                        />
-                      }
-
+                      className="border-1 border-black"
+                      icon={<img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '90px', height: '90px' }} />}
                       onClick={() => togglePopUp("gama_screen")}
                     />
                     <Button
                       text="Shared Screen"
                       bgColor="bg-white"
                       showText={true}
-                      className='border-1 border-black'
-                      icon={
-                        <img src='/images/shared_screen.png' alt="shared_screen" className="w-12" style={{ width: '90px', height: '90px' }} />
-                      }
+                      className="border-1 border-black"
+                      icon={<img src="/images/shared_screen.png" alt="shared_screen" style={{ width: '90px', height: '90px' }} />}
                       onClick={() => togglePopUp("shared_screen")}
                     />
                   </div>
-
-                  </>
-                  ) : null
-                )}
+                </>
+              ) : null}
+                
             </div>
           </div>
 

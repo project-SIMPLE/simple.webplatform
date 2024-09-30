@@ -85,7 +85,6 @@ class MonitorServer {
                             if (index !== undefined && index >= 0 && index < this.controller.modelManager.getModelList().length) {
                                 // Retrieve the simulation based on the index
                                 const selectedSimulation = this.controller.modelManager.getModelList()[index]; 
-                                
                                 socket.send(JSON.stringify({ 
                                     type: "get_simulation_by_index", 
                                     simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
@@ -98,8 +97,7 @@ class MonitorServer {
                         break;
 
                         // in the component that displays the monitoring screens, create a useEffect that listens to this variable
-                        // directly use the variable in the component with conditional rendering
-                        
+                        // directly use the variable in the component with conditional rendering                        
                         case "set_gama_screen":
                             socket.send(JSON.stringify({ 
                                 type: "setMonitorScreen", 
