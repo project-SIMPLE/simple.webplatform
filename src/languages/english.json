@@ -1,0 +1,9 @@
+{
+    "change_language": "Change Language",
+    "select_language": "Select Language",
+    "close": "Close", 
+    "enter_path":"Enter the simulation path :", 
+    "launch_path": "Launch", 
+    "get_sim_infos":"Get Simulations informations"
+  }
+  
