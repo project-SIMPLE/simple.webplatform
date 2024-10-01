@@ -47,6 +47,8 @@ const SimulationManager: React.FC = () => {
   const handleEnd = () => {
     if(ws !== null){
         ws.send(JSON.stringify({"type": "stop_experiment"}));
+        //  redirect to the main page :
+        navigate('/');
       }else{
       console.error("WS is null");
     }
