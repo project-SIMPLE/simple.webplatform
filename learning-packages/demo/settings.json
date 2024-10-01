@@ -5,5 +5,6 @@
   "model_file_path": "./Models/Demo/Simple Player Game/DemoModelVR.gaml",
   "experiment_name": "vr_xp", 
   "minimal_players": "1", 
-  "maximal_players": "4"
+  "maximal_players": "4", 
+  "selected_monitoring": "gama_screen"
 }

@@ -32,7 +32,7 @@ const SimulationManager: React.FC = () => {
   
   const [showPopUpManageHeadset, setshowPopUpManageHeadset] = useState(false);
 
-  const [selectedButton, setSelectedButton] = useState<string | null>(null);
+  const [selectedButton, setSelectedButton] = useState<string | null>(selectedSimulation?.selected_monitoring || null);
 
 
   // Calcul du nombre de casques non détectés (casques vides)
@@ -349,7 +349,7 @@ useEffect(() => {
                   </div>
                   <div className="flex justify-center mt-3 gap-4">
                   <Button
-                    text="Monitoring Screen"
+                    text="Gama Screen"
                     bgColor={"bg-white"} // Change background color if selected
                     showText={true}
                     className={`border-1 border-black ${selectedButton === "gama_screen" ? "border-4 border-black-600" : ""}`} // Change border if selected
