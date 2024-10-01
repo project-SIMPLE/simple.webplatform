@@ -32,6 +32,9 @@ const SimulationManager: React.FC = () => {
   
   const [showPopUpManageHeadset, setshowPopUpManageHeadset] = useState(false);
 
+  const [selectedButton, setSelectedButton] = useState<string | null>(null);
+
+
   // Calcul du nombre de casques non détectés (casques vides)
   const remainingPlayers = Number(maxPlayers) - detectedPlayers.length;
 
@@ -111,6 +114,7 @@ const SimulationManager: React.FC = () => {
     if (mode) {
       setScreenModeDisplay(mode); // Update screenModeDisplay from the context
       console.log(`Selected mode: ${mode}, current screenModeDisplay: ${screenModeDisplay}`);
+      setSelectedButton(mode);
     }
     setShowPopUp(!showPopUp); // Toggle pop-up visibility
   };
@@ -344,22 +348,22 @@ useEffect(() => {
                     />
                   </div>
                   <div className="flex justify-center mt-3 gap-4">
-                    <Button
-                      text= {t('Monitoring Screen')}
-                      bgColor="bg-white"
-                      showText={true}
-                      className="border-1 border-black"
-                      icon={<img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '90px', height: '90px' }} />}
-                      onClick={() => togglePopUp("gama_screen")}
-                    />
-                    <Button
-                      text= {t('Shared Screen')}
-                      bgColor="bg-white"
-                      showText={true}
-                      className="border-1 border-black"
-                      icon={<img src="/images/shared_screen.png" alt="shared_screen" style={{ width: '90px', height: '90px' }} />}
-                      onClick={() => togglePopUp("shared_screen")}
-                    />
+                  <Button
+                    text="Monitoring Screen"
+                    bgColor={"bg-white"} // Change background color if selected
+                    showText={true}
+                    className={`border-1 border-black ${selectedButton === "gama_screen" ? "border-4 border-black-600" : ""}`} // Change border if selected
+                    icon={<img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '90px', height: '90px' }} />}
+                    onClick={() => togglePopUp("gama_screen")}
+                  />
+                  <Button
+                    text="Shared Screen"
+                    bgColor={"bg-white"} // Change background color if selected
+                    showText={true}
+                    className={`border-1 border-black ${selectedButton === "shared_screen" ? "border-4 border-black-600" : ""}`} // Change border if selected
+                    icon={<img src="/images/shared_screen.png" alt="shared_screen" style={{ width: '90px', height: '90px' }} />}
+                    onClick={() => togglePopUp("shared_screen")}
+                  />
                   </div>
                 </>
               ) : null}
