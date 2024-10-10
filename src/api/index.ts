@@ -24,6 +24,5 @@ if (false) {
 
 // Initialisation du contrôleur
 const c = new Controller();
-await c.adbDummyClient();
 
 export { useVerbose };
