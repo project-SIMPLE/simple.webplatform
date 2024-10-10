@@ -4,14 +4,20 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "concurrently \"node src/api/index.js\" \"vite\" ",
+    "start": "concurrently \"npx tsx src/api/index.ts\" \"vite\" ",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "fetch-scrcpy-server 2.5"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.7",
+    "@yume-chan/adb-scrcpy": "0.0.0-next-20240917062356",
+    "@yume-chan/adb-server-node-tcp": "0.0.0-next-20240917062356",
+    "@yume-chan/scrcpy-decoder-tinyh264": "0.0.0-next-20240917062356",
+    "@yume-chan/scrcpy-decoder-webcodecs": "0.0.0-next-20240917062356",
+    "@yume-chan/stream-extra": "0.0.0-next-20240917062356",
     "axios": "^1.7.3",
     "dotenv": "^16.4.5",
     "i18next": "^23.15.1",
@@ -23,7 +29,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "@types/node": "^22.2.0",
+    "@types/node": "^22.5.5",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@types/react-router-dom": "^5.3.3",
@@ -31,6 +37,8 @@
     "@typescript-eslint/eslint-plugin": "^7.15.0",
     "@typescript-eslint/parser": "^7.15.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "@yume-chan/adb": "0.0.0-next-20240917062356",
+    "@yume-chan/fetch-scrcpy-server": "0.0.0-next-20240917062356",
     "autoprefixer": "^10.4.20",
     "concurrently": "^8.2.2",
     "eslint": "^8.57.0",
@@ -38,6 +46,7 @@
     "eslint-plugin-react-refresh": "^0.4.7",
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.7",
+    "tsx": "^4.19.1",
     "typescript": "^5.2.2",
     "vite": "^5.3.4"
   }

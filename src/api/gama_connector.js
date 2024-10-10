@@ -124,7 +124,7 @@ class GamaConnector {
                         break;
 
                     case "CommandExecutedSuccessfully":
-                        if (useVerbose) {
+                        if (false) {
                             console.log("\x1b[32m[DEBUG GamaConnector] Message received from Gama Server: CommandExecutedSuccessfully for "+message.command.type+ ' '+ (message.command.experiment !== undefined ? '\''+message.command.experiment+'\'' : 'command') + '\x1b[0m');
                             console.log(message);
                         }
@@ -440,7 +440,7 @@ class GamaConnector {
         do_sending = true;
         continue_sending = true;
         function_to_call = () => {
-            if (useVerbose) {
+            if (false) {
                 console.log("-> The ask: "+json.action+" was sent successfully");
             }
         }

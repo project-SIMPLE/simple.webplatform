@@ -16,7 +16,7 @@ const App: React.FC = () => {
   return (
     <BrowserRouter>
             <WebSocketManager>
-              <ScreenModeProvider>
+                <ScreenModeProvider>
                 <Routes>
                     <Route index element={<SelectorSimulations />} />
                     <Route path="navigation" element={<Navigation />} />
@@ -35,9 +35,9 @@ const root = ReactDOM.createRoot(container);
 
 root.render(
   // <Provider store={store}>  
-  <React.StrictMode>
+//  <React.StrictMode>
       <App />
-  </React.StrictMode>
+//  </React.StrictMode>
     // </Provider>
 );
 
