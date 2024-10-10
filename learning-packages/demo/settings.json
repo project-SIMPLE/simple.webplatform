@@ -4,6 +4,7 @@
   "splashscreen": "learning-packages/demo/splashscreen/demoOne.png",
   "model_file_path": "./Models/Demo/Simple Player Game/DemoModelVR.gaml",
   "experiment_name": "vr_xp", 
-  "minimal_players": "2", 
-  "maximal_players": "4"
+  "minimal_players": "1", 
+  "maximal_players": "4", 
+  "selected_monitoring": "gama_screen"
 }

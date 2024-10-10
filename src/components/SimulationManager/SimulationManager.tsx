@@ -2,12 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
-import SimulationManagerButtons from './SimulationManagerButtons';
-import Navigation from '../Navigation/Navigation';
 import { useNavigate } from 'react-router-dom';
 import { useScreenModeState, useScreenModeSetter } from '../ScreenModeContext/ScreenModeContext';
 import MiniNavigation from '../Navigation/MiniNavigation';
-
+import { useTranslation } from 'react-i18next';
 interface Player {
   connected: boolean;
   date_connection: string;
@@ -21,7 +19,7 @@ const SimulationManager: React.FC = () => {
   const [clickedUserInfos, setClickedUserInfos] = useState<boolean>(false);
   const [showPopUp, setShowPopUp] = useState(false);
   const [showPopUpHeadset, setShowPopUpHeadset] = useState(false);
-
+  const { t } = useTranslation();
   // const {setScreenModeDisplay, screenModeDisplay } = useScreenMode();
   // Separate hooks for reading and updating screenModeDisplay
   const screenModeDisplay = useScreenModeState();
@@ -32,33 +30,94 @@ const SimulationManager: React.FC = () => {
   const maxPlayers = selectedSimulation?.maximal_players || 0;
   const minPlayers = selectedSimulation?.minimal_players || 0;
   
+  const [showPopUpManageHeadset, setshowPopUpManageHeadset] = useState(false);
+
+  const [selectedButton, setSelectedButton] = useState<string | null>(selectedSimulation?.selected_monitoring || null);
+
+
   // Calcul du nombre de casques non détectés (casques vides)
   const remainingPlayers = Number(maxPlayers) - detectedPlayers.length;
 
-  const popPup = () => {  
-    setShowPopUp(!showPopUp);
+
+  const handlePlayPause = () => {
+    if(ws !== null){
+        ws.send(JSON.stringify({"type": gama.experiment_state == "NONE" ? "launch_experiment" : (gama.experiment_state != "RUNNING" ? "resume_experiment" : "pause_experiment") }));
+      }else{
+      console.error("WS is null");
+    }
   };
 
+  const handleEnd = () => {
+    if(ws !== null){
+        ws.send(JSON.stringify({"type": "stop_experiment"}));
+        //  redirect to the main page :
+        navigate('/');
+      }else{
+      console.error("WS is null");
+    }
+  };
+
+  // Choice for the ICON :
+  const icon = gama.experiment_state === 'LAUNCHING'  ? (
+    <svg
+      className="w-7 h-7"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        strokeWidth="2"
+        d="M10 9v6m4-6v6" // Verticals bars for "pause"
+      />
+    </svg>
+
+  ) : gama.experiment_state === 'NONE' || gama.experiment_state === 'NOTREADY' || gama.experiment_state === 'PAUSED' ? (
+    <svg
+      className="w-7 h-7 "
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        strokeWidth="2"
+        d="M5 3l14 9-14 9V3z" // triangle for "play"
+      />
+    </svg>
+  ) : (
+    <svg
+      className="w-7 h-7"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        strokeWidth="2"
+        d="M10 9v6m4-6v6" 
+      />
+    </svg>
+  );
+
+  const togglePopUpshowPopUpManageHeadset = () => {
+    setshowPopUpManageHeadset(!showPopUpManageHeadset);
+  };
+  
   const togglePopUp = (mode?: string) => {
     if (mode) {
       setScreenModeDisplay(mode); // Update screenModeDisplay from the context
       console.log(`Selected mode: ${mode}, current screenModeDisplay: ${screenModeDisplay}`);
+      setSelectedButton(mode);
     }
     setShowPopUp(!showPopUp); // Toggle pop-up visibility
   };
-  
-  
-
-  // useEffect(() => {
-  //   if (isWsConnected && ws !== null) {
-  //     // console.log('WebSocket connected');
-  //   }
-  // }, [isWsConnected, ws]);
-
-  // Add players to the WebSocket server automatically when the WebSocket connection is established
-
-  // Not add Player List When player has been removed, add again if relaunch the application
-  // Redirect to the main page if no simulation is selected
   
   useEffect(() => {
     if (!selectedSimulation) {
@@ -67,8 +126,6 @@ const SimulationManager: React.FC = () => {
   }, [selectedSimulation, navigate]);
 
 
-
-  
 
 // Générer une liste complète de casques (connectés + vides)
 const playerHeadsets = [
@@ -79,21 +136,19 @@ const playerHeadsets = [
   ...Array(remainingPlayers).fill({ connected: false }), // Remplir les casques non détectés
 ];
 
+// add automatically player_headset
+useEffect(() => {
+  if (isWsConnected && ws !== null) {
+    Object.keys(playerList).forEach((key) => {
+      // const player = playerList[key];
 
-
-
-  useEffect(() => {
-    if (isWsConnected && ws !== null) {
-      Object.keys(playerList).forEach((key) => {
-        // const player = playerList[key];
-
-        // reconnect player only if in game , if not mean that player has been removed
-        // if (player.in_game === true) {
-          ws.send(JSON.stringify({ type: 'add_player_headset', id: key }));
-          // }
-      });
-    }
-  }, [playerList, isWsConnected, ws]);
+      // reconnect player only if in game , if not mean that player has been removed
+      // if (player.in_game === true) {
+        ws.send(JSON.stringify({ type: 'add_player_headset', id: key }));
+        // }
+    });
+  }
+}, [playerList, isWsConnected, ws]);
 
   // Handler for removing players
   const handleRemove = (id: string) => {
@@ -101,11 +156,13 @@ const playerHeadsets = [
       console.log(`ID headset ${id}`);
       ws.send(JSON.stringify({ "type": "remove_player_headset", id }));
      // removePlayer(id);  // already did in WebSocketManagers
+     togglePopUpshowPopUpManageHeadset();
     } else {
       console.error('WebSocket is not connected');
     }
   };
 
+  // Method launch button hide , at the bottom of this component 
   const handleGetPlayers = () => {
     if (ws !== null) {
       console.log('Player list:', playerList);
@@ -120,38 +177,11 @@ const playerHeadsets = [
   };
 
 
-const handleGetInformation = (id: string) => {
-  setUserInfos(playerList[id]); 
-  setShowPopUpHeadset(true);    
-};
-
-const closePopUp = () => {
-  setShowPopUpHeadset(false);   // close the pop-up
-};
-
-  // const handleGetInformation = (id: string) => {
-  //   if (clickedUserInfos === true){
-  //     setClickedUserInfos(false);
-  //     setShowPopUpHeadset(false);
-  //   }else{
-  //     setClickedUserInfos(true);
-  //     setShowPopUpHeadset(true);
-  //   }
-  //   setUserInfos(playerList[id]);
-  //   // console.log("Infos user : ",userInfos);
-  // };
-
-  // useEffect((id : string) => {
-  //   console.log("Updated playerList in SimulationManager:", playerList);
-  //   ws.send(JSON.stringify({ type: 'add_player_headset', id }));
-
-  // }, [playerList]);
-
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       {/* <Navigation /> */}
       <MiniNavigation />
-      <div className="flex flex-col items-center justify-center bg-gray-100 bg-white p-8 shadow-lg rounded-lg text-center mt-12" style={{marginRight:'60px', marginLeft:'60px', marginTop:'100px'}}>
+      <div className="flex flex-col items-center justify-center bg-gray-100 bg-white p-8 pt-0  shadow-lg rounded-lg text-center mt-12" style={{marginRight:'60px', marginLeft:'60px', marginTop:'100px'}}>
         
         
         {selectedSimulation ? (
@@ -159,10 +189,7 @@ const closePopUp = () => {
           
           <div>
             
-            <div className="text-3xl mb-4">{selectedSimulation.name}</div>
-
-            {/* <span>Minimal Players: {minPlayers}</span>
-            <span>Maximal Players: {maxPlayers}</span> */}
+          <div className="text-3xl mb-4">{selectedSimulation.name}</div>
 
             <div className="flex justify-center mt-8 space-x-4 mb-7">
               
@@ -171,101 +198,71 @@ const closePopUp = () => {
                 const player = playerList[key];
                 return (
                   <div key={key} className="flex flex-col items-center">
-                    {/* Casque connecté */}
-                    {/* <VRHeadset isConnected={player.connected} /> */}
+                    
                     <VRHeadset
                       key={key}
-                      selectedPlayer={player}  // Pass the player data as props
+                      selectedPlayer={player}  
                     />
                     
+                      {showPopUpManageHeadset && (
+                        <>
+                          {/* Grey Overley */}
+                          <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-50"></div>
+  
+                          <div className="fixed inset-0 flex items-center justify-center z-50" onClick={togglePopUpshowPopUpManageHeadset}>
+                            <div className="bg-white p-6 rounded-lg shadow-lg w-72 text-center">
+                              <h2 className="text-lg font-semibold mb-4"> 
+                              {t('popop_question')} {key} ? 
+                              </h2>
+                              
+                              <div className='flex gap-5 ml-3'>
+                              
+                              <button
+                                className="bg-red-500 text-white px-4 py-2 mt-4 rounded"
+                                onClick={() => handleRemove(key)}
+                              >
+                                {t('remove')}
+                              </button>
+
+                              <button
+                                className="bg-orange-500 text-white px-4 py-2 mt-4 rounded"
+                                onClick={() => handleRestart(key)}
+                              >
+                                 {t('relaunch')}
+                              </button>
+
+                              </div>
+
+
+  
+                              <button
+                                className="bg-red-500 text-white px-4 py-2 mt-6 rounded"
+                                onClick={togglePopUpshowPopUpManageHeadset}
+                              >
+                                {t('cancel')}
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
                       
+                      {/* The trash */}
                     <div className='flex gap-3 mt-2'> 
                       <p style={{ marginTop: '3px' }}> {key} </p>
                       <Button  
                         bgColor='bg-red-500'
-                        icon={<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="18" height="18" viewBox="0 0 48 48">
-                              <path d="M 24 4 C 20.491685 4 17.570396 6.6214322 17.080078 10 L 10.238281 10 A 1.50015 1.50015 0 0 0 9.9804688 9.9785156 A 1.50015 1.50015 0 0 0 9.7578125 10 L 6.5 10 A 1.50015 1.50015 0 1 0 6.5 13 L 8.6386719 13 L 11.15625 39.029297 C 11.427329 41.835926 13.811782 44 16.630859 44 L 31.367188 44 C 34.186411 44 36.570826 41.836168 36.841797 39.029297 L 39.361328 13 L 41.5 13 A 1.50015 1.50015 0 1 0 41.5 10 L 38.244141 10 A 1.50015 1.50015 0 0 0 37.763672 10 L 30.919922 10 C 30.429604 6.6214322 27.508315 4 24 4 z M 24 7 C 25.879156 7 27.420767 8.2681608 27.861328 10 L 20.138672 10 C 20.579233 8.2681608 22.120844 7 24 7 z M 11.650391 13 L 36.347656 13 L 33.855469 38.740234 C 33.730439 40.035363 32.667963 41 31.367188 41 L 16.630859 41 C 15.331937 41 14.267499 40.033606 14.142578 38.740234 L 11.650391 13 z M 20.476562 17.978516 A 1.50015 1.50015 0 0 0 19 19.5 L 19 34.5 A 1.50015 1.50015 0 1 0 22 34.5 L 22 19.5 A 1.50015 1.50015 0 0 0 20.476562 17.978516 z M 27.476562 17.978516 A 1.50015 1.50015 0 0 0 26 19.5 L 26 34.5 A 1.50015 1.50015 0 1 0 29 34.5 L 29 19.5 A 1.50015 1.50015 0 0 0 27.476562 17.978516 z"></path>
-                              </svg>} 
-                          onClick={() => handleRemove(key)}
+                        icon={
+                          <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="18" height="18" viewBox="0 0 48 48">
+                          <path fill="#FFFFFF" d="M 24 4 C 20.491685 4 17.570396 6.6214322 17.080078 10 L 10.238281 10 A 1.50015 1.50015 0 0 0 9.9804688 9.9785156 A 1.50015 1.50015 0 0 0 9.7578125 10 L 6.5 10 A 1.50015 1.50015 0 1 0 6.5 13 L 8.6386719 13 L 11.15625 39.029297 C 11.427329 41.835926 13.811782 44 16.630859 44 L 31.367188 44 C 34.186411 44 36.570826 41.836168 36.841797 39.029297 L 39.361328 13 L 41.5 13 A 1.50015 1.50015 0 1 0 41.5 10 L 38.244141 10 A 1.50015 1.50015 0 0 0 37.763672 10 L 30.919922 10 C 30.429604 6.6214322 27.508315 4 24 4 z M 24 7 C 25.879156 7 27.420767 8.2681608 27.861328 10 L 20.138672 10 C 20.579233 8.2681608 22.120844 7 24 7 z M 11.650391 13 L 36.347656 13 L 33.855469 38.740234 C 33.730439 40.035363 32.667963 41 31.367188 41 L 16.630859 41 C 15.331937 41 14.267499 40.033606 14.142578 38.740234 L 11.650391 13 z M 20.476562 17.978516 A 1.50015 1.50015 0 0 0 19 19.5 L 19 34.5 A 1.50015 1.50015 0 1 0 22 34.5 L 22 19.5 A 1.50015 1.50015 0 0 0 20.476562 17.978516 z M 27.476562 17.978516 A 1.50015 1.50015 0 0 0 26 19.5 L 26 34.5 A 1.50015 1.50015 0 1 0 29 34.5 L 29 19.5 A 1.50015 1.50015 0 0 0 27.476562 17.978516 z"></path>
+                        </svg>
+                        
+                              } 
+                          onClick={togglePopUpshowPopUpManageHeadset}
+                          // onClick={() => handleRemove(key)}
                       >
 
                       </Button>
                     </div>
-
-                    {/* <p>{player.connected ? 'Connected' : 'Waiting for connection...'}</p> */}
-                    
-                    
-                    {/* Boutons pour les casques connectés */}
-                    {/* {player.connected && (
-                      <div className="flex mt-4 space-x-2">
-                        <Button
-                          onClick={() => handleRemove(key)}
-                          text="Remove"
-                          bgColor="bg-red-500"
-                          icon={
-                            <svg
-                              className="w-6 h-6 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          }
-                          showText={false}
-                        />
-                        <Button
-                          onClick={() => handleRestart(key)}
-                          text="Restart"
-                          bgColor="bg-orange-500"
-                          icon={
-                            <svg
-                              className="w-6 h-6 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M4 4v6h6M20 20v-6h-6M4 10c1.5-2 4-3 6-3h4c2 0 4 1 5 3M4 14c1.5 2 4 3 6 3h4c2 0 4-1 5-3"
-                              />
-                            </svg>
-                          }
-                          showText={false}
-                        />
-                        <Button
-                          onClick={() => handleGetInformation(key)}
-                          text="Get Information"
-                          bgColor="bg-yellow-500"
-                          icon={
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="w-6 h-6 mr-2"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M12 8v4m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20zm0 4h.01"
-                              />
-                            </svg>
-                          }
-                          showText={false}
-                        />
-                      </div>
-                    )} */}
                   </div>
                 );
               })}
@@ -275,7 +272,7 @@ const closePopUp = () => {
               {Array.from({ length: Number(maxPlayers) - Object.keys(playerList).length }).map((_, index) => (
                 <div key={`placeholder-${index}`} className="flex flex-col items-center opacity-50 cursor-not-allowed">
                   <VRHeadset  />
-                  <p style={{ marginTop: '3px' }}>Empty slot</p>
+                  <p style={{ marginTop: '3px' }}>{t('empty_slot')}</p>
                   {/* <p>Waiting for connection...</p> */}
                 </div>
               ))}
@@ -283,112 +280,99 @@ const closePopUp = () => {
             
             
             </div>
-              <p className='mb-5'>Waiting for {Number(maxPlayers) - Object.keys(playerList).length } players ...</p>
-
-            
-            
-            
-            
-            {/* Div display State toward Gama */}
-            {/* <div className="flex justify-center mb-4"> */}
-              {/* green circule */}
-              {/* <div
-                style={{ marginTop: '7.5px', marginRight: '15.2px' }}
-                className={`w-3 h-3 rounded-full ${gama.connected ? 'bg-green-500' : 'bg-gray-500'}`}
-              ></div> */}
               
-              {/* <span className={gama.connected ? 'text-green-500' : 'text-gray-500'}>
-                {gama.connected ? 'Connected' : 'Waiting for connection'}
-              </span> */}
-            
-            {/* </div> */}
-
-            <SimulationManagerButtons />
-
-            {/* AJOUTER LE BOUTON MONOTORING ICI */}
-            {/* + Déplacer la logique ici : les functions, appels du context*/}
-            
-            {/* Monitoring Button */}
-            <div className='flex justify-center mt-3 gap-4'>
-              <Button
-                text="Gama screen"
-                bgColor="bg-white"
-                showText={true}
-                className='border-1 border-black'
-                icon={
-                  <img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '90px', height: '90px' }} 
-                  />
-                  // <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="35" height="35">
-                  //   <rect x="5" y="5" width="30" height="20" rx="2" ry="2" fill="#d1d1d1" stroke="#333" strokeWidth="1"/>
-                  //   <rect x="7" y="7" width="26" height="16" fill="#fff" stroke="#333" strokeWidth="1"/>
-                  //   <line x1="7" y1="15" x2="33" y2="15" stroke="#333" strokeWidth="1"/>
-                  //   <line x1="20" y1="7" x2="20" y2="23" stroke="#333" strokeWidth="1"/>
-                  //   <rect x="18" y="26" width="4" height="4" fill="#333"/>
-                  //   <rect x="16" y="30" width="8" height="2" fill="#333"/>
-                  // </svg>
-                }
-
-                onClick={() => togglePopUp()}
-              />
-              <Button
-                text="Shared Screen"
-                bgColor="bg-white"
-                showText={true}
-                className='border-1 border-black'
-                icon={
-                  <img src='/images/shared_screen.png' alt="shared_screen" className="w-12" style={{ width: '90px', height: '90px' }} />
-                }
-                onClick={() => togglePopUp()}
-              />
-
-         
-
-
-
-              {/* The PopUp */}
-              {showPopUp && (
-                <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-                  <div className="bg-white p-6 rounded-lg shadow-lg w-64 text-center">
-                    <h2 className="text-lg font-semibold mb-4">Choose an Option</h2>
-
-                    
-                    <div className="flex flex-col space-y-4">
-                      
-                      <Button
-                        text="Gama Screen"
-                        bgColor="bg-green-500 hover:bg-green-600"
-                        onClick={() => {
-                          // setModeScreen("full_screen");
-                          // console.log(modeScreen);
-                          togglePopUp("gama_screen");
-                        }}
-                      />
-
-                      <Button
-                        text="Shared Screen"
-                        bgColor="bg-blue-500 hover:bg-blue-600 "
-                        onClick={() => {
-                            // setModeScreen("shared_screen");
-                            // console.log(modeScreen);
-                            togglePopUp("shared_screen");
-                        }}
-                      />
-                      
-                    </div>
-
-                    <button
-                      className="bg-red-500 mt-4 text-white hover:underline"
-                      onClick={() => {togglePopUp()}}
-                    >
-                      Cancel
-                    </button>
-                  
-                  </div>
-                </div>
-              )}
+            <div>  
             </div>
-            {/* End Monotoring button */}
 
+          {/* Buttons Simulations : Play Button, Pause Button, Stop Button  */}
+
+          <div>
+            <div>
+            {gama.experiment_state === 'NONE' || gama.experiment_state === 'NOTREADY' ? (
+                
+                Object.keys(playerList).length < Number(minPlayers) ? (
+                  
+                  <p className="flex items-center align-center" style={{ marginLeft: '90px' }}>
+                    {t('wait_minim_players_1')} {Number(minPlayers) - Object.keys(playerList).length} {t('wait_minim_players_2')}
+                    <svg className="animate-spin ml-2 h-5 w-5 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                  </p>
+                
+              
+              ) : Object.keys(playerList).length >= Number(minPlayers) && Object.keys(playerList).length < Number(maxPlayers) ? (
+                  <>
+                    <p className="flex items-center align-center" style={{ marginLeft: '90px' }}>
+                    {t('wait_minim_players_1')} {Number(maxPlayers) - Object.keys(playerList).length} {t('wait_maximum_players_1')}
+                      <svg className="animate-spin ml-2 h-5 w-5 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                      </svg>
+                    </p>
+
+                    <div className="flex justify-center space-x-2 gap-10 mb-5 mt-5">
+                      <Button
+                        onClick={handlePlayPause}
+                        customStyle={{ width: '100px', height: '50px' }}
+                        bgColor="bg-green-500"
+                        showText={true}
+                        text= {t('button_begin_anyway')}
+                      />
+                    </div>
+                  </>
+                ) : null
+              ) : gama.experiment_state === 'PAUSED' ||
+                gama.experiment_state === 'LAUNCHING' ||
+                gama.experiment_state === 'RUNNING' ? (
+                <>
+                  <div className="flex justify-center space-x-2 gap-10 mb-5 mt-5">
+                    <Button
+                      onClick={handlePlayPause}
+                      customStyle={{ width: '100px', height: '50px' }}
+                      bgColor={gama.experiment_state === 'RUNNING' ? 'bg-orange-500' : 'bg-green-500'}
+                      icon={icon}
+                      showText={true}
+                    />
+                    <Button
+                      onClick={handleEnd}
+                      className="w-20"
+                      customStyle={{ width: '100px', height: '50px' }}
+                      bgColor="bg-red-500"
+                      icon={
+                        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      }
+                      showText={true}
+                    />
+                  </div>
+                  <div className="flex justify-center mt-3 gap-4">
+                  <Button
+                    text="Gama Screen"
+                    bgColor={"bg-white"} // Change background color if selected
+                    showText={true}
+                    className={`border-1 border-black ${selectedButton === "gama_screen" ? "border-4 border-black-600" : ""}`} // Change border if selected
+                    icon={<img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '90px', height: '90px' }} />}
+                    onClick={() => togglePopUp("gama_screen")}
+                  />
+                  <Button
+                    text="Shared Screen"
+                    bgColor={"bg-white"} // Change background color if selected
+                    showText={true}
+                    className={`border-1 border-black ${selectedButton === "shared_screen" ? "border-4 border-black-600" : ""}`} // Change border if selected
+                    icon={<img src="/images/shared_screen.png" alt="shared_screen" style={{ width: '90px', height: '90px' }} />}
+                    onClick={() => togglePopUp("shared_screen")}
+                  />
+                  </div>
+                </>
+              ) : null}
+                
+            </div>
+          </div>
+
+
+            
             
           </div>
         ) : (
@@ -397,24 +381,25 @@ const closePopUp = () => {
       </div>
 
       {/* Get Player */}
-      <div className="w-2/3 mt-8 grid grid-cols-2 gap-4">
-        {/* Column 1 */}
-        
+      <div className="w-2/3 mt-8 grid grid-cols-2 gap-4">        
         {
         import.meta.env.VITE_APP_ENV === 'development' && (  
-        <div>
-          {/* <div className="text-lg mt-3 mb-3">Get Players connected:</div> */}
-          <Button onClick={handleGetPlayers} text="Get Player list logs" bgColor="bg-purple-500" showText={true} 
+          <div></div>
+
+        // BUTTON get handletGetPlayerList (debug)
+        // <div>
+        //   {/* <div className="text-lg mt-3 mb-3">Get Players connected:</div> */}
+        //   <Button onClick={handleGetPlayers} text="Get Player list logs" bgColor="bg-purple-500" showText={true} 
             
-            icon= {
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
-                <circle cx="12" cy="12" r="10" fill="none" stroke="white" strokeWidth="2"/>
-                <line x1="12" y1="17" x2="12" y2="12" stroke="white" strokeWidth="2"/>
-                <circle cx="12" cy="8.5" r="1" fill="white"/>
-              </svg>
-            }
-          />
-        </div>
+        //     icon= {
+        //       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+        //         <circle cx="12" cy="12" r="10" fill="none" stroke="white" strokeWidth="2"/>
+        //         <line x1="12" y1="17" x2="12" y2="12" stroke="white" strokeWidth="2"/>
+        //         <circle cx="12" cy="8.5" r="1" fill="white"/>
+        //       </svg>
+        //     }
+        //   />
+        // </div>
         )}
 
         {/* Column 2 */}
@@ -433,7 +418,7 @@ const closePopUp = () => {
     
     
       {/* Footer of the page */}
-      <footer className="flex justify-between items-center p-4 border-t border-gray-300  w-full" style={{ marginTop: '60px' }} >
+      <footer className="flex justify-between items-center p-4 border-t border-gray-300  w-full" style={{ marginTop: '20px' }} >
         <div className='flex'>
           <img src="/images/global-gateway-euro.png" alt="Global Gateway" className="h-8" />
           <img src="/images/funded-by-ue.png" alt="Global Gateway" className="h-8" />

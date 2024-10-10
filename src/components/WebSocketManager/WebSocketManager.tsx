@@ -20,7 +20,8 @@ interface Simulation {
     type: string;
     type_model_file_path: string;
     maximal_players: string,
-    minimal_players:string
+    minimal_players:string, 
+    selected_monitoring:string
 }
 
 // interface SimulationList {

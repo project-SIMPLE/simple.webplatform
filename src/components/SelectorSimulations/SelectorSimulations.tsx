@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Button from '../Button/Button';
 import Navigation from '../Navigation/Navigation';
 import VRHeadset from '../VRHeadset/VRHeadset';
+import LanguageSelector from '../LanguageSelector/LanguageSelector';
+import { useTranslation } from 'react-i18next';
 
 const SelectorSimulations = () => {
   const { ws, isWsConnected, simulationList, playerList, gama } = useWebSocket();
@@ -11,6 +13,8 @@ const SelectorSimulations = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [showCustomInput, setShowCustomInput] = useState<boolean>(false); 
   const [connectionStatus, setConnectionStatus] = useState<string>('Waiting for connection ...'); 
+  const {t} = useTranslation();
+
 
   const navigate = useNavigate(); 
 
@@ -71,7 +75,7 @@ const SelectorSimulations = () => {
   // Display connexion statue
   useEffect(() => {
     if (gama.connected) {
-      setConnectionStatus('Connected');
+      setConnectionStatus('');
     } else {
       setConnectionStatus('Please launch Gama...');
     }
@@ -79,6 +83,9 @@ const SelectorSimulations = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white p-8">
+
+     <LanguageSelector />   
+      
       <Navigation />
 
       {loading ? (
@@ -87,7 +94,7 @@ const SelectorSimulations = () => {
           <h2 className="text-gray-700">Loading simulations...</h2>
         </div>
       ) : (
-       
+        
         // Display simulations cards
         <div className="flex flex-col items-center justify-center bg-white p-8">
         <div className="flex items-center justify-between ">
@@ -124,45 +131,46 @@ const SelectorSimulations = () => {
           {/* Right Button from the grid */}
           {import.meta.env.VITE_APP_ENV === 'development' && (
             <div className="ml-20 ">
-              <Button
+
+              <div
+              className={`bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer ${
+                !gama.connected ? 'opacity-50 cursor-not-allowed' : ''
+              }`}                
+              
+              style={{
+                  backgroundImage: `url(/images/codecode.png)`,
+                  backgroundSize: 'cover',
+                  width: '100px',
+                  height: '100px',
+                  marginBottom:'13px'
+                }}
+                // key={index}
                 onClick={() => setShowCustomInput(!showCustomInput)}
-                text="Dev Mode"
-                className='bg-green-700'
-                icon={
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-6 h-6 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"
-                    />
-                  </svg>
-                }
-                bgColor="bg-blue-500"
-                showText={true}
-              />
+                
+              >
+                <h2
+                  className="text-gray-500 text-sm text-center "
+                  style={{
+                    marginTop: '80px',
+                  }}
+                >
+                  DevMode
+                </h2>
+              </div>
+
             </div>
           )}
         </div>
-        {/* Display the statue*/}
-      <div className='flex gap-2 mt-6'>
 
-        {/* Display here the conditional rendering  */}
-        {/* // if gama.connected : afficher connecter
-        // sinon afficher en attente du lancement de Gama */}
-        <img src='images/gama-logo.png' className='w-6'/>
-        :
+
+        {/* Display the statue, ask for the user to connect to Gama if still not */}
+      <div className='flex gap-2 mt-6'>
         <span className={gama.connected ? 'text-green-500'  : 'text-red-500'}>    
-           {connectionStatus}
+           {gama.connected ? '' : connectionStatus }
         </span>
 
       </div>
+
       </div>
       
 
@@ -175,7 +183,7 @@ const SelectorSimulations = () => {
         // Section: path to start a simulation
         <div className="mt-4 w-full" style={{ marginTop: '20px', marginBottom: '-25px' }} >
           
-          <h1 className="text-lg font-bold mb-4">Enter a simulation path:</h1>
+          <h1 className="text-lg font-bold mb-4"> {t('enter_path')} </h1> 
           <input
             type="text"
             value={directoryPath}
@@ -191,7 +199,7 @@ const SelectorSimulations = () => {
                 console.error('WebSocket is not connected');
               }
             }}
-            text="Launch"
+            text={t('launch_path')}
             bgColor="bg-green-500"
             showText={true}
           />
@@ -199,7 +207,7 @@ const SelectorSimulations = () => {
 
         {/* // Section: Get simulation informations */}
         <div className="mt-7">
-         <h1 className="text-lg font-bold mb-5">Get simulation informations:</h1>
+         <h1 className="text-lg font-bold mb-5"> {t('get_sim_infos')} </h1>
          <Button
             onClick={() => {
               if (isWsConnected && ws !== null) {
@@ -208,7 +216,7 @@ const SelectorSimulations = () => {
                 console.error('WebSocket is not connected');
               }
             }}
-            text="Get Simulations Informations"
+            text={t('get_sim_infos')}
             bgColor="bg-green-500"
             showText={true}
           />
@@ -233,7 +241,7 @@ const SelectorSimulations = () => {
                       key={key}
                       selectedPlayer={player}  // Pass the player data as props
                     />
-                    
+
                     <p style={{ marginTop: "3px" }}>id player: {key}</p>
                     <p>{player.connected ? 'Connected' : 'Waiting for connection..'}</p>
 

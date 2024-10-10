@@ -106,7 +106,11 @@ export class MonitorServer {
                             } else {
                                 console.error("Invalid index received or out of bounds");
                             }
-                            break;
+
+                        break;
+
+                        // in the component that displays the monitoring screens, create a useEffect that listens to this variable
+                        // directly use the variable in the component with conditional rendering                        
                         case "set_gama_screen":
                             socket.send(JSON.stringify({
                                 type: "setMonitorScreen",
