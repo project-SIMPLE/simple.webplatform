@@ -1,10 +1,19 @@
 // @ts-ignore
-import GamaConnector from './gama_connector.js';
+// import GamaConnector from './gama_connector.js';
+import GamaConnector from './gama_connector.ts';
+
+
+// @ts-ignore
+// import PlayerServer from './player-server.js';
+import PlayerServer from './player-server.ts';
+
+// @ts-ignore
+
+// import ModelManager from './model-manager.js';
+import ModelManager from './model-manager.ts';
+
 import {MonitorServer} from './monitor-server.ts';
-// @ts-ignore
-import PlayerServer from './player-server.js';
-// @ts-ignore
-import ModelManager from './model-manager.js';
+
 import {AdbManager} from "./adb/AdbManager.ts";
 
 import {ScrcpyServer} from "./scrcpy/ScrcpyServer.ts";
@@ -60,7 +69,7 @@ export class Controller {
      */
 
     changeJsonSettings(json_settings: JsonSettings) {
-        this.modelManager.setJsonSettings(json_settings);
+        // this.modelManager.setJsonSettings(json_settings);
     }
 
     getSimulationInformations(): JsonSettings {
@@ -137,8 +146,8 @@ export class Controller {
         this.gama_connector.stopExperiment();
     }
 
-    pauseExperiment() {
-        this.gama_connector.pauseExperiment();
+    pauseExperiment(callback: () => void) {
+        this.gama_connector.pauseExperiment(callback);
     }
 
     resumeExperiment() {

@@ -6,8 +6,8 @@
 
 import fs from 'fs';
 import path from 'path';
-import Model from './model.js';
-import { useVerbose } from './index.js';
+import Model from '../model.js';
+import { useVerbose } from '../index.js';
 
 
 class ModelManager {

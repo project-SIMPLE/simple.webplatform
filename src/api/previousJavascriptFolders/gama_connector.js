@@ -2,7 +2,7 @@
 // const WebSocket = require('ws');
 // const { useVerbose } = require('../index.js');
 import WebSocket from 'ws';
-import { useVerbose } from './index.js';
+import { useVerbose } from '../index.js';
 
 
 //Global variables about the state of the connector. This is only for internal purposes.
