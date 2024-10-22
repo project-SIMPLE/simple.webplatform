@@ -24,10 +24,6 @@ interface Simulation {
     selected_monitoring:string
 }
 
-// interface SimulationList {
-//     [key: string]: Simulation;
-// }
-
 // Define types for the WebSocket context
 interface WebSocketContextType {
     ws: WebSocket | null;
@@ -42,14 +38,8 @@ interface WebSocketContextType {
     playerList: PlayerList;
     simulationList: Simulation[];
     selectedSimulation: Simulation | null;
-    // screenMode: string;
-
+    indexSimulation: number;
     removePlayer: (id: string) => void; // Define removePlayer here
-    // setscreenMode: React.Dispatch<React.SetStateAction<string>>; 
-    
-
-    // screenMode: string;
-    // setscreenMode: (mode: string) => void; 
 }
 
 // Initialize context with a default value of `null` for WebSocket and default values for other states
@@ -72,6 +62,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
     const [playerList, setPlayerList] = useState<PlayerList>({});
     const [simulationList, setSimulationList] = useState<Simulation[]>([]);
     const [selectedSimulation, setSelectedSimulation] = useState<Simulation | null>(null);
+    const [indexSimulation, setIndexSimulation] = useState<number>(0);
 
     // const [screenMode, setscreenMode] = useState<string>("shared_screen");
 
@@ -128,6 +119,8 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
                         break;
                     case 'get_simulation_by_index':
                         setSelectedSimulation(data.simulation);
+                        setIndexSimulation(data.indexSimulation);
+
                         break;
                     case 'remove_player_headset':
                         // console.log("playerList Before remove", playerList); // should show list of players 
@@ -176,7 +169,7 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
     
     
         return (
-        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList, selectedSimulation,removePlayer }}>
+        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList, selectedSimulation,removePlayer, indexSimulation }}>
             {children}
         </WebSocketContext.Provider>
     );

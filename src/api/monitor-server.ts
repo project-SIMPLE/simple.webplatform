@@ -44,7 +44,11 @@ export class MonitorServer {
                     const type = jsonMonitor.type;
                     switch (type) {
                         case "launch_experiment":
-                            this.controller.launchExperiment();
+                            if (jsonMonitor.simulationIndex !== undefined) {
+                                this.controller.launchExperiment(jsonMonitor.simulationIndex);
+                            } else {
+                                console.error("simulationIndex is undefined");
+                            }
                             break;
                         case "stop_experiment":
                             this.controller.stopExperiment();
@@ -94,15 +98,26 @@ export class MonitorServer {
                             break;
                         case "get_simulation_by_index":
                             const index = jsonMonitor.simulationIndex;
-
                             if (index !== undefined && index >= 0 && index < this.controller.modelManager.getModelList().length) {
+                                
+                                // change choosedLearningPackage index value
+                                this.controller.setChoosedLearningPackageIndex(index);
+
+
                                 // Retrieve the simulation based on the index
                                 const selectedSimulation = this.controller.modelManager.getModelList()[index];
+                                
+                                // console.log("selected simulation:",selectedSimulation);
+                                
 
+                                // set in websocketManager then re use in the front
+                                // display name of the experiment in the simulation manager page 
                                 socket.send(JSON.stringify({
                                     type: "get_simulation_by_index",
-                                    simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
+                                    simulation: selectedSimulation.getJsonSettings(), // Assuming getJsonSettings returns the relevant data
+                                    indexSimulation: index
                                 }));
+
                             } else {
                                 console.error("Invalid index received or out of bounds");
                             }

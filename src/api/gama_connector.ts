@@ -10,6 +10,16 @@ let list_messages: any[];
 let function_to_call: () => void;
 let current_id_player: string;
 
+interface GamaState {
+    connected: boolean;
+    experiment_state: string;
+    loading: boolean;
+    content_error: string;
+    experiment_id: string;
+    experiment_name: string;
+}
+
+
 // List of error messages for Gama Server
 const gama_error_messages = [
     "SimulationStatusError",
@@ -28,6 +38,7 @@ class GamaConnector {
     controller: any;
     model: any;
     gama_socket: WebSocket;
+    jsonGama: GamaState;
 
     /**
      * Constructor of the websocket client
@@ -37,9 +48,29 @@ class GamaConnector {
         this.controller = controller;
         this.model = this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex];
         this.gama_socket = this.connectGama();
+
+        this.jsonGama = {
+            connected: false,
+            experiment_state: "NONE",
+            loading: false,
+            content_error: "",
+            experiment_id: "",
+            experiment_name: ""
+        };
     }
 
     // -------------------
+    setLearningPackageIndex(index: number) {
+        if (index >= 0 && index < this.controller.modelManager.getModelList().length) {
+            
+            // change the model according to the index 
+            this.model = this.controller.modelManager.getModelList()[index];
+            //console.log("LE MODEL modfifié", this.model);
+        } else {
+            console.error("Invalid index for learning package");
+        }
+    }
+
 
     /* Protocol messages about Gama Server */
 
@@ -207,6 +238,8 @@ class GamaConnector {
      * Asks Gama to launch the experiment
      */
     launchExperiment() {
+        
+        console.log("debuggage: ",this.model.getGama());
         if (this.model.getGama().connected && this.model.getGama().experiment_state === 'NONE') {
             list_messages = [this.jsonLoadExperiment];
             index_messages = 0;

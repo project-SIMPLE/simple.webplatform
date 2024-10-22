@@ -13,7 +13,7 @@ interface Player {
 }
 
 const SimulationManager: React.FC = () => {
-  const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket(); // `removePlayer` is now available
+  const { ws, gama, playerList, selectedSimulation, isWsConnected, indexSimulation } = useWebSocket(); // `removePlayer` is now available
   const navigate = useNavigate();
   const [userInfos, setUserInfos] = useState<Player | null>(null);
   const [clickedUserInfos, setClickedUserInfos] = useState<boolean>(false);
@@ -41,7 +41,18 @@ const SimulationManager: React.FC = () => {
 
   const handlePlayPause = () => {
     if(ws !== null){
-        ws.send(JSON.stringify({"type": gama.experiment_state == "NONE" ? "launch_experiment" : (gama.experiment_state != "RUNNING" ? "resume_experiment" : "pause_experiment") }));
+        // lancerr le getIndexSimulation quand clique sur un bouton 
+        // retrieve the index from the 
+
+        // in the websocketmanager retrieve the index for here
+        // ws.send(JSON.stringify({ type: 'get_simulation_by_index', simulationIndex: indexSimulation }));
+        console.log("index of simulation: ",indexSimulation);
+        ws.send(JSON.stringify({"type": gama.experiment_state == "NONE" ? "launch_experiment" : (gama.experiment_state != "RUNNING" ? "resume_experiment" : "pause_experiment"), simulationIndex: indexSimulation }));
+      
+        // 1. take the index from the websocket into the first thing 
+
+        // 1.1 if not working , do one ws.send which do the getsimIndex and start or whatever
+        // like in the launch experiment in the monitor-server for example 
       }else{
       console.error("WS is null");
     }

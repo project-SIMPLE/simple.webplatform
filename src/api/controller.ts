@@ -51,6 +51,20 @@ export class Controller {
         this.video_stream_server = new ScrcpyServer();
     }
 
+    setChoosedLearningPackageIndex(index: number) {
+        if (index >= 0 && index < this.modelManager.getModelList().length) {
+            
+            // set l'index dans le controller et dans le gama_connector
+            
+            this.choosedLearningPackageIndex = index;
+            this.gama_connector.setLearningPackageIndex(index); 
+        
+        } else {
+            console.error("Invalid index value");
+        }
+    }
+
+
     restart() {
         this.player_server.close();
         this.gama_connector.close();
@@ -138,7 +152,8 @@ export class Controller {
         this.gama_connector.sendAsk(json);
     }
 
-    launchExperiment() {
+    launchExperiment(indexSimulation:number) {
+        this.setChoosedLearningPackageIndex(indexSimulation);
         this.gama_connector.launchExperiment();
     }
 

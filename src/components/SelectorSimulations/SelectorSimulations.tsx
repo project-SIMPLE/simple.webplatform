@@ -33,7 +33,12 @@ const SelectorSimulations = () => {
 
   const handleSimulation = (index: number) => {
     if (isWsConnected && ws !== null) {
+      
+      // suppose to change the current indexSimulation in the controller 
       ws.send(JSON.stringify({ type: 'get_simulation_by_index', simulationIndex: index }));
+      
+      // 
+
       setTimeout(() => {
         navigate('/simulationManager');
       }, 100); 
