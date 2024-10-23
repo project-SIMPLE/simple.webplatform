@@ -90,7 +90,7 @@ export class MonitorServer {
                             break;
                         case "get_simulation_informations":
                             // send to the Web socket Manager
-                            // socket.send(this.controller.getSimulationInformations());
+                            socket.send(this.controller.getSimulationInformations());
                             break;
                         case "get_simulation_by_index":
                             const index = jsonMonitor.simulationIndex;
