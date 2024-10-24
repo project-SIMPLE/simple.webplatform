@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import GamaConnector from './gama_connector';
+import GamaConnector, { GamaState } from './gama_connector';
 
 
 export interface PlayerState {
@@ -51,23 +51,22 @@ class Model {
      * Gets the complete state of the model
      * @returns {object} - The state of the model
      */
-    getAll() {
+    getAll(): { type: string; gama: GamaState; player: Record<string, PlayerState> } {
         return {
             type: "json_state",
-            gama: this.jsonGama,
+            gama: this.gamaConnector.getGama(),
             player: this.jsonPlayers
         };
     }
 
-    // GAMA
 
-    /**
-     * Gets the Gama state
-     * @returns {GamaState} - The state of Gama
-     */
-    getGama() {
-        return this.jsonGama;
-    }
+    // /**
+    //  * Gets the Gama state
+    //  * @returns {GamaState} - The state of Gama
+    //  */
+    // getGama() {
+    //     return this.jsonGama;
+    // }
 
     /**
      * Sets the Gama connection state

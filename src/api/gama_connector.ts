@@ -21,7 +21,7 @@ const gama_error_messages = [
     "UnableToExecuteRequest"
 ];
 
-interface GamaState {
+export interface GamaState {
     connected: boolean;
     experiment_state: string;
     loading: boolean;
@@ -57,6 +57,18 @@ class GamaConnector {
             experiment_id: "",
             experiment_name: ""
         };
+    }
+
+
+    // methods using jsonGama  
+    
+        /**
+     * Gets the Gama state
+     * @returns {GamaState} - The state of Gama
+     */
+
+    getGama() {
+        return this.jsonGama;
     }
 
     // -------------------
