@@ -3,6 +3,7 @@ import path from 'path';
 import Model, { PlayerState } from './model';
 import JsonSettings from './model';
 import { useVerbose } from './index';
+import { isAbsolute } from 'path';
 
 class ModelManager {
     controller: any;
@@ -23,7 +24,7 @@ class ModelManager {
      */
     initModelsList(): Model[] {
         let modelList: Model[] = [];
-        const packageRootDir = path.join(process.cwd(), process.env.LEARNING_PACKAGE_PATH!);
+        const packageRootDir = isAbsolute(process.env.LEARNING_PACKAGE_PATH!) ? process.env.LEARNING_PACKAGE_PATH! : path.join(process.cwd(), process.env.LEARNING_PACKAGE_PATH!);
 
         const packageFolder = fs.readdirSync(packageRootDir);
 
