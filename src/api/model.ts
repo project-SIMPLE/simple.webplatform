@@ -3,15 +3,6 @@ import path from 'path';
 import GamaConnector from './gama_connector';
 
 
-interface GamaState {
-    connected: boolean;
-    experiment_state: string;
-    loading: boolean;
-    content_error: string;
-    experiment_id: string;
-    experiment_name: string;
-}
-
 export interface PlayerState {
     connected: boolean;
     in_game: boolean;
@@ -25,7 +16,6 @@ interface JsonSettings {
 
 class Model {
     controller: any;
-    jsonGama: GamaState;
     jsonPlayers: Record<string, PlayerState>;
     jsonSettings: JsonSettings;
     modelFilePath: string;
@@ -38,14 +28,6 @@ class Model {
      */
     constructor(controller: any, settingsPath: string) {
         this.controller = controller;
-        this.jsonGama = {
-            connected: false,
-            experiment_state: "NONE",
-            loading: false,
-            content_error: "",
-            experiment_id: "",
-            experiment_name: ""
-        };
         this.jsonPlayers = {};
         this.jsonSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8')) as JsonSettings;
         this.modelFilePath = path.join(path.dirname(settingsPath), this.jsonSettings.model_file_path);

@@ -21,6 +21,16 @@ const gama_error_messages = [
     "UnableToExecuteRequest"
 ];
 
+interface GamaState {
+    connected: boolean;
+    experiment_state: string;
+    loading: boolean;
+    content_error: string;
+    experiment_id: string;
+    experiment_name: string;
+}
+
+
 /**
  * This class creates a websocket client for Gama Server.
  */
@@ -28,6 +38,7 @@ class GamaConnector {
     controller: any;
     model: any;
     gama_socket: WebSocket;
+    jsonGama: GamaState;
 
     /**
      * Constructor of the websocket client
@@ -37,6 +48,15 @@ class GamaConnector {
         this.controller = controller;
         this.model = this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex];
         this.gama_socket = this.connectGama();
+
+        this.jsonGama = {
+            connected: false,
+            experiment_state: "NONE",
+            loading: false,
+            content_error: "",
+            experiment_id: "",
+            experiment_name: ""
+        };
     }
 
     // -------------------
