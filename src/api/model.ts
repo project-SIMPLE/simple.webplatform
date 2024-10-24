@@ -1,5 +1,7 @@
 import fs from 'fs';
 import path from 'path';
+import GamaConnector from './gama_connector';
+
 
 interface GamaState {
     connected: boolean;
@@ -27,6 +29,7 @@ class Model {
     jsonPlayers: Record<string, PlayerState>;
     jsonSettings: JsonSettings;
     modelFilePath: string;
+    gamaConnector : GamaConnector;
 
     /**
      * Creates the model
@@ -46,6 +49,8 @@ class Model {
         this.jsonPlayers = {};
         this.jsonSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8')) as JsonSettings;
         this.modelFilePath = path.join(path.dirname(settingsPath), this.jsonSettings.model_file_path);
+    
+        this.gamaConnector = new GamaConnector(this.controller);
     }
 
     /**
