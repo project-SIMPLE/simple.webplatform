@@ -71,6 +71,63 @@ class GamaConnector {
         return this.jsonGama;
     }
 
+
+     /**
+     * Sets the Gama connection state
+     * @param {boolean} connected - Connection status
+     */
+    
+     setGamaConnection(connected: boolean) {
+        this.jsonGama.connected = connected;
+        this.controller.notifyMonitor();
+    }
+
+    /**
+     * Sets the Gama experiment state
+     * @param {string} experimentState - The new experiment state
+     */
+    setGamaExperimentState(experimentState: string) {
+        this.jsonGama.experiment_state = experimentState;
+        this.controller.notifyMonitor();
+    }
+
+
+        /**
+     * Sets the Gama loading state
+     * @param {boolean} loading - Loading status
+     */
+    setGamaLoading(loading: boolean) {
+        this.jsonGama.loading = loading;
+        this.controller.notifyMonitor();
+    }
+
+    /**
+         * Sets the Gama content error
+         * @param {string} contentError - Error message
+         */
+    setGamaContentError(contentError: string) {
+        this.jsonGama.content_error = contentError;
+        this.controller.notifyMonitor();
+    }
+
+    /**
+     * Sets the Gama experiment ID
+     * @param {string} experimentId - Experiment ID
+     */
+    setGamaExperimentId(experimentId: string) {
+        this.jsonGama.experiment_id = experimentId;
+    }
+
+    /**
+     * Sets the Gama experiment name
+     * @param {string} experimentName - Experiment name
+     */
+    setGamaExperimentName(experimentName: string) {
+        this.jsonGama.experiment_name = experimentName;
+        this.controller.notifyMonitor();
+    }
+
+
     // -------------------
 
     /* Protocol messages about Gama Server */
