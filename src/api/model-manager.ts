@@ -24,31 +24,39 @@ class ModelManager {
      */
     initModelsList(): Model[] {
         let modelList: Model[] = [];
-        const packageRootDir = isAbsolute(process.env.LEARNING_PACKAGE_PATH!) ? process.env.LEARNING_PACKAGE_PATH! : path.join(process.cwd(), process.env.LEARNING_PACKAGE_PATH!);
+        let directoriesWithProjects: string[] = [];
 
-        const packageFolder = fs.readdirSync(packageRootDir);
+        directoriesWithProjects.push(isAbsolute(process.env.LEARNING_PACKAGE_PATH!) ? process.env.LEARNING_PACKAGE_PATH! : path.join(process.cwd(), process.env.LEARNING_PACKAGE_PATH!));
 
-        // Browse in learning package folder to find available packages
-        packageFolder.forEach((file) => {
-            const folderPath = path.join(packageRootDir, file);
-            const stat = fs.statSync(folderPath);
+        if ( process.env.EXTRA_LEARNING_PACKAGE_PATH != "" ){
+            directoriesWithProjects.push(isAbsolute(process.env.EXTRA_LEARNING_PACKAGE_PATH!) ? process.env.EXTRA_LEARNING_PACKAGE_PATH! : path.join(process.cwd(), process.env.EXTRA_LEARNING_PACKAGE_PATH!));
+        }
 
-            if (stat && stat.isDirectory()) {
-                // Verify if there is a settings file
-                if (fs.existsSync(path.join(folderPath, "settings.json"))) {
-                    if (useVerbose) {
-                        console.log("[DEBUG] Append new package to ModelManager: " + folderPath);
-                    }
-                    modelList = modelList.concat(
-                        new Model(this.controller, path.join(folderPath, "settings.json"))
-                    );
-                } else {
-                    if (useVerbose) {
-                        console.warn("Couldn't find settings file for folder " + folderPath);
+        directoriesWithProjects.forEach((packageRootDir) => {
+            const packageFolder = fs.readdirSync(packageRootDir);
+
+            // Browse in learning package folder to find available packages
+            packageFolder.forEach((file) => {
+                const folderPath = path.join(packageRootDir, file);
+                const stat = fs.statSync(folderPath);
+
+                if (stat && stat.isDirectory()) {
+                    // Verify if there is a settings file
+                    if (fs.existsSync(path.join(folderPath, "settings.json"))) {
+                        if (useVerbose) {
+                            console.log("[MODEL MANAGER] Append new package to ModelManager: " + folderPath);
+                        }
+                        modelList = modelList.concat(
+                            new Model(this.controller, path.join(folderPath, "settings.json"))
+                        );
+                    } else {
+                        if (useVerbose) {
+                            console.warn("Couldn't find settings file for folder " + folderPath);
+                        }
                     }
                 }
-            }
-        });
+            });
+        })
 
         return modelList;
     }

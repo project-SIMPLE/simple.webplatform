@@ -11,6 +11,7 @@ process.env.GAMA_IP_ADDRESS =       process.env.GAMA_IP_ADDRESS       || 'localh
 process.env.HEADSET_WS_PORT =       process.env.HEADSET_WS_PORT       || '8080';
 process.env.MONITOR_WS_PORT =       process.env.MONITOR_WS_PORT       || '8001';
 process.env.LEARNING_PACKAGE_PATH = process.env.LEARNING_PACKAGE_PATH || "./learning-packages";
+process.env.EXTRA_LEARNING_PACKAGE_PATH = process.env.EXTRA_LEARNING_PACKAGE_PATH || "";
 
 // Rendre le paramètre verbose un booléen
 const useVerbose: boolean = process.env.VERBOSE !== undefined ? ['true', '1', 'yes'].includes(process.env.VERBOSE.toLowerCase()) : false;
