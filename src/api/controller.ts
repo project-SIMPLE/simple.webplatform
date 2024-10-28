@@ -31,7 +31,7 @@ interface JsonOutput {
 }
 
 export class Controller {
-    modelManager: ModelManager;
+    model_manager: ModelManager;
     monitor_server: MonitorServer;
     player_server: PlayerServer;
     gama_connector: GamaConnector;
@@ -39,7 +39,7 @@ export class Controller {
     video_stream_server: ScrcpyServer;
 
     constructor() {
-        this.modelManager = new ModelManager(this);
+        this.model_manager = new ModelManager(this);
         this.monitor_server = new MonitorServer(this);
         this.player_server = new PlayerServer(this);
         this.gama_connector = new GamaConnector(this);
@@ -66,16 +66,12 @@ export class Controller {
     =============================
      */
 
-    changeJsonSettings(json_settings: JsonSettings) {
-        // this.modelManager.setJsonSettings(json_settings);
-    }
-
     getSimulationInformations(): JsonSettings {
-        return this.modelManager.getModelListJSON();
+        return this.model_manager.getModelListJSON();
     }
 
     getPlayerList() {
-        return this.modelManager.getListPlayers();
+        return this.model_manager.getListPlayers();
     }
 
     /*

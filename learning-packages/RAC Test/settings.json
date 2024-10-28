@@ -1,7 +1,0 @@
-{
-    "type": "json_settings",
-    "name": "RAC - Test broken settings file",
-    "splashscreen": "learning-packages/RAC/images/splashscreen.png",
-    "model_file_path": "./Models/Demo/Simple Player Game/DemoModelVR.gaml",
-    "experiment_name": "rac_experiment"
-}

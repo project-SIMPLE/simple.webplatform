@@ -50,6 +50,7 @@ export class MonitorServer {
                             this.controller.stopExperiment();
                             break;
                         case "pause_experiment":
+                            // @ts-ignore
                             this.controller.pauseExperiment();
                             break;
                         case "resume_experiment":
@@ -82,24 +83,23 @@ export class MonitorServer {
                                 }));
                             }
                             break;
-                        case "json_settings":
-                            this.controller.changeJsonSettings(jsonMonitor);
-                            break;
                         case "clean_all":
                             this.controller.cleanAll();
                             break;
                         case "get_simulation_informations":
                             // send to the Web socket Manager
-                            socket.send(this.controller.getSimulationInformations());
+                            socket.send(
+                                JSON.stringify(this.controller.getSimulationInformations())
+                            );
                             break;
                         case "get_simulation_by_index":
                              const index = jsonMonitor.simulationIndex;
 
-                             if (index !== undefined && index >= 0 && index < this.controller.modelManager.getModelList().length) {
+                             if (index !== undefined && index >= 0 && index < this.controller.model_manager.getModelList().length) {
                                  // Retrieve the simulation based on the index
-                                 this.controller.modelManager.setActiveModelByIndex(index);
+                                 this.controller.model_manager.setActiveModelByIndex(index);
 
-                                 const selectedSimulation = this.controller.modelManager.getActiveModel();
+                                 const selectedSimulation = this.controller.model_manager.getActiveModel();
 
                                  socket.send(JSON.stringify({
                                      type: "get_simulation_by_index",
@@ -150,9 +150,9 @@ export class MonitorServer {
      * Sends the json_state to the monitor
      */
     sendMonitorGamaState(): void {
-        if (this.monitorSocketClients !== undefined && this.controller.modelManager.getActiveModel() !== undefined) {
+        if (this.monitorSocketClients !== undefined && this.controller.model_manager.getActiveModel() !== undefined) {
             this.monitorSocketClients.forEach((client: WebSocket) => {
-                client.send(JSON.stringify(this.controller.modelManager.getActiveModel().getAll()));
+                client.send(JSON.stringify(this.controller.model_manager.getActiveModel().getAll()));
             });
         }
     }
@@ -161,9 +161,9 @@ export class MonitorServer {
      * Send the json_setting to the monitor
      */
     sendMonitorJsonSettings(): void {
-        if (this.monitorSocketClients !== undefined && this.controller.modelManager.getActiveModel() !== undefined) {
+        if (this.monitorSocketClients !== undefined && this.controller.model_manager.getActiveModel() !== undefined) {
             this.monitorSocketClients.forEach((client: WebSocket) => {
-                client.send(JSON.stringify(this.controller.modelManager.getActiveModel().getJsonSettings()));
+                client.send(JSON.stringify(this.controller.model_manager.getActiveModel().getJsonSettings()));
             });
         }
     }

@@ -1,14 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import Model, { PlayerState } from './model';
-import JsonSettings from './model';
 import { useVerbose } from './index';
 import { isAbsolute } from 'path';
 
 class ModelManager {
     controller: any;
     models: Model[];
-    activeModel: Model;
+    activeModel: Model | undefined;
 
     /**
      * Creates the model manager
@@ -109,10 +108,6 @@ class ModelManager {
      */
     getModelList(): Model[] {
         return this.models;
-    }
-
-    setJsonSettings(json_settings: Model) {
-        // Assuming you want to update some settings in the models
     }
 }
 

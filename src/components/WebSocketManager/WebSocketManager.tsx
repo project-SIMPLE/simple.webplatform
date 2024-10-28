@@ -122,10 +122,6 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
                         // console.log('Liste des playeyrs', data.player);
                         setPlayerList(data.player);
                         break;
-
-
-                    case 'json_settings':
-                        break;
                     case 'get_simulation_by_index':
                         setSelectedSimulation(data.simulation);
                         break;
