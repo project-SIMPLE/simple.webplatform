@@ -31,7 +31,6 @@ interface JsonOutput {
 }
 
 export class Controller {
-    choosedLearningPackageIndex: number;
     modelManager: ModelManager;
     monitor_server: MonitorServer;
     player_server: PlayerServer;
@@ -40,7 +39,6 @@ export class Controller {
     video_stream_server: ScrcpyServer;
 
     constructor() {
-        this.choosedLearningPackageIndex = 0;
         this.modelManager = new ModelManager(this);
         this.monitor_server = new MonitorServer(this);
         this.player_server = new PlayerServer(this);
@@ -87,7 +85,7 @@ export class Controller {
      */
 
     notifyMonitor() {
-        this.monitor_server.sendMonitorJsonState();
+        this.monitor_server.sendMonitorGamaState();
     }
 
     /*

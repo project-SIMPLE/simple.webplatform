@@ -36,7 +36,7 @@ export class MonitorServer {
         this.monitorSocket.on('connection', (socket: WebSocket) => {
             this.monitorSocketClients.push(socket);
             console.log("[MONITOR SERVER] Connected to monitor server");
-            this.sendMonitorJsonState();
+            this.sendMonitorGamaState();
             this.sendMonitorJsonSettings();
             socket.on('message', (message) => {
                 try {
@@ -93,24 +93,26 @@ export class MonitorServer {
                             socket.send(this.controller.getSimulationInformations());
                             break;
                         case "get_simulation_by_index":
-                            const index = jsonMonitor.simulationIndex;
+                             const index = jsonMonitor.simulationIndex;
 
-                            if (index !== undefined && index >= 0 && index < this.controller.modelManager.getModelList().length) {
-                                // Retrieve the simulation based on the index
-                                const selectedSimulation = this.controller.modelManager.getModelList()[index];
+                             if (index !== undefined && index >= 0 && index < this.controller.modelManager.getModelList().length) {
+                                 // Retrieve the simulation based on the index
+                                 this.controller.modelManager.setActiveModelByIndex(index);
 
-                                socket.send(JSON.stringify({
-                                    type: "get_simulation_by_index",
-                                    simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
-                                }));
-                            } else {
-                                console.error("Invalid index received or out of bounds");
-                            }
+                                 const selectedSimulation = this.controller.modelManager.getActiveModel();
 
-                        break;
+                                 socket.send(JSON.stringify({
+                                     type: "get_simulation_by_index",
+                                     simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
+                                 }));
+                                 console.log(selectedSimulation.getJsonSettings());
+                             } else {
+                                 console.error("Invalid index received or out of bounds");
+                             }
+                         break;
 
                         // in the component that displays the monitoring screens, create a useEffect that listens to this variable
-                        // directly use the variable in the component with conditional rendering                        
+                        // directly use the variable in the component with conditional rendering
                         case "set_gama_screen":
                             socket.send(JSON.stringify({
                                 type: "setMonitorScreen",
@@ -147,10 +149,10 @@ export class MonitorServer {
     /**
      * Sends the json_state to the monitor
      */
-    sendMonitorJsonState(): void {
-        if (this.monitorSocketClients !== undefined) {
+    sendMonitorGamaState(): void {
+        if (this.monitorSocketClients !== undefined && this.controller.modelManager.getActiveModel() !== undefined) {
             this.monitorSocketClients.forEach((client: WebSocket) => {
-                client.send(JSON.stringify(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getAll()));
+                client.send(JSON.stringify(this.controller.modelManager.getActiveModel().getAll()));
             });
         }
     }
@@ -159,9 +161,9 @@ export class MonitorServer {
      * Send the json_setting to the monitor
      */
     sendMonitorJsonSettings(): void {
-        if (this.monitorSocketClients !== undefined) {
+        if (this.monitorSocketClients !== undefined && this.controller.modelManager.getActiveModel() !== undefined) {
             this.monitorSocketClients.forEach((client: WebSocket) => {
-                client.send(JSON.stringify(this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex].getJsonSettings()));
+                client.send(JSON.stringify(this.controller.modelManager.getActiveModel().getJsonSettings()));
             });
         }
     }

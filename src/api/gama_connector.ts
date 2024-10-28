@@ -91,11 +91,13 @@ class GamaConnector {
 
     /* Protocol messages about Gama Server */
 
-    jsonLoadExperiment = () => {
+    jsonLoadExperiment() {
+        const model = this.controller.modelManager.getActiveModel();
+
         return {
             type: "load",
-            model: this.model.getModelFilePath(),
-            experiment: this.model.getExperimentName()
+            model: model.getModelFilePath(),
+            experiment: model.getExperimentName()
         };
     };
 
@@ -256,7 +258,7 @@ class GamaConnector {
      */
     launchExperiment() {
         if (this.jsonGama.connected && this.jsonGama.experiment_state === 'NONE') {
-            list_messages = [this.jsonLoadExperiment];
+            list_messages = [this.jsonLoadExperiment()];
             index_messages = 0;
             do_sending = true;
             continue_sending = true;

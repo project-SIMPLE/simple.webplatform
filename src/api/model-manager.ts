@@ -8,6 +8,7 @@ import { isAbsolute } from 'path';
 class ModelManager {
     controller: any;
     models: Model[];
+    activeModel: Model;
 
     /**
      * Creates the model manager
@@ -15,14 +16,14 @@ class ModelManager {
      */
     constructor(controller: any) {
         this.controller = controller;
-        this.models = this.initModelsList();
+        this.models = this.#initModelsList();
     }
 
     /**
      * Initialize the models list by scanning the learning packages
      * @returns {Model[]} - List of models
      */
-    initModelsList(): Model[] {
+    #initModelsList(): Model[] {
         let modelList: Model[] = [];
         let directoriesWithProjects: string[] = [];
 
@@ -60,6 +61,22 @@ class ModelManager {
 
         return modelList;
     }
+
+    // -------------------
+
+    setActiveModel(newModel: Model) {
+        this.activeModel = newModel;
+    }
+
+    setActiveModelByIndex(index: number) {
+        this.activeModel = this.models[index];
+    }
+
+    getActiveModel(){
+        return this.activeModel !== undefined ? this.activeModel : this.models[0];
+    }
+
+    // -------------------
 
     /**
      * Retrieve the list of players from the first model
