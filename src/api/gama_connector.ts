@@ -10,6 +10,15 @@ let list_messages: any[];
 let function_to_call: () => void;
 let current_id_player: string;
 
+interface GamaState {
+    connected: boolean;
+    experiment_state: string;
+    loading: boolean;
+    content_error: string;
+    experiment_id: string;
+    experiment_name: string;
+}
+
 // List of error messages for Gama Server
 const gama_error_messages = [
     "SimulationStatusError",
@@ -27,6 +36,7 @@ const gama_error_messages = [
 class GamaConnector {
     controller: any;
     model: any;
+    jsonGama: GamaState;
     gama_socket: WebSocket;
 
     /**
@@ -36,7 +46,45 @@ class GamaConnector {
     constructor(controller: any) {
         this.controller = controller;
         this.model = this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex];
+        // Initialise class and settings before first attempt to connect to gama
+        this.jsonGama = {
+            connected: false,
+            experiment_state: "NONE",
+            loading: false,
+            content_error: "",
+            experiment_id: "",
+            experiment_name: ""
+        };
+
         this.gama_socket = this.connectGama();
+    }
+
+    getJsonGama(){
+        return this.jsonGama;
+    }
+
+    setGamaConnection(connected: boolean) {
+        this.jsonGama.connected = connected;
+        this.controller.notifyMonitor();
+    }
+    setGamaLoading(loading: boolean){
+        this.jsonGama.loading = loading;
+        this.controller.notifyMonitor();
+    }
+    setGamaContentError(contentError: string){
+        this.jsonGama.content_error = contentError;
+        this.controller.notifyMonitor();
+    }
+    setGamaExperimentId(experimentId: string) {
+        this.jsonGama.experiment_id = experimentId;
+    }
+    setGamaExperimentState(experimentState: string) {
+        this.jsonGama.experiment_state = experimentState;
+        this.controller.notifyMonitor();
+    }
+    setGamaExperimentName(experimentName: string) {
+        this.jsonGama.experiment_name = experimentName;
+        this.controller.notifyMonitor();
     }
 
     // -------------------
@@ -58,7 +106,7 @@ class GamaConnector {
      */
     jsonControlGamaExperiment = (type: string) => ({
         type: type,
-        exp_id: this.model.getGama().experiment_id,
+        exp_id: this.jsonGama.experiment_id,
     });
 
     /**
@@ -68,14 +116,14 @@ class GamaConnector {
      */
     jsonTogglePlayer = (toggle: string) => ({
         type: "expression",
-        exp_id: this.model.getGama().experiment_id,
+        exp_id: this.jsonGama.experiment_id,
         expr: `do ${toggle}_player("${current_id_player}");`
     });
 
     jsonSendExpression = (expr: string) => ({
         type: "expression",
         content: "Send an expression",
-        exp_id: this.model.getGama().experiment_id,
+        exp_id: this.jsonGama.experiment_id,
         expr: expr
     });
 
@@ -86,14 +134,14 @@ class GamaConnector {
      * @returns WebSocket
      */
     connectGama(): WebSocket {
-        this.model.setGamaLoading(true);
+        this.setGamaLoading(true);
         const sendMessages = this.sendMessages.bind(this);
         gama_socket = new WebSocket(`ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
 
         gama_socket.onopen = () => {
             console.log("-> Connected to Gama Server");
-            this.model.setGamaConnection(true);
-            this.model.setGamaExperimentState('NONE');
+            this.setGamaConnection(true);
+            this.setGamaExperimentState('NONE');
         };
 
         gama_socket.onmessage = (event: WebSocket.MessageEvent) => {
@@ -105,12 +153,12 @@ class GamaConnector {
                     case "SimulationStatus":
                         if (useVerbose) console.log("[DEBUG] Message received from Gama Server: SimulationStatus = " + message.content);
 
-                        this.model.setGamaExperimentId(message.exp_id);
-                        if (['NONE', 'NOTREADY'].includes(message.content) && ['RUNNING', 'PAUSED', 'NOTREADY'].includes(this.model.getGama().experiment_state)) {
+                        this.setGamaExperimentId(message.exp_id);
+                        if (['NONE', 'NOTREADY'].includes(message.content) && ['RUNNING', 'PAUSED', 'NOTREADY'].includes(this.jsonGama.experiment_state)) {
                             this.model.setRemoveInGameEveryPlayers();
                         }
 
-                        this.model.setGamaExperimentState(message.content);
+                        this.setGamaExperimentState(message.content);
                         break;
 
                     case "SimulationOutput":
@@ -127,8 +175,8 @@ class GamaConnector {
                             console.log("\x1b[32m[DEBUG GamaConnector] Message received from Gama Server: CommandExecutedSuccessfully\x1b[0m");
                         }
 
-                        this.model.setGamaContentError('');
-                        if (message.command.type === "load") this.model.setGamaExperimentName(message.content);
+                        this.setGamaContentError('');
+                        if (message.command.type === "load") this.setGamaExperimentName(message.content);
 
                         continue_sending = true;
                         setTimeout(sendMessages, 100);
@@ -146,8 +194,8 @@ class GamaConnector {
                     console.error("Error message received from Gama Server:");
                     console.error(message);
 
-                    this.model.setGamaContentError(message);
-                    this.model.setGamaLoading(false);
+                    this.setGamaContentError(message);
+                    this.setGamaLoading(false);
 
                     throw new Error("A problem appeared in the last message. Please check the response from the Server");
                 }
@@ -157,9 +205,9 @@ class GamaConnector {
         };
 
         gama_socket.addEventListener('close', (event) => {
-            this.model.setGamaConnection(false);
-            this.model.setGamaExperimentState("NONE");
-            this.model.setGamaLoading(false);
+            this.setGamaConnection(false);
+            this.setGamaExperimentState("NONE");
+            this.setGamaLoading(false);
             this.model.setRemoveInGameEveryPlayers();
             if (event.wasClean) {
                 console.log('-> The connection with Gama Server was properly closed');
@@ -173,7 +221,7 @@ class GamaConnector {
             console.error(error);
         });
 
-        this.model.setGamaLoading(false);
+        this.setGamaLoading(false);
 
         return gama_socket;
     }
@@ -207,14 +255,14 @@ class GamaConnector {
      * Asks Gama to launch the experiment
      */
     launchExperiment() {
-        if (this.model.getGama().connected && this.model.getGama().experiment_state === 'NONE') {
+        if (this.jsonGama.connected && this.jsonGama.experiment_state === 'NONE') {
             list_messages = [this.jsonLoadExperiment];
             index_messages = 0;
             do_sending = true;
             continue_sending = true;
-            this.model.setGamaLoading(true);
+            this.setGamaLoading(true);
             function_to_call = () => {
-                this.model.setGamaLoading(false);
+                this.setGamaLoading(false);
             };
             this.sendMessages();
         } else {
@@ -226,7 +274,7 @@ class GamaConnector {
      * Asks Gama to stop the experiment
      */
     stopExperiment() {
-        const currentState = this.model.getGama().experiment_state;
+        const currentState = this.jsonGama.experiment_state;
 
         if (currentState === 'RUNNING') {
             console.log("Pausing the simulation before stopping...");
@@ -245,9 +293,9 @@ class GamaConnector {
         do_sending = true;
         continue_sending = true;
 
-        this.model.setGamaLoading(true);
+        this.setGamaLoading(true);
         function_to_call = () => {
-            this.model.setGamaLoading(false);
+            this.setGamaLoading(false);
             this.model.setRemoveInGameEveryPlayers();
         };
 
@@ -258,15 +306,15 @@ class GamaConnector {
      * Asks Gama to pause the experiment
      */
     pauseExperiment(callback: () => void) {
-        if (this.model.getGama().experiment_state === 'RUNNING') {
+        if (this.jsonGama.experiment_state === 'RUNNING') {
             list_messages = [this.jsonControlGamaExperiment("pause")];
             index_messages = 0;
             do_sending = true;
             continue_sending = true;
-            this.model.setGamaLoading(true);
+            this.setGamaLoading(true);
 
             function_to_call = () => {
-                this.model.setGamaLoading(false);
+                this.setGamaLoading(false);
                 if (typeof callback === 'function') {
                     callback();
                 }
@@ -279,14 +327,14 @@ class GamaConnector {
      * Asks Gama to play the experiment
      */
     resumeExperiment() {
-        if (this.model.getGama().experiment_state === 'PAUSED') {
+        if (this.jsonGama.experiment_state === 'PAUSED') {
             list_messages = [this.jsonControlGamaExperiment("play")];
             index_messages = 0;
             do_sending = true;
             continue_sending = true;
-            this.model.setGamaLoading(true);
+            this.setGamaLoading(true);
             function_to_call = () => {
-                this.model.setGamaLoading(false);
+                this.setGamaLoading(false);
             };
             this.sendMessages();
         }
@@ -297,7 +345,7 @@ class GamaConnector {
      * @param {string} idPlayer - The id of the player to be added
      */
     addInGamePlayer(idPlayer: string) {
-        if (['NONE', "NOTREADY"].includes(this.model.getGama().experiment_state)) return;
+        if (['NONE', "NOTREADY"].includes(this.jsonGama.experiment_state)) return;
 
         if (this.model.getPlayerState(idPlayer) && this.model.getPlayerState(idPlayer).in_game) return;
 
@@ -320,7 +368,7 @@ class GamaConnector {
     removeInGamePlayer(idPlayer: string) {
         console.log("Start removing player from game: " + idPlayer);
 
-        if (['NONE', "NOTREADY"].includes(this.model.getGama().experiment_state)) {
+        if (['NONE', "NOTREADY"].includes(this.jsonGama.experiment_state)) {
             console.log("Gama Simulation is not running, cannot remove player");
             return;
         }
@@ -360,7 +408,7 @@ class GamaConnector {
      * Removes all the players which are authenticated
      */
     removeInGameEveryPlayers() {
-        if (["RUNNING", 'PAUSED'].includes(this.model.getGama().experiment_state)) {
+        if (["RUNNING", 'PAUSED'].includes(this.jsonGama.experiment_state)) {
             let index = 0;
             for (let idPlayer in this.model.getAllPlayers()) {
                 if (this.model.getPlayerState(idPlayer) && this.model.getPlayerState(idPlayer).in_game) {
@@ -380,7 +428,7 @@ class GamaConnector {
      * @param {string} expr - The expression. If this expression contains $id, it will be replaced by the id of the player which asked the method
      */
     sendExpression(idPlayer: string, expr: string) {
-        if (['NONE', "NOTREADY"].includes(this.model.getGama().experiment_state)) return;
+        if (['NONE', "NOTREADY"].includes(this.jsonGama.experiment_state)) return;
 
         expr = expr.replace('$id', "\"" + idPlayer + "\"");
         list_messages = [this.jsonSendExpression(expr)];
@@ -398,7 +446,7 @@ class GamaConnector {
      * @param {object} json - The JSON containing the information of the ask
      */
     sendAsk(json: any) {
-        if (['NONE', "NOTREADY"].includes(this.model.getGama().experiment_state)) return;
+        if (['NONE', "NOTREADY"].includes(this.jsonGama.experiment_state)) return;
 
         list_messages = [json];
         index_messages = 0;
