@@ -45,7 +45,7 @@ class GamaConnector {
      */
     constructor(controller: any) {
         this.controller = controller;
-        this.model = this.controller.modelManager.getModelList()[this.controller.choosedLearningPackageIndex];
+        this.model = this.controller.model_manager.getModelList()[this.controller.choosedLearningPackageIndex];
         // Initialise class and settings before first attempt to connect to gama
         this.jsonGamaState = {
             connected: false,
@@ -102,7 +102,7 @@ class GamaConnector {
     /* Protocol messages about Gama Server */
 
     jsonLoadExperiment() {
-        const model = this.controller.modelManager.getActiveModel();
+        const model = this.controller.model_manager.getActiveModel();
 
         return {
             type: "load",

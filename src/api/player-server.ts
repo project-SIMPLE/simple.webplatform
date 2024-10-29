@@ -43,7 +43,7 @@ class PlayerServer {
         this.playerSocket.on('connection', (ws: PlayerSocket) => {
             ws.isAlive = true;
 
-            const model = this.controller.modelManager.getActiveModel();
+            const model = this.controller.model_manager.getActiveModel();
 
             ws.on('message', (message: string) => {
                 try {
@@ -213,7 +213,7 @@ class PlayerServer {
      * Cleans from the display all the players that are disconnected and not in-game
      */
     cleanAll() {
-        const model = this.controller.modelManager.getActiveModel();
+        const model = this.controller.model_manager.getActiveModel();
         for (let idPlayer in model.getAllPlayers()) {
             if (model.getPlayerState(idPlayer) !== undefined
                 && !model.getPlayerState(idPlayer).connected
