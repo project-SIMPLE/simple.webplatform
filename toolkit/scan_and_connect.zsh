@@ -15,7 +15,7 @@ port_range="30000-49999"
 
 # Loop through each IP address
 for ip in "${ip_addresses[@]}"; do
-  echo "Scanning IP address: $ip"
+  #echo "Scanning IP address: $ip"
 
   # Scan ports using nmap, grep for open ports, and extract port numbers
   open_ports=($(nmap -p${port_range} -oG - $ip |
@@ -23,25 +23,28 @@ for ip in "${ip_addresses[@]}"; do
                 sed -E 's/.*Ports: ([0-9]+)\/.*/\1/'))
 
   if [[ ${#open_ports[@]} -eq 0 ]]; then
-    echo "  No open ports found in the specified range on $ip."
+    #echo "  No open ports found in the specified range on $ip."
+    echo "ERROR"
   else
-    echo "  Open ports found on $ip:"
+    #echo "  Open ports found on $ip:"
     for port in "${open_ports[@]}"; do
-      echo "  - $port"
+      #echo "  - $port"
 
       # Attempt to connect using adb
-      echo "  Trying to connect with adb to $ip:$port..."
+      #echo "  Trying to connect with adb to $ip:$port..."
       adb connect $ip:$port
       if [[ $? -eq 0 ]]; then
-        echo "  Successfully connected to $ip:$port"
+        #echo "  Successfully connected to $ip:$port"
+        echo "OK"
       else
-        echo "  Connection to $ip:$port failed"
+        #echo "  Connection to $ip:$port failed"
+        echo "ERROR"
       fi
     done
   fi
 
-  echo "---------------------"
+  #echo "---------------------"
 done
 
-echo "Display all devices connected to ADB"
-adb devices
+#echo "Display all devices connected to ADB"
+#adb devices
