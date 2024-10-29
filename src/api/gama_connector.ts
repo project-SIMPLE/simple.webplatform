@@ -45,7 +45,6 @@ class GamaConnector {
      */
     constructor(controller: any) {
         this.controller = controller;
-        this.model = this.controller.model_manager.getModelList()[this.controller.choosedLearningPackageIndex];
         // Initialise class and settings before first attempt to connect to gama
         this.jsonGamaState = {
             connected: false,
@@ -283,6 +282,8 @@ class GamaConnector {
                 this.setGamaLoading(false);
             };
             this.sendMessages();
+
+            this.model = this.controller.model_manager.getActiveModel();
         } else {
             console.warn("GAMA is not connected or an experiment is already running...");
         }
