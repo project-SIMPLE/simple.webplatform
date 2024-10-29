@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useScreenModeState } from '../ScreenModeContext/ScreenModeContext';
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
 
 const StreamPlayerScreen: React.FC = () => {
   const screenModeDisplay = useScreenModeState();
-  const [, setTrigger] = useState(false);
 
   useEffect(() => {
     console.log("Screen Mode Display updated:", screenModeDisplay);
@@ -19,7 +18,7 @@ const StreamPlayerScreen: React.FC = () => {
   // Rendu basé sur la valeur de screenModeDisplay
   return (
     <>
-      {/* <VideoStreamManager /> */}
+      <VideoStreamManager />
 
       {screenModeDisplay === 'shared_screen' && (
         <div className="relative w-full h-screen bg-gray-100 flex">
