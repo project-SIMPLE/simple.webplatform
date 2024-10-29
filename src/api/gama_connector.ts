@@ -156,7 +156,7 @@ class GamaConnector {
         gama_socket = new WebSocket(`ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
 
         gama_socket.onopen = () => {
-            console.log("-> Connected to Gama Server");
+            console.log("[GAMA CONNECTOR] Connected to Gama Server");
             this.setGamaConnection(true);
             this.setGamaExperimentState('NONE');
         };
@@ -225,17 +225,22 @@ class GamaConnector {
             this.setGamaConnection(false);
             this.setGamaExperimentState("NONE");
             this.setGamaLoading(false);
-            this.model.setRemoveInGameEveryPlayers();
+            if(this.model !== undefined) {
+                this.model.setRemoveInGameEveryPlayers();
+            }
+
             if (event.wasClean) {
-                console.log('-> The connection with Gama Server was properly closed');
+                console.log('[GAMA CONNECTOR] The connection with Gama Server was properly closed');
             } else {
-                console.error('-> The connection with Gama Server was interrupted suddenly');
+                console.error('[GAMA CONNECTOR] The connection with Gama Server was interrupted suddenly');
+                console.warn("[GAMA CONNECTOR] Reconnecting in 10s...");
+                setTimeout(() => { this.connectGama(); }, 10000);
             }
         });
 
         gama_socket.addEventListener('error', (error) => {
-            console.error("-> Failed to connect with Gama Server");
-            console.error(error);
+            console.error("[GAMA CONNECTOR] Failed to connect with Gama Server");
+            if (useVerbose) console.error(error);
         });
 
         this.setGamaLoading(false);
