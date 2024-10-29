@@ -50,7 +50,7 @@ export class ScrcpyServer {
         this.wsServer.on('connection', async (socket: WebSocket) => {
 
             this.wsClients.push(socket);
-            console.log("[ScrcpyServer WS] Client connected");
+            console.log("[ScrcpyServer WS] Web view connected");
 
             // Send configuration message if scrcpy is already started
             if(this.scrcpyStreamConfig){
@@ -119,6 +119,7 @@ export class ScrcpyServer {
                                     case "configuration":
                                         // Handle configuration packet
                                         const newStreamConfig = JSON.stringify({
+                                                streamId: adbConnection.serial,
                                                 type: "configuration",
                                                 data: Buffer.from(packet.data).toString('base64'), // Convert Uint8Array to Base64 string
                                             });
@@ -133,6 +134,7 @@ export class ScrcpyServer {
                                         // Handle data packet
                                         myself.broadcastToClients(
                                             JSON.stringify({
+                                                streamId: adbConnection.serial,
                                                 type: "data",
                                                 keyframe: packet.keyframe,
                                                 // @ts-ignore
@@ -162,10 +164,10 @@ export class ScrcpyServer {
         }
     }
 
-    broadcastToClients(packet: any): void {
+    broadcastToClients(packetJson: string): void {
         this.wsClients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) {
-                client.send(packet);
+                client.send(packetJson);
             }
         });
     }
