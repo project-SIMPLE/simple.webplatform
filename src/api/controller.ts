@@ -16,8 +16,6 @@ import {MonitorServer} from './monitor-server.ts';
 
 import {AdbManager} from "./adb/AdbManager.ts";
 
-import {ScrcpyServer} from "./scrcpy/ScrcpyServer.ts";
-
 interface JsonSettings {
     // Define the structure of your JSON settings here
 }
@@ -36,7 +34,6 @@ export class Controller {
     player_server: PlayerServer;
     gama_connector: GamaConnector;
     adb_manager: AdbManager;
-    video_stream_server: ScrcpyServer;
 
     constructor() {
         this.model_manager = new ModelManager(this);
@@ -44,9 +41,7 @@ export class Controller {
         this.player_server = new PlayerServer(this);
         this.gama_connector = new GamaConnector(this);
 
-        this.adb_manager = new AdbManager();
-
-        this.video_stream_server = new ScrcpyServer();
+        this.adb_manager = new AdbManager(this);
     }
 
     restart() {
@@ -57,7 +52,7 @@ export class Controller {
         this.gama_connector = new GamaConnector(this);
         this.monitor_server = new MonitorServer(this);
 
-        this.adb_manager = new AdbManager();
+        this.adb_manager = new AdbManager(this);
     }
 
     /*
