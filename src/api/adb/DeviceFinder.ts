@@ -1,11 +1,14 @@
 import { spawn } from 'child_process';
 import path from 'path';
+import Controller from "../controller.ts";
 
 class DeviceFinder {
+    controller: Controller;
     private scriptPath: string;
     ipToConnect: string[];
 
-    constructor() {
+    constructor(controller: Controller) {
+        this.controller = controller;
         this.scriptPath = path.join(process.cwd(), 'toolkit', 'scan_and_connect.zsh');
         this.ipToConnect = ['192.168.100.161', '192.168.100.163'];
     }
@@ -27,6 +30,10 @@ class DeviceFinder {
 
                 if (output.includes('OK')) {
                     console.log('[ADB FINDER] Successfully connected to ', ipToTry[i]);
+
+                    // Start casting for newly connected device
+                    await this.controller.adb_manager.startStreaming(ipToTry[i]);
+
                     // Remove the IP from the original array
                     this.ipToConnect.splice(this.ipToConnect.indexOf(ipToTry[i]), 1);
                 } else if (output.includes('ERROR')) {

@@ -33,7 +33,7 @@ const c = new Controller();
  */
 // Disabled while not properly documented
 if (false){
-    const d = new DeviceFinder();
+    const d = new DeviceFinder(c);
     (async () => {
         try {
             await d.scanAndConnect();
