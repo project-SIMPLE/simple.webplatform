@@ -17,10 +17,17 @@ process.env.MONITOR_WS_PORT =       process.env.MONITOR_WS_PORT       || '8001';
 process.env.LEARNING_PACKAGE_PATH = process.env.LEARNING_PACKAGE_PATH || "./learning-packages";
 process.env.EXTRA_LEARNING_PACKAGE_PATH = process.env.EXTRA_LEARNING_PACKAGE_PATH || "";
 
-// Make verbose option more user friendly and ts-friendly
-const useVerbose: boolean = process.env.VERBOSE !== undefined ? ['true', '1', 'yes'].includes(process.env.VERBOSE.toLowerCase()) : false;
 
-if (useVerbose) {
+const useExtraVerbose: boolean = process.env.EXTRA_VERBOSE !== undefined ? ['true', '1', 'yes'].includes(process.env.EXTRA_VERBOSE.toLowerCase()) : false;
+
+// Make verbose option more user friendly and ts-friendly
+const useVerbose: boolean = useExtraVerbose ?
+    true :
+    process.env.VERBOSE !== undefined ?
+        ['true', '1', 'yes'].includes(process.env.VERBOSE.toLowerCase())
+        : false;
+
+if (useExtraVerbose) {
     console.log(process.env);
 }
 
@@ -73,4 +80,4 @@ if (os.platform() !== 'win32'){
     console.warn("[ADB FINDER] Skipping finder now...");
 }
 
-export { useVerbose };
+export { useVerbose, useExtraVerbose };

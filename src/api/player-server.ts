@@ -1,5 +1,5 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import { useVerbose } from './index.js';
+import {useExtraVerbose, useVerbose} from './index.js';
 
 interface PlayerSocket extends WebSocket {
     isAlive: boolean;
@@ -82,10 +82,12 @@ class PlayerServer {
                             break;
 
                         case "expression":
+                            if (useExtraVerbose) console.log("[PLAYER " + this.getIdClient(ws) + "] Sent expression:", jsonPlayer.expr);
                             this.controller.sendExpression(this.getIdClient(ws), jsonPlayer.expr!);
                             break;
 
                         case "ask":
+                            if (useExtraVerbose) console.log("[PLAYER " + this.getIdClient(ws) + "] Sent ask:", jsonPlayer);
                             this.controller.sendAsk(jsonPlayer);
                             break;
 

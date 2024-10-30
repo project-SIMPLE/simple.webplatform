@@ -188,7 +188,7 @@ class GamaConnector {
                         break;
 
                     case "CommandExecutedSuccessfully":
-                        if (useVerbose) {
+                        if (useExtraVerbose) {
                             console.log("\x1b[32m[DEBUG GamaConnector] Message received from Gama Server: CommandExecutedSuccessfully\x1b[0m");
                         }
 
