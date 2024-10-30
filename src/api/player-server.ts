@@ -162,7 +162,8 @@ class PlayerServer {
 
             playerSocket.isAlive = false;
             playerSocket.send(JSON.stringify({ type: "ping" }));
-            if (useVerbose) console.log("Sending ping to " + this.getWsClient(playerSocket as any));
+
+            if (useVerbose) console.log("Sending ping to " + this.getIdClient(playerSocket));
         });
     }
 
