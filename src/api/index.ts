@@ -60,8 +60,6 @@ if (os.platform() !== 'win32'){
         await isCommandAvailable("zsh")
     ){
         try {
-            // Wait for 2 seconds before starting auto-scanning, to be sure ADB is well connected with server
-            await new Promise(resolve => setTimeout(resolve, 2000));
             await new DeviceFinder(c).scanAndConnect();
         } catch (error) {
             console.error('[ADB FINDER] Error:', error);

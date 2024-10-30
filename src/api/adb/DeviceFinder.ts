@@ -11,9 +11,19 @@ class DeviceFinder {
         this.controller = controller;
         this.scriptPath = path.join(process.cwd(), 'toolkit', 'scan_and_connect.zsh');
         this.ipToConnect = ['192.168.100.161', '192.168.100.163'];
+
+        // Filter out already connected IPs
+        const clientStreaming = this.controller.adb_manager.clientCurrentlyStreaming;
+        this.ipToConnect = this.ipToConnect.filter(ip => {
+            return !clientStreaming.some(item => item.startsWith(ip));
+        });
     }
 
     public async scanAndConnect() {
+        if (this.ipToConnect.length == 0){
+            console.log('[ADB FINDER] Every known IP already connected, skipping now...');
+            return;
+        }
         console.log(
             '[ADB FINDER] Start looking to connect for those IP : ',
             this.ipToConnect
