@@ -38,7 +38,7 @@ if (useExtraVerbose) {
 
 console.log('\n\x1b[95mWelcome to Gama Server Middleware !\x1b[0m\n');
 
-const useAdb: boolean = os.platform() === 'linux' ? false :
+const useAdb: boolean = os.platform() === 'win32' ? false :
     await isCommandAvailable("adb") ?
         await new Promise((resolve) => {
             console.log("Waking up ADB...")
