@@ -10,7 +10,7 @@ class DeviceFinder {
     constructor(controller: Controller) {
         this.controller = controller;
         this.scriptPath = path.join(process.cwd(), 'toolkit', 'scan_and_connect.zsh');
-        this.ipToConnect = ['192.168.100.161', '192.168.100.163'];
+        this.ipToConnect = [];
 
         // Filter out already connected IPs
         const clientStreaming = this.controller.adb_manager.clientCurrentlyStreaming;
