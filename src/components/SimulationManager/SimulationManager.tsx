@@ -191,7 +191,7 @@ useEffect(() => {
             
           <div className="text-3xl mb-4">{selectedSimulation.name}</div>
 
-            <div className="flex justify-center mt-8 space-x-4 mb-7">
+            <div className="flex justify-center mt-8 space-x-4 mb-2">
               
               {/*Display Headset Connected */}
               {Object.keys(playerList).map((key) => {
@@ -272,7 +272,7 @@ useEffect(() => {
               {Array.from({ length: Number(maxPlayers) - Object.keys(playerList).length }).map((_, index) => (
                 <div key={`placeholder-${index}`} className="flex flex-col items-center opacity-50 cursor-not-allowed">
                   <VRHeadset  />
-                  <p style={{ marginTop: '3px' }}>{t('empty_slot')}</p>
+                  <p style={{ marginTop: '3px' }}></p>
                   {/* <p>Waiting for connection...</p> */}
                 </div>
               ))}
@@ -311,7 +311,7 @@ useEffect(() => {
                       </svg>
                     </p>
 
-                    <div className="flex justify-center space-x-2 gap-10 mb-5 mt-5">
+                    <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4">
                       <Button
                         onClick={handlePlayPause}
                         customStyle={{ width: '100px', height: '50px' }}
@@ -326,7 +326,7 @@ useEffect(() => {
                 gama.experiment_state === 'LAUNCHING' ||
                 gama.experiment_state === 'RUNNING' ? (
                 <>
-                  <div className="flex justify-center space-x-2 gap-10 mb-5 mt-5">
+                  <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4">
                     <Button
                       onClick={handlePlayPause}
                       customStyle={{ width: '100px', height: '50px' }}
@@ -349,21 +349,21 @@ useEffect(() => {
                   </div>
                   <div className="flex justify-center mt-3 gap-4">
                   <Button
-                    text="Gama Screen"
-                    bgColor={"bg-white"} // Change background color if selected
+                    bgColor={"bg-white"}
                     showText={true}
-                    className={`border-1 border-black ${selectedButton === "gama_screen" ? "border-4 border-black-600" : ""}`} // Change border if selected
-                    icon={<img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '90px', height: '90px' }} />}
+                    className={`border-0 hover:border-none hover:bg-white focus:outline-none ${selectedButton === "gama_screen" ? "" : "opacity-50"}`} // No border or color change on hover
+                    icon={<img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '120px', height: '120px' }} />}
                     onClick={() => togglePopUp("gama_screen")}
                   />
                   <Button
-                    text="Shared Screen"
-                    bgColor={"bg-white"} // Change background color if selected
+                    bgColor={"bg-white"}
                     showText={true}
-                    className={`border-1 border-black ${selectedButton === "shared_screen" ? "border-4 border-black-600" : ""}`} // Change border if selected
-                    icon={<img src="/images/shared_screen.png" alt="shared_screen" style={{ width: '90px', height: '90px' }} />}
+                    className={`border-0 hover:border-none hover:bg-white focus:outline-none ${selectedButton === "shared_screen" ? "" : "opacity-50"}`} // No border or color change on hover
+                    icon={<img src="/images/shared_screen.png" alt="shared_screen" style={{ width: '120px', height: '120px' }} />}
                     onClick={() => togglePopUp("shared_screen")}
                   />
+
+
                   </div>
                 </>
               ) : null}
