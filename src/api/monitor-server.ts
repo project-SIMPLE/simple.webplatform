@@ -151,7 +151,11 @@ export class MonitorServer {
     sendMonitorGamaState(): void {
         if (this.monitorSocketClients !== undefined && this.controller.model_manager.getActiveModel() !== undefined) {
             this.monitorSocketClients.forEach((client: WebSocket) => {
-                client.send(JSON.stringify(this.controller.model_manager.getActiveModel().getAll()));
+                client.send(JSON.stringify({
+                    type: "json_state",
+                    gama: this.controller.gama_connector.getJsonGama(),
+                    player: this.controller.player_manager.getPlayerList(),
+                }));
             });
         }
     }

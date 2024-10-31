@@ -1,20 +1,9 @@
-// @ts-ignore
-// import GamaConnector from './gama_connector.js';
 import GamaConnector from './gama_connector.ts';
-
-
-// @ts-ignore
-// import PlayerServer from './player-server.js';
-import PlayerServer from './player-server.ts';
-
-// @ts-ignore
-
-// import ModelManager from './model-manager.js';
+import PlayerManager from './PlayerManager.ts';
 import ModelManager from './model-manager.ts';
-
 import {MonitorServer} from './monitor-server.ts';
-
 import {AdbManager} from "./adb/AdbManager.ts";
+import {useAdb} from "./index.ts";
 
 interface JsonSettings {
     // Define the structure of your JSON settings here
@@ -31,7 +20,7 @@ interface JsonOutput {
 export class Controller {
     model_manager: ModelManager;
     monitor_server: MonitorServer;
-    player_server: PlayerServer;
+    player_manager: PlayerManager;
     gama_connector: GamaConnector;
     // @ts-ignore
     adb_manager: AdbManager;
@@ -39,7 +28,7 @@ export class Controller {
     constructor(useAdb:boolean) {
         this.model_manager = new ModelManager(this);
         this.monitor_server = new MonitorServer(this);
-        this.player_server = new PlayerServer(this);
+        this.player_manager = new PlayerManager(this);
         this.gama_connector = new GamaConnector(this);
 
         if(useAdb){
@@ -50,10 +39,10 @@ export class Controller {
     }
 
     restart() {
-        this.player_server.close();
+        this.player_manager.close();
         this.gama_connector.close();
         this.monitor_server.close();
-        this.player_server = new PlayerServer(this);
+        this.player_manager = new PlayerManager(this);
         this.gama_connector = new GamaConnector(this);
         this.monitor_server = new MonitorServer(this);
 
@@ -91,15 +80,15 @@ export class Controller {
      */
 
     notifyPlayerChange(id_player: number, json_player: JsonPlayer) {
-        this.player_server.notifyPlayerChange(id_player, json_player);
+        this.player_manager.notifyPlayerChange(id_player, json_player);
     }
 
     broadcastSimulationOutput(json_output: JsonOutput) {
-        this.player_server.broadcastSimulationOutput(json_output);
+        this.player_manager.broadcastSimulationOutput(json_output);
     }
 
     cleanAll() {
-        this.player_server.cleanAll();
+        this.player_manager.cleanAll();
     }
 
     /*

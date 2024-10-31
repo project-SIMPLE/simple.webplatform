@@ -47,7 +47,7 @@ class ModelManager {
                             console.log("[MODEL MANAGER] Append new package to ModelManager: " + folderPath);
                         }
                         modelList = modelList.concat(
-                            new Model(this.controller, path.join(folderPath, "settings.json"))
+                            new Model(path.join(folderPath, "settings.json"))
                         );
                     } else {
                         if (useVerbose) {
@@ -84,7 +84,7 @@ class ModelManager {
     getListPlayers(): Record<string, PlayerState> | null {
         if (this.models.length > 0) {
             console.log("this.models:", this.models);
-            const players = this.models[0].getAllPlayers(); // Calls getAllPlayers() on the first instance of Model
+            const players = this.controller.player_manager.getPlayerList();
             console.log("MODEL MANAGER, les players:", players);
             return players;
         } else {

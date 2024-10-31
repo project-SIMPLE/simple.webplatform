@@ -38,7 +38,7 @@ if (useExtraVerbose) {
 
 console.log('\n\x1b[95mWelcome to Gama Server Middleware !\x1b[0m\n');
 
-const isAdbStarted: boolean = os.platform() === 'win32' ? false :
+const useAdb: boolean = os.platform() === 'linux' ? false :
     await isCommandAvailable("adb") ?
         await new Promise((resolve) => {
             console.log("Waking up ADB...")
@@ -49,7 +49,7 @@ const isAdbStarted: boolean = os.platform() === 'win32' ? false :
             });
         }) : false;
 
-const c = new Controller(isAdbStarted);
+const c = new Controller(useAdb);
 
 // =========================================================
 
@@ -73,7 +73,7 @@ async function isCommandAvailable(commandName: string): Promise<boolean> {
  */
 // Disabled while not properly documented
 if (os.platform() !== 'win32'){
-    if (isAdbStarted &&
+    if (useAdb &&
         await isCommandAvailable("nmap") &&
         await isCommandAvailable("adb") &&
         await isCommandAvailable("zsh")
@@ -92,4 +92,4 @@ if (os.platform() !== 'win32'){
     console.warn("[ADB FINDER] Skipping finder now...");
 }
 
-export { useVerbose, useExtraVerbose, HEADSETS_IP };
+export { useVerbose, useExtraVerbose, useAdb, HEADSETS_IP };

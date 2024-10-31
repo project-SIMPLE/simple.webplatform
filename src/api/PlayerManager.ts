@@ -18,15 +18,22 @@ interface JsonOutput {
     }>;
 }
 
+interface PlayerState {
+    connected: boolean;
+    in_game: boolean;
+    date_connection: string;
+}
+
 /**
  * Creates a websocket server to handle player connections
  */
-class PlayerServer {
+class PlayerManager {
     controller: any;
     playerSocket: WebSocketServer;
     playerSocketClients: PlayerSocket[];
     playerSocketClientsId: string[];
     pingInterval: NodeJS.Timeout;
+    playersList: Record<string, PlayerState> = {};
 
     /**
      * Creates a Websocket Server
@@ -42,8 +49,6 @@ class PlayerServer {
 
         this.playerSocket.on('connection', (ws: PlayerSocket) => {
             ws.isAlive = true;
-
-            const model = this.controller.model_manager.getActiveModel();
 
             ws.on('message', (message: string) => {
                 try {
@@ -63,16 +68,22 @@ class PlayerServer {
                             break;
 
                         case "connection":
-                            if (model.getPlayerState(jsonPlayer.id) !== undefined) {
+                            if (this.playersList[jsonPlayer.id] !== undefined) {
                                 const index = this.playerSocketClientsId.indexOf(jsonPlayer.id);
                                 this.playerSocketClients[index] = ws;
-                                model.setPlayerConnection(jsonPlayer.id, true);
+                                this.addPlayerConnection(jsonPlayer.id, true);
                                 console.log('-> Reconnection of the player of id ' + jsonPlayer.id);
                             } else {
                                 this.playerSocketClients.push(ws);
                                 this.playerSocketClientsId.push(jsonPlayer.id);
-                                model.insertPlayer(jsonPlayer.id);
-                                model.setPlayerConnection(jsonPlayer.id, true);
+                                // Create new player in the list
+                                this.playersList[jsonPlayer.id] = {
+                                    connected: false,
+                                    in_game: false,
+                                    date_connection: ""
+                                };
+
+                                this.addPlayerConnection(jsonPlayer.id, true);
                                 console.log('-> New connection of the player of id ' + jsonPlayer.id);
                             }
                             break;
@@ -108,23 +119,20 @@ class PlayerServer {
 
             ws.on('close', () => {
                 const idPlayer = this.getIdClient(ws);
-                if (model.getPlayerState(idPlayer) !== undefined) {
-                    model.setPlayerConnection(
-                        idPlayer,
-                        false,
-                        `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
-                    );
+                if (this.playersList[idPlayer] !== undefined) {
+                    this.playersList[idPlayer].connected = false;
+                    this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+
                     console.log("-> The player " + idPlayer + " disconnected");
                 }
             });
 
             ws.on('error', (error) => {
                 const idPlayer = this.getIdClient(ws);
-                model.setPlayerConnection(
-                    idPlayer,
-                    false,
-                    `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`
-                );
+
+                this.playersList[idPlayer].connected = false;
+                this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+
                 console.error("-> The player " + idPlayer + " had an error and disconnected");
                 console.error(error);
             });
@@ -149,6 +157,89 @@ class PlayerServer {
 
     getWsClient(id: string): PlayerSocket {
         return this.playerSocketClients[this.playerSocketClientsId.indexOf(id)];
+    }
+
+    /**
+     * Gets the state of a specific player
+     * @param {string} idPlayer - Player ID
+     * @returns {PlayerState} - The state of the player
+     */
+    getPlayerState(idPlayer: string): PlayerState {
+        return this.playersList[idPlayer];
+    }
+
+    /**
+     * Gets all players
+     * @returns {Record<string, PlayerState>} - A record of all players
+     */
+    getPlayerList(): Record<string, PlayerState> {
+        return this.playersList;
+    }
+
+    // Setters
+
+    // Managing Player list
+
+
+    /**
+     * Withdraws a player
+     * @param {string} idPlayer - Player ID
+     */
+    withdrawPlayer(idPlayer: string) {
+        delete this.playersList[idPlayer];
+        this.controller.notifyMonitor();
+    }
+
+    /**
+     * Cleans from the display all the players that are disconnected and not in-game
+     */
+    cleanAll() {
+        for (let idPlayer in this.getPlayerList()) {
+            if (this.playersList[idPlayer] !== undefined
+                && !this.playersList[idPlayer].connected
+                && !this.playersList[idPlayer].in_game) {
+                const index = this.playerSocketClientsId.indexOf(idPlayer);
+                this.playerSocketClientsId.splice(index, 1);
+                this.playerSocketClients.splice(index, 1);
+                this.withdrawPlayer(idPlayer);
+            }
+        }
+    }
+
+    // Interact with Player
+    /**
+     * Sets the in-game status of a player
+     * @param {string} idPlayer - Player ID
+     * @param {boolean} inGame - In-game status
+     */
+    setPlayerInGame(idPlayer: string, inGame: boolean) {
+        this.playersList[idPlayer].in_game = inGame;
+        this.controller.notifyPlayerChange(idPlayer, this.playersList[idPlayer]);
+        this.controller.notifyMonitor();
+    }
+
+    /**
+     * Sets all players' in-game status to false
+     */
+    setRemoveInGameEveryPlayers() {
+        for (let idPlayer in this.playersList) {
+            if (this.playersList[idPlayer] !== undefined) {
+                this.playersList[idPlayer].in_game = false;
+                this.controller.notifyPlayerChange(idPlayer, this.playersList[idPlayer]);
+            }
+        }
+        this.controller.notifyMonitor();
+    }
+    /**
+     * Sets the connection state of a player
+     * @param {string} idPlayer - Player ID
+     * @param {boolean} connected - Connection status
+     */
+    addPlayerConnection(idPlayer: string, connected: boolean) {
+        this.playersList[idPlayer].connected = connected;
+        this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+        this.controller.notifyPlayerChange(idPlayer, this.playersList[idPlayer]);
+        this.controller.notifyMonitor();
     }
 
     /**
@@ -212,26 +303,9 @@ class PlayerServer {
         }
     }
 
-    /**
-     * Cleans from the display all the players that are disconnected and not in-game
-     */
-    cleanAll() {
-        const model = this.controller.model_manager.getActiveModel();
-        for (let idPlayer in model.getAllPlayers()) {
-            if (model.getPlayerState(idPlayer) !== undefined
-                && !model.getPlayerState(idPlayer).connected
-                && !model.getPlayerState(idPlayer).in_game) {
-                const index = this.playerSocketClientsId.indexOf(idPlayer);
-                this.playerSocketClientsId.splice(index, 1);
-                this.playerSocketClients.splice(index, 1);
-                model.withdrawPlayer(idPlayer);
-            }
-        }
-    }
-
     close() {
         this.playerSocket.close();
     }
 }
 
-export default PlayerServer;
+export default PlayerManager;

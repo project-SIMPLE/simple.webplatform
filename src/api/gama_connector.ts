@@ -172,7 +172,7 @@ class GamaConnector {
 
                         this.setGamaExperimentId(message.exp_id);
                         if (['NONE', 'NOTREADY'].includes(message.content) && ['RUNNING', 'PAUSED', 'NOTREADY'].includes(this.jsonGamaState.experiment_state)) {
-                            this.model.setRemoveInGameEveryPlayers();
+                            this.controller.player_manager.setRemoveInGameEveryPlayers();
                         }
 
                         this.setGamaExperimentState(message.content);
@@ -226,7 +226,7 @@ class GamaConnector {
             this.setGamaExperimentState("NONE");
             this.setGamaLoading(false);
             if(this.model !== undefined) {
-                this.model.setRemoveInGameEveryPlayers();
+                this.controller.player_manager.setRemoveInGameEveryPlayers();
             }
 
             if (event.wasClean) {
@@ -320,7 +320,7 @@ class GamaConnector {
         this.setGamaLoading(true);
         function_to_call = () => {
             this.setGamaLoading(false);
-            this.model.setRemoveInGameEveryPlayers();
+            this.controller.player_manager.setRemoveInGameEveryPlayers();
         };
 
         this.sendMessages();
@@ -371,7 +371,7 @@ class GamaConnector {
     addInGamePlayer(idPlayer: string) {
         if (['NONE', "NOTREADY"].includes(this.jsonGamaState.experiment_state)) return;
 
-        if (this.model.getPlayerState(idPlayer) && this.model.getPlayerState(idPlayer).in_game) return;
+        if (this.controller.player_manager.getPlayerState(idPlayer) && this.controller.player_manager.getPlayerState(idPlayer).in_game) return;
 
         current_id_player = idPlayer;
         list_messages = [this.jsonTogglePlayer("create")];
@@ -380,7 +380,7 @@ class GamaConnector {
         continue_sending = true;
         function_to_call = () => {
             console.log("-> The Player " + idPlayer + " has been added to Gama");
-            this.model.setPlayerInGame(idPlayer, true);
+            this.controller.player_manager.setPlayerInGame(idPlayer, true);
         };
         this.sendMessages();
     }
@@ -397,7 +397,7 @@ class GamaConnector {
             return;
         }
 
-        const playerState = this.model.getPlayerState(idPlayer);
+        const playerState = this.controller.player_manager.getPlayerState(idPlayer);
         if (playerState && !playerState.in_game) {
             console.log("Player " + idPlayer + " is already out of the game");
             return;
@@ -409,7 +409,7 @@ class GamaConnector {
         do_sending = true;
         continue_sending = true;
         function_to_call = () => {
-            this.model.setPlayerInGame(idPlayer, false);
+            this.controller.player_manager.setPlayerInGame(idPlayer, false);
         };
         this.sendMessages();
     }
@@ -419,10 +419,9 @@ class GamaConnector {
      */
     addInGameEveryPlayers() {
         let index = 0;
-        for (let idPlayer in this.model.getAllPlayers()) {
-            if (this.model.getPlayerState(idPlayer) && this.model.getPlayerState(idPlayer).connected && !this.model.getPlayerState(idPlayer).in_game) {
-                const id_player_copy = idPlayer;
-                setTimeout(() => { this.addInGamePlayer(id_player_copy); }, 300 * index);
+        for (const idPlayer in this.controller.player_manager.getPlayerList()) {
+            if (this.controller.player_manager.getPlayerState(idPlayer) && this.controller.player_manager.getPlayerState(idPlayer).connected && !this.controller.player_manager.getPlayerState(idPlayer).in_game) {
+                setTimeout(() => { this.addInGamePlayer(idPlayer); }, 300 * index);
                 index += 1;
             }
         }
@@ -434,15 +433,15 @@ class GamaConnector {
     removeInGameEveryPlayers() {
         if (["RUNNING", 'PAUSED'].includes(this.jsonGamaState.experiment_state)) {
             let index = 0;
-            for (let idPlayer in this.model.getAllPlayers()) {
-                if (this.model.getPlayerState(idPlayer) && this.model.getPlayerState(idPlayer).in_game) {
+            for (let idPlayer in this.controller.player_manager.getPlayerList()) {
+                if (this.controller.player_manager.getPlayerState(idPlayer) && this.controller.player_manager.getPlayerState(idPlayer).in_game) {
                     const id_player_copy = idPlayer;
                     setTimeout(() => { this.removeInGamePlayer(id_player_copy); }, 300 * index);
                     index += 1;
                 }
             }
         } else {
-            this.model.setRemoveInGameEveryPlayers();
+            this.controller.player_manager.setRemoveInGameEveryPlayers();
         }
     }
 
