@@ -125,14 +125,6 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
                     case 'get_simulation_by_index':
                         setSelectedSimulation(data.simulation);
                         break;
-                    case 'remove_player_headset':
-                        // console.log("playerList Before remove", playerList); // should show list of players 
-                        removePlayer(data.id);
-                        // console.log(` Player ${data.id} removed and in_game set to false.`);
-                        // console.log("playerList after remove", playerList);
-                        break;
-                    
-
                     case 'setMonitorScreen': 
                         
                         // Asynchronus ! so doesnt immediately change the value of screenMode, cant have it after next lines 

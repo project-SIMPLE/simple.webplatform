@@ -110,7 +110,20 @@ export class Controller {
     }
 
     removeInGamePlayer(id_player: string) {
+        console.log("[CONNECTOR] Remove player", id_player);
+
+        // Remove from GAMA
         this.gama_connector.removeInGamePlayer(id_player);
+        // Remove from connected list
+        this.player_manager.removePlayer(id_player);
+
+        // Close application for headset
+        if(useAdb){
+            // TODO
+        }
+
+        // Inform webview of update state
+        this.notifyMonitor();
     }
 
     sendExpression(id_player: string, expr: string) {

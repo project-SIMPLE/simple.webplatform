@@ -185,9 +185,13 @@ class PlayerManager {
      * Withdraws a player
      * @param {string} idPlayer - Player ID
      */
-    withdrawPlayer(idPlayer: string) {
+    removePlayer(idPlayer: string) {
+        if (useVerbose) console.log("[PLAYER MANAGER] Deleting player", idPlayer);
+
         delete this.playersList[idPlayer];
         this.controller.notifyMonitor();
+
+        this.getWsClient(idPlayer).close();
     }
 
     /**
@@ -201,7 +205,7 @@ class PlayerManager {
                 const index = this.playerSocketClientsId.indexOf(idPlayer);
                 this.playerSocketClientsId.splice(index, 1);
                 this.playerSocketClients.splice(index, 1);
-                this.withdrawPlayer(idPlayer);
+                this.removePlayer(idPlayer);
             }
         }
     }
