@@ -38,7 +38,8 @@ if (useExtraVerbose) {
 
 console.log('\n\x1b[95mWelcome to Gama Server Middleware !\x1b[0m\n');
 
-const isAdbStarted: boolean = await new Promise((resolve) => {
+const isAdbStarted: boolean = os.platform() === 'win32' ? false :
+    await new Promise((resolve) => {
     console.log("Waking up ADB...")
     const checkAdb = spawn('adb', ["devices"]);
 
