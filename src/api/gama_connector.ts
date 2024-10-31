@@ -1,5 +1,5 @@
 import WebSocket from 'ws';
-import { useVerbose } from './index.js';
+import { useVerbose, useExtraVerbose } from './index.js';
 
 // Global variables about the state of the connector. This is only for internal purposes.
 let gama_socket: WebSocket;

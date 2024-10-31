@@ -37,7 +37,16 @@ if (useExtraVerbose) {
 
 console.log('\n\x1b[95mWelcome to Gama Server Middleware !\x1b[0m\n');
 
-const c = new Controller();
+const isAdbStarted: boolean = await new Promise((resolve) => {
+    console.log("Waking up ADB...")
+    const checkAdb = spawn('adb', ["devices"]);
+
+    checkAdb.on('close', (code) => {
+        resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
+    });
+});
+
+const c = new Controller(isAdbStarted);
 
 // =========================================================
 
@@ -61,7 +70,7 @@ async function isCommandAvailable(commandName: string): Promise<boolean> {
  */
 // Disabled while not properly documented
 if (os.platform() !== 'win32'){
-    if (
+    if (isAdbStarted &&
         await isCommandAvailable("nmap") &&
         await isCommandAvailable("adb") &&
         await isCommandAvailable("zsh")

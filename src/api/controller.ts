@@ -33,15 +33,20 @@ export class Controller {
     monitor_server: MonitorServer;
     player_server: PlayerServer;
     gama_connector: GamaConnector;
+    // @ts-ignore
     adb_manager: AdbManager;
 
-    constructor() {
+    constructor(useAdb:boolean) {
         this.model_manager = new ModelManager(this);
         this.monitor_server = new MonitorServer(this);
         this.player_server = new PlayerServer(this);
         this.gama_connector = new GamaConnector(this);
 
-        this.adb_manager = new AdbManager(this);
+        if(useAdb){
+            this.adb_manager = new AdbManager(this);
+        } else {
+            console.warn("[CONTROLLER] Couldn't find ADB working or started, cancelling ADB management")
+        }
     }
 
     restart() {
