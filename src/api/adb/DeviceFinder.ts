@@ -1,6 +1,8 @@
 import { spawn } from 'child_process';
 import path from 'path';
+
 import Controller from "../controller.ts";
+import {HEADSETS_IP, useVerbose} from "../index.ts";
 
 class DeviceFinder {
     controller: Controller;
@@ -10,7 +12,7 @@ class DeviceFinder {
     constructor(controller: Controller) {
         this.controller = controller;
         this.scriptPath = path.join(process.cwd(), 'toolkit', 'scan_and_connect.zsh');
-        this.ipToConnect = [];
+        this.ipToConnect = HEADSETS_IP;
 
         // Filter out already connected IPs
         const clientStreaming = this.controller.adb_manager.clientCurrentlyStreaming;
@@ -48,7 +50,7 @@ class DeviceFinder {
                     this.ipToConnect.splice(this.ipToConnect.indexOf(ipToTry[i]), 1);
                 } else if (output.includes('ERROR')) {
                     console.warn('[ADB FINDER] Failed to connect to ' + ipToTry[i]);
-                    console.warn(output);
+                    if (useVerbose) console.warn(output);
                 } else {
                     console.error('[ADB FINDER] Unknown message... ');
                     console.error(output);

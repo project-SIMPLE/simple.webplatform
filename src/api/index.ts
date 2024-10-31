@@ -16,6 +16,7 @@ process.env.HEADSET_WS_PORT =       process.env.HEADSET_WS_PORT       || '8080';
 process.env.MONITOR_WS_PORT =       process.env.MONITOR_WS_PORT       || '8001';
 process.env.LEARNING_PACKAGE_PATH = process.env.LEARNING_PACKAGE_PATH || "./learning-packages";
 process.env.EXTRA_LEARNING_PACKAGE_PATH = process.env.EXTRA_LEARNING_PACKAGE_PATH || "";
+const HEADSETS_IP: string[] = process.env.HEADSETS_IP ? process.env.HEADSETS_IP.split(';').filter((value) => value.trim() !== '') : [];
 
 
 const useExtraVerbose: boolean = process.env.EXTRA_VERBOSE !== undefined ? ['true', '1', 'yes'].includes(process.env.EXTRA_VERBOSE.toLowerCase()) : false;
@@ -89,4 +90,4 @@ if (os.platform() !== 'win32'){
     console.warn("[ADB FINDER] Skipping finder now...");
 }
 
-export { useVerbose, useExtraVerbose };
+export { useVerbose, useExtraVerbose, HEADSETS_IP };
