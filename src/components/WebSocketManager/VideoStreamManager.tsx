@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { TinyH264Decoder } from '@yume-chan/scrcpy-decoder-tinyh264';
 
-//const host = process.env.WEB_APPLICATION_HOST || 'localhost';
-const host = "localhost";
+const host = window.location.hostname;
 //const port = process.env.VIDEO_WS_PORT || '8082';
 const port = "8082";
 
