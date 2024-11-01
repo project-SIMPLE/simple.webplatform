@@ -29,8 +29,9 @@ const SimulationManager: React.FC = () => {
   const detectedPlayers = Object.keys(playerList); // List Detected Players
   const maxPlayers = selectedSimulation?.maximal_players || 0;
   const minPlayers = selectedSimulation?.minimal_players || 0;
-  
+
   const [showPopUpManageHeadset, setshowPopUpManageHeadset] = useState(false);
+  let [simulationStarted, setSimulationStarted] = useState(false);
 
   const [selectedButton, setSelectedButton] = useState<string | null>(selectedSimulation?.selected_monitoring || null);
 
@@ -41,8 +42,13 @@ const SimulationManager: React.FC = () => {
 
   const handlePlayPause = () => {
     if(ws !== null){
-        ws.send(JSON.stringify({"type": gama.experiment_state == "NONE" ? "launch_experiment" : (gama.experiment_state != "RUNNING" ? "resume_experiment" : "pause_experiment") }));
-      }else{
+      if(gama.experiment_state == "NONE" && !simulationStarted){
+        setSimulationStarted(true);
+        ws.send(JSON.stringify({"type": "launch_experiment"}));
+      }else if(gama.experiment_state != "NOTREADY"){
+        ws.send(JSON.stringify({"type": (gama.experiment_state != "RUNNING" ? "resume_experiment" : "pause_experiment") }));
+      }
+    }else{
       console.error("WS is null");
     }
   };
@@ -321,16 +327,22 @@ useEffect(() => {
                       />
                     </div>
                   </>
-                ) : null
-              ) : gama.experiment_state === 'PAUSED' ||
-                gama.experiment_state === 'LAUNCHING' ||
-                gama.experiment_state === 'RUNNING' ? (
+                ) : ( // Autostart simulation
+                    <>
+                      {
+                          Object.keys(playerList).length >= Number(maxPlayers) && handlePlayPause() // Call handlePlayPause function here
+                      }
+                    </>
+                )
+            ) : gama.experiment_state === 'PAUSED' ||
+            gama.experiment_state === 'LAUNCHING' ||
+            gama.experiment_state === 'RUNNING' ? (
                 <>
                   <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4">
                     <Button
-                      onClick={handlePlayPause}
-                      customStyle={{ width: '100px', height: '50px' }}
-                      bgColor={gama.experiment_state === 'RUNNING' ? 'bg-orange-500' : 'bg-green-500'}
+                        onClick={handlePlayPause}
+                        customStyle={{width: '100px', height: '50px'}}
+                        bgColor={gama.experiment_state === 'RUNNING' ? 'bg-orange-500' : 'bg-green-500'}
                       icon={icon}
                       showText={true}
                     />
