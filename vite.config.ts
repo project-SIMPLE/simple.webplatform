@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
     preview: serverConfig,
     server: serverConfig,
     optimizeDeps: {
-      exclude: ["@yume-chan/scrcpy-decoder-tinyh264"],
+      exclude: ["@yume-chan/adb-scrcpy", "@yume-chan/stream-extra", "@yume-chan/scrcpy-decoder-tinyh264"],
       include: ['@yume-chan/scrcpy-decoder-tinyh264 > yuv-buffer', '@yume-chan/scrcpy-decoder-tinyh264 > yuv-canvas']
     }
   };
