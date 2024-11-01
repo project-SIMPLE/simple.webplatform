@@ -207,7 +207,8 @@ useEffect(() => {
                     
                     <VRHeadset
                       key={key}
-                      selectedPlayer={player}  
+                      selectedPlayer={player}
+                      playerId={key}
                     />
                     
                       {showPopUpManageHeadset && (
