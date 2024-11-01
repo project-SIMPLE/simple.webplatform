@@ -6,6 +6,7 @@ import { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyOptions2_1 } from "@yume-chan/adb-scrcpy";
 import { BIN, VERSION } from "@yume-chan/fetch-scrcpy-server";
 import { DEFAULT_SERVER_PATH, ScrcpyMediaStreamPacket, ScrcpyOptions2_3 } from "@yume-chan/scrcpy";
+import {useVerbose} from "../index.ts";
 
 export class ScrcpyServer {
     // =======================
@@ -62,6 +63,7 @@ export class ScrcpyServer {
                 console.log("[ScrcpyServer WS] Client disconnected");
             });
         });
+        if (useVerbose) console.log("[ScrcpyServer] Using scrcpy version", VERSION);
     }
 
     async loadScrcpyServer(){
@@ -78,7 +80,7 @@ export class ScrcpyServer {
 
             const myself = this;
 
-            console.log(`[ScrcpyServer] Pushing scrcpy server to ${adbConnection.serial} ===`);
+            if (useVerbose) console.log(`[ScrcpyServer] Pushing scrcpy server to ${adbConnection.serial} ===`);
             const sync = await adbConnection.sync();
             try {
                 await sync.write({
@@ -96,7 +98,7 @@ export class ScrcpyServer {
                 await sync.dispose();
             }
 
-            console.log(`[ScrcpyServer] Starting scrcpy server from ${adbConnection.serial} ===`);
+            if (useVerbose) console.log(`[ScrcpyServer] Starting scrcpy server from ${adbConnection.serial} ===`);
             const client: AdbScrcpyClient = await AdbScrcpyClient.start(
                 adbConnection,
                 DEFAULT_SERVER_PATH,

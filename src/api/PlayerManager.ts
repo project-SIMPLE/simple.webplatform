@@ -217,9 +217,13 @@ class PlayerManager {
      * @param {boolean} inGame - In-game status
      */
     setPlayerInGame(idPlayer: string, inGame: boolean) {
-        this.playersList[idPlayer].in_game = inGame;
-        this.controller.notifyPlayerChange(idPlayer, this.playersList[idPlayer]);
-        this.controller.notifyMonitor();
+        if (this.playersList[idPlayer] !== undefined) {
+            this.playersList[idPlayer].in_game = inGame;
+            this.controller.notifyPlayerChange(idPlayer, this.playersList[idPlayer]);
+            this.controller.notifyMonitor();
+        } else {
+            console.error("[GAMA CONNECTOR] Something strange happened while try to change in_game status for", idPlayer, inGame);
+        }
     }
 
     /**

@@ -390,16 +390,16 @@ class GamaConnector {
      * @param {string} idPlayer - The id of the player
      */
     removeInGamePlayer(idPlayer: string) {
-        console.log("Start removing player from game: " + idPlayer);
+        if (useVerbose) console.log("[GAMA CONNECTOR] Removing player from game: " + idPlayer);
 
         if (['NONE', "NOTREADY"].includes(this.jsonGamaState.experiment_state)) {
-            console.log("Gama Simulation is not running, cannot remove player");
+            console.log("[GAMA CONNECTOR] Gama Simulation is not running, cannot remove player");
             return;
         }
 
         const playerState = this.controller.player_manager.getPlayerState(idPlayer);
         if (playerState && !playerState.in_game) {
-            console.log("Player " + idPlayer + " is already out of the game");
+            console.log("[GAMA CONNECTOR] Player " + idPlayer + " is already out of the game");
             return;
         }
 
