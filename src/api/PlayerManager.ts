@@ -222,7 +222,7 @@ class PlayerManager {
             this.controller.notifyPlayerChange(idPlayer, this.playersList[idPlayer]);
             this.controller.notifyMonitor();
         } else {
-            console.error("[GAMA CONNECTOR] Something strange happened while try to change in_game status for", idPlayer, inGame);
+            console.error("[PLAYER MANAGER] Something strange happened while try to change in_game status for", idPlayer, inGame);
         }
     }
 
@@ -248,6 +248,10 @@ class PlayerManager {
         this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
         this.controller.notifyPlayerChange(idPlayer, this.playersList[idPlayer]);
         this.controller.notifyMonitor();
+        if ( !['NONE', "NOTREADY"].includes(this.controller.gama_controller.jsonGamaState.experiment_state) ) {
+            if (useVerbose) console.log("[PLAYER MANAGER] Automatically adding new " + idPlayer + " to GAMA simulation...");
+            this.setPlayerInGame(idPlayer, true);
+        }
     }
 
     /**
