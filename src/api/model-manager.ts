@@ -78,22 +78,6 @@ class ModelManager {
     // -------------------
 
     /**
-     * Retrieve the list of players from the first model
-     * @returns {Record<string, PlayerState> | null} - List of players
-     */
-    getListPlayers(): Record<string, PlayerState> | null {
-        if (this.models.length > 0) {
-            console.log("this.models:", this.models);
-            const players = this.controller.player_manager.getPlayerList();
-            console.log("MODEL MANAGER, les players:", players);
-            return players;
-        } else {
-            console.log('No models available.');
-            return null;
-        }
-    }
-
-    /**
      * Converts the model list to JSON format
      * @returns {string} - JSON string of models
      */

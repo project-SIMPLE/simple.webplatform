@@ -115,6 +115,17 @@ export class ScrcpyServer {
                 this.scrcpyOptions
             );
 
+
+            // Print output of Scrcpy server
+            if (useVerbose) void client.stdout.pipeTo(
+                // @ts-ignore
+                new WritableStream<string>({
+                    write(chunk: string): void {
+                        console.debug("\x1b[41m[ScrcpyServer DEBUG]\x1b[0m", chunk);
+                    },
+                }),
+            );
+
             if (client.videoStream) {
                 const { metadata, stream: videoPacketStream } = await client.videoStream;
                 console.log(metadata);

@@ -46,7 +46,7 @@ export class Controller {
         this.gama_connector = new GamaConnector(this);
         this.monitor_server = new MonitorServer(this);
 
-        this.adb_manager = new AdbManager(this);
+        if(useAdb) this.adb_manager = new AdbManager(this);
     }
 
     /*
@@ -57,10 +57,6 @@ export class Controller {
 
     getSimulationInformations(): JsonSettings {
         return this.model_manager.getModelListJSON();
-    }
-
-    getPlayerList() {
-        return this.model_manager.getListPlayers();
     }
 
     /*

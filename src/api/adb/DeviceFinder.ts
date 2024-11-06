@@ -19,11 +19,12 @@ class DeviceFinder {
         this.ipToConnect = this.ipToConnect.filter(ip => {
             return !clientStreaming.some(item => item.startsWith(ip));
         });
+        if (useVerbose) console.log("[ADB FINDER] Loaded successfully, will start to scan for devices now...");
     }
 
     public async scanAndConnect() {
         if (this.ipToConnect.length == 0){
-            console.log('[ADB FINDER] Every known IP already connected, skipping now...');
+            console.log('[ADB FINDER] Every known IP already connected, stopping now...');
             return;
         }
         console.log(
@@ -72,6 +73,7 @@ class DeviceFinder {
             });
         } else {
             console.log("[ADB FINDER] All devices connected.");
+            console.log("[ADB FINDER] Stopping now...");
         }
     }
 
