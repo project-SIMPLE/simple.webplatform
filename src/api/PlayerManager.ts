@@ -1,5 +1,5 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import {useExtraVerbose, useVerbose} from './index.js';
+import {useExtraVerbose, useVerbose, useAggressiveDisconnect} from './index.js';
 
 interface PlayerSocket extends WebSocket {
     isAlive: boolean;
@@ -120,21 +120,29 @@ class PlayerManager {
             ws.on('close', () => {
                 const idPlayer = this.getIdClient(ws);
                 if (this.playersList[idPlayer] !== undefined) {
-                    this.playersList[idPlayer].connected = false;
-                    this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+                    if (useAggressiveDisconnect){
+                        this.controller.purgePlayer(idPlayer);
+                    } else {
+                        this.playersList[idPlayer].connected = false;
+                        this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
 
-                    console.log("-> The player " + idPlayer + " disconnected");
+                        console.log("-> The player " + idPlayer + " disconnected");
+                    }
                 }
             });
 
             ws.on('error', (error) => {
                 const idPlayer = this.getIdClient(ws);
 
-                this.playersList[idPlayer].connected = false;
-                this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
-
                 console.error("-> The player " + idPlayer + " had an error and disconnected");
                 console.error(error);
+
+                if (useAggressiveDisconnect){
+                    this.controller.purgePlayer(idPlayer);
+                } else {
+                    this.playersList[idPlayer].connected = false;
+                    this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+                }
             });
         });
 
@@ -316,6 +324,12 @@ class PlayerManager {
     }
 
     close() {
+        const copyPlayerSocketClientsId = this.playerSocketClientsId;
+
+        for (let i = 0; i < copyPlayerSocketClientsId.length; i++) {
+            this.removePlayer(copyPlayerSocketClientsId[i]);
+        }
+
         this.playerSocket.close();
     }
 }

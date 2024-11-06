@@ -109,7 +109,7 @@ export class Controller {
         this.gama_connector.addInGamePlayer(id_player);
     }
 
-    removeInGamePlayer(id_player: string) {
+    purgePlayer(id_player: string) {
         console.log("[CONNECTOR] Remove player", id_player);
 
         // Remove from GAMA

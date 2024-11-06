@@ -72,7 +72,7 @@ export class MonitorServer {
                             break;
                         case "remove_player_headset":
                             if (jsonMonitor.id) {
-                                this.controller.removeInGamePlayer(jsonMonitor.id);
+                                this.controller.purgePlayer(jsonMonitor.id);
                             } else {
                                 console.error("[MONITOR] Failed to remove player headset, missing PlayerID");
                             }

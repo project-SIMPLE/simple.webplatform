@@ -18,6 +18,7 @@ process.env.LEARNING_PACKAGE_PATH = process.env.LEARNING_PACKAGE_PATH || "./lear
 process.env.EXTRA_LEARNING_PACKAGE_PATH = process.env.EXTRA_LEARNING_PACKAGE_PATH || "";
 const HEADSETS_IP: string[] = process.env.HEADSETS_IP ? process.env.HEADSETS_IP.split(';').filter((value) => value.trim() !== '') : [];
 
+const useAggressiveDisconnect: boolean = process.env.AGGRESSIVE_DISCONNECT !== undefined ? ['true', '1', 'yes'].includes(process.env.AGGRESSIVE_DISCONNECT.toLowerCase()) : false;
 
 const useExtraVerbose: boolean = process.env.EXTRA_VERBOSE !== undefined ? ['true', '1', 'yes'].includes(process.env.EXTRA_VERBOSE.toLowerCase()) : false;
 
@@ -92,4 +93,4 @@ if (os.platform() !== 'win32'){
     console.warn("[ADB FINDER] Skipping finder now...");
 }
 
-export { useVerbose, useExtraVerbose, useAdb, HEADSETS_IP };
+export { useVerbose, useExtraVerbose, useAdb, useAggressiveDisconnect, HEADSETS_IP };
