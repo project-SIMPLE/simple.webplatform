@@ -5,8 +5,11 @@ import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyOptions2_1 } from "@yume-chan/adb-scrcpy";
 import { BIN, VERSION } from "@yume-chan/fetch-scrcpy-server";
-import { DEFAULT_SERVER_PATH, ScrcpyMediaStreamPacket, ScrcpyOptions2_3 } from "@yume-chan/scrcpy";
+import { DEFAULT_SERVER_PATH, ScrcpyMediaStreamPacket, ScrcpyOptions2_3, CodecOptions } from "@yume-chan/scrcpy";
 import {useVerbose} from "../index.ts";
+import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
+
+const H264Capabilities = TinyH264Decoder.capabilities.h264;
 
 export class ScrcpyServer {
     // =======================
@@ -30,6 +33,12 @@ export class ScrcpyServer {
             // Clean feed
             audio: false,
             control: false,
+            videoCodec: "h264",
+            videoCodecOptions: new CodecOptions({
+                profile: H264Capabilities.maxProfile,
+                level: H264Capabilities.maxLevel,
+            }),
+            crop: "2064:2200:2064:0",
         })
     )
 
