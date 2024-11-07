@@ -23,22 +23,23 @@ export class ScrcpyServer {
 
     readonly scrcpyOptions = new AdbScrcpyOptions2_1(
         new ScrcpyOptions2_3({
+            // scrcpy options
+            videoCodec: "h264",
+            videoCodecOptions: new CodecOptions({ // Ensure Meta Quest compatibility
+                profile: H264Capabilities.maxProfile,
+                level: H264Capabilities.maxLevel,
+            }),
             // Video settings
             video: true,
             maxSize: 600,
             maxFps: 20,
             videoBitRate: 200,
+            crop: "2064:2200:2064:0",
             // Android soft settings
             stayAwake: true,
             // Clean feed
             audio: false,
             control: false,
-            videoCodec: "h264",
-            videoCodecOptions: new CodecOptions({
-                profile: H264Capabilities.maxProfile,
-                level: H264Capabilities.maxLevel,
-            }),
-            crop: "2064:2200:2064:0",
         })
     )
 

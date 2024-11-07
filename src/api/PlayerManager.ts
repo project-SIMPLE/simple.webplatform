@@ -1,4 +1,5 @@
 import { WebSocketServer, WebSocket } from 'ws';
+
 import {useExtraVerbose, useVerbose, useAggressiveDisconnect} from './index.js';
 
 interface PlayerSocket extends WebSocket {
@@ -72,7 +73,7 @@ class PlayerManager {
                                 const index = this.playerSocketClientsId.indexOf(jsonPlayer.id);
                                 this.playerSocketClients[index] = ws;
                                 this.addPlayerConnection(jsonPlayer.id, true);
-                                console.log('-> Reconnection of the player of id ' + jsonPlayer.id);
+                                console.log('[PLAYER MANAGER] Reconnection of the player of id ' + jsonPlayer.id);
                             } else {
                                 this.playerSocketClients.push(ws);
                                 this.playerSocketClientsId.push(jsonPlayer.id);
@@ -84,7 +85,7 @@ class PlayerManager {
                                 };
 
                                 this.addPlayerConnection(jsonPlayer.id, true);
-                                console.log('-> New connection of the player of id ' + jsonPlayer.id);
+                                console.log('[PLAYER MANAGER] New connection of the player of id ' + jsonPlayer.id);
                             }
                             break;
 
@@ -108,11 +109,12 @@ class PlayerManager {
                             break;
 
                         default:
-                            console.warn("\x1b[31m-> The last message received from " + this.getIdClient(ws) + " had an unknown type.\x1b[0m");
+                            console.warn("\x1b[31m[PLAYER MANAGER] The last message received from " + this.getIdClient(ws) + " had an unknown type.\x1b[0m");
                             console.warn(jsonPlayer);
                     }
                 } catch (exception) {
-                    console.error("\x1b[31m-> The last message received from " + this.getIdClient(ws) + " created an internal error.\x1b[0m");
+                    console.error("\x1b[31m[PLAYER MANAGER] The last message received from " + this.getIdClient(ws) + " created an internal error.\x1b[0m");
+                    console.error(message);
                     console.error(exception);
                 }
             });
@@ -126,7 +128,7 @@ class PlayerManager {
                         this.playersList[idPlayer].connected = false;
                         this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
 
-                        console.log("-> The player " + idPlayer + " disconnected");
+                        console.log("[PLAYER MANAGER] The player " + idPlayer + " disconnected");
                     }
                 }
             });
@@ -134,7 +136,7 @@ class PlayerManager {
             ws.on('error', (error) => {
                 const idPlayer = this.getIdClient(ws);
 
-                console.error("-> The player " + idPlayer + " had an error and disconnected");
+                console.error("[PLAYER MANAGER] The player " + idPlayer + " had an error and disconnected");
                 console.error(error);
 
                 if (useAggressiveDisconnect){
@@ -148,9 +150,9 @@ class PlayerManager {
 
         this.playerSocket.on('error', (err: NodeJS.ErrnoException) => {
             if (err.code === 'EADDRINUSE') {
-                console.error(`\x1b[31m-> The port ${process.env.HEADSET_WS_PORT} is already in use. Choose a different port in settings.json.\x1b[0m`);
+                console.error(`\x1b[31m[PLAYER MANAGER] The port ${process.env.HEADSET_WS_PORT} is already in use. Choose a different port in settings.json.\x1b[0m`);
             } else {
-                console.error(`\x1b[31m-> An error occurred for the player server, code: ${err.code}\x1b[0m`);
+                console.error(`\x1b[31m[PLAYER MANAGER] An error occurred for the player server, code: ${err.code}\x1b[0m`);
                 console.error(err);
             }
         });
@@ -256,7 +258,7 @@ class PlayerManager {
         this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
         this.controller.notifyPlayerChange(idPlayer, this.playersList[idPlayer]);
         this.controller.notifyMonitor();
-        if ( !['NONE', "NOTREADY"].includes(this.controller.gama_controller.jsonGamaState.experiment_state) ) {
+        if ( !['NONE', "NOTREADY"].includes(this.controller.gama_connector.jsonGamaState.experiment_state) ) {
             if (useVerbose) console.log("[PLAYER MANAGER] Automatically adding new " + idPlayer + " to GAMA simulation...");
             this.setPlayerInGame(idPlayer, true);
         }
@@ -269,14 +271,14 @@ class PlayerManager {
         this.playerSocket.clients.forEach((socket: WebSocket) => {
             const playerSocket = socket as PlayerSocket;
             if (!playerSocket.isAlive) {
-                console.warn('Terminating dead socket from player ' + this.getWsClient(playerSocket as any));
+                console.warn('[PLAYER MANAGER] Terminating dead socket from player ' + this.getWsClient(playerSocket as any));
                 return playerSocket.terminate();
             }
 
             playerSocket.isAlive = false;
             playerSocket.send(JSON.stringify({ type: "ping" }));
 
-            if (useVerbose) console.log("Sending ping to " + this.getIdClient(playerSocket));
+            if (useVerbose) console.log("[PLAYER MANAGER] Sending ping to " + this.getIdClient(playerSocket));
         });
     }
 
@@ -300,7 +302,7 @@ class PlayerManager {
                 });
             });
         } catch (exception) {
-            console.error("\x1b[31m-> The following message hasn't the correct format:\x1b[0m");
+            console.error("\x1b[31m[PLAYER MANAGER] The following message hasn't the correct format:\x1b[0m");
             console.error(jsonOutput);
         }
     }
@@ -319,7 +321,7 @@ class PlayerManager {
             };
 
             this.playerSocketClients[index].send(JSON.stringify({ ...jsonStatePlayer, ...jsonPlayer }));
-            if (useVerbose) console.log(`[DEBUG Player ${idPlayer}] Receiving state update ${JSON.stringify({ ...jsonStatePlayer, ...jsonPlayer })}`);
+            if (useVerbose) console.log(`[PLAYER MANAGER][DEBUG Player ${idPlayer}] Receiving state update ${JSON.stringify({ ...jsonStatePlayer, ...jsonPlayer })}`);
         }
     }
 
