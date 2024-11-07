@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import Model, { PlayerState } from './model';
+import Model from './model';
 import { useVerbose } from './index';
 import { isAbsolute } from 'path';
 
@@ -33,14 +33,13 @@ class ModelManager {
         }
 
         directoriesWithProjects.forEach((packageRootDir) => {
-            const packageFolder = fs.readdirSync(packageRootDir);
+            const packageFolder:string[] = ["."].concat(fs.readdirSync(packageRootDir));
 
             // Browse in learning package folder to find available packages
             packageFolder.forEach((file) => {
                 const folderPath = path.join(packageRootDir, file);
-                const stat = fs.statSync(folderPath);
 
-                if (stat && stat.isDirectory()) {
+                if (fs.statSync(folderPath).isDirectory()) {
                     // Verify if there is a settings file
                     if (fs.existsSync(path.join(folderPath, "settings.json"))) {
                         if (useVerbose) {
@@ -62,10 +61,6 @@ class ModelManager {
     }
 
     // -------------------
-
-    setActiveModel(newModel: Model) {
-        this.activeModel = newModel;
-    }
 
     setActiveModelByIndex(index: number) {
         this.activeModel = this.models[index];
