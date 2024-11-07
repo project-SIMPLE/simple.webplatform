@@ -1,14 +1,6 @@
 import WebSocket from 'ws';
-import { useVerbose, useExtraVerbose } from './index.js';
 
-// Global variables about the state of the connector. This is only for internal purposes.
-let gama_socket: WebSocket;
-let index_messages: number;
-let continue_sending = false;
-let do_sending = false;
-let list_messages: any[];
-let function_to_call: () => void;
-let current_id_player: string;
+import { useVerbose, useExtraVerbose } from './index.js';
 
 interface GamaState {
     connected: boolean;
@@ -20,7 +12,7 @@ interface GamaState {
 }
 
 // List of error messages for Gama Server
-const gama_error_messages = [
+const GAMA_ERROR_MESSAGES = [
     "SimulationStatusError",
     "SimulationErrorDialog",
     "SimulationError",
@@ -37,7 +29,9 @@ class GamaConnector {
     controller: any;
     model: any;
     jsonGamaState: GamaState;
-    gama_socket: WebSocket;
+    gama_socket!: WebSocket;
+
+    listMessages: any[] = [];
 
     /**
      * Constructor of the websocket client
@@ -55,7 +49,7 @@ class GamaConnector {
             experiment_name: ""
         };
 
-        this.gama_socket = this.connectGama();
+        this.connectGama();
     }
 
     getJsonGama(){
@@ -125,9 +119,10 @@ class GamaConnector {
     /**
      * Create or remove player from simulation
      * @param {string} toggle - Only accepted values: [create, remove]
+     * @param current_id_player
      * @returns {object}
      */
-    jsonTogglePlayer(toggle: "create" | "remove") {
+    jsonTogglePlayer(toggle: "create" | "remove", current_id_player: string) {
         return {
             type: "expression",
             exp_id: this.jsonGamaState.experiment_id,
@@ -150,18 +145,17 @@ class GamaConnector {
      * Connects the websocket client with gama server and manage the messages received
      * @returns WebSocket
      */
-    connectGama(): WebSocket {
+    connectGama(): void {
         this.setGamaLoading(true);
-        const sendMessages = this.sendMessages.bind(this);
-        gama_socket = new WebSocket(`ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
+        this.gama_socket = new WebSocket(`ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
 
-        gama_socket.onopen = () => {
+        this.gama_socket.onopen = () => {
             console.log("[GAMA CONNECTOR] Connected to Gama Server");
             this.setGamaConnection(true);
             this.setGamaExperimentState('NONE');
         };
 
-        gama_socket.onmessage = (event: WebSocket.MessageEvent) => {
+        this.gama_socket.onmessage = (event: WebSocket.MessageEvent) => {
             try {
                 const message = JSON.parse(event.data as string);
                 const type = message.type;
@@ -183,7 +177,7 @@ class GamaConnector {
                             this.controller.broadcastSimulationOutput(JSON.parse(message.content));
                         } catch (error) {
                             console.error("\x1b[31m-> Unable to parse received message:\x1b[0m");
-                            console.error(message.content);
+                            console.error(message);
                         }
                         break;
 
@@ -195,33 +189,30 @@ class GamaConnector {
                         this.setGamaContentError('');
                         if (message.command.type === "load") this.setGamaExperimentName(message.content);
 
-                        continue_sending = true;
-                        setTimeout(sendMessages, 100);
-
                         try {
                             this.controller.broadcastSimulationOutput(message);
                         } catch (exception) {
+                            console.error("[GAMA CONNECTOR] Failed to broadcast Simulation Output from Gama Server");
                             console.error(exception);
                         }
                         break;
                 }
 
                 // If a known GAMA error
-                if (gama_error_messages.includes(type)) {
-                    console.error("Error message received from Gama Server:");
+                if (GAMA_ERROR_MESSAGES.includes(type)) {
+                    console.error("[GAMA CONNECTOR] Error message received from Gama Server:");
                     console.error(message);
 
                     this.setGamaContentError(message);
                     this.setGamaLoading(false);
-
-                    throw new Error("A problem appeared in the last message. Please check the response from the Server");
                 }
             } catch (error) {
+                console.error("[GAMA CONNECTOR] Error with the WebSocket with Gama Server:");
                 console.error("\x1b[31m" + error + "\x1b[0m");
             }
         };
 
-        gama_socket.addEventListener('close', (event) => {
+        this.gama_socket.addEventListener('close', (event) => {
             this.setGamaConnection(false);
             this.setGamaExperimentState("NONE");
             this.setGamaLoading(false);
@@ -238,39 +229,43 @@ class GamaConnector {
             }
         });
 
-        gama_socket.addEventListener('error', (error) => {
+        this.gama_socket.addEventListener('error', (error) => {
             console.error("[GAMA CONNECTOR] Failed to connect with Gama Server");
             if (useVerbose) console.error(error);
         });
 
         this.setGamaLoading(false);
-
-        return gama_socket;
     }
 
     /**
-     * Sends the message contained in the list @var list_messages at the index @var index_messages.
+     * Sends the message contained in the list @var this.listMessages at the index @var this.currentMessageIndex.
      */
-    sendMessages() {
-        if (do_sending && continue_sending) {
-            if (index_messages < list_messages.length) {
-                if (typeof list_messages[index_messages] === "function") {
-                    gama_socket.send(JSON.stringify(list_messages[index_messages]()));
-                    if (useVerbose) {
-                        if (list_messages[index_messages]().expr !== undefined)
-                            console.log("Expression sent to Gama Server: " + '\'' + list_messages[index_messages]().expr + '\'' + " Waiting for the answer (if any)...");
-                        else console.log("Message sent to Gama Server: type " + list_messages[index_messages]().type + ". Waiting for the answer (if any)...");
-                    }
+    sendMessages(callback?: () => void) {
+        const copy_listMessages = this.listMessages;
+        for (const message of copy_listMessages) {
+            try {
+                if (typeof message === "function") {
+                    this.gama_socket.send( JSON.stringify( message() ) );
+                    if (useVerbose)
+                        if (message().expr !== undefined)
+                            console.log("Expression sent to Gama Server: " + '\'' + message().expr + '\'' + " Waiting for the answer (if any)...");
+                        else
+                            console.log("Message sent to Gama Server: type " + message().type + ". Waiting for the answer (if any)...");
                 } else {
-                    gama_socket.send(JSON.stringify(list_messages[index_messages]));
+                    this.gama_socket.send( JSON.stringify( message ) );
                 }
-                continue_sending = false;
-                index_messages = index_messages + 1;
-            } else {
-                function_to_call();
-                do_sending = false;
+            }
+            catch (e) {
+                console.error("[GAMA CONNECTOR] Error while sending this command to GAMA:", message);
+                console.error(e);
+            }
+            finally {
+                this.listMessages.splice(this.listMessages.indexOf(message), 1);
             }
         }
+
+        // Run final callback after sending every messages
+        if (callback !== undefined) callback();
     }
 
     /**
@@ -278,15 +273,12 @@ class GamaConnector {
      */
     launchExperiment() {
         if (this.jsonGamaState.connected && this.jsonGamaState.experiment_state === 'NONE') {
-            list_messages = [this.jsonLoadExperiment()];
-            index_messages = 0;
-            do_sending = true;
-            continue_sending = true;
+            this.listMessages = [this.jsonLoadExperiment()];
             this.setGamaLoading(true);
-            function_to_call = () => {
+
+            this.sendMessages(() => {
                 this.setGamaLoading(false);
-            };
-            this.sendMessages();
+            });
 
             this.model = this.controller.model_manager.getActiveModel();
         } else {
@@ -312,18 +304,13 @@ class GamaConnector {
     }
 
     executeStopExperiment() {
-        list_messages = [this.jsonControlGamaExperiment("stop")];
-        index_messages = 0;
-        do_sending = true;
-        continue_sending = true;
-
+        this.listMessages = [this.jsonControlGamaExperiment("stop")];
         this.setGamaLoading(true);
-        function_to_call = () => {
+
+        this.sendMessages(() => {
             this.setGamaLoading(false);
             this.controller.player_manager.setRemoveInGameEveryPlayers();
-        };
-
-        this.sendMessages();
+        });
     }
 
     /**
@@ -331,19 +318,15 @@ class GamaConnector {
      */
     pauseExperiment(callback: () => void) {
         if (this.jsonGamaState.experiment_state === 'RUNNING') {
-            list_messages = [this.jsonControlGamaExperiment("pause")];
-            index_messages = 0;
-            do_sending = true;
-            continue_sending = true;
+            this.listMessages = [this.jsonControlGamaExperiment("pause")];
             this.setGamaLoading(true);
 
-            function_to_call = () => {
+            this.sendMessages(() => {
                 this.setGamaLoading(false);
                 if (typeof callback === 'function') {
                     callback();
                 }
-            };
-            this.sendMessages();
+            });
         }
     }
 
@@ -352,15 +335,12 @@ class GamaConnector {
      */
     resumeExperiment() {
         if (this.jsonGamaState.experiment_state === 'PAUSED') {
-            list_messages = [this.jsonControlGamaExperiment("play")];
-            index_messages = 0;
-            do_sending = true;
-            continue_sending = true;
+            this.listMessages = [this.jsonControlGamaExperiment("play")];
             this.setGamaLoading(true);
-            function_to_call = () => {
+
+            this.sendMessages(() => {
                 this.setGamaLoading(false);
-            };
-            this.sendMessages();
+            });
         }
     }
 
@@ -369,20 +349,18 @@ class GamaConnector {
      * @param {string} idPlayer - The id of the player to be added
      */
     addInGamePlayer(idPlayer: string) {
-        if (['NONE', "NOTREADY"].includes(this.jsonGamaState.experiment_state)) return;
+        if (['NONE', "NOTREADY"].includes(this.jsonGamaState.experiment_state))
+            return;
 
-        if (this.controller.player_manager.getPlayerState(idPlayer) && this.controller.player_manager.getPlayerState(idPlayer).in_game) return;
+        if (this.controller.player_manager.getPlayerState(idPlayer) && this.controller.player_manager.getPlayerState(idPlayer).in_game)
+            return;
 
-        current_id_player = idPlayer;
-        list_messages = [this.jsonTogglePlayer("create")];
-        index_messages = 0;
-        do_sending = true;
-        continue_sending = true;
-        function_to_call = () => {
+        this.listMessages = [this.jsonTogglePlayer("create", idPlayer)];
+
+        this.sendMessages(() => {
             console.log("-> The Player " + idPlayer + " has been added to Gama");
             this.controller.player_manager.setPlayerInGame(idPlayer, true);
-        };
-        this.sendMessages();
+        });
     }
 
     /**
@@ -403,15 +381,11 @@ class GamaConnector {
             return;
         }
 
-        current_id_player = idPlayer;
-        list_messages = [this.jsonTogglePlayer("remove")];
-        index_messages = 0;
-        do_sending = true;
-        continue_sending = true;
-        function_to_call = () => {
+        this.listMessages = [this.jsonTogglePlayer("remove", idPlayer)];
+
+        this.sendMessages(() => {
             this.controller.player_manager.setPlayerInGame(idPlayer, false);
-        };
-        this.sendMessages();
+        });
     }
 
     /**
@@ -451,17 +425,15 @@ class GamaConnector {
      * @param {string} expr - The expression. If this expression contains $id, it will be replaced by the id of the player which asked the method
      */
     sendExpression(idPlayer: string, expr: string) {
-        if (['NONE', "NOTREADY"].includes(this.jsonGamaState.experiment_state)) return;
+        if (['NONE', "NOTREADY"].includes(this.jsonGamaState.experiment_state))
+            return;
 
         expr = expr.replace('$id', "\"" + idPlayer + "\"");
-        list_messages = [this.jsonSendExpression(expr)];
-        index_messages = 0;
-        do_sending = true;
-        continue_sending = true;
-        function_to_call = () => {
+        this.listMessages = [this.jsonSendExpression(expr)];
+
+        this.sendMessages(() => {
             console.log("-> The Player of id " + idPlayer + " called the function: " + expr + " successfully.");
-        };
-        this.sendMessages();
+        });
     }
 
     /**
@@ -469,13 +441,11 @@ class GamaConnector {
      * @param {object} json - The JSON containing the information of the ask
      */
     sendAsk(json: any) {
-        if (['NONE', "NOTREADY"].includes(this.jsonGamaState.experiment_state)) return;
+        if (['NONE', "NOTREADY"].includes(this.jsonGamaState.experiment_state))
+            return;
 
-        list_messages = [json];
-        index_messages = 0;
-        do_sending = true;
-        continue_sending = true;
-        function_to_call = () => { };
+        this.listMessages = [json];
+
         this.sendMessages();
     }
 
