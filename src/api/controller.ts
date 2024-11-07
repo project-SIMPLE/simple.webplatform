@@ -4,18 +4,7 @@ import ModelManager from './model-manager.ts';
 import {MonitorServer} from './monitor-server.ts';
 import {AdbManager} from "./adb/AdbManager.ts";
 import {useAdb} from "./index.ts";
-
-interface JsonSettings {
-    // Define the structure of your JSON settings here
-}
-
-interface JsonPlayer {
-    // Define the structure of your JSON player here
-}
-
-interface JsonOutput {
-    // Define the structure of your JSON output here
-}
+import { JsonSettings, JsonPlayer, JsonOutput } from "./constants.ts";
 
 export class Controller {
     model_manager: ModelManager;

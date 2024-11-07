@@ -1,29 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws';
 
 import {useExtraVerbose, useVerbose, useAggressiveDisconnect} from './index.js';
-
-interface PlayerSocket extends WebSocket {
-    isAlive: boolean;
-}
-
-interface PlayerJson {
-    id: string;
-    type: string;
-    expr?: string;
-}
-
-interface JsonOutput {
-    contents?: Array<{
-        id: string[];
-        contents: any;
-    }>;
-}
-
-interface PlayerState {
-    connected: boolean;
-    in_game: boolean;
-    date_connection: string;
-}
+import { PlayerSocket, PlayerJson, JsonOutput, PlayerState } from "./constants.ts";
 
 /**
  * Creates a websocket server to handle player connections

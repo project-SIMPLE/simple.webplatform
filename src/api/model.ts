@@ -1,10 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-interface JsonSettings {
-    model_file_path: string;
-    experiment_name: string;
-}
+import {JsonSettings} from "./constants.ts";
 
 class Model {
     readonly #jsonSettings: JsonSettings;

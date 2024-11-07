@@ -1,26 +1,7 @@
 import WebSocket from 'ws';
 
 import { useVerbose, useExtraVerbose } from './index.js';
-
-interface GamaState {
-    connected: boolean;
-    experiment_state: string;
-    loading: boolean;
-    content_error: string;
-    experiment_id: string;
-    experiment_name: string;
-}
-
-// List of error messages for Gama Server
-const GAMA_ERROR_MESSAGES = [
-    "SimulationStatusError",
-    "SimulationErrorDialog",
-    "SimulationError",
-    "RuntimeError",
-    "GamaServerError",
-    "MalformedRequest",
-    "UnableToExecuteRequest"
-];
+import { GamaState, GAMA_ERROR_MESSAGES } from "./constants.ts";
 
 /**
  * This class creates a websocket client for Gama Server.

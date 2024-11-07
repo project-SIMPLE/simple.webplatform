@@ -1,11 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import { Controller } from './controller';
 
-interface JsonMonitor {
-    type: string;
-    id?: string;
-    simulationIndex?: number;
-}
+import { Controller } from './controller';
+import { JsonMonitor } from "./constants.ts"
 
 /**
  * Creates a Websocket Server for handling monitor connections

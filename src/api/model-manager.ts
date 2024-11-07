@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import { isAbsolute } from 'path';
+
 import Model from './model';
 import { useVerbose } from './index';
-import { isAbsolute } from 'path';
 
 class ModelManager {
     controller: any;
