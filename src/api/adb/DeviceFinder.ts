@@ -2,12 +2,13 @@ import { spawn } from 'child_process';
 import path from 'path';
 
 import Controller from "../controller.ts";
-import {HEADSETS_IP, useVerbose} from "../index.ts";
+import {HEADSETS_IP, useExtraVerbose, useVerbose} from "../index.ts";
 
 class DeviceFinder {
     controller: Controller;
     private scriptPath: string;
     ipToConnect: string[];
+    isScanning: boolean = false;
 
     constructor(controller: Controller) {
         this.controller = controller;
@@ -23,57 +24,61 @@ class DeviceFinder {
     }
 
     public async scanAndConnect() {
-        if (this.ipToConnect.length == 0){
-            console.log('[ADB FINDER] Every known IP already connected, stopping now...');
+        if (this.ipToConnect.length === 0 || this.isScanning) {
+            if(this.ipToConnect.length === 0)
+            {
+                console.log('[ADB FINDER] Every known IP already connected, stopping now...');
+            } else
+                if (useExtraVerbose) console.log('[ADB FINDER] Already scanning for new IP, skipping this call...');
+
             return;
         }
-        console.log(
-            '[ADB FINDER] Start looking to connect for those IP : ',
-            this.ipToConnect
-        );
 
-        // Create a copy of the IP array to avoid modification issues
-        const ipToTry = [...this.ipToConnect];
+        this.isScanning = true; // Set the flag before starting to connect, otherwise, multiple attempts will start concurrently before the flag will be set.
 
-        for (let i = 0; i < ipToTry.length; i++) {
-            console.log('Trying ', ipToTry[i]);
-            try {
-                // @ts-ignore
-                const output = await this.scanAndConnectIP(ipToTry[i]);
+        try {
+            console.log('[ADB FINDER] Start looking to connect for those IP : ', this.ipToConnect);
 
-                if (output.includes('OK')) {
-                    console.log('[ADB FINDER] Successfully connected to ', ipToTry[i]);
+            for (let i = 0; i < this.ipToConnect.length; i++) { // Directly use this.ipToConnect. No need to copy
+                const ip = this.ipToConnect[i];
+                if (useVerbose) console.log('[ADB FINDER] Trying ', ip);
 
-                    // Start casting for newly connected device
-                    await this.controller.adb_manager.startStreaming(ipToTry[i]);
+                try {
+                    const output = await this.scanAndConnectIP(ip);
 
-                    // Remove the IP from the original array
-                    this.ipToConnect.splice(this.ipToConnect.indexOf(ipToTry[i]), 1);
-                } else if (output.includes('ERROR')) {
-                    console.warn('[ADB FINDER] Failed to connect to ' + ipToTry[i]);
-                    if (useVerbose) console.warn(output);
-                } else {
-                    console.error('[ADB FINDER] Unknown message... ');
-                    console.error(output);
+                    if (output.includes('OK')) {
+                        console.log('[ADB FINDER] Successfully connected to ', ip);
+                        await this.controller.adb_manager.startStreaming(ip);
+                        this.ipToConnect.splice(i, 1); // Remove the connected IP; adjust index
+                        i--;                     // Decrement i to account for removed element
+                    } else if (output.includes('ERROR')) {
+                        console.warn('[ADB FINDER] Failed to connect to ' + ip);
+                        if (useVerbose) console.warn(output);
+                    } else {
+                        console.error('[ADB FINDER] Unknown message:', output);
+                    }
+
+                } catch (innerError) {
+                    console.error(`[ADB FINDER] Error connecting to ${ip}:`, innerError);
                 }
-            } catch (error) {
-                console.error('[ADB FINDER] Error connecting:', error);
             }
-        }
+        } finally {
+            if (this.ipToConnect.length > 0) {
 
-        if (this.ipToConnect.length > 0) {
-            console.log('[ADB FINDER] Those IP are left to be connected : ', this.ipToConnect);
-            console.log('[ADB FINDER] Retry in 10 seconds...');
+                this.isScanning = false;  // Allow new thread to search for devices
 
-            await new Promise((resolve) => {
+                console.log('[ADB FINDER] Those IP are left to be connected : ', this.ipToConnect);
+                console.log('[ADB FINDER] Retry in 5 seconds...');
+
+                // Trigger new call
                 setTimeout(async () => {
-                    await this.scanAndConnect(); // Await the recursive call!
-                    resolve(undefined); // Resolve the promise to continue
-                }, 10000);
-            });
-        } else {
-            console.log("[ADB FINDER] All devices connected.");
-            console.log("[ADB FINDER] Stopping now...");
+                    await this.scanAndConnect();
+                }, 5000);
+
+            } else {
+                console.log('[ADB FINDER] All devices connected.');
+                console.log('[ADB FINDER] Stopping now...');
+            }
         }
     }
 
