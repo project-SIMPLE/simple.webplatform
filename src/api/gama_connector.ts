@@ -10,7 +10,7 @@ class GamaConnector {
     controller: any;
     model: any;
     jsonGamaState: GamaState;
-    gama_socket!: WebSocket;
+    gama_socket: WebSocket | null = null;
 
     listMessages: any[] = [];
 
@@ -39,8 +39,10 @@ class GamaConnector {
 
     setGamaConnection(connected: boolean) {
         this.jsonGamaState.connected = connected;
+        this.setGamaLoading(connected);
         this.controller.notifyMonitor();
     }
+
     setGamaLoading(loading: boolean){
         this.jsonGamaState.loading = loading;
         this.controller.notifyMonitor();
@@ -127,95 +129,133 @@ class GamaConnector {
      * @returns WebSocket
      */
     connectGama(): void {
+        if (this.gama_socket
+            && ( this.gama_socket.readyState === WebSocket.CONNECTING
+                || this.gama_socket.readyState === WebSocket.OPEN )
+        ) {
+            if (useVerbose) console.warn("[GAMA CONNECTOR] Already connected or connecting. Skipping.");
+            return; // Prevent multiple connection attempts
+        }
+
         this.setGamaLoading(true);
-        this.gama_socket = new WebSocket(`ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
 
-        this.gama_socket.onopen = () => {
-            console.log("[GAMA CONNECTOR] Connected to Gama Server");
-            this.setGamaConnection(true);
-            this.setGamaExperimentState('NONE');
-        };
+        try {
+            this.gama_socket = new WebSocket(`ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
 
-        this.gama_socket.onmessage = (event: WebSocket.MessageEvent) => {
-            try {
-                const message = JSON.parse(event.data as string);
-                const type = message.type;
+            this.gama_socket.onopen = () => {
+                console.log(`[GAMA CONNECTOR] Connected to Gama Server on ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
 
-                switch (type) {
-                    case "SimulationStatus":
-                        if (useVerbose) console.log("[DEBUG] Message received from Gama Server: SimulationStatus = " + message.content);
+                this.setGamaConnection(true);
+                this.setGamaExperimentState('NONE');
+            };
 
-                        this.setGamaExperimentId(message.exp_id);
-                        if (['NONE', 'NOTREADY'].includes(message.content) && ['RUNNING', 'PAUSED', 'NOTREADY'].includes(this.jsonGamaState.experiment_state)) {
-                            this.controller.player_manager.setRemoveInGameEveryPlayers();
-                        }
+            this.gama_socket.onmessage = (event: WebSocket.MessageEvent) => {
+                try {
+                    const message = JSON.parse(event.data as string);
+                    const type = message.type;
 
-                        this.setGamaExperimentState(message.content);
-                        break;
+                    switch (type) {
+                        case "SimulationStatus":
+                            if (useVerbose) console.log("[DEBUG] Message received from Gama Server: SimulationStatus = " + message.content);
 
-                    case "SimulationOutput":
-                        try {
-                            this.controller.broadcastSimulationOutput(JSON.parse(message.content));
-                        } catch (error) {
-                            console.error("\x1b[31m-> Unable to parse received message:\x1b[0m");
-                            console.error(message);
-                        }
-                        break;
+                            this.setGamaExperimentId(message.exp_id);
+                            if (['NONE', 'NOTREADY'].includes(message.content) && ['RUNNING', 'PAUSED', 'NOTREADY'].includes(this.jsonGamaState.experiment_state)) {
+                                this.controller.player_manager.setRemoveInGameEveryPlayers();
+                            }
 
-                    case "CommandExecutedSuccessfully":
-                        if (useExtraVerbose) {
-                            console.log("\x1b[32m[DEBUG GamaConnector] Message received from Gama Server: CommandExecutedSuccessfully\x1b[0m");
-                        }
+                            this.setGamaExperimentState(message.content);
+                            break;
 
-                        this.setGamaContentError('');
-                        if (message.command.type === "load") this.setGamaExperimentName(message.content);
+                        case "SimulationOutput":
+                            try {
+                                this.controller.broadcastSimulationOutput(JSON.parse(message.content));
+                            } catch (error) {
+                                console.error("\x1b[31m-> Unable to parse received message:\x1b[0m");
+                                console.error(message);
+                            }
+                            break;
 
-                        try {
-                            this.controller.broadcastSimulationOutput(message);
-                        } catch (exception) {
-                            console.error("[GAMA CONNECTOR] Failed to broadcast Simulation Output from Gama Server");
-                            console.error(exception);
-                        }
-                        break;
+                        case "CommandExecutedSuccessfully":
+                            if (useExtraVerbose) {
+                                console.log("\x1b[32m[DEBUG GamaConnector] Message received from Gama Server: CommandExecutedSuccessfully\x1b[0m");
+                            }
+
+                            this.setGamaContentError('');
+                            if (message.command.type === "load") this.setGamaExperimentName(message.content);
+
+                            try {
+                                this.controller.broadcastSimulationOutput(message);
+                            } catch (exception) {
+                                console.error("[GAMA CONNECTOR] Failed to broadcast Simulation Output from Gama Server");
+                                console.error(exception);
+                            }
+                            break;
+
+                        default:
+                            // If a known GAMA error
+                            if (GAMA_ERROR_MESSAGES.includes(type)) {
+                                console.error("[GAMA CONNECTOR] Error message received from Gama Server:");
+                                console.error(message);
+
+                                this.setGamaContentError(message);
+                                //this.setGamaLoading(false);
+                            } else {
+                                console.error("[GAMA CONNECTOR] Unknown message received from Gama Server:", message);
+                            }
+                    }
+
+                } catch (error) {
+                    console.error("[GAMA CONNECTOR] Error with the WebSocket with Gama Server:");
+                    console.error("\x1b[31m" + error + "\x1b[0m");
+
+                    if (error instanceof SyntaxError) {
+                        console.error("[GAMA CONNECTOR] Invalid JSON received:", event.data);
+                    }
                 }
+            };
 
-                // If a known GAMA error
-                if (GAMA_ERROR_MESSAGES.includes(type)) {
-                    console.error("[GAMA CONNECTOR] Error message received from Gama Server:");
-                    console.error(message);
+            this.gama_socket.onclose = (event) => {
+                this.setGamaConnection(false);
+                this.setGamaExperimentState("NONE");
 
-                    this.setGamaContentError(message);
-                    this.setGamaLoading(false);
+                // Always calls remove in game players when the socket closes
+                this.controller.player_manager.setRemoveInGameEveryPlayers();
+
+                if (event.wasClean) {
+                    console.log('[GAMA CONNECTOR] Connection with Gama Server closed cleanly, not reconnecting');
+                    this.gama_socket = null;
+                } else {
+                    console.error('[GAMA CONNECTOR] Connection with Gama Server interrupted suddenly');
+                    this.gama_socket = null;
+
+                    console.warn("[GAMA CONNECTOR] Reconnecting in 5s...");
+                    setTimeout(() => this.connectGama(), 5000);
                 }
-            } catch (error) {
-                console.error("[GAMA CONNECTOR] Error with the WebSocket with Gama Server:");
-                console.error("\x1b[31m" + error + "\x1b[0m");
-            }
-        };
+            };
 
-        this.gama_socket.addEventListener('close', (event) => {
+            this.gama_socket.onerror = (error) => {
+                console.error("[GAMA CONNECTOR] An error happened within the Gama Server WebSocket");
+                if (useVerbose) console.error(error);
+                this.setGamaConnection(false);
+
+                console.warn("[GAMA CONNECTOR] Reconnecting in 5s...");
+                setTimeout(() => this.connectGama(), 5000);
+            };
+
+
+        } catch (error: any) {  // in case the Websocket instantiation fails for some rare reason
+            console.error("[GAMA CONNECTOR] An error broke the WebSocket:", error);
+            this.gama_socket = null; // Set to null if there was an error, so a reconnection may be triggered
+
             this.setGamaConnection(false);
             this.setGamaExperimentState("NONE");
+            this.controller.player_manager.setRemoveInGameEveryPlayers();
+
+            console.warn("[GAMA CONNECTOR] Reconnecting in 5s...");
+            setTimeout(() => this.connectGama(), 5000);
+        } finally {
             this.setGamaLoading(false);
-            if(this.model !== undefined) {
-                this.controller.player_manager.setRemoveInGameEveryPlayers();
-            }
-
-            if (event.wasClean) {
-                console.log('[GAMA CONNECTOR] The connection with Gama Server was properly closed');
-            } else {
-                console.error('[GAMA CONNECTOR] The connection with Gama Server was interrupted suddenly');
-                console.warn("[GAMA CONNECTOR] Reconnecting in 10s...");
-                setTimeout(() => { this.connectGama(); }, 10000);
-            }
-        });
-
-        this.gama_socket.addEventListener('error', (error) => {
-            console.error("[GAMA CONNECTOR] Failed to connect with Gama Server");
-            if (useVerbose) console.error(error);
-        });
-
-        this.setGamaLoading(false);
+        }
     }
 
     /**
@@ -225,16 +265,17 @@ class GamaConnector {
         const copy_listMessages = this.listMessages;
         for (const message of copy_listMessages) {
             try {
-                if (typeof message === "function") {
-                    this.gama_socket.send( JSON.stringify( message() ) );
-                    if (useVerbose)
-                        if (message().expr !== undefined)
-                            console.log("Expression sent to Gama Server: " + '\'' + message().expr + '\'' + " Waiting for the answer (if any)...");
-                        else
-                            console.log("Message sent to Gama Server: type " + message().type + ". Waiting for the answer (if any)...");
-                } else {
-                    this.gama_socket.send( JSON.stringify( message ) );
-                }
+                if (this.gama_socket != null)
+                    if (typeof message === "function") {
+                        this.gama_socket.send( JSON.stringify( message() ) );
+                        if (useVerbose)
+                            if (message().expr !== undefined)
+                                console.log("Expression sent to Gama Server: " + '\'' + message().expr + '\'' + " Waiting for the answer (if any)...");
+                            else
+                                console.log("Message sent to Gama Server: type " + message().type + ". Waiting for the answer (if any)...");
+                    } else {
+                        this.gama_socket.send( JSON.stringify( message ) );
+                    }
             }
             catch (e) {
                 console.error("[GAMA CONNECTOR] Error while sending this command to GAMA:", message);
