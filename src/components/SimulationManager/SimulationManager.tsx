@@ -98,17 +98,6 @@ const SimulationManager: React.FC = () => {
     }
   }, [selectedSimulation, navigate]);
 
-
-
-  // Générer une liste complète de casques (connectés + vides)
-  const playerHeadsets = [
-    ...detectedPlayers.map((key) => ({
-      id: key,
-      connected: playerList[key].connected,
-    })),
-    ...Array(remainingPlayers).fill({ connected: false }), // Remplir les casques non détectés
-  ];
-
   // Handler for removing players
   const handleRemove = (id: string) => {
     if (ws !== null) {

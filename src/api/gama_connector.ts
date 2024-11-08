@@ -39,7 +39,7 @@ class GamaConnector {
 
     setGamaConnection(connected: boolean) {
         this.jsonGamaState.connected = connected;
-        this.setGamaLoading(connected);
+        this.setGamaLoading(!connected);
         this.controller.notifyMonitor();
     }
 
@@ -393,13 +393,13 @@ class GamaConnector {
         if (useVerbose) console.log("[GAMA CONNECTOR] Removing player from game: " + idPlayer);
 
         if (['NONE', "NOTREADY"].includes(this.jsonGamaState.experiment_state)) {
-            console.log("[GAMA CONNECTOR] Gama Simulation is not running, cannot remove player");
+            if (useVerbose) console.log("[GAMA CONNECTOR] Gama Simulation is not running, cannot remove player");
             return;
         }
 
         const playerState = this.controller.player_manager.getPlayerState(idPlayer);
         if (playerState && !playerState.in_game) {
-            console.log("[GAMA CONNECTOR] Player " + idPlayer + " is already out of the game");
+            if (useVerbose) console.log("[GAMA CONNECTOR] Player " + idPlayer + " is already out of the game");
             return;
         }
 

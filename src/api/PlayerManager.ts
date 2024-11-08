@@ -2,6 +2,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 
 import {useExtraVerbose, useVerbose, useAggressiveDisconnect} from './index.js';
 import { PlayerSocket, PlayerJson, JsonOutput, PlayerState } from "./constants.ts";
+import controller from "./controller.ts";
 
 /**
  * Creates a websocket server to handle player connections
@@ -224,7 +225,7 @@ class PlayerManager {
         this.controller.notifyMonitor();
         if ( !['NONE', "NOTREADY"].includes(this.controller.gama_connector.jsonGamaState.experiment_state) ) {
             if (useVerbose) console.log("[PLAYER MANAGER] Automatically adding new " + idPlayer + " to GAMA simulation...");
-            this.setPlayerInGame(idPlayer, true);
+            this.controller.addInGamePlayer(idPlayer, connected);
         }
     }
 
