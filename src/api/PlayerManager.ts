@@ -228,6 +228,13 @@ class PlayerManager {
         }
     }
 
+    addEveryPlayer(): void {
+        for( const index in this.playersList){
+            this.controller.gama_connector.addInGamePlayer(index);
+            this.setPlayerInGame(index, true);
+        }
+    }
+
     /**
      * Automatically send Heartbeat ping message to every player's open websocket
      */
@@ -285,7 +292,7 @@ class PlayerManager {
             };
 
             this.playerSocketClients[index].send(JSON.stringify({ ...jsonStatePlayer, ...jsonPlayer }));
-            if (useVerbose) console.log(`[PLAYER MANAGER][DEBUG Player ${idPlayer}] Receiving state update ${JSON.stringify({ ...jsonStatePlayer, ...jsonPlayer })}`);
+            if (useVerbose) console.log(`[PLAYER MANAGER][DEBUG Player ${idPlayer}] Sending state update ${JSON.stringify({ ...jsonStatePlayer, ...jsonPlayer })}`);
         }
     }
 

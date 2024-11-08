@@ -109,6 +109,14 @@ export class Controller {
 
     launchExperiment() {
         this.gama_connector.launchExperiment();
+        // Try until simulation is ready
+        const interval= setInterval(() => {
+            if (!['NONE', "NOTREADY"].includes(this.gama_connector.jsonGamaState.experiment_state)) {
+                // Stop calling
+                clearInterval(interval);
+                this.player_manager.addEveryPlayer();
+            }
+        }, 100);
     }
 
     stopExperiment() {
