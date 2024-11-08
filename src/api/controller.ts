@@ -72,23 +72,11 @@ export class Controller {
         this.player_manager.broadcastSimulationOutput(json_output);
     }
 
-    cleanAll() {
-        this.player_manager.cleanAll();
-    }
-
     /*
     =============================
         GAMA CONNECTOR
     =============================
      */
-
-    removeInGameEveryPlayers() {
-        this.gama_connector.removeInGameEveryPlayers();
-    }
-
-    addInGameEveryPlayers() {
-        this.gama_connector.addInGameEveryPlayers();
-    }
 
     addInGamePlayer(id_player: string) {
         this.gama_connector.addInGamePlayer(id_player);

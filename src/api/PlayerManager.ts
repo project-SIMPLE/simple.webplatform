@@ -179,23 +179,9 @@ class PlayerManager {
         delete this.playersList[idPlayer];
         this.controller.notifyMonitor();
 
-        this.getWsClient(idPlayer).close();
-    }
+        console.log(this.playersList);
 
-    /**
-     * Cleans from the display all the players that are disconnected and not in-game
-     */
-    cleanAll() {
-        for (let idPlayer in this.getPlayerList()) {
-            if (this.playersList[idPlayer] !== undefined
-                && !this.playersList[idPlayer].connected
-                && !this.playersList[idPlayer].in_game) {
-                const index = this.playerSocketClientsId.indexOf(idPlayer);
-                this.playerSocketClientsId.splice(index, 1);
-                this.playerSocketClients.splice(index, 1);
-                this.removePlayer(idPlayer);
-            }
-        }
+        this.getWsClient(idPlayer).close();
     }
 
     // Interact with Player

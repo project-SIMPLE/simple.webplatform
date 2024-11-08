@@ -55,12 +55,6 @@ export class MonitorServer {
                         case "try_connection":
                             this.controller.connectGama();
                             break;
-                        case "add_every_players":
-                            this.controller.addInGameEveryPlayers();
-                            break;
-                        case "remove_every_players":
-                            this.controller.removeInGameEveryPlayers();
-                            break;
                         case "add_player_headset":
                             if (jsonMonitor.id) {
                                 this.controller.addInGamePlayer(jsonMonitor.id);
@@ -72,9 +66,6 @@ export class MonitorServer {
                             } else {
                                 console.error("[MONITOR] Failed to remove player headset, missing PlayerID");
                             }
-                            break;
-                        case "clean_all":
-                            this.controller.cleanAll();
                             break;
                         case "get_simulation_informations":
                             // send to the Web socket Manager

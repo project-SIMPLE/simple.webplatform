@@ -370,37 +370,6 @@ class GamaConnector {
     }
 
     /**
-     * Adds all the players which are connected but not authenticated
-     */
-    addInGameEveryPlayers() {
-        let index = 0;
-        for (const idPlayer in this.controller.player_manager.getPlayerList()) {
-            if (this.controller.player_manager.getPlayerState(idPlayer) && this.controller.player_manager.getPlayerState(idPlayer).connected && !this.controller.player_manager.getPlayerState(idPlayer).in_game) {
-                setTimeout(() => { this.addInGamePlayer(idPlayer); }, 300 * index);
-                index += 1;
-            }
-        }
-    }
-
-    /**
-     * Removes all the players which are authenticated
-     */
-    removeInGameEveryPlayers() {
-        if (["RUNNING", 'PAUSED'].includes(this.jsonGamaState.experiment_state)) {
-            let index = 0;
-            for (let idPlayer in this.controller.player_manager.getPlayerList()) {
-                if (this.controller.player_manager.getPlayerState(idPlayer) && this.controller.player_manager.getPlayerState(idPlayer).in_game) {
-                    const id_player_copy = idPlayer;
-                    setTimeout(() => { this.removeInGamePlayer(id_player_copy); }, 300 * index);
-                    index += 1;
-                }
-            }
-        } else {
-            this.controller.player_manager.setRemoveInGameEveryPlayers();
-        }
-    }
-
-    /**
      * Sends an expression for a certain player
      * @param {string} idPlayer - The id of the player to apply this expression
      * @param {string} expr - The expression. If this expression contains $id, it will be replaced by the id of the player which asked the method
