@@ -2,13 +2,13 @@ import { WebSocketServer, WebSocket } from 'ws';
 
 import {useExtraVerbose, useVerbose, useAggressiveDisconnect} from './index.js';
 import { PlayerSocket, PlayerJson, JsonOutput, PlayerState } from "./constants.ts";
-import controller from "./controller.ts";
+import Controller from "./controller.ts";
 
 /**
  * Creates a websocket server to handle player connections
  */
 class PlayerManager {
-    controller: any;
+    controller: Controller;
     playerSocket: WebSocketServer;
     playerSocketClients: PlayerSocket[];
     playerSocketClientsId: string[];
@@ -19,7 +19,7 @@ class PlayerManager {
      * Creates a Websocket Server
      * @param {any} controller - The controller of the project
      */
-    constructor(controller: any) {
+    constructor(controller: Controller) {
         this.controller = controller;
         this.playerSocket = new WebSocketServer({ port: Number(process.env.HEADSET_WS_PORT) });
 
@@ -83,7 +83,7 @@ class PlayerManager {
                             break;
 
                         case "disconnect_properly":
-                            this.controller.removeInGamePlayer(this.getIdClient(ws));
+                            this.controller.purgePlayer(this.getIdClient(ws));
                             ws.close();
                             break;
 

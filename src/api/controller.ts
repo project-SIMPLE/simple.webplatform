@@ -64,7 +64,7 @@ export class Controller {
     =============================
      */
 
-    notifyPlayerChange(id_player: number, json_player: JsonPlayer) {
+    notifyPlayerChange(id_player: string, json_player: JsonPlayer) {
         this.player_manager.notifyPlayerChange(id_player, json_player);
     }
 
