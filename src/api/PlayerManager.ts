@@ -94,6 +94,7 @@ class PlayerManager {
                 } catch (exception) {
                     console.error("\x1b[31m[PLAYER MANAGER] The last message received from " + this.getIdClient(ws) + " created an internal error.\x1b[0m");
                     console.error(message);
+                    console.error(JSON.parse(message));
                     console.error(exception);
                 }
             });
@@ -182,7 +183,13 @@ class PlayerManager {
 
         console.log(this.playersList);
 
-        this.getWsClient(idPlayer).close();
+        const wsPlayer = this.getWsClient(idPlayer);
+        if (wsPlayer) {
+            this.getWsClient(idPlayer).close();
+            const index = this.playerSocketClientsId.indexOf(idPlayer);
+            delete this.playerSocketClients[index];
+            delete this.playerSocketClientsId[index];
+        }
     }
 
     // Interact with Player
@@ -221,11 +228,13 @@ class PlayerManager {
     addPlayerConnection(idPlayer: string, connected: boolean) {
         this.playersList[idPlayer].connected = connected;
         this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
-        this.controller.notifyPlayerChange(idPlayer, this.playersList[idPlayer]);
-        this.controller.notifyMonitor();
+
         if ( !['NONE', "NOTREADY"].includes(this.controller.gama_connector.jsonGamaState.experiment_state) ) {
             if (useVerbose) console.log("[PLAYER MANAGER] Automatically adding new " + idPlayer + " to GAMA simulation...");
-            this.controller.addInGamePlayer(idPlayer, connected);
+            this.controller.addInGamePlayer(idPlayer);
+        } else {
+            this.controller.notifyPlayerChange(idPlayer, this.playersList[idPlayer]);
+            this.controller.notifyMonitor();
         }
     }
 
@@ -284,8 +293,8 @@ class PlayerManager {
      * @param {number} idPlayer - The id of the player that needs to be informed about a change
      * @param {object} jsonPlayer - The jsonPlayer to be sent
      */
-    notifyPlayerChange(idPlayer: number, jsonPlayer: any) {
-        const index = this.playerSocketClientsId.indexOf(idPlayer.toString());
+    notifyPlayerChange(idPlayer: string, jsonPlayer: any) {
+        const index = this.playerSocketClientsId.indexOf(idPlayer);
         if (index !== -1) {
             const jsonStatePlayer = {
                 type: "json_state",
