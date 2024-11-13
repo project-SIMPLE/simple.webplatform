@@ -1,0 +1,32 @@
+/**
+* Name: ChooseMode
+* This wizard creates a new experiment file. 
+* Author: drogoul
+* Tags: 
+*/
+
+experiment "Choose mode" model: "Base Model.gaml" parent: "Base" type: gui {
+	
+	output {
+		display "UI" parent: map {}
+	}
+	
+
+	action _init_ {
+		map result <- user_input_dialog("Flooding game", [choose("Choose a difficulty", string, "normal", ["easy", "normal", "hard"])]);
+		string difficulty <- result["Choose a difficulty"];
+		switch difficulty {
+			match "easy" {
+				create simulation with: (nb_of_people: 200, budget_year: 4000, the_alert_strategy: "CLOSEST", my_csv_file: csv_file("../includes/FLoodDataH.csv"), limitscore: 2000000000);
+			}
+
+			match "normal" {
+				create simulation with: (nb_of_people: 400, budget_year: 3500, the_alert_strategy: "CLOSEST", my_csv_file: csv_file("../includes/FLoodDataH.csv"), limitscore: 300000000);
+			}
+
+			match "hard" {
+				create simulation with: (nb_of_people: 600, budget_year: 2500, the_alert_strategy: "CLOSEST", my_csv_file: csv_file("../includes/FLoodDataH.csv"), limitscore: 55000);
+			} 
+		} 
+	} 		
+} 
