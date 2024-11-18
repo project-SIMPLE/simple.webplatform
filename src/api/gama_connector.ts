@@ -2,13 +2,15 @@ import WebSocket from 'ws';
 
 import { useVerbose, useExtraVerbose } from './index.js';
 import { GamaState, GAMA_ERROR_MESSAGES } from "./constants.ts";
+import Model from "./model.ts";
+import Controller from "./controller.ts";
 
 /**
  * This class creates a websocket client for Gama Server.
  */
 class GamaConnector {
-    controller: any;
-    model: any;
+    controller: Controller;
+    model!: Model;
     jsonGamaState: GamaState;
     gama_socket: WebSocket | null = null;
 
@@ -18,7 +20,7 @@ class GamaConnector {
      * Constructor of the websocket client
      * @param {any} controller - The controller of the project
      */
-    constructor(controller: any) {
+    constructor(controller: Controller) {
         this.controller = controller;
         // Initialise class and settings before first attempt to connect to gama
         this.jsonGamaState = {
@@ -243,7 +245,7 @@ class GamaConnector {
             };
 
 
-        } catch (error: any) {  // in case the Websocket instantiation fails for some rare reason
+        } catch (error) {  // in case the Websocket instantiation fails for some rare reason
             console.error("[GAMA CONNECTOR] An error broke the WebSocket:", error);
             this.gama_socket = null; // Set to null if there was an error, so a reconnection may be triggered
 
@@ -441,7 +443,7 @@ class GamaConnector {
     }
 
     close() {
-        this.gama_socket.close();
+        if (this.gama_socket !== null) this.gama_socket.close();
     }
 }
 

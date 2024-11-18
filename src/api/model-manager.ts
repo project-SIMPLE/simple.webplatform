@@ -4,9 +4,10 @@ import { isAbsolute } from 'path';
 
 import Model from './model';
 import { useVerbose } from './index';
+import Controller from "./controller.ts";
 
 class ModelManager {
-    controller: any;
+    controller: Controller;
     models: Model[];
     activeModel: Model | undefined;
 
@@ -14,7 +15,7 @@ class ModelManager {
      * Creates the model manager
      * @param {any} controller - The controller of the server project
      */
-    constructor(controller: any) {
+    constructor(controller: Controller) {
         this.controller = controller;
         this.models = this.#initModelsList();
     }
