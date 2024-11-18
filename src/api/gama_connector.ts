@@ -313,35 +313,32 @@ class GamaConnector {
     /**
      * Asks Gama to stop the experiment
      */
-    stopExperiment() {
-        const currentState = this.jsonGamaState.experiment_state;
-
-        if (currentState === 'RUNNING') {
-            console.log("Pausing the simulation before stopping...");
-            this.pauseExperiment(() => {
-                console.log("Simulation paused. Now stopping...");
-                this.executeStopExperiment();
-            });
-        } else if (['PAUSED', 'NOTREADY'].includes(currentState)) {
-            this.executeStopExperiment();
-        }
-    }
-
-    executeStopExperiment() {
-        this.listMessages = [this.jsonControlGamaExperiment("stop")];
+    async stopExperiment() {
         this.setGamaLoading(true);
+        // Try to pause before closing experiment
+        this.pauseExperiment();
+
+        // Wait for simulation to be fully paused
+        while (this.jsonGamaState.experiment_state != "PAUSED"){
+            await new Promise( resolve => setTimeout(resolve, 1) );
+        }
+
+        // Stop experiment
+        this.listMessages = [this.jsonControlGamaExperiment("stop")];
 
         this.sendMessages(() => {
             this.setGamaLoading(false);
-            this.controller.player_manager.setRemoveInGameEveryPlayers();
-        });
+        })
+
+        this.jsonGamaState.experiment_state = "NONE";
     }
 
     /**
      * Asks Gama to pause the experiment
      */
-    pauseExperiment(callback: () => void) {
+    pauseExperiment(callback?: () => void) {
         if (this.jsonGamaState.experiment_state === 'RUNNING') {
+            if (useVerbose) console.log("[GAMA CONNECTOR] Pausing simulation...")
             this.listMessages = [this.jsonControlGamaExperiment("pause")];
             this.setGamaLoading(true);
 

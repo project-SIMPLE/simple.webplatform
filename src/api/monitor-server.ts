@@ -46,7 +46,6 @@ export class MonitorServer {
                             this.controller.stopExperiment();
                             break;
                         case "pause_experiment":
-                            // @ts-ignore
                             this.controller.pauseExperiment();
                             break;
                         case "resume_experiment":

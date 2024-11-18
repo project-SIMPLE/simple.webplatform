@@ -44,7 +44,7 @@ export class Controller {
     =============================
      */
 
-    getSimulationInformations(): JsonSettings {
+    getSimulationInformations(): string {
         return this.model_manager.getModelListJSON();
     }
 
@@ -120,10 +120,14 @@ export class Controller {
     }
 
     stopExperiment() {
+        this.player_manager.setRemoveInGameEveryPlayers()
+
         this.gama_connector.stopExperiment();
+
+        this.notifyMonitor();
     }
 
-    pauseExperiment(callback: () => void) {
+    pauseExperiment(callback?: () => void) {
         this.gama_connector.pauseExperiment(callback);
     }
 
