@@ -262,7 +262,7 @@ class PlayerManager {
         // Stop pinging if player already disconnected
         if(!this.playerList.has(idPlayer) || !this.playerList.get(idPlayer)!.connected) {
             if (useVerbose) console.log("[PLAYER MANAGER] " + idPlayer + " is already disconnected, stop pinging...");
-            clearTimeout(this.playerList.get(idPlayer)!.timeout);
+            if (this.playerList.has(idPlayer)) clearTimeout(this.playerList.get(idPlayer)!.timeout);
             return;
         } else {
             clearTimeout(this.playerList.get(idPlayer)!.timeout);
