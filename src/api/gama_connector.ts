@@ -145,7 +145,7 @@ class GamaConnector {
             this.gama_socket = new WebSocket(`ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
 
             this.gama_socket.onopen = () => {
-                console.log(`[GAMA CONNECTOR] Connected to Gama Server on ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
+                console.log(`[GAMA CONNECTOR] Opening connection with GAMA Server`);
 
                 this.setGamaConnection(true);
                 this.setGamaExperimentState('NONE');
@@ -191,6 +191,10 @@ class GamaConnector {
                                 console.error("[GAMA CONNECTOR] Failed to broadcast Simulation Output from Gama Server");
                                 console.error(exception);
                             }
+                            break;
+
+                        case "ConnectionSuccessful":
+                            if (useVerbose) console.log(`[GAMA CONNECTOR] Connected to Gama Server on ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
                             break;
 
                         default:
