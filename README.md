@@ -30,7 +30,7 @@ Built with **React**, **TypeScript**, and **Vite**, this project leverages moder
 ## Getting Started 🏗️  
 
 ### Prerequisites  
-- Node.js >= v14  
+- Node.js >= v22
 - npm or yarn  
 
 ### Installation  
