@@ -120,7 +120,7 @@ export class Controller {
     }
 
     stopExperiment() {
-        this.player_manager.setRemoveInGameEveryPlayers()
+        this.player_manager.removeAllPlayerInGame()
 
         this.gama_connector.stopExperiment();
 

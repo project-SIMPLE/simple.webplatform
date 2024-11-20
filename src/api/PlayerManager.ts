@@ -4,16 +4,31 @@ import {useExtraVerbose, useVerbose, useAggressiveDisconnect} from './index.js';
 import { PlayerSocket, PlayerJson, JsonOutput, PlayerState } from "./constants.ts";
 import Controller from "./controller.ts";
 
+export interface Player {
+    //id: string,
+    // Player Socket
+    ws: WebSocket,
+    is_alive: boolean
+    // Player State
+    connected: boolean,
+    in_game: boolean,
+    date_connection: string,
+}
+
 /**
  * Creates a websocket server to handle player connections
  */
 class PlayerManager {
     controller: Controller;
-    playerSocket: WebSocketServer;
-    playerSocketClients: PlayerSocket[];
-    playerSocketClientsId: string[];
     pingInterval: NodeJS.Timeout;
-    playersList: Record<string, PlayerState> = {};
+
+    playerSocket: WebSocketServer;
+
+    // playerSocketClients: PlayerSocket[];
+    // playerSocketClientsId: string[];
+    // playersList: Record<string, PlayerState> = {};
+
+    playerList: Map<string, Player>;
 
     /**
      * Creates a Websocket Server
@@ -23,14 +38,11 @@ class PlayerManager {
         this.controller = controller;
         this.playerSocket = new WebSocketServer({ port: Number(process.env.HEADSET_WS_PORT) });
 
-        // Logging connected clients to seamlessly allow client's reconnection
-        this.playerSocketClients = [];
-        this.playerSocketClientsId = [];
+        this.playerList = new Map<string, Player>()
 
         this.playerSocket.on('connection', (ws: PlayerSocket) => {
-            ws.isAlive = true;
-
             ws.on('message', (message: string) => {
+                ws.isAlive = true;
                 try {
                     const jsonPlayer: PlayerJson = JSON.parse(message);
                     const type = jsonPlayer.type;
@@ -48,23 +60,25 @@ class PlayerManager {
                             break;
 
                         case "connection":
-                            if (this.playersList[jsonPlayer.id] !== undefined) {
-                                const index = this.playerSocketClientsId.indexOf(jsonPlayer.id);
-                                this.playerSocketClients[index] = ws;
-                                this.addPlayerConnection(jsonPlayer.id, true);
+                            if (this.playerList.has(jsonPlayer.id)) {
                                 console.log('[PLAYER MANAGER] Reconnection of the player of id ' + jsonPlayer.id);
+                                this.playerList.get(jsonPlayer.id)!.ws = ws;
+                                // Add in simulation if not already the case
+                                if (!this.playerList.get(jsonPlayer.id)!.in_game) this.addPlayerConnection(jsonPlayer.id, true);
+
+                                console.log(this.playerList.get(jsonPlayer.id));
                             } else {
-                                this.playerSocketClients.push(ws);
-                                this.playerSocketClientsId.push(jsonPlayer.id);
+                                console.log('[PLAYER MANAGER] New connection of the player of id ' + jsonPlayer.id);
                                 // Create new player in the list
-                                this.playersList[jsonPlayer.id] = {
+                                this.playerList.set(jsonPlayer.id, {
+                                    ws: ws,
+                                    is_alive: true,
                                     connected: false,
                                     in_game: false,
-                                    date_connection: ""
-                                };
+                                    date_connection: "",
+                                })
 
                                 this.addPlayerConnection(jsonPlayer.id, true);
-                                console.log('[PLAYER MANAGER] New connection of the player of id ' + jsonPlayer.id);
                             }
                             break;
 
@@ -101,12 +115,12 @@ class PlayerManager {
 
             ws.on('close', () => {
                 const idPlayer = this.getIdClient(ws);
-                if (this.playersList[idPlayer] !== undefined) {
+                if (this.playerList.has(idPlayer)) {
                     if (useAggressiveDisconnect){
                         this.controller.purgePlayer(idPlayer);
                     } else {
-                        this.playersList[idPlayer].connected = false;
-                        this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+                        this.playerList.get(idPlayer)!.connected = false;
+                        this.playerList.get(idPlayer)!.date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
 
                         console.log("[PLAYER MANAGER] The player " + idPlayer + " disconnected");
                     }
@@ -122,8 +136,8 @@ class PlayerManager {
                 if (useAggressiveDisconnect){
                     this.controller.purgePlayer(idPlayer);
                 } else {
-                    this.playersList[idPlayer].connected = false;
-                    this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+                    this.playerList.get(idPlayer)!.connected = false;
+                    this.playerList.get(idPlayer)!.date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
                 }
             });
         });
@@ -142,12 +156,19 @@ class PlayerManager {
 
     // Getters
     getIdClient(ws: PlayerSocket): string {
-        return this.playerSocketClientsId[this.playerSocketClients.indexOf(ws)];
+        let toReturn: string = "";
+        for (const [key, player] of this.playerList) {
+            if (player.ws === ws) {
+                toReturn = key;
+                break;
+            }
+        }
+        return toReturn;
     }
-
-    getWsClient(id: string): PlayerSocket {
-        return this.playerSocketClients[this.playerSocketClientsId.indexOf(id)];
-    }
+    //
+    // getWsClient(id: string): PlayerSocket {
+    //     return this.playerSocketClients[this.playerSocketClientsId.indexOf(id)];
+    // }
 
     /**
      * Gets the state of a specific player
@@ -155,15 +176,16 @@ class PlayerManager {
      * @returns {PlayerState} - The state of the player
      */
     getPlayerState(idPlayer: string): PlayerState {
-        return this.playersList[idPlayer];
+        const player: Player = this.playerList.get(idPlayer)!;
+        return {connected: player.connected, in_game: player.in_game, date_connection: player.date_connection}
     }
 
     /**
      * Gets all players
      * @returns {Record<string, PlayerState>} - A record of all players
      */
-    getPlayerList(): Record<string, PlayerState> {
-        return this.playersList;
+    getPlayerList() {
+        return this.playerList;
     }
 
     // Setters
@@ -177,19 +199,11 @@ class PlayerManager {
      */
     removePlayer(idPlayer: string) {
         if (useVerbose) console.log("[PLAYER MANAGER] Deleting player", idPlayer);
-
-        delete this.playersList[idPlayer];
+        // Properly close web socket
+        this.playerList.get(idPlayer)!.ws.close();
+        // Remove player
+        this.playerList.delete(idPlayer);
         this.controller.notifyMonitor();
-
-        console.log(this.playersList);
-
-        const wsPlayer = this.getWsClient(idPlayer);
-        if (wsPlayer) {
-            this.getWsClient(idPlayer).close();
-            const index = this.playerSocketClientsId.indexOf(idPlayer);
-            delete this.playerSocketClients[index];
-            delete this.playerSocketClientsId[index];
-        }
     }
 
     // Interact with Player
@@ -198,10 +212,10 @@ class PlayerManager {
      * @param {string} idPlayer - Player ID
      * @param {boolean} inGame - In-game status
      */
-    setPlayerInGame(idPlayer: string, inGame: boolean) {
-        if (this.playersList[idPlayer] !== undefined) {
-            this.playersList[idPlayer].in_game = inGame;
-            this.controller.notifyPlayerChange(idPlayer, this.playersList[idPlayer]);
+    togglePlayerInGame(idPlayer: string, inGame: boolean) {
+        if (this.playerList.has(idPlayer)) {
+            this.playerList.get(idPlayer)!.in_game = inGame;
+            this.notifyPlayerChange(idPlayer, this.playerList.get(idPlayer));
             this.controller.notifyMonitor();
         } else {
             console.error("[PLAYER MANAGER] Something strange happened while try to change in_game status for", idPlayer, inGame);
@@ -211,14 +225,10 @@ class PlayerManager {
     /**
      * Sets all players' in-game status to false
      */
-    setRemoveInGameEveryPlayers() {
-        for (let idPlayer in this.playersList) {
-            if (this.playersList[idPlayer] !== undefined) {
-                this.playersList[idPlayer].in_game = false;
-                this.controller.notifyPlayerChange(idPlayer, this.playersList[idPlayer]);
-            }
+    removeAllPlayerInGame() {
+        for (const [idPlayer] of this.playerList) {
+            this.togglePlayerInGame(idPlayer, false)
         }
-        this.controller.notifyMonitor();
     }
     /**
      * Sets the connection state of a player
@@ -226,22 +236,22 @@ class PlayerManager {
      * @param {boolean} connected - Connection status
      */
     addPlayerConnection(idPlayer: string, connected: boolean) {
-        this.playersList[idPlayer].connected = connected;
-        this.playersList[idPlayer].date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+        this.playerList.get(idPlayer)!.connected = connected;
+        this.playerList.get(idPlayer)!.date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
 
         if ( !['NONE', "NOTREADY"].includes(this.controller.gama_connector.jsonGamaState.experiment_state) ) {
             if (useVerbose) console.log("[PLAYER MANAGER] Automatically adding new " + idPlayer + " to GAMA simulation...");
             this.controller.addInGamePlayer(idPlayer);
         } else {
-            this.controller.notifyPlayerChange(idPlayer, this.playersList[idPlayer]);
+            this.notifyPlayerChange(idPlayer, this.playerList.get(idPlayer));
             this.controller.notifyMonitor();
         }
     }
 
     addEveryPlayer(): void {
-        for( const index in this.playersList){
-            this.controller.gama_connector.addInGamePlayer(index);
-            this.setPlayerInGame(index, true);
+        for (const [idPlayer] of this.playerList) {
+            this.controller.gama_connector.addInGamePlayer(idPlayer);
+            this.togglePlayerInGame(idPlayer, false)
         }
     }
 
@@ -252,7 +262,7 @@ class PlayerManager {
         this.playerSocket.clients.forEach((socket: WebSocket) => {
             const playerSocket = socket as PlayerSocket;
             if (!playerSocket.isAlive) {
-                console.warn('[PLAYER MANAGER] Terminating dead socket from player ' + this.getWsClient(playerSocket as any));
+                console.warn('[PLAYER MANAGER] Terminating dead socket from player ' + this.getIdClient(playerSocket));
                 return playerSocket.terminate();
             }
 
@@ -269,16 +279,16 @@ class PlayerManager {
      */
     broadcastSimulationOutput(jsonOutput: JsonOutput) {
         if (!jsonOutput.contents) return;
+
         try {
             jsonOutput.contents.forEach((element) => {
                 element.id.forEach((idPlayer) => {
-                    const index = this.playerSocketClientsId.indexOf(idPlayer);
-                    if (index !== -1) {
+                    if (this.playerList.has(idPlayer)) {
                         const jsonOutputPlayer = {
                             contents: element.contents,
                             type: "json_output"
                         };
-                        this.playerSocketClients[index].send(JSON.stringify(jsonOutputPlayer));
+                        this.playerList.get(idPlayer)!.ws.send(JSON.stringify(jsonOutputPlayer));
                     }
                 });
             });
@@ -293,24 +303,23 @@ class PlayerManager {
      * @param {number} idPlayer - The id of the player that needs to be informed about a change
      * @param {object} jsonPlayer - The jsonPlayer to be sent
      */
-    notifyPlayerChange(idPlayer: string, jsonPlayer: any) {
-        const index = this.playerSocketClientsId.indexOf(idPlayer);
-        if (index !== -1) {
+    notifyPlayerChange(idPlayer: string, jsonPlayer: Player) {
+        const { ws, ...newJsonPlayer } = jsonPlayer;
+        if (this.playerList.has(idPlayer)) {
             const jsonStatePlayer = {
                 type: "json_state",
                 id_player: idPlayer
             };
 
-            this.playerSocketClients[index].send(JSON.stringify({ ...jsonStatePlayer, ...jsonPlayer }));
-            if (useVerbose) console.log(`[PLAYER MANAGER][DEBUG Player ${idPlayer}] Sending state update ${JSON.stringify({ ...jsonStatePlayer, ...jsonPlayer })}`);
+            this.playerList.get(idPlayer)!.ws.send(JSON.stringify({...jsonStatePlayer, ...newJsonPlayer}));
+            if (useVerbose) console.log(`[PLAYER MANAGER][DEBUG Player ${idPlayer}] Sending state update ${JSON.stringify({...jsonStatePlayer, ...newJsonPlayer})}`);
         }
     }
 
     close() {
-        const copyPlayerSocketClientsId = this.playerSocketClientsId;
-
-        for (let i = 0; i < copyPlayerSocketClientsId.length; i++) {
-            this.removePlayer(copyPlayerSocketClientsId[i]);
+        // Notify players that they are removed
+        for (const [idPlayer] of this.playerList) {
+            this.removePlayer(idPlayer)
         }
 
         this.playerSocket.close();

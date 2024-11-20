@@ -162,7 +162,7 @@ class GamaConnector {
 
                             this.setGamaExperimentId(message.exp_id);
                             if (['NONE', 'NOTREADY'].includes(message.content) && ['RUNNING', 'PAUSED', 'NOTREADY'].includes(this.jsonGamaState.experiment_state)) {
-                                this.controller.player_manager.setRemoveInGameEveryPlayers();
+                                this.controller.player_manager.removeAllPlayerInGame();
                             }
 
                             this.setGamaExperimentState(message.content);
@@ -225,7 +225,7 @@ class GamaConnector {
                 this.setGamaExperimentState("NONE");
 
                 // Always calls remove in game players when the socket closes
-                this.controller.player_manager.setRemoveInGameEveryPlayers();
+                this.controller.player_manager.removeAllPlayerInGame();
 
                 if (event.wasClean) {
                     console.log('[GAMA CONNECTOR] Connection with Gama Server closed cleanly, not reconnecting');
@@ -255,7 +255,7 @@ class GamaConnector {
 
             this.setGamaConnection(false);
             this.setGamaExperimentState("NONE");
-            this.controller.player_manager.setRemoveInGameEveryPlayers();
+            this.controller.player_manager.removeAllPlayerInGame();
 
             console.warn("[GAMA CONNECTOR] Reconnecting in 5s...");
             setTimeout(() => this.connectGama(), 5000);
@@ -384,7 +384,7 @@ class GamaConnector {
 
         this.sendMessages(() => {
             console.log("-> The Player " + idPlayer + " has been added to Gama");
-            this.controller.player_manager.setPlayerInGame(idPlayer, true);
+            this.controller.player_manager.togglePlayerInGame(idPlayer, true);
         });
     }
 
@@ -409,7 +409,7 @@ class GamaConnector {
         this.listMessages = [this.jsonTogglePlayer("remove", idPlayer)];
 
         this.sendMessages(() => {
-            this.controller.player_manager.setPlayerInGame(idPlayer, false);
+            this.controller.player_manager.togglePlayerInGame(idPlayer, false);
         });
     }
 
