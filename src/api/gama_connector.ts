@@ -384,7 +384,6 @@ class GamaConnector {
 
         this.sendMessages(() => {
             console.log("-> The Player " + idPlayer + " has been added to Gama");
-            this.controller.player_manager.togglePlayerInGame(idPlayer, true);
         });
     }
 

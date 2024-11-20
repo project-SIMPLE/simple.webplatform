@@ -60,10 +60,11 @@ class PlayerManager {
                             if (this.playerList.has(jsonPlayer.id)) {
                                 console.log('[PLAYER MANAGER] Reconnection of the player of id ' + jsonPlayer.id);
                                 this.playerList.get(jsonPlayer.id)!.ws = ws;
+                                this.playerList.get(jsonPlayer.id)!.connected = true;
+
                                 // Add in simulation if not already the case
                                 if (!this.playerList.get(jsonPlayer.id)!.in_game) this.addPlayerConnection(jsonPlayer.id, true);
-
-                                console.log(this.playerList.get(jsonPlayer.id));
+                                this.notifyPlayerChange(jsonPlayer.id);
                             } else {
                                 console.log('[PLAYER MANAGER] New connection of the player of id ' + jsonPlayer.id);
                                 // Create new player in the list
@@ -240,16 +241,17 @@ class PlayerManager {
         if ( !['NONE', "NOTREADY"].includes(this.controller.gama_connector.jsonGamaState.experiment_state) ) {
             if (useVerbose) console.log("[PLAYER MANAGER] Automatically adding new " + idPlayer + " to GAMA simulation...");
             this.controller.addInGamePlayer(idPlayer);
-        } else {
-            this.notifyPlayerChange(idPlayer, this.playerList.get(idPlayer)!);
-            this.controller.notifyMonitor();
+            this.togglePlayerInGame(idPlayer, true);
         }
+
+        this.notifyPlayerChange(idPlayer, this.playerList.get(idPlayer)!);
+        this.controller.notifyMonitor();
     }
 
     addEveryPlayer(): void {
         for (const [idPlayer] of this.playerList) {
             this.controller.gama_connector.addInGamePlayer(idPlayer);
-            this.togglePlayerInGame(idPlayer, false)
+            this.togglePlayerInGame(idPlayer, true)
         }
     }
 
@@ -313,8 +315,11 @@ class PlayerManager {
      * @param {number} idPlayer - The id of the player that needs to be informed about a change
      * @param {object} jsonPlayer - The jsonPlayer to be sent
      */
-    notifyPlayerChange(idPlayer: string, jsonPlayer: Player) {
-        const { ws, ...newJsonPlayer } = jsonPlayer;
+    notifyPlayerChange(idPlayer: string, jsonPlayer?: Player) {
+        if (jsonPlayer == undefined)
+            jsonPlayer = this.playerList.get(idPlayer);
+
+        const { ws, timeout, ...newJsonPlayer } = jsonPlayer!;
         if (this.playerList.has(idPlayer)) {
             const jsonStatePlayer = {
                 type: "json_state",
