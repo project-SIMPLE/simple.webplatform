@@ -134,7 +134,7 @@ export class MonitorServer {
                 client.send(JSON.stringify({
                     type: "json_state",
                     gama: this.controller.gama_connector.getJsonGama(),
-                    player: this.controller.player_manager.getPlayerList(),
+                    player: this.controller.player_manager.getArrayPlayerList(),
                 }));
             });
         }

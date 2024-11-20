@@ -162,10 +162,6 @@ class PlayerManager {
         }
         return toReturn;
     }
-    //
-    // getWsClient(id: string): PlayerSocket {
-    //     return this.playerSocketClients[this.playerSocketClientsId.indexOf(id)];
-    // }
 
     /**
      * Gets the state of a specific player
@@ -178,17 +174,20 @@ class PlayerManager {
     }
 
     /**
-     * Gets all players
-     * @returns {Record<string, PlayerState>} - A record of all players
+     * Gets array with all players under a format which can be JSON.stringify
+     * Removed attribute `ws` which is very verbose and not necessary
      */
-    getPlayerList() {
-        return this.playerList;
+    getArrayPlayerList() {
+        // Turn Map to a dictionnary
+        // Remove very verbose `ws` attribute
+        return Object.fromEntries(
+            Array.from(this.playerList.entries()).map(([key, value]) => [key, { ...value, ws: undefined }])
+        );
     }
 
     // Setters
 
     // Managing Player list
-
 
     /**
      * Withdraws a player
