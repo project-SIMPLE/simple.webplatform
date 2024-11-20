@@ -48,6 +48,7 @@ export interface PlayerJson {
     id: string;
     type: string;
     expr?: string;
+    heartbeat?: number;
 }
 
 export interface PlayerState {

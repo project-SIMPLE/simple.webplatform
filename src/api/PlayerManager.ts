@@ -8,6 +8,7 @@ export interface Player {
     //id: string,
     // Player Socket
     ws: WebSocket,
+    ping_interval: number,
     is_alive: boolean
     // Player State
     connected: boolean,
@@ -20,13 +21,8 @@ export interface Player {
  */
 class PlayerManager {
     controller: Controller;
-    pingInterval: NodeJS.Timeout;
 
-    playerSocket: WebSocketServer;
-
-    // playerSocketClients: PlayerSocket[];
-    // playerSocketClientsId: string[];
-    // playersList: Record<string, PlayerState> = {};
+    webSocketServer: WebSocketServer;
 
     playerList: Map<string, Player>;
 
@@ -36,11 +32,11 @@ class PlayerManager {
      */
     constructor(controller: Controller) {
         this.controller = controller;
-        this.playerSocket = new WebSocketServer({ port: Number(process.env.HEADSET_WS_PORT) });
+        this.webSocketServer = new WebSocketServer({ port: Number(process.env.HEADSET_WS_PORT) });
 
         this.playerList = new Map<string, Player>()
 
-        this.playerSocket.on('connection', (ws: PlayerSocket) => {
+        this.webSocketServer.on('connection', (ws: PlayerSocket) => {
             ws.on('message', (message: string) => {
                 ws.isAlive = true;
                 try {
@@ -72,6 +68,7 @@ class PlayerManager {
                                 // Create new player in the list
                                 this.playerList.set(jsonPlayer.id, {
                                     ws: ws,
+                                    ping_interval: jsonPlayer.heartbeat || 5000,
                                     is_alive: true,
                                     connected: false,
                                     in_game: false,
@@ -80,6 +77,8 @@ class PlayerManager {
 
                                 this.addPlayerConnection(jsonPlayer.id, true);
                             }
+                            // Trigger heartbeat per client
+                            setTimeout(() => this.sendHeartbeat(jsonPlayer.id), jsonPlayer.heartbeat || 5000);
                             break;
 
                         case "restart":
@@ -142,7 +141,7 @@ class PlayerManager {
             });
         });
 
-        this.playerSocket.on('error', (err: NodeJS.ErrnoException) => {
+        this.webSocketServer.on('error', (err: NodeJS.ErrnoException) => {
             if (err.code === 'EADDRINUSE') {
                 console.error(`\x1b[31m[PLAYER MANAGER] The port ${process.env.HEADSET_WS_PORT} is already in use. Choose a different port in settings.json.\x1b[0m`);
             } else {
@@ -150,8 +149,6 @@ class PlayerManager {
                 console.error(err);
             }
         });
-
-        this.pingInterval = setInterval(this.sendHeartbeat.bind(this), 5000);
     }
 
     // Getters
@@ -215,7 +212,7 @@ class PlayerManager {
     togglePlayerInGame(idPlayer: string, inGame: boolean) {
         if (this.playerList.has(idPlayer)) {
             this.playerList.get(idPlayer)!.in_game = inGame;
-            this.notifyPlayerChange(idPlayer, this.playerList.get(idPlayer));
+            this.notifyPlayerChange(idPlayer, this.playerList.get(idPlayer)!);
             this.controller.notifyMonitor();
         } else {
             console.error("[PLAYER MANAGER] Something strange happened while try to change in_game status for", idPlayer, inGame);
@@ -243,7 +240,7 @@ class PlayerManager {
             if (useVerbose) console.log("[PLAYER MANAGER] Automatically adding new " + idPlayer + " to GAMA simulation...");
             this.controller.addInGamePlayer(idPlayer);
         } else {
-            this.notifyPlayerChange(idPlayer, this.playerList.get(idPlayer));
+            this.notifyPlayerChange(idPlayer, this.playerList.get(idPlayer)!);
             this.controller.notifyMonitor();
         }
     }
@@ -258,19 +255,28 @@ class PlayerManager {
     /**
      * Automatically send Heartbeat ping message to every player's open websocket
      */
-    sendHeartbeat() {
-        this.playerSocket.clients.forEach((socket: WebSocket) => {
-            const playerSocket = socket as PlayerSocket;
-            if (!playerSocket.isAlive) {
-                console.warn('[PLAYER MANAGER] Terminating dead socket from player ' + this.getIdClient(playerSocket));
-                return playerSocket.terminate();
-            }
+    sendHeartbeat(idPlayer: string): void {
+        // Stop pinging if player already disconnected
+        if(!this.playerList.has(idPlayer) || !this.playerList.get(idPlayer)!.connected) {
+            if (useVerbose) console.log("[PLAYER MANAGER] " + idPlayer + " is already disconnected, stop pinging...");
+            return;
+        }
 
-            playerSocket.isAlive = false;
-            playerSocket.send(JSON.stringify({ type: "ping" }));
+        const playerSocket = this.playerList.get(idPlayer)!.ws as PlayerSocket;
 
-            if (useVerbose) console.log("[PLAYER MANAGER] Sending ping to " + this.getIdClient(playerSocket));
-        });
+        if (!playerSocket.isAlive) {
+            console.warn('[PLAYER MANAGER] Terminating dead socket from ' + idPlayer);
+            this.removePlayer(idPlayer);
+            return playerSocket.terminate();
+        }
+
+        playerSocket.isAlive = false;
+        playerSocket.send(JSON.stringify({ type: "ping" }));
+
+        if (useVerbose) console.log("[PLAYER MANAGER] Sending ping to " + idPlayer);
+
+        // Recall in `ping_interval` ms time
+        setTimeout(() => this.sendHeartbeat(idPlayer), this.playerList.get(idPlayer)!.ping_interval);
     }
 
     /**
@@ -322,7 +328,7 @@ class PlayerManager {
             this.removePlayer(idPlayer)
         }
 
-        this.playerSocket.close();
+        this.webSocketServer.close();
     }
 }
 
