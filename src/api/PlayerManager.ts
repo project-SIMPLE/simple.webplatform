@@ -9,7 +9,8 @@ export interface Player {
     // Player Socket
     ws: WebSocket,
     ping_interval: number,
-    is_alive: boolean
+    is_alive: boolean,
+    timeout?: NodeJS.Timeout,
     // Player State
     connected: boolean,
     in_game: boolean,
@@ -77,8 +78,9 @@ class PlayerManager {
 
                                 this.addPlayerConnection(jsonPlayer.id, true);
                             }
+
                             // Trigger heartbeat per client
-                            setTimeout(() => this.sendHeartbeat(jsonPlayer.id), jsonPlayer.heartbeat || 5000);
+                            this.playerList.get(jsonPlayer.id)!.timeout = setTimeout(() => this.sendHeartbeat(jsonPlayer.id), jsonPlayer.heartbeat || 5000);
                             break;
 
                         case "restart":
@@ -181,7 +183,7 @@ class PlayerManager {
         // Turn Map to a dictionnary
         // Remove very verbose `ws` attribute
         return Object.fromEntries(
-            Array.from(this.playerList.entries()).map(([key, value]) => [key, { ...value, ws: undefined }])
+            Array.from(this.playerList.entries()).map(([key, value]) => [key, { ...value, timeout: undefined, ws: undefined }])
         );
     }
 
@@ -258,7 +260,10 @@ class PlayerManager {
         // Stop pinging if player already disconnected
         if(!this.playerList.has(idPlayer) || !this.playerList.get(idPlayer)!.connected) {
             if (useVerbose) console.log("[PLAYER MANAGER] " + idPlayer + " is already disconnected, stop pinging...");
+            clearTimeout(this.playerList.get(idPlayer)!.timeout);
             return;
+        } else {
+            clearTimeout(this.playerList.get(idPlayer)!.timeout);
         }
 
         const playerSocket = this.playerList.get(idPlayer)!.ws as PlayerSocket;
@@ -275,7 +280,7 @@ class PlayerManager {
         if (useVerbose) console.log("[PLAYER MANAGER] Sending ping to " + idPlayer);
 
         // Recall in `ping_interval` ms time
-        setTimeout(() => this.sendHeartbeat(idPlayer), this.playerList.get(idPlayer)!.ping_interval);
+        this.playerList.get(idPlayer)!.timeout = setTimeout(() => this.sendHeartbeat(idPlayer), this.playerList.get(idPlayer)!.ping_interval);
     }
 
     /**
