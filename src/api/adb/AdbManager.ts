@@ -57,6 +57,10 @@ export class AdbManager {
     async startStreamingForAll() {
         for (const device of this.adbClientList) {
             await this.startStreaming(device.serial);
+
+            // Cooldown to let client properly create streams' canvas
+            if (useVerbose) console.log("[ADB MANAGER] Waiting 2s before starting a new stream...");
+            await new Promise( resolve => setTimeout(resolve, 2000) );
         }
     }
 

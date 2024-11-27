@@ -69,3 +69,12 @@ export const GAMA_ERROR_MESSAGES = [
     "MalformedRequest",
     "UnableToExecuteRequest"
 ];
+
+export const HEADSET_COLOR = {
+    "101": "blue",
+    "102": "red",
+    "103": "green",
+    "104": "yellow",
+    "105": "black",
+    "106": "white"
+};

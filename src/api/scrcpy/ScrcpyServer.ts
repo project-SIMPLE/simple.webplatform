@@ -31,7 +31,7 @@ export class ScrcpyServer {
             }),
             // Video settings
             video: true,
-            maxSize: 600,
+            maxSize: 700,
             maxFps: 20,
             videoBitRate: 200,
             crop: "2064:2200:2064:0",

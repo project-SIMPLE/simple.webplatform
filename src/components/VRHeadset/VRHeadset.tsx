@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import {HEADSET_COLOR} from "../../api/constants.ts";
 
 interface VRHeadsetProps {
   selectedPlayer?: any;  
@@ -17,19 +18,14 @@ const VRHeadset: React.FC<VRHeadsetProps> = ({ selectedPlayer, className, player
     const getHeadsetColor = () => {
         if (!isAvailable || playerId === undefined) {
             return "/images/headset_white.png";
-        } else switch (playerId!.split("_")[1]) {
-            case "101":
-                return "/images/headset_blue.png";
-            case "102":
-                return "/images/headset_red.png";
-            case "103":
-                return "/images/headset_green.png";
-            case "104":
-                return "/images/headset_yellow.png";
-            case "105":
-                return "/images/headset_black.png";
-            default:
+        } else {
+            const ipIdentifier: string = playerId!.split("_")[1];
+            if (ipIdentifier in HEADSET_COLOR) {
+                // @ts-ignore
+                return `/images/headset_${HEADSET_COLOR[ipIdentifier]}.png`;
+            } else {
                 return "/images/headset_white.png";
+            }
         }
     };
 
