@@ -89,7 +89,7 @@ class GamaConnector {
         };
     };
 
-    /**
+    /** 
      * Allow to control gama execution
      * @param {string} type - Only accepted values: [stop, pause, play]
      * @returns {{exp_id: string, type: string}}
@@ -233,9 +233,7 @@ class GamaConnector {
                 } else {
                     console.error('[GAMA CONNECTOR] Connection with Gama Server interrupted suddenly');
                     this.gama_socket = null;
-
-                    console.warn("[GAMA CONNECTOR] Reconnecting in 5s...");
-                    setTimeout(() => this.connectGama(), 5000);
+                    if (useVerbose) console.log(event);
                 }
             };
 
