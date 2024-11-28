@@ -18,7 +18,7 @@
     "@yume-chan/scrcpy-decoder-tinyh264": "0.0.0-next-20240917062356",
     "@yume-chan/scrcpy-decoder-webcodecs": "0.0.0-next-20240917062356",
     "@yume-chan/stream-extra": "0.0.0-next-20240917062356",
-    "axios": "^1.7.3",
+    "axios": "^1.7.4",
     "dotenv": "^16.4.5",
     "i18next": "^23.15.1",
     "react": "^18.3.1",
