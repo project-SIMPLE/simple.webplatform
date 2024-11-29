@@ -8,14 +8,15 @@ import { BIN, VERSION } from "@yume-chan/fetch-scrcpy-server";
 import { DEFAULT_SERVER_PATH, ScrcpyMediaStreamPacket, ScrcpyOptions2_3, CodecOptions } from "@yume-chan/scrcpy";
 import {useVerbose} from "../index.ts";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
+import uWS, {TemplatedApp} from "uWebSockets.js";
 
 const H264Capabilities = TinyH264Decoder.capabilities.h264;
 
 export class ScrcpyServer {
     // =======================
     // WebSocket
-    private wsServer!: WebSocketServer;
-    private wsClients: WebSocket[] = [];
+    private wsServer!: TemplatedApp;
+    private wsClients: Set<uWS.WebSocket<any>>;
 
     // =======================
     // Scrcpy server
@@ -48,31 +49,71 @@ export class ScrcpyServer {
     private scrcpyStreamConfig!: string;
 
     constructor() {
+        this.wsClients = new Set<uWS.WebSocket<any>>();
+
         const host = process.env.WEB_APPLICATION_HOST || 'localhost';
         const port = parseInt(process.env.VIDEO_WS_PORT || '8082', 10);
 
         try {
-            this.wsServer = new WebSocketServer({ host, port });
+            this.wsServer = uWS.App(); //new WebSocketServer({ host, port });
             console.log(`[ScrcpyServer WS] Creating video stream server on: ws://${host}:${port}`);
         } catch (e) {
             console.error('[ScrcpyServer WS] Failed to create a new websocket', e);
         }
 
-        this.wsServer.on('connection', async (socket: WebSocket) => {
-
-            this.wsClients.push(socket);
-            console.log("[ScrcpyServer WS] Web view connected");
-
-            // Send configuration message if scrcpy is already started
-            if(this.scrcpyStreamConfig){
-                socket.send(this.scrcpyStreamConfig);
+        this.wsServer.listen(host, port, (token) => {
+            if (token) {
+                console.log(`[ScrcpyServer WS] Creating monitor server on: ws://${host}:${port}`);
+            } else {
+                console.error('[ScrcpyServer WS] Failed to listen on the specified port and host');
             }
-
-            socket.on('close', () => {
-                this.wsClients = this.wsClients.filter(client => client !== socket);
-                console.log("[ScrcpyServer WS] Client disconnected");
-            });
         });
+
+        this.wsServer.ws('/*', {
+            compression: uWS.SHARED_COMPRESSOR, // Enable compression
+            maxPayloadLength: 3 * 1024 * 1024,  // 2 MB: Adjust based on expected video bitrate
+            idleTimeout: 30, // 30 seconds timeout
+
+            open: (ws) => {
+                this.wsClients.add(ws);
+                console.log("[ScrcpyServer WS] Web view connected");
+
+                // Send configuration message if scrcpy is already started
+                if(this.scrcpyStreamConfig){
+                    ws.send(this.scrcpyStreamConfig, false, true);
+                }
+            },
+
+            close: (ws, code: number, message) => {
+                try {
+                    this.wsClients.delete(ws)
+                    console.log(`[ScrcpyServer WS] Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
+
+                    // Handle specific close codes
+                    switch (code) {
+                        case 1003:
+                            console.error('[ScrcpyServer WS] Unsupported data sent by the client.');
+                            break;
+
+                        case 1006:
+                        case 1009:
+                            console.error('[ScrcpyServer WS] Message too big!');
+                            console.error('[ScrcpyServer WS] Message size:', message.byteLength, 'bytes');
+                            console.error('[ScrcpyServer WS] Message :', message);
+                            break;
+
+                        default:
+                            if (code !== 1000) // 1000 = Normal Closure
+                                console.error('[ScrcpyServer WS] Unexpected closure');
+                            else
+                            if (useVerbose) console.log(`[ScrcpyServer WS] Connection normally`);
+                    }
+                } catch (err) {
+                    console.error('[ScrcpyServer WS] Error during close handling:', err);
+                }
+            }
+        });
+
         if (useVerbose) console.log("[ScrcpyServer] Using scrcpy version", VERSION);
     }
 
@@ -189,9 +230,7 @@ export class ScrcpyServer {
 
     broadcastToClients(packetJson: string): void {
         this.wsClients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(packetJson);
-            }
+            client.send(packetJson, false, true);
         });
     }
 }
