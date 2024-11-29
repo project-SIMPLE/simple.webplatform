@@ -18,7 +18,6 @@
     "@yume-chan/scrcpy-decoder-tinyh264": "0.0.0-next-20240917062356",
     "@yume-chan/scrcpy-decoder-webcodecs": "0.0.0-next-20240917062356",
     "@yume-chan/stream-extra": "0.0.0-next-20240917062356",
-    "axios": "^1.7.3",
     "dotenv": "^16.4.5",
     "i18next": "^23.15.1",
     "react": "^18.3.1",
@@ -48,6 +47,6 @@
     "tailwindcss": "^3.4.7",
     "tsx": "^4.19.1",
     "typescript": "^5.2.2",
-    "vite": "^5.3.4"
+    "vite": "^5.4.11"
   }
 }
