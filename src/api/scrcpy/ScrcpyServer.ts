@@ -5,7 +5,7 @@ import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyOptions2_1 } from "@yume-chan/adb-scrcpy";
 import { BIN, VERSION } from "@yume-chan/fetch-scrcpy-server";
-import { DEFAULT_SERVER_PATH, ScrcpyMediaStreamPacket, ScrcpyOptions2_3, CodecOptions } from "@yume-chan/scrcpy";
+import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyOptions3_0, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
 import {useVerbose} from "../index.ts";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, {TemplatedApp} from "uWebSockets.js";
@@ -23,10 +23,10 @@ export class ScrcpyServer {
     declare server: Buffer;
 
     readonly scrcpyOptions = new AdbScrcpyOptions2_1(
-        new ScrcpyOptions2_3({
+        new ScrcpyOptions3_0({
             // scrcpy options
             videoCodec: "h264",
-            videoCodecOptions: new CodecOptions({ // Ensure Meta Quest compatibility
+            videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
                 profile: H264Capabilities.maxProfile,
                 level: H264Capabilities.maxLevel,
             }),
@@ -34,8 +34,9 @@ export class ScrcpyServer {
             video: true,
             maxSize: 700,
             maxFps: 20,
-            videoBitRate: 200,
-            crop: "2064:2200:2064:0",
+            //videoBitRate: 200,
+            angle: 25,
+            crop: "1508:1708:300:200",
             // Android soft settings
             stayAwake: true,
             // Clean feed
@@ -135,7 +136,7 @@ export class ScrcpyServer {
             const sync = await adbConnection.sync();
             try {
                 await sync.write({
-                    filename: DEFAULT_SERVER_PATH,
+                    filename: DefaultServerPath,
                     file: new ReadableStream({
                         start: (controller) => {
                             controller.enqueue(myself.server);
@@ -152,7 +153,7 @@ export class ScrcpyServer {
             if (useVerbose) console.log(`[ScrcpyServer] Starting scrcpy server from ${adbConnection.serial} ===`);
             const client: AdbScrcpyClient = await AdbScrcpyClient.start(
                 adbConnection,
-                DEFAULT_SERVER_PATH,
+                DefaultServerPath,
                 VERSION,
                 this.scrcpyOptions
             );
