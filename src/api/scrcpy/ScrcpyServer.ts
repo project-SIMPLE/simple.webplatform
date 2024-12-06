@@ -1,5 +1,4 @@
 import fs from "fs/promises";
-import { WebSocket, WebSocketServer } from 'ws';
 
 import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
