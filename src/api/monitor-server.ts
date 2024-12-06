@@ -4,6 +4,17 @@ import { Controller } from './controller';
 import { JsonMonitor } from "./constants.ts"
 import {useVerbose} from "./index.ts";
 
+// Override the log function
+const log = (...args: any[]) => {
+    console.log("\x1b[33m[MONITOR SERVER]\x1b[0m", ...args);
+};
+const logWarn = (...args: any[]) => {
+    console.warn("\x1b[33m[MONITOR SERVER]\x1b[0m", "\x1b[43m", ...args, "\x1b[0m");
+};
+const logError = (...args: any[]) => {
+    console.error("\x1b[33m[MONITOR SERVER]\x1b[0m", "\x1b[41m", ...args, "\x1b[0m");
+};
+
 /**
  * Creates a Websocket Server for handling monitor connections
  */
@@ -27,9 +38,9 @@ export class MonitorServer {
 
         this.wsServer.listen(host, port, (token) => {
             if (token) {
-                console.log(`[MONITOR SERVER] Creating monitor server on: ws://${host}:${port}`);
+                log(`Creating monitor server on: ws://${host}:${port}`);
             } else {
-                console.error('[MONITOR SERVER] Failed to listen on the specified port and host');
+                logError('Failed to listen on the specified port and host');
             }
         });
 
@@ -43,7 +54,7 @@ export class MonitorServer {
             idleTimeout: 30, // 30 seconds timeout
 
             open: (ws) => {
-                console.log("[MONITOR SERVER] Connected to monitor server");
+                log("Connected to monitor server");
                 this.wsClients.add(ws);
                 this.sendMonitorGamaState();
                 this.sendMonitorJsonSettings();
@@ -83,12 +94,12 @@ export class MonitorServer {
                         if (jsonMonitor.id) {
                             this.controller.purgePlayer(jsonMonitor.id);
                         } else {
-                            console.error("[MONITOR] Failed to remove player headset, missing PlayerID");
+                            logError("Failed to remove player headset, missing PlayerID");
                         }
                         break;
 
                     case "get_simulation_informations":
-                        //console.log(this.controller.getSimulationInformations());
+                        //log(this.controller.getSimulationInformations());
                         // data processed on the front-end by the Web socket Manager
                         ws.send(this.controller.getSimulationInformations(), false, true); // Force message compression
                     break;
@@ -106,11 +117,11 @@ export class MonitorServer {
                                 type: "get_simulation_by_index",
                                 simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
                             }), false, true); // Force message compression
-                            if (!success) {console.error('[MONITOR WS] Backpressure detected. Data not sent.')}
+                            if (!success) {logError('Backpressure detected. Data not sent.')}
 
-                            if (useVerbose) console.log("[MONITOR] Opening virtual universe", selectedSimulation.getJsonSettings());
+                            if (useVerbose) log("Opening virtual universe", selectedSimulation.getJsonSettings());
                         } else {
-                            console.error("[MONITOR] Invalid index received or out of bounds");
+                            logError("Invalid index received or out of bounds");
                         }
                         break;
 
@@ -122,55 +133,55 @@ export class MonitorServer {
                     //         type: "setMonitorScreen",
                     //         mode: 'gama_screen'
                     //     }));
-                    //     if (!success) {console.error('[MONITOR WS] Backpressure detected. Data not sent.')}
+                    //     if (!success) {logError('[Backpressure detected. Data not sent.')}
                     //     break;
                     //
                     // //
                     // case "set_shared_screen":
-                    //     console.log("shared screen !");
+                    //     log("shared screen !");
                     //     const success = ws.send(JSON.stringify({
                     //         type: "setMonitorScreen",
                     //         mode: 'shared_screen'
                     //     }));
-                    //     if (!success) {console.error('[MONITOR WS] Backpressure detected. Data not sent.')}
+                    //     if (!success) {logError('Backpressure detected. Data not sent.')}
                     //     break;
 
                     default:
-                        console.warn("\x1b[31m[MONITOR] The last message received from the monitor had an unknown type.\x1b[0m");
-                        console.warn(jsonMonitor);
+                        logWarn("The last message received from the monitor had an unknown type.");
+                        logWarn(jsonMonitor);
                 }
             },
 
             close: (ws, code: number, message) => {
                 try {
                     this.wsClients.delete(ws);
-                    console.log(`[MONITOR] Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
+                    log(`Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
 
                     // Handle specific close codes
                     switch (code) {
                         case 1003:
-                            console.error('[MONITOR] Unsupported data sent by the client.');
+                            logError('Unsupported data sent by the client.');
                             break;
 
                         case 1006:
                         case 1009:
-                            console.error('[MONITOR] Message too big!');
+                            logError('Message too big!');
                             if (message) {
-                                console.error('[MONITOR] Message :', message);
+                                logError('Message :', message);
                                 if (typeof message.byteLength !== 'undefined') {
-                                    console.error('[MONITOR] Message size:', message.byteLength, 'bytes');
+                                    logError('Message size:', message.byteLength, 'bytes');
                                 }
                             }
                             break;
 
                         default:
                             if (code !== 1000) // 1000 = Normal Closure
-                                console.error('[MONITOR] Unexpected closure');
+                                logError('Unexpected closure');
                             else
-                                if (useVerbose) console.log(`[MONITOR] Closing normally`);
+                                if (useVerbose) log(`Closing normally`);
                     }
                 } catch (err) {
-                    console.error('[MONITOR] Error during close handling:', err);
+                    logError('Error during close handling:', err);
                 }
             },
         });

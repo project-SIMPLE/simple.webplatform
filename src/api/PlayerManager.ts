@@ -1,33 +1,21 @@
 import uWS, {TemplatedApp} from 'uWebSockets.js';
 
 import {useExtraVerbose, useVerbose, useAggressiveDisconnect} from './index.js';
-import {PlayerJson, JsonOutput, PlayerState, JsonMonitor} from "./constants.ts";
+import {PlayerJson, JsonOutput, PlayerState, Player} from "./constants.ts";
 import Controller from "./controller.ts";
 import {clearInterval} from "node:timers";
 
 
 // Override the log function
 const log = (...args: any[]) => {
-    // Add your custom functionality here
-    console.log("\x1b[34m[PLAYER MANAGER]\x1b[0m", ...args);
+    console.log("\x1b[32m[PLAYER MANAGER]\x1b[0m", ...args);
 };
-const error = (...args: any[]) => {
-    // Add your custom functionality here
-    console.error("\x1b[34m[PLAYER MANAGER]\x1b[0m", "\x1b[41m", ...args, "\x1b[0m");
+const logWarn = (...args: any[]) => {
+    console.warn("\x1b[32m[PLAYER MANAGER]\x1b[0m", "\x1b[43m", ...args, "\x1b[0m");
 };
-
-export interface Player {
-    id: string,
-    // Player Socket
-    ws: uWS.WebSocket<unknown>,
-    ping_interval: number,
-    is_alive: boolean,
-    timeout?: NodeJS.Timeout,
-    // Player State
-    connected: boolean,
-    in_game: boolean,
-    date_connection: string,
-}
+const logError = (...args: any[]) => {
+    console.error("\x1b[32m[PLAYER MANAGER]\x1b[0m", "\x1b[41m", ...args, "\x1b[0m");
+};
 
 /**
  * Creates a websocket server to handle player connections
@@ -53,7 +41,7 @@ class PlayerManager {
             if (token) {
                 log(`Creating monitor server on: ws://0.0.0.0:${Number(process.env.HEADSET_WS_PORT)}`);
             } else {
-                error('Failed to listen on the specified port', process.env.HEADSET_WS_PORT);
+                logError('Failed to listen on the specified port', process.env.HEADSET_WS_PORT);
             }
         }).ws('/*', {
             compression: uWS.SHARED_COMPRESSOR, // Enable compression
@@ -157,8 +145,8 @@ class PlayerManager {
                         break;
 
                     default:
-                        console.warn("\x1b[31m[PLAYER MANAGER] The last message received from " + this.playerList.get(playerIP)!.id + " had an unknown type.\x1b[0m");
-                        console.warn(jsonPlayer);
+                        logWarn("\x1b[31m[PLAYER MANAGER] The last message received from " + this.playerList.get(playerIP)!.id + " had an unknown type.\x1b[0m");
+                        logWarn(jsonPlayer);
                 }
 
                 // Client is alive as he just communicated
@@ -187,29 +175,29 @@ class PlayerManager {
                     // Handle specific close codes
                     switch (code) {
                         case 1003:
-                            error('Unsupported data sent by the client.');
-                            error('Message :', message);
+                            logError('Unsupported data sent by the client.');
+                            logError('Message :', message);
                             break;
 
                         case 1006:
                         case 1009:
-                            error('Message too big!');
+                            logError('Message too big!');
                             if (message) {
-                                error(`${playerIP} - Message :`, Buffer.from(message).toString());
+                                logError(`${playerIP} - Message :`, Buffer.from(message).toString());
                                 if (typeof message.byteLength !== 'undefined') {
-                                    error('Message size:', message.byteLength, 'bytes');
+                                    logError('Message size:', message.byteLength, 'bytes');
                                 }
                             }
                             break;
 
                         default:
                             if (code !== 1000) // 1000 = Normal Closure
-                                error('Unexpected closure');
+                                logError('Unexpected closure');
                             else
                                 if (useVerbose) log('Closing normally');
                     }
                 } catch (err) {
-                    error('Error during close handling:', err);
+                    logError('Error during close handling:', err);
                 }
 
                 this.controller.notifyMonitor();
@@ -226,7 +214,7 @@ class PlayerManager {
                 break;
             }
         }
-        if (toReturn == undefined) error("Cannot find player with ID" + id);
+        if (toReturn == undefined) logError("Cannot find player with ID" + id);
 
         return toReturn;
     }
@@ -239,7 +227,7 @@ class PlayerManager {
                 break;
             }
         }
-        if (toReturn == undefined) error("Cannot find player with ID" + id);
+        if (toReturn == undefined) logError("Cannot find player with ID" + id);
 
         return toReturn;
     }
@@ -326,7 +314,7 @@ class PlayerManager {
             this.playerList.get(playerIP)!.in_game = inGame;
             this.notifyPlayerChange(playerIP);
         } else {
-            error("Something strange happened while try to change in_game status for", idPlayer, inGame);
+            logError("Something strange happened while try to change in_game status for", idPlayer, inGame);
         }
     }
 
@@ -363,7 +351,7 @@ class PlayerManager {
         const player: Player = this.playerList.get(ipPlayer)!;
 
         if (!player.is_alive) {
-            console.warn('Terminating dead socket from ' + player.id);
+            logWarn('Terminating dead socket from ' + player.id);
             this.closePlayerWS(ipPlayer);
             this.controller.notifyMonitor();
         }
@@ -395,8 +383,8 @@ class PlayerManager {
                 });
             });
         } catch (exception) {
-            error("\x1b[31m[PLAYER MANAGER] The following message hasn't the correct format:\x1b[0m");
-            error(jsonOutput);
+            logError("\x1b[31m[PLAYER MANAGER] The following message hasn't the correct format:\x1b[0m");
+            logError(jsonOutput);
         }
     }
 

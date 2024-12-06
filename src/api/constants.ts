@@ -2,6 +2,8 @@
     INTERFACES  ========================================
  */
 
+import uWS from "uWebSockets.js";
+
 export interface JsonPlayer {
     // Define the structure of your JSON player here
 }
@@ -44,6 +46,19 @@ export interface PlayerState {
     connected: boolean;
     in_game: boolean;
     date_connection: string;
+}
+
+export interface Player {
+    id: string,
+    // Player Socket
+    ws: uWS.WebSocket<unknown>,
+    ping_interval: number,
+    is_alive: boolean,
+    timeout?: NodeJS.Timeout,
+    // Player State
+    connected: boolean,
+    in_game: boolean,
+    date_connection: string,
 }
 
 /*

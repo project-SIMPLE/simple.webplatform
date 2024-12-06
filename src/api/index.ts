@@ -82,15 +82,15 @@ if (os.platform() !== 'win32'){
         try {
             await new DeviceFinder(c).scanAndConnect();
         } catch (error) {
-            console.error('[ADB FINDER] Error:', error);
+            console.error('\x1b[36m[ADB FINDER]\x1b[0m Error:', error);
         }
     }else{
-        console.error("[ADB FINDER] One or several of those tools are not available on your computer:", "zsh, nmap, adb");
-        console.error("[ADB FINDER] Skipping finder now...");
+        console.error("\x1b[36m[ADB FINDER]\x1b[0m One or several of those tools are not available on your computer:", "zsh, nmap, adb");
+        console.error("\x1b[36m[ADB FINDER]\x1b[0m Skipping finder now...");
     }
 }else{
-    console.warn("[ADB FINDER] Sorry, this feature is not available on Windows.");
-    console.warn("[ADB FINDER] Skipping finder now...");
+    console.warn("\x1b[36m[ADB FINDER]\x1b[0m Sorry, this feature is not available on Windows.");
+    console.warn("\x1b[36m[ADB FINDER]\x1b[0m Skipping finder now...");
 }
 
 export { useVerbose, useExtraVerbose, useAdb, useAggressiveDisconnect, HEADSETS_IP };

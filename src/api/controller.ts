@@ -6,6 +6,17 @@ import {AdbManager} from "./adb/AdbManager.ts";
 import {useAdb} from "./index.ts";
 import { JsonSettings, JsonPlayer, JsonOutput } from "./constants.ts";
 
+// Override the log function
+const log = (...args: any[]) => {
+    console.log("\x1b[31m[CONTROLLER]\x1b[0m", ...args);
+};
+const logWarn = (...args: any[]) => {
+    console.warn("\x1b[31m[CONTROLLER]\x1b[0m", "\x1b[43m", ...args, "\x1b[0m");
+};
+const logError = (...args: any[]) => {
+    console.error("\x1b[31m[CONTROLLER]\x1b[0m", "\x1b[41m", ...args, "\x1b[0m");
+};
+
 export class Controller {
     model_manager: ModelManager;
     monitor_server: MonitorServer;
@@ -23,7 +34,7 @@ export class Controller {
         if(useAdb){
             this.adb_manager = new AdbManager(this);
         } else {
-            console.warn("[CONTROLLER] Couldn't find ADB working or started, cancelling ADB management")
+            logWarn("Couldn't find ADB working or started, cancelling ADB management")
         }
     }
 
@@ -79,7 +90,7 @@ export class Controller {
     }
 
     purgePlayer(id_player: string) {
-        console.log("[CONNECTOR] Remove player", id_player);
+        log("Remove player", id_player);
 
         // Remove from GAMA
         this.gama_connector.removeInGamePlayer(id_player);
