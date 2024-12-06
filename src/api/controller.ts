@@ -64,10 +64,6 @@ export class Controller {
     =============================
      */
 
-    notifyPlayerChange(id_player: string, json_player: JsonPlayer) {
-        this.player_manager.notifyPlayerChange(id_player, json_player);
-    }
-
     broadcastSimulationOutput(json_output: JsonOutput) {
         this.player_manager.broadcastSimulationOutput(json_output);
     }
@@ -116,6 +112,7 @@ export class Controller {
                 clearInterval(interval);
                 this.player_manager.addEveryPlayer();
             }
+            this.notifyMonitor();
         }, 100);
     }
 

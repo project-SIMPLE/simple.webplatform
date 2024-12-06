@@ -163,6 +163,7 @@ class GamaConnector {
                             this.setGamaExperimentId(message.exp_id);
                             if (['NONE', 'NOTREADY'].includes(message.content) && ['RUNNING', 'PAUSED', 'NOTREADY'].includes(this.jsonGamaState.experiment_state)) {
                                 this.controller.player_manager.removeAllPlayerInGame();
+                                this.controller.notifyMonitor();
                             }
 
                             this.setGamaExperimentState(message.content);
@@ -226,6 +227,7 @@ class GamaConnector {
 
                 // Always calls remove in game players when the socket closes
                 this.controller.player_manager.removeAllPlayerInGame();
+                this.controller.notifyMonitor();
 
                 if (event.wasClean) {
                     console.log('[GAMA CONNECTOR] Connection with Gama Server closed cleanly, not reconnecting');
@@ -254,6 +256,7 @@ class GamaConnector {
             this.setGamaConnection(false);
             this.setGamaExperimentState("NONE");
             this.controller.player_manager.removeAllPlayerInGame();
+            this.controller.notifyMonitor();
 
             console.warn("[GAMA CONNECTOR] Reconnecting in 5s...");
             setTimeout(() => this.connectGama(), 5000);
@@ -407,6 +410,7 @@ class GamaConnector {
 
         this.sendMessages(() => {
             this.controller.player_manager.togglePlayerInGame(idPlayer, false);
+            this.controller.notifyMonitor();
         });
     }
 

@@ -143,7 +143,7 @@ export class MonitorServer {
 
             close: (ws, code: number, message) => {
                 try {
-                    this.wsClients.delete(ws)
+                    this.wsClients.delete(ws);
                     console.log(`[MONITOR] Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
 
                     // Handle specific close codes
@@ -155,15 +155,19 @@ export class MonitorServer {
                         case 1006:
                         case 1009:
                             console.error('[MONITOR] Message too big!');
-                            console.error('[MONITOR] Message size:', message.byteLength, 'bytes');
-                            console.error('[MONITOR] Message :', message);
+                            if (message) {
+                                console.error('[MONITOR] Message :', message);
+                                if (typeof message.byteLength !== 'undefined') {
+                                    console.error('[MONITOR] Message size:', message.byteLength, 'bytes');
+                                }
+                            }
                             break;
 
                         default:
                             if (code !== 1000) // 1000 = Normal Closure
                                 console.error('[MONITOR] Unexpected closure');
                             else
-                                if (useVerbose) console.log(`[MONITOR] Connection normally`);
+                                if (useVerbose) console.log(`[MONITOR] Closing normally`);
                     }
                 } catch (err) {
                     console.error('[MONITOR] Error during close handling:', err);

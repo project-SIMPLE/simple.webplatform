@@ -2,12 +2,6 @@
     INTERFACES  ========================================
  */
 
-import {WebSocket} from "ws";
-
-export interface JsonSettings {
-    // Define the structure of your JSON settings here
-}
-
 export interface JsonPlayer {
     // Define the structure of your JSON player here
 }
@@ -37,11 +31,6 @@ export interface GamaState {
     content_error: string;
     experiment_id: string;
     experiment_name: string;
-}
-
-
-export interface PlayerSocket extends WebSocket {
-    isAlive: boolean;
 }
 
 export interface PlayerJson {
