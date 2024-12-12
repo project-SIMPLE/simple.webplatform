@@ -68,7 +68,7 @@ class PlayerManager {
                     }
 
                     // Restart ping interval
-                    player.timeout = setInterval(() => this.sendHeartbeat(playerIP), 5000);
+                    player.timeout = setInterval(() => this.sendHeartbeat(playerIP), player.ping_interval);
 
                     // Update new version of player
                     this.playerList.set( playerIP, player );
