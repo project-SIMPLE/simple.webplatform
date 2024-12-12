@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 
 import { useVerbose, useExtraVerbose } from './index.js';
-import { GamaState, GAMA_ERROR_MESSAGES } from "./constants.ts";
+import {GamaState, GAMA_ERROR_MESSAGES, JsonPlayerAsk} from "./constants.ts";
 import Model from "./model.ts";
 import Controller from "./controller.ts";
 
@@ -447,7 +447,7 @@ class GamaConnector {
      * Sends an ask to GAMA
      * @param {object} json - The JSON containing the information of the ask
      */
-    sendAsk(json: any) {
+    sendAsk(json: JsonPlayerAsk) {
         if (['NONE', "NOTREADY"].includes(this.jsonGamaState.experiment_state))
             return;
 

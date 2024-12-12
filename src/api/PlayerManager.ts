@@ -1,7 +1,7 @@
 import uWS, {TemplatedApp} from 'uWebSockets.js';
 
 import {useExtraVerbose, useVerbose, useAggressiveDisconnect} from './index.js';
-import {PlayerJson, JsonOutput, PlayerState, Player} from "./constants.ts";
+import {JsonPlayer, JsonOutput, PlayerState, Player, JsonPlayerAsk} from "./constants.ts";
 import Controller from "./controller.ts";
 import {clearInterval} from "node:timers";
 
@@ -86,8 +86,8 @@ class PlayerManager {
             message: (ws, message) => {
                 const playerIP = Buffer.from(ws.getRemoteAddressAsText()).toString();
 
-                const jsonPlayer: PlayerJson = JSON.parse(Buffer.from(message).toString());
-                const type = jsonPlayer.type;
+                const jsonPlayer: JsonPlayer = JSON.parse(Buffer.from(message).toString());
+                const type = JSON.parse(Buffer.from(message).toString()).type;
 
                 switch (type) {
                     case "pong":
@@ -135,8 +135,9 @@ class PlayerManager {
                         break;
 
                     case "ask":
+                        const askJsonPlayer: JsonPlayerAsk = JSON.parse(Buffer.from(message).toString());
                         if (useExtraVerbose) log("\x1b[34m[PLAYER " + this.playerList.get(playerIP)!.id + "]\x1b[0m", "Sent ask:", jsonPlayer);
-                        this.controller.sendAsk(jsonPlayer);
+                        this.controller.sendAsk(askJsonPlayer);
                         break;
 
                     case "disconnect_properly":

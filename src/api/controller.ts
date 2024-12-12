@@ -4,7 +4,7 @@ import ModelManager from './model-manager.ts';
 import {MonitorServer} from './monitor-server.ts';
 import {AdbManager} from "./adb/AdbManager.ts";
 import {useAdb} from "./index.ts";
-import { JsonSettings, JsonPlayer, JsonOutput } from "./constants.ts";
+import {JsonPlayerAsk, JsonOutput} from "./constants.ts";
 
 // Override the log function
 const log = (...args: any[]) => {
@@ -110,7 +110,7 @@ export class Controller {
         this.gama_connector.sendExpression(id_player, expr);
     }
 
-    sendAsk(json: JsonSettings) {
+    sendAsk(json: JsonPlayerAsk) {
         this.gama_connector.sendAsk(json);
     }
 
