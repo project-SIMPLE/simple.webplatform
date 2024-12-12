@@ -136,7 +136,7 @@ class PlayerManager {
 
                     case "ask":
                         const askJsonPlayer: JsonPlayerAsk = JSON.parse(Buffer.from(message).toString());
-                        if (useExtraVerbose) log("\x1b[34m[PLAYER " + this.playerList.get(playerIP)!.id + "]\x1b[0m", "Sent ask:", jsonPlayer);
+                        if (useExtraVerbose) log("\x1b[34m[PLAYER " + this.playerList.get(playerIP)!.id + "]\x1b[0m", "Sent ask:", askJsonPlayer);
                         this.controller.sendAsk(askJsonPlayer);
                         break;
 
