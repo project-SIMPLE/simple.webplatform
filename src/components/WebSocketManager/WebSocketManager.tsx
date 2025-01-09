@@ -20,13 +20,9 @@ interface Simulation {
     type: string;
     type_model_file_path: string;
     maximal_players: string,
-    minimal_players:string, 
-    selected_monitoring:string
+    minimal_players: string,
+    selected_monitoring: string
 }
-
-// interface SimulationList {
-//     [key: string]: Simulation;
-// }
 
 // Define types for the WebSocket context
 interface WebSocketContextType {
@@ -42,14 +38,10 @@ interface WebSocketContextType {
     playerList: PlayerList;
     simulationList: Simulation[];
     selectedSimulation: Simulation | null;
-    // screenMode: string;
+
 
     removePlayer: (id: string) => void; // Define removePlayer here
-    // setscreenMode: React.Dispatch<React.SetStateAction<string>>; 
-    
 
-    // screenMode: string;
-    // setscreenMode: (mode: string) => void; 
 }
 
 // Initialize context with a default value of `null` for WebSocket and default values for other states
@@ -73,25 +65,17 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
     const [simulationList, setSimulationList] = useState<Simulation[]>([]);
     const [selectedSimulation, setSelectedSimulation] = useState<Simulation | null>(null);
 
-    // const [screenMode, setscreenMode] = useState<string>("shared_screen");
 
     // Function to remove a player from the playerList
     const removePlayer = (id: string) => {
         setPlayerList(prevPlayerList => {
             const updatedPlayerList = { ...prevPlayerList };
             delete updatedPlayerList[id]; // Remove the player with the given id
-            // console.log("Before updating: ", prevPlayerList);
-            // console.log("After updating: ", updatedPlayerList);
+
             return updatedPlayerList;
         });
-        // console.log(" This player have been removed from playerList : ", id);
+
     };
-
-
-    // This useEffect will log the updated screenMode value
-    // useEffect(() => {
-    //     console.log("The screenMode has changed to :", screenMode);
-    // }, [screenMode]);
 
 
     useEffect(() => {
@@ -108,40 +92,33 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
 
         socket.onmessage = (event: MessageEvent) => {
             const data = JSON.parse(event.data);
-            
+
 
             if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
                 setSimulationList(data.map(sim => sim.jsonSettings));
                 console.log('[WebSocketManager] Simulation list:', data);
             } else {
-                // console.log("Just the list of players :", playerList); // should show list of players 
                 switch (data.type) {
                     // this case is launch too much time
                     case 'json_state':
                         setGama(data.gama);
-                        // console.log('Liste des playeyrs', data.player);
                         setPlayerList(data.player);
                         break;
                     case 'get_simulation_by_index':
                         setSelectedSimulation(data.simulation);
                         break;
-                    case 'setMonitorScreen': 
-                        
-                        // Asynchronus ! so doesnt immediately change the value of screenMode, cant have it after next lines 
-                        // setscreenMode(data.mode);
+                    case 'setMonitorScreen':
 
-                        // the setScreenMode doesnt change the value immediately, so we need to wait for it to change
-                        // the setScreenMode doesnt works  
-                        
+
+
                         break;
-                    
+
                     default:
                         console.warn('[WebSocketManager] Message not processed', data);
                 }
             }
         };
 
-        // console.log("screenMode", screenMode);
 
         socket.onclose = () => {
             console.log('[WebSocketManager] WebSocket disconnected');
@@ -154,17 +131,12 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
             }
         };
     }, []);
-    
-    // methode that we will call from simulationManagerButtons.tsx
-    // export const setScreenMode = (mode: string) => {
-    //     setscreenMode(mode);
-    //     console.log("Screen Mode updated :", mode);
-    // };
 
-    
-    
-        return (
-        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList, selectedSimulation,removePlayer }}>
+
+
+
+    return (
+        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList, selectedSimulation, removePlayer }}>
             {children}
         </WebSocketContext.Provider>
     );

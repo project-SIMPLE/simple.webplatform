@@ -1,5 +1,4 @@
-import { use } from 'i18next';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const LanguageSelector = () => {

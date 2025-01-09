@@ -1,19 +1,13 @@
 import React, { useEffect, useState } from 'react';
 
-// import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import Button from '../Button/Button';
 
 import { useScreenMode } from '../ScreenModeContext/ScreenModeContext';
 
-// import { useSelector } from 'react-redux';
-// import { RootState } from '../../redux/store';
 
 const TestMonitoringScreen: React.FC = () => {
-  // const {screenMode} = useWebSocket();
   const [, setTrigger] = useState(false); 
-  // const screenMode = useSelector((state: RootState) => state.screenMode.screenMode); // Accéder à l'état global
  
-//   const { screenModeDisplay } = useScreenMode();
   const [showPopUp, setshowPopUp] = useState(false);
   const {setScreenModeDisplay, screenModeDisplay } = useScreenMode();
 
@@ -50,7 +44,6 @@ const TestMonitoringScreen: React.FC = () => {
                         bgColor="bg-green-500 hover:bg-green-600"
                         onClick={() => {
                           // setModeScreen("full_screen");
-                          // console.log(modeScreen);
                           togglePopUp("gama_screen");
                         }}
                       />
@@ -60,7 +53,6 @@ const TestMonitoringScreen: React.FC = () => {
                         bgColor="bg-blue-500 hover:bg-blue-600 "
                         onClick={() => {
                             // setModeScreen("shared_screen");
-                            // console.log(modeScreen);
                             togglePopUp("shared_screen");
                         }}
                       />

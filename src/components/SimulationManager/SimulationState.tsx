@@ -1,17 +1,11 @@
-
-import  {FC } from 'react';
-
-
 // define props type 
-interface SimulationStateProps {
+interface SimulationStateProps{
     experiment_state : string;
 }
 
-const SimulationState : FC<SimulationStateProps> = ({experiment_state}) => {
+const SimulationState = ({experiment_state}: SimulationStateProps)=> {
   
     const renderExperimentState = () => {
-        
-        // console.log("EXPIREMENT STATE Right Now: ",experiment_state);
         
         switch (experiment_state) {
           case 'RUNNING':
@@ -26,7 +20,7 @@ const SimulationState : FC<SimulationStateProps> = ({experiment_state}) => {
                 >
                   <path
                     strokeLinecap="round"
-                    strokeLinejoin="round"
+                    // // strokeLinejoin="round"
                     strokeWidth="2"
                     d="M5 13l4 4L19 7"
                   />

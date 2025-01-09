@@ -11,8 +11,7 @@ interface Player {
   date_connection: string;
   in_game: boolean;
 }
-
-const SimulationManager: React.FC = () => {
+const SimulationManager = () => {
   const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket(); // `removePlayer` is now available
   const navigate = useNavigate();
   const [userInfos, setUserInfos] = useState<Player | null>(null);
