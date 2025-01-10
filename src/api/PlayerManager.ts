@@ -161,7 +161,7 @@ class PlayerManager {
             close: (ws, code: number, message) => {
                 let playerIP!: string;
                 try {
-                    playerIP = Buffer.from(ws.getRemoteAddressAsText()).toString();
+                    playerIP = this.getIndexByPlayerWs(ws)!;
                 } catch (e) {
                     playerIP = Buffer.from(message).toString();
                 }
@@ -230,6 +230,19 @@ class PlayerManager {
             }
         }
         if (toReturn == undefined) logError("Cannot find player with ID" + id);
+
+        return toReturn;
+    }
+
+    getIndexByPlayerWs(ws: uWS.WebSocket<unknown>): string | undefined {
+        let toReturn = undefined;
+        for (const [key, player] of this.playerList) {
+            if (player.ws === ws) {
+                toReturn = key;
+                break;
+            }
+        }
+        if (toReturn == undefined) logError("Cannot find player with WS" + ws);
 
         return toReturn;
     }
