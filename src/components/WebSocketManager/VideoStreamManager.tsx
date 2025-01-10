@@ -1,9 +1,8 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import {HEADSET_COLOR} from "../../api/constants.ts";
 
 const host = window.location.hostname;
-//const port = process.env.VIDEO_WS_PORT || '8082';
 const port = "8082";
 
 // Deserialize the data into ScrcpyMediaStreamPacket
@@ -37,7 +36,7 @@ interface VideoStreamManagerProps {
 }
 
 // The React component
-const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
+const VideoStreamManager = ({targetRef}: VideoStreamManagerProps) => {
 
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
