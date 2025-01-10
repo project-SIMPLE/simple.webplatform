@@ -81,7 +81,6 @@ class PlayerManager {
                     if (useExtraVerbose) log(ws.toString());
                 }
             },
-
             // ======================================
 
             message: (ws, message) => {
@@ -147,7 +146,7 @@ class PlayerManager {
                         break;
 
                     default:
-                        logWarn("\x1b[31m[PLAYER MANAGER] The last message received from " + this.playerList.get(playerIP)!.id + " had an unknown type.\x1b[0m");
+                        logWarn("The last message received from " + this.playerList.get(playerIP)!.id + " had an unknown type");
                         logWarn(jsonPlayer);
                 }
 
@@ -163,10 +162,17 @@ class PlayerManager {
                 try {
                     playerIP = this.getIndexByPlayerWs(ws)!;
                 } catch (e) {
-                    playerIP = Buffer.from(message).toString();
+                    logWarn("Can't find player from websocket, trying fallback method...")
+                    try {
+                        playerIP = Buffer.from(ws.getRemoteAddressAsText()).toString();
+                    } catch (e) {
+                        playerIP = Buffer.from(message).toString();
+                    }
                 }
 
-                try {
+                if (playerIP == "" || playerIP == undefined)
+                    logError("Can't find which WebSocket been closed...");
+                else try {
                     log(`Connection closed with ${this.playerList.get(playerIP)!.id} - ${playerIP}.\n\tCode: ${code}`,
                         (code != 1000) ? `, Reason: ${Buffer.from(message).toString()}` : "");
 
@@ -174,32 +180,44 @@ class PlayerManager {
                     this.playerList.get(playerIP)!.connected = false;
                     clearInterval(this.playerList.get(playerIP)!.timeout);
 
-                    // Handle specific close codes
-                    switch (code) {
-                        case 1003:
-                            logError('Unsupported data sent by the client.');
-                            logError('Message :', message);
-                            break;
+                } catch (err) {
+                    logError('Error during close handling:', err);
+                }
 
-                        case 1006:
-                        case 1009:
-                            logError('Message too big!');
-                            if (message) {
+                // Handle specific close codes
+                switch (code) {
+                    case 1003:
+                        logError('Unsupported data sent by the client.');
+                        logError('Message :', message);
+                        break;
+
+                    case 1006:
+                        logWarn("====");
+                        logError("Abnormal websocket closure with message:", Buffer.from(message).toString());
+                        logWarn("====");
+                        break;
+
+                    case 1009:
+                        logError('Message too big!');
+                        if (message) {
+                            try {
                                 logError(`${playerIP} - Message :`, Buffer.from(message).toString());
                                 if (typeof message.byteLength !== 'undefined') {
                                     logError('Message size:', message.byteLength, 'bytes');
                                 }
-                            }
-                            break;
+                            } catch {}
+                        }
+                        break;
 
-                        default:
-                            if (code !== 1000) // 1000 = Normal Closure
-                                logError('Unexpected closure');
-                            else
-                                if (useVerbose) log('Closing normally');
-                    }
-                } catch (err) {
-                    logError('Error during close handling:', err);
+                    case 1005:
+                        logWarn("Closed without reason; the game probably been closed in Unity IDE");
+                        break;
+
+                    default:
+                        if (code !== 1000) // 1000 = Normal Closure
+                            logError('Unexpected closure');
+                        else
+                            if (useVerbose) log('Closing normally');
                 }
 
                 this.controller.notifyMonitor();
@@ -361,14 +379,11 @@ class PlayerManager {
             if (useVerbose) log(ipPlayer + " is already disconnected, stop pinging...");
             if (this.playerList.has(ipPlayer)) clearInterval(this.playerList.get(ipPlayer)!.timeout);
             return;
-        }
-
-        const player: Player = this.playerList.get(ipPlayer)!;
-
-        if (!player.is_alive) {
-            logWarn('Terminating dead socket from ' + player.id);
+        } else if (!this.playerList.get(ipPlayer)!.is_alive) { // Terminate ws of disconnected player
+            logWarn('Terminating dead socket from ' + this.playerList.get(ipPlayer)!.id);
             this.closePlayerWS(ipPlayer);
             this.controller.notifyMonitor();
+            return;
         }
 
         this.playerList.get(ipPlayer)!.is_alive = false;
@@ -402,8 +417,7 @@ class PlayerManager {
                 });
             });
         } catch (exception) {
-            logError("\x1b[31m[PLAYER MANAGER] The following message hasn't the correct format:\x1b[0m");
-            logError(jsonOutput);
+            logError("The following message hasn't the correct format:", jsonOutput);
         }
     }
 

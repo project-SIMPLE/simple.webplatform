@@ -159,6 +159,10 @@ export class MonitorServer {
 
                     // Handle specific close codes
                     switch (code) {
+                        case 1001:
+                            logWarn('Connection timed out...');
+                            break;
+
                         case 1003:
                             logError('Unsupported data sent by the client.');
                             break;
