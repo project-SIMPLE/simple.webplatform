@@ -44,10 +44,11 @@ class PlayerManager {
                 logError('Failed to listen on the specified port', process.env.HEADSET_WS_PORT);
             }
         }).ws('/*', {
-            compression: uWS.SHARED_COMPRESSOR, // Enable compression
-            // Maximum length of *received* message.
-            //maxPayloadLength: 16 * 1024,
-            //idleTimeout: 30, // 30 seconds timeout
+            // Server doesn't compress yet
+            // WebSocketSharp (Unity side) doesn't support deflating messages
+            // https://github.com/sta/websocket-sharp/issues/580
+            compression: (uWS.SHARED_COMPRESSOR | uWS.SHARED_DECOMPRESSOR),
+
             open: (ws) => {
                 const playerIP = Buffer.from(ws.getRemoteAddressAsText()).toString();
 
