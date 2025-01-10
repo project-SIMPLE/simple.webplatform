@@ -96,10 +96,10 @@ class PlayerManager {
                         break;
 
                     case "ping":
-                        ws.send(JSON.stringify({
+                        this.sendMessageByWs(playerIP, {
                             type: "pong",
                             id: jsonPlayer.id
-                        }), false, true); // not binary, compress
+                        });
                         break;
 
                     case "connection":
@@ -359,7 +359,11 @@ class PlayerManager {
         }
 
         this.playerList.get(ipPlayer)!.is_alive = false;
-        player.ws.send(JSON.stringify({ type: "ping" }), false, true);
+        try {
+            this.sendMessageByWs(ipPlayer, { type: "ping" })
+        } catch (e) {
+            logError(`Error while sending ping to ${this.playerList.get(ipPlayer)!.id})`, e);
+        }
 
         if (useVerbose) log("Sending ping to " + player.id);
     }
@@ -380,7 +384,7 @@ class PlayerManager {
                             contents: element.contents,
                             type: "json_output"
                         };
-                        this.playerList.get(playerIp)!.ws.send(JSON.stringify(jsonOutputPlayer), false, true);
+                        this.sendMessageByWs(playerIp, jsonOutputPlayer);
                     }
                 });
             });
@@ -406,9 +410,30 @@ class PlayerManager {
                 id_player: jsonPlayer!.id
             };
 
-            jsonPlayer!.ws.send(JSON.stringify({...jsonStatePlayer, ...newJsonPlayer}), false, true);
+            this.sendMessageByWs(ipPlayer, {...jsonStatePlayer, ...newJsonPlayer});
             if (useVerbose) log(`\x1b[34m[DEBUG Player ${jsonPlayer!.id}]\x1b[0m`, `Sending state update ${JSON.stringify({...jsonStatePlayer, ...newJsonPlayer})}`);
         }
+    }
+
+    /**
+     *
+     * @param ipPlayer
+     * @param message
+     * @return Returns 1 for success, 2 for dropped due to backpressure limit, and 0 for built up backpressure that will drain over time.
+     * @return -1 if ipPlayer missing or not connected
+     */
+    sendMessageByWs(ipPlayer: string, message: any): number {
+        let jsonPlayer!: Player;
+        if (this.playerList.has(ipPlayer) && this.playerList.get(ipPlayer)!.connected )
+            jsonPlayer = this.playerList.get(ipPlayer)!;
+        else{
+            logError("Can't send a message to player", ipPlayer);
+            return -1;
+        }
+
+        return jsonPlayer.ws.send(
+            JSON.stringify(message),
+            false, true); // not binary, compress
     }
 
     close() {
