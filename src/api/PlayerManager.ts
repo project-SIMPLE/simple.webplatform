@@ -44,10 +44,11 @@ class PlayerManager {
                 logError('Failed to listen on the specified port', process.env.HEADSET_WS_PORT);
             }
         }).ws('/*', {
-            compression: uWS.SHARED_COMPRESSOR, // Enable compression
-            // Maximum length of *received* message.
-            //maxPayloadLength: 16 * 1024,
-            //idleTimeout: 30, // 30 seconds timeout
+            // Server doesn't compress yet
+            // WebSocketSharp (Unity side) doesn't support deflating messages
+            // https://github.com/sta/websocket-sharp/issues/580
+            compression: (uWS.SHARED_COMPRESSOR | uWS.SHARED_DECOMPRESSOR),
+
             open: (ws) => {
                 const playerIP = Buffer.from(ws.getRemoteAddressAsText()).toString();
 
@@ -80,7 +81,6 @@ class PlayerManager {
                     if (useExtraVerbose) log(ws.toString());
                 }
             },
-
             // ======================================
 
             message: (ws, message) => {
@@ -95,10 +95,10 @@ class PlayerManager {
                         break;
 
                     case "ping":
-                        ws.send(JSON.stringify({
+                        this.sendMessageByWs(playerIP, {
                             type: "pong",
                             id: jsonPlayer.id
-                        }), false, true); // not binary, compress
+                        });
                         break;
 
                     case "connection":
@@ -146,7 +146,7 @@ class PlayerManager {
                         break;
 
                     default:
-                        logWarn("\x1b[31m[PLAYER MANAGER] The last message received from " + this.playerList.get(playerIP)!.id + " had an unknown type.\x1b[0m");
+                        logWarn("The last message received from " + this.playerList.get(playerIP)!.id + " had an unknown type");
                         logWarn(jsonPlayer);
                 }
 
@@ -160,12 +160,19 @@ class PlayerManager {
             close: (ws, code: number, message) => {
                 let playerIP!: string;
                 try {
-                    playerIP = Buffer.from(ws.getRemoteAddressAsText()).toString();
+                    playerIP = this.getIndexByPlayerWs(ws)!;
                 } catch (e) {
-                    playerIP = Buffer.from(message).toString();
+                    logWarn("Can't find player from websocket, trying fallback method...")
+                    try {
+                        playerIP = Buffer.from(ws.getRemoteAddressAsText()).toString();
+                    } catch (e) {
+                        playerIP = Buffer.from(message).toString();
+                    }
                 }
 
-                try {
+                if (playerIP == "" || playerIP == undefined)
+                    logError("Can't find which WebSocket been closed...");
+                else try {
                     log(`Connection closed with ${this.playerList.get(playerIP)!.id} - ${playerIP}.\n\tCode: ${code}`,
                         (code != 1000) ? `, Reason: ${Buffer.from(message).toString()}` : "");
 
@@ -173,32 +180,44 @@ class PlayerManager {
                     this.playerList.get(playerIP)!.connected = false;
                     clearInterval(this.playerList.get(playerIP)!.timeout);
 
-                    // Handle specific close codes
-                    switch (code) {
-                        case 1003:
-                            logError('Unsupported data sent by the client.');
-                            logError('Message :', message);
-                            break;
+                } catch (err) {
+                    logError('Error during close handling:', err);
+                }
 
-                        case 1006:
-                        case 1009:
-                            logError('Message too big!');
-                            if (message) {
+                // Handle specific close codes
+                switch (code) {
+                    case 1003:
+                        logError('Unsupported data sent by the client.');
+                        logError('Message :', message);
+                        break;
+
+                    case 1006:
+                        logWarn("====");
+                        logError("Abnormal websocket closure with message:", Buffer.from(message).toString());
+                        logWarn("====");
+                        break;
+
+                    case 1009:
+                        logError('Message too big!');
+                        if (message) {
+                            try {
                                 logError(`${playerIP} - Message :`, Buffer.from(message).toString());
                                 if (typeof message.byteLength !== 'undefined') {
                                     logError('Message size:', message.byteLength, 'bytes');
                                 }
-                            }
-                            break;
+                            } catch {}
+                        }
+                        break;
 
-                        default:
-                            if (code !== 1000) // 1000 = Normal Closure
-                                logError('Unexpected closure');
-                            else
-                                if (useVerbose) log('Closing normally');
-                    }
-                } catch (err) {
-                    logError('Error during close handling:', err);
+                    case 1005:
+                        logWarn("Closed without reason; the game probably been closed in Unity IDE");
+                        break;
+
+                    default:
+                        if (code !== 1000) // 1000 = Normal Closure
+                            logError('Unexpected closure');
+                        else
+                            if (useVerbose) log('Closing normally');
                 }
 
                 this.controller.notifyMonitor();
@@ -229,6 +248,19 @@ class PlayerManager {
             }
         }
         if (toReturn == undefined) logError("Cannot find player with ID" + id);
+
+        return toReturn;
+    }
+
+    getIndexByPlayerWs(ws: uWS.WebSocket<unknown>): string | undefined {
+        let toReturn = undefined;
+        for (const [key, player] of this.playerList) {
+            if (player.ws === ws) {
+                toReturn = key;
+                break;
+            }
+        }
+        if (toReturn == undefined) logError("Cannot find player with WS" + ws);
 
         return toReturn;
     }
@@ -347,18 +379,19 @@ class PlayerManager {
             if (useVerbose) log(ipPlayer + " is already disconnected, stop pinging...");
             if (this.playerList.has(ipPlayer)) clearInterval(this.playerList.get(ipPlayer)!.timeout);
             return;
-        }
-
-        const player: Player = this.playerList.get(ipPlayer)!;
-
-        if (!player.is_alive) {
-            logWarn('Terminating dead socket from ' + player.id);
+        } else if (!this.playerList.get(ipPlayer)!.is_alive) { // Terminate ws of disconnected player
+            logWarn('Terminating dead socket from ' + this.playerList.get(ipPlayer)!.id);
             this.closePlayerWS(ipPlayer);
             this.controller.notifyMonitor();
+            return;
         }
 
         this.playerList.get(ipPlayer)!.is_alive = false;
-        player.ws.send(JSON.stringify({ type: "ping" }), false, true);
+        try {
+            this.sendMessageByWs(ipPlayer, { type: "ping" })
+        } catch (e) {
+            logError(`Error while sending ping to ${this.playerList.get(ipPlayer)!.id})`, e);
+        }
 
         if (useVerbose) log("Sending ping to " + player.id);
     }
@@ -379,13 +412,12 @@ class PlayerManager {
                             contents: element.contents,
                             type: "json_output"
                         };
-                        this.playerList.get(playerIp)!.ws.send(JSON.stringify(jsonOutputPlayer), false, true);
+                        this.sendMessageByWs(playerIp, jsonOutputPlayer);
                     }
                 });
             });
         } catch (exception) {
-            logError("\x1b[31m[PLAYER MANAGER] The following message hasn't the correct format:\x1b[0m");
-            logError(jsonOutput);
+            logError("The following message hasn't the correct format:", jsonOutput);
         }
     }
 
@@ -405,9 +437,30 @@ class PlayerManager {
                 id_player: jsonPlayer!.id
             };
 
-            jsonPlayer!.ws.send(JSON.stringify({...jsonStatePlayer, ...newJsonPlayer}), false, true);
+            this.sendMessageByWs(ipPlayer, {...jsonStatePlayer, ...newJsonPlayer});
             if (useVerbose) log(`\x1b[34m[DEBUG Player ${jsonPlayer!.id}]\x1b[0m`, `Sending state update ${JSON.stringify({...jsonStatePlayer, ...newJsonPlayer})}`);
         }
+    }
+
+    /**
+     *
+     * @param ipPlayer
+     * @param message
+     * @return Returns 1 for success, 2 for dropped due to backpressure limit, and 0 for built up backpressure that will drain over time.
+     * @return -1 if ipPlayer missing or not connected
+     */
+    sendMessageByWs(ipPlayer: string, message: any): number {
+        let jsonPlayer!: Player;
+        if (this.playerList.has(ipPlayer) && this.playerList.get(ipPlayer)!.connected )
+            jsonPlayer = this.playerList.get(ipPlayer)!;
+        else{
+            logError("Can't send a message to player", ipPlayer);
+            return -1;
+        }
+
+        return jsonPlayer.ws.send(
+            JSON.stringify(message),
+            false, true); // not binary, compress
     }
 
     close() {
