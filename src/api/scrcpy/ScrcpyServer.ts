@@ -164,7 +164,6 @@ export class ScrcpyServer {
             const client: AdbScrcpyClient = await AdbScrcpyClient.start(
                 adbConnection,
                 DefaultServerPath,
-                VERSION,
                 this.scrcpyOptions
             );
 
