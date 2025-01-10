@@ -4,7 +4,7 @@ import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyOptions2_1 } from "@yume-chan/adb-scrcpy";
 import { BIN, VERSION } from "@yume-chan/fetch-scrcpy-server";
-import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyOptions3_0, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
+import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyOptions3_1, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
 import {useVerbose} from "../index.ts";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, {TemplatedApp} from "uWebSockets.js";
@@ -33,7 +33,7 @@ export class ScrcpyServer {
     declare server: Buffer;
 
     readonly scrcpyOptions = new AdbScrcpyOptions2_1(
-        new ScrcpyOptions3_0({
+        new ScrcpyOptions3_1({
             // scrcpy options
             videoCodec: "h264",
             videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
