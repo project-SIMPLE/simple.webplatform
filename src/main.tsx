@@ -1,4 +1,3 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
@@ -12,7 +11,7 @@ import TestMonitoringScreen from './components/TestMonitoringScreen/TestMonitori
 import './i18next/i18n';
 
 
-const App: React.FC = () => {
+const App = () => {
   return (
     <BrowserRouter>
             <WebSocketManager>
@@ -35,9 +34,9 @@ const root = ReactDOM.createRoot(container);
 
 root.render(
   // <Provider store={store}>  
-//  <React.StrictMode>
+  // <React.StrictMode>
       <App />
-//  </React.StrictMode>
+  //  </React.StrictMode> 
     // </Provider>
 );
 

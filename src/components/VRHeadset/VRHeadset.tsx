@@ -55,7 +55,7 @@ const VRHeadset: React.FC<VRHeadsetProps> = ({ selectedPlayer, className, player
         
       {showPopUp && isAvailable && (
         <>
-          {/* Grey Overley */}
+          {/* Grey Overlay */}
           <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-50"></div>
 
           <div className="fixed inset-0 flex items-center justify-center z-50" onClick={togglePopUp}>

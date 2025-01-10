@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
 interface Player {
     connected: boolean;
@@ -51,7 +51,7 @@ interface WebSocketManagerProps {
     children: ReactNode;
 }
 
-const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
+const WebSocketManager = ({ children }: WebSocketManagerProps) => { 
     const [ws, setWs] = useState<WebSocket | null>(null);
     const [isWsConnected, setIsWsConnected] = useState<boolean>(false);
     const [gama, setGama] = useState({
