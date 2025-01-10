@@ -90,7 +90,7 @@ const SelectorSimulations = () => {
 
       {loading ? (
         <div className="text-center">
-          <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4"></div>
+          <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4 -z-50"></div>
           
           <h2 className="text-gray-700">{t('loading')}</h2>
         
@@ -113,6 +113,7 @@ const SelectorSimulations = () => {
                   backgroundSize: 'cover',
                   width: '100px',
                   height: '100px',
+                  zIndex: 1, // Lower z-index value
                 }}
                 key={index}
                 onClick={ gama.connected ? () => handleSimulation(index) : () => {} }
