@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import Button from '../Button/Button';
 
 import { useScreenMode } from '../ScreenModeContext/ScreenModeContext';
 
 
-const TestMonitoringScreen: React.FC = () => {
+const TestMonitoringScreen = () => {
   const [, setTrigger] = useState(false); 
  
   const [showPopUp, setshowPopUp] = useState(false);
@@ -28,11 +28,10 @@ const TestMonitoringScreen: React.FC = () => {
 
   return (
     <>
-        {/* Les deux bouttons, quand clique change la vue dans StreamPlayerScreen */}
+        {/* Les deux boutons, quand cliqués changent la vue dans StreamPlayerScreen */}
         {/* Monitoring Button */}
         <div className='flex justify-center mt-3'>
               
-                {/* <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50"> */}
                   <div className="bg-white p-6 rounded-lg shadow-lg w-64 text-center">
                     <h2 className="text-lg font-semibold mb-4">Choose an Option</h2>
 
@@ -43,7 +42,6 @@ const TestMonitoringScreen: React.FC = () => {
                         text="Gama Screen"
                         bgColor="bg-green-500 hover:bg-green-600"
                         onClick={() => {
-                          // setModeScreen("full_screen");
                           togglePopUp("gama_screen");
                         }}
                       />
@@ -52,7 +50,6 @@ const TestMonitoringScreen: React.FC = () => {
                         text="Shared Screen"
                         bgColor="bg-blue-500 hover:bg-blue-600 "
                         onClick={() => {
-                            // setModeScreen("shared_screen");
                             togglePopUp("shared_screen");
                         }}
                       />
@@ -67,9 +64,8 @@ const TestMonitoringScreen: React.FC = () => {
                     </button>
                   
                   </div>
-                {/* </div> */}
         </div>
-            {/* End Monotoring button */}
+            {/* End Monitoring button */}
     </>
   );
 };
