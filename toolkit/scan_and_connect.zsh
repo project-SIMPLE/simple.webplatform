@@ -1,13 +1,7 @@
 #!/usr/bin/env zsh
 
-# Check if a list of IPs is provided
-if [[ $# -eq 0 ]]; then
-  echo "Usage: $0 <ip1> [<ip2> <ip3> ...]"
-  exit 1
-fi
-
-# Activate adb server if not yet
-adb devices > /dev/null 2>&1
+# Activate adb server if not yet started
+adb start-server
 
 # Get the list of IP addresses from the command line arguments
 ip_addresses=("$@")
@@ -45,6 +39,3 @@ for ip in "${ip_addresses[@]}"; do
 
   #echo "---------------------"
 done
-
-#echo "Display all devices connected to ADB"
-#adb devices
