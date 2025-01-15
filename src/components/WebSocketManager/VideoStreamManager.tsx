@@ -1,6 +1,18 @@
 import React, { useEffect } from "react";
+
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
+
+import {
+  VideoFrameRenderer,
+  InsertableStreamVideoFrameRenderer,
+  WebGLVideoFrameRenderer,
+  BitmapVideoFrameRenderer,
+  WebCodecsVideoDecoder,
+} from "@yume-chan/scrcpy-decoder-webcodecs";
+import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
+
 import {HEADSET_COLOR} from "../../api/constants.ts";
+import {ScrcpyVideoStreamMetadata} from "@yume-chan/scrcpy/src/base/video.ts";
 
 const host = window.location.hostname;
 //const port = process.env.VIDEO_WS_PORT || '8082';
@@ -34,6 +46,23 @@ const deserializeData = (serializedData: string) => {
 
 interface VideoStreamManagerProps {
   targetRef: React.RefObject<HTMLDivElement>;
+}
+
+function createVideoFrameRenderer(): {
+  renderer: VideoFrameRenderer;
+  element: HTMLCanvasElement;
+} {
+  if (WebGLVideoFrameRenderer.isSupported) {
+    console.log("[SCRCPY] Using WebGLVideoFrameRenderer");
+    const renderer = new WebGLVideoFrameRenderer();
+    return { renderer, element: renderer.canvas as HTMLCanvasElement };
+  } else {
+    console.warn("[SCRCPY] WebGL isn't supported... ");
+  }
+
+  console.log("[SCRCPY] Using fallback BitmapVideoFrameRenderer");
+  const renderer = new BitmapVideoFrameRenderer();
+  return { renderer, element: renderer.canvas as HTMLCanvasElement };
 }
 
 // The React component
@@ -77,8 +106,8 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
     });
 
     // Create new decoder object
-    const d = new TinyH264Decoder();
-
+    const { renderer, element } = createVideoFrameRenderer();
+    
     // Create HTML wrapper to stylize the video stream
     const wrapper = document.createElement('div');
     wrapper.classList.add(...["m-4", "p-2", "rounded-md"]);
@@ -93,15 +122,30 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
     }
 
     // @ts-ignore
-    wrapper.appendChild(d.renderer);
+    wrapper.appendChild(element); //d.renderer);
     // Add to final page
     targetRef.current.appendChild(wrapper);
 
-    // Feed the scrcpy stream to the video decoder
-    stream.pipeTo(d.writable).catch((err) => {
-      console.error("[Scrcpy] Error piping to decoder writable stream:", err);
+    const result = await VideoDecoder.isConfigSupported({
+      codec: "hev1.1.60.L153.B0.0.0.0.0.0",
     });
-    return stream;
+    if (result.supported === true) {
+
+      const decoder = new WebCodecsVideoDecoder({
+        codec:  ScrcpyVideoCodecId.H265,
+        renderer: renderer,
+      });
+      decoder.sizeChanged(({ width, height }) => {
+        console.log(width, height);
+      });
+
+      // Feed the scrcpy stream to the video decoder
+      void stream.pipeTo(decoder.writable).catch((err) => {
+        console.error("[Scrcpy] Error piping to decoder writable stream:", err);
+      });
+
+      return stream;
+    }
   }
 
   useEffect(() => {
