@@ -110,18 +110,15 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
 
     // Handle incoming WebSocket messages
     socket.onmessage = (event) => {
-      const serializedMessage = event.data;
-
       // Deserialize the message and enqueue the data into the readable stream
-      const deserializedData = deserializeData(serializedMessage);
+      const deserializedData = deserializeData( event.data );
 
-      let controller = readableControllers.get(deserializedData!.streamId);
-
-      // Create stream and get ref if new stream
-      if (!controller) {
+      // Create stream if new stream
+      if (!readableControllers.has(deserializedData!.streamId)) {
         newVideoStream(deserializedData!.streamId);
-        controller = readableControllers.get(deserializedData!.streamId);
       }
+
+      const controller = readableControllers.get(deserializedData!.streamId);
 
       // Enqueue data package to decoder stream
       if (deserializedData!.packet) {
