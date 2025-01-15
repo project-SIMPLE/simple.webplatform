@@ -12,7 +12,7 @@ const VRHeadset: React.FC<VRHeadsetProps> = ({ selectedPlayer, className, player
   const [showPopUp, setShowPopUp] = useState(false);
   const {t} = useTranslation();
 
-  // Determined if the player is available
+  // Determines if the player is available 
   const isAvailable = !!selectedPlayer;
 
     const getHeadsetColor = () => {
@@ -30,7 +30,7 @@ const VRHeadset: React.FC<VRHeadsetProps> = ({ selectedPlayer, className, player
     };
 
   const togglePopUp = () => {
-    setShowPopUp(!showPopUp);
+    setShowPopUp(!showPopUp); 
   };
 
   return (
@@ -80,4 +80,4 @@ const VRHeadset: React.FC<VRHeadsetProps> = ({ selectedPlayer, className, player
   );
 };
 
-export default VRHeadset;
+export default VRHeadset; 
