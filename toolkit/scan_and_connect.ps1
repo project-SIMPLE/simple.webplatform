@@ -1,3 +1,8 @@
+param(
+[string]$port_range = "30000-49999",
+[string]$ip_adresses
+)
+
 $DebugPreference = "Continue" #variable used to specify the level of verbosity of debug messages         
 # change to SilentlyContinue to remove them
 
@@ -6,18 +11,12 @@ function is_ip_valid($ip) {
   $ip -match "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"
 }
 
-function scan_and_connect {
-  param(
-    [string]$ip_adresses,
-    [string]$port_range = "30000-49999"
-  )
-
+  
   &adb start-server #starts the adb server
   if($ip_adresses -eq 0) {
     Write-Debug "No IP addresses provided"
-    return
+    return 1
   }
-  
   foreach ($ip in $ip_adresses) {
     if (-not (is_ip_valid $ip)) {
       Write-Debug "$ip is not a valid IP address"
@@ -36,9 +35,10 @@ function scan_and_connect {
           Write-Debug "Connecting to $ip on port $port"
           &adb connect ${ip}:${port}
         }
+        return 0
       }
     }
   }
-}
+
 
 
