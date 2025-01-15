@@ -92,16 +92,18 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
       await new Promise( resolve => setTimeout(resolve, 1) );
     }
 
-    // Create new entry for keyframe's initialisation
-    isDecoderHasConfig.set(deviceId, false);
-
     // Create new ReadableStream used for scrcpy decoding
-    const stream = new ReadableStream({
+    const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
       start(controller) {
         readableControllers.set(deviceId, controller);
+
+        // Create new entry for keyframe's initialisation
+        isDecoderHasConfig.set(deviceId, false);
       },
+      // Clean up when the stream is canceled
       cancel() {
-        readableControllers.delete(deviceId); // Clean up when the stream is canceled
+        readableControllers.delete(deviceId);
+        isDecoderHasConfig.delete(deviceId);
       },
     });
 
