@@ -226,19 +226,6 @@ class PlayerManager {
     }
 
     // Getters
-    getPlayerById(id: string): Player | undefined {
-        let toReturn = undefined;
-        for (const [, player] of this.playerList) {
-            if (player.id === id) {
-                toReturn = player;
-                break;
-            }
-        }
-        if (toReturn == undefined) logError("Cannot find player with ID" + id);
-
-        return toReturn;
-    }
-
     getIndexByPlayerId(id: string): string | undefined {
         let toReturn = undefined;
         for (const [key, player] of this.playerList) {
@@ -270,9 +257,12 @@ class PlayerManager {
      * @param {string} idPlayer - Player ID
      * @returns {PlayerState} - The state of the player
      */
-    getPlayerState(idPlayer: string): PlayerState {
-        const player: Player = this.getPlayerById(idPlayer)!;
-        return {connected: player.connected, in_game: player.in_game, date_connection: player.date_connection}
+    getPlayerState(idPlayer: string): PlayerState|void {
+        if (this.playerList.has(idPlayer)){
+            const player: Player = this.playerList.get(idPlayer)!;
+            return {connected: player.connected, in_game: player.in_game, date_connection: player.date_connection}
+        } else
+            if(useVerbose) logWarn("Can't find player with ID" + idPlayer);
     }
 
     /**
