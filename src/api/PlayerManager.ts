@@ -393,7 +393,7 @@ class PlayerManager {
             logError(`Error while sending ping to ${this.playerList.get(ipPlayer)!.id})`, e);
         }
 
-        if (useVerbose) log("Sending ping to " + player.id);
+        //if (useVerbose) log("Sending ping to " + player.id);
     }
 
     /**
