@@ -52,7 +52,7 @@ export class ScrcpyServer {
             stayAwake: true,
             // Clean feed
             audio: false,
-            control: false,
+            control: true,
         })
     )
 
