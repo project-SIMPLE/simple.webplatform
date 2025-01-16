@@ -77,27 +77,19 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
    * @returns A ReadableStream that can be enqueued with data stream
    */
   async function newVideoStream(deviceId: string) {
-    console.log("[Scrcpy] Create new ReadableStream for ", deviceId);
 
     // Wait for HTML to be available
     while (!targetRef.current){
       await new Promise( resolve => setTimeout(resolve, 1) );
     }
 
-    // Create new ReadableStream used for scrcpy decoding
-    const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
-      start(controller) {
-        readableControllers.set(deviceId, controller);
-
-        // Create new entry for keyframe's initialisation
-        isDecoderHasConfig.set(deviceId, false);
-      },
-      // Clean up when the stream is canceled
-      cancel() {
-        readableControllers.delete(deviceId);
-        isDecoderHasConfig.delete(deviceId);
-      },
-    });
+    if (document.getElementById(deviceId)){
+      console.log("[Scrcpy] Restarting new RedableStream for", deviceId);
+      document.getElementById(deviceId)!.remove();
+    } else {
+      // Create new stream
+      console.log("[Scrcpy] Create new ReadableStream for", deviceId);
+    }
 
     // Prepare video stream =======================
 
@@ -106,6 +98,7 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
     // Create HTML wrapper to stylize the video stream
     const wrapper: HTMLDivElement = document.createElement('div');
     wrapper.classList.add(...["m-4", "p-2", "rounded-md"]);
+    wrapper.id = deviceId;
 
     // Add background color
     const ipIdentifier: string = deviceId.split(":")[0].split(".")[deviceId.split(".").length -1];
@@ -132,6 +125,24 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
           renderer: renderer,
         });
 
+        // Create new ReadableStream used for scrcpy decoding
+        const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
+          start(controller) {
+            readableControllers.set(deviceId, controller);
+
+            // Create new entry for keyframe's initialisation
+            isDecoderHasConfig.set(deviceId, false);
+          },
+          // Clean up when the stream is canceled
+          cancel() {
+            readableControllers.delete(deviceId);
+            isDecoderHasConfig.delete(deviceId);
+
+            // Remove canvas
+            wrapper.parentNode!.removeChild(wrapper);
+          },
+        });
+
         // Feed the scrcpy stream to the video decoder
         void stream.pipeTo(decoder.writable).catch((err) => {
           console.error("[Scrcpy] Error piping to decoder writable stream:", err);
@@ -145,6 +156,8 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
       console.error('Error checking H.264 configuration support:', error);
     });
   }
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   useEffect(() => {
     // Open the WebSocket connection
@@ -174,10 +187,7 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
           !isDecoderHasConfig.get(deserializedData!.streamId) &&
           deserializedData!.packet.type == "configuration"
         ) {
-          console.log(
-            "[Scrcpy] WebSocket decoder loaded for ",
-            deserializedData!.streamId,
-          );
+          console.log("[Scrcpy] WebSocket decoder loaded for ", deserializedData!.streamId );
           controller!.enqueue(deserializedData!.packet);
           isDecoderHasConfig.set(deserializedData!.streamId, true);
         }
