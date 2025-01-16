@@ -3,6 +3,7 @@ import path from 'path';
 
 import Controller from "../controller.ts";
 import {HEADSETS_IP, useExtraVerbose, useVerbose} from "../index.ts";
+import * as os from "node:os"
 
 class DeviceFinder {
     controller: Controller;
@@ -12,7 +13,7 @@ class DeviceFinder {
 
     constructor(controller: Controller) {
         this.controller = controller;
-        this.scriptPath = path.join(process.cwd(), 'toolkit', 'scan_and_connect.zsh');
+        this.scriptPath = path.join(process.cwd(), 'toolkit', 'scan_and_connect'); // the extension of the file is added later to select either zsh or ps1
         this.ipToConnect = HEADSETS_IP;
 
         // Filter out already connected IPs
@@ -37,6 +38,7 @@ class DeviceFinder {
         this.isScanning = true; // Set the flag before starting to connect, otherwise, multiple attempts will start concurrently before the flag will be set.
 
         try {
+            
             console.log('[ADB FINDER] Start looking to connect for those IP : ', this.ipToConnect);
 
             for (let i = 0; i < this.ipToConnect.length; i++) { // Directly use this.ipToConnect. No need to copy
@@ -84,8 +86,33 @@ class DeviceFinder {
 
 
     public async scanAndConnectIP(ipAddress: string): Promise<string[]> {
+        if(os.platform() === 'win32'){
+            return new Promise((resolve, reject) => {
+                const parameters = ['-ip_adresses', ipAddress, // Replace with your IP addresses (comma-separated if multiple)
+                                    ]
+                const child = spawn('powershell', [this.scriptPath + '.ps1', ...parameters]);
+                let outputLines: string[] = []; // Store output lines
+
+                child.stdout.on('data', (data) => {
+                    const lines = data.toString().split('\n');
+                    outputLines.push(...lines);
+                });
+
+                child.stderr.on('data', (data) => {
+                    console.error('Script Error:', data.toString());
+                });
+
+                child.on('close', (code) => {
+                    if (code === 0) {
+                        resolve(outputLines);
+                    } else {
+                        reject(`Script failed with exit code ${code}`);
+                    }
+                });
+            });
+        }else{
         return new Promise((resolve, reject) => {
-            const child = spawn('zsh', [this.scriptPath, ipAddress]);
+            const child = spawn('zsh', [this.scriptPath + ".zsh", ipAddress]);
             let outputLines: string[] = []; // Store output lines
 
             child.stdout.on('data', (data) => {
@@ -104,7 +131,7 @@ class DeviceFinder {
                     reject(`Script failed with exit code ${code}`);
                 }
             });
-        });
+        });}
     }
 }
 
