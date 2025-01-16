@@ -128,26 +128,28 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
     // Add to final page
     targetRef.current.appendChild(wrapper);
 
-    const result = await VideoDecoder.isConfigSupported({
-      codec: "hev1.1.60.L153.B0.0.0.0.0.0",
+    await VideoDecoder.isConfigSupported({
+      // Check if h264 is supported
+      codec: "avc1.4D401E",
+    }).then((supported) => {
+      if (supported.supported) {
+        const decoder = new WebCodecsVideoDecoder({
+          codec:  ScrcpyVideoCodecId.H264,
+          renderer: renderer,
+        });
+
+        // Feed the scrcpy stream to the video decoder
+        void stream.pipeTo(decoder.writable).catch((err) => {
+          console.error("[Scrcpy] Error piping to decoder writable stream:", err);
+        });
+
+        return stream;
+      } else {
+        console.error("[Scrcpy] Error piping to decoder writable stream");
+      }
+    }).catch((error) => {
+      console.error('Error checking H.264 configuration support:', error);
     });
-    if (result.supported === true) {
-
-      const decoder = new WebCodecsVideoDecoder({
-        codec:  ScrcpyVideoCodecId.H265,
-        renderer: renderer,
-      });
-      decoder.sizeChanged(({ width, height }) => {
-        console.log(width, height);
-      });
-
-      // Feed the scrcpy stream to the video decoder
-      void stream.pipeTo(decoder.writable).catch((err) => {
-        console.error("[Scrcpy] Error piping to decoder writable stream:", err);
-      });
-
-      return stream;
-    }
   }
 
   useEffect(() => {

@@ -35,7 +35,7 @@ export class ScrcpyServer {
     readonly scrcpyOptions = new AdbScrcpyOptions2_1(
         new ScrcpyOptions3_1({
             // scrcpy options
-            videoCodec: "h265",
+            videoCodec: "h264",
             videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
                 profile: H264Capabilities.maxProfile,
                 level: H264Capabilities.maxLevel,
