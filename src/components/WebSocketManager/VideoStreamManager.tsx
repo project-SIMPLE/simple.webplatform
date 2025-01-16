@@ -1,10 +1,7 @@
 import React, { useEffect } from "react";
 
-import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
-
 import {
   VideoFrameRenderer,
-  InsertableStreamVideoFrameRenderer,
   WebGLVideoFrameRenderer,
   BitmapVideoFrameRenderer,
   WebCodecsVideoDecoder,
@@ -12,11 +9,10 @@ import {
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 
 import {HEADSET_COLOR} from "../../api/constants.ts";
-import {ScrcpyVideoStreamMetadata} from "@yume-chan/scrcpy/src/base/video.ts";
 
-const host = window.location.hostname;
-//const port = process.env.VIDEO_WS_PORT || '8082';
-const port = "8082";
+const host: string = window.location.hostname;
+//const port: string = process.env.VIDEO_WS_PORT || '8082';
+const port: string = '8082';
 
 // Deserialize the data into ScrcpyMediaStreamPacket
 const deserializeData = (serializedData: string) => {
@@ -48,21 +44,17 @@ interface VideoStreamManagerProps {
   targetRef: React.RefObject<HTMLDivElement>;
 }
 
-function createVideoFrameRenderer(): {
-  renderer: VideoFrameRenderer;
-  element: HTMLCanvasElement;
-} {
+function createVideoFrameRenderer(): VideoFrameRenderer {
+
   if (WebGLVideoFrameRenderer.isSupported) {
     console.log("[SCRCPY] Using WebGLVideoFrameRenderer");
-    const renderer = new WebGLVideoFrameRenderer();
-    return { renderer, element: renderer.canvas as HTMLCanvasElement };
+    return new WebGLVideoFrameRenderer();
   } else {
     console.warn("[SCRCPY] WebGL isn't supported... ");
   }
 
   console.log("[SCRCPY] Using fallback BitmapVideoFrameRenderer");
-  const renderer = new BitmapVideoFrameRenderer();
-  return { renderer, element: renderer.canvas as HTMLCanvasElement };
+  return new BitmapVideoFrameRenderer();
 }
 
 // The React component
@@ -107,11 +99,12 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
       },
     });
 
-    // Create new decoder object
-    const { renderer, element } = createVideoFrameRenderer();
-    
+    // Prepare video stream =======================
+
+    const renderer: VideoFrameRenderer = createVideoFrameRenderer();
+
     // Create HTML wrapper to stylize the video stream
-    const wrapper = document.createElement('div');
+    const wrapper: HTMLDivElement = document.createElement('div');
     wrapper.classList.add(...["m-4", "p-2", "rounded-md"]);
 
     // Add background color
@@ -124,7 +117,8 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
     }
 
     // @ts-ignore
-    wrapper.appendChild(element); //d.renderer);
+    wrapper.appendChild(renderer.canvas as HTMLCanvasElement);
+
     // Add to final page
     targetRef.current.appendChild(wrapper);
 
