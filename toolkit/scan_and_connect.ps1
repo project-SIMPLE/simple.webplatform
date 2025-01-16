@@ -15,7 +15,7 @@ function is_ip_valid($ip) {
   &adb start-server #starts the adb server
   if($ip_adresses -eq 0) {
     Write-Debug "No IP addresses provided"
-    return 1
+    exit 1
   }
   foreach ($ip in $ip_adresses) {
     if (-not (is_ip_valid $ip)) {
@@ -25,7 +25,7 @@ function is_ip_valid($ip) {
     else {
       Write-Debug "Scanning $ip for open ports in range with nmap"
       #open_ports is considered a list, even though empirically only a single port is returned
-      $open_ports = (&nmap -p $port_range -oG - 10.2.98.198) | Select-String -Pattern "open" | ForEach-Object { $PSItem -replace ".*Ports: (\d+)/.*", '$1' }
+      $open_ports = (&nmap -p $port_range -oG - $ip_adresses ) | Select-String -Pattern "open" | ForEach-Object { $PSItem -replace ".*Ports: (\d+)/.*", '$1' }
       #checks if the list is empty
       if ($open_ports -eq 0) {
         Write-Error "No open ports found on $ip"
@@ -35,7 +35,7 @@ function is_ip_valid($ip) {
           Write-Debug "Connecting to $ip on port $port"
           &adb connect ${ip}:${port}
         }
-        return 0
+        exit 0
       }
     }
   }

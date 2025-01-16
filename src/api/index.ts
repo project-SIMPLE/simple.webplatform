@@ -30,20 +30,20 @@ const useVerbose: boolean = useExtraVerbose ?
         : false;
 
 if (useExtraVerbose) {
-    console.log(process.env);
+  console.log(process.env);
 }
 
 /*
     APPLICATION ENTRY POINT ================================
  */
 
-console.log('\n\x1b[95mWelcome to Gama Server Middleware !\x1b[0m\n');
+console.log("\n\x1b[95mWelcome to Gama Server Middleware !\x1b[0m\n");
 
-const useAdb: boolean = os.platform() === 'win32' ? false :
-    await isCommandAvailable("adb") ?
-        await new Promise((resolve) => {
-            console.log("Waking up ADB...")
-            const checkAdb = spawn('adb', ["devices"]);
+const useAdb: boolean = (await isCommandAvailable("adb"))
+
+  ? await new Promise((resolve) => {
+      console.log("Waking up ADB...");
+      const checkAdb = spawn("adb", ["devices"]);
 
             checkAdb.on('close', (code) => {
                 resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
@@ -55,15 +55,23 @@ const c = new Controller(useAdb);
 // =========================================================
 
 async function isCommandAvailable(commandName: string): Promise<boolean> {
+  if (os.platform() === "win32") {
+    const checkAdbProcess = spawn("where", [commandName]);
     return new Promise((resolve) => {
-        const checkAdbProcess = spawn('which', [commandName]);
-
-        checkAdbProcess.on('close', (code) => {
+        checkAdbProcess.on("close", (code) => {
             resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
         });
-    });
-}
+        });
+  } else {
+    return new Promise((resolve) => {
+      const checkAdbProcess = spawn("which", [commandName]);
 
+      checkAdbProcess.on("close", (code) => {
+        resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
+      });
+    });
+  }
+}
 
 /*
     Pro-actively looking for Meta Quest devices to connect with ADB using an external script

@@ -20,6 +20,7 @@
     "@yume-chan/stream-extra": "^1.0.0",
     "dotenv": "^16.4.5",
     "i18next": "^23.15.1",
+    "jest": "^29.7.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^15.0.2",
