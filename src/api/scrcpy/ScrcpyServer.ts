@@ -27,6 +27,7 @@ export class ScrcpyServer {
     // WebSocket
     private wsServer!: TemplatedApp;
     private wsClients: Set<uWS.WebSocket<any>>;
+    private scrcpyClients: AdbScrcpyClient[] = [];
 
     // =======================
     // Scrcpy server
@@ -92,6 +93,11 @@ export class ScrcpyServer {
                 // Send configuration message if scrcpy is already started
                 if(this.scrcpyStreamConfig){
                     ws.send(this.scrcpyStreamConfig, false, true);
+                }
+
+                for (const client of this.scrcpyClients) {
+                    // Add small delay to let the client finish to load webpage
+                    setTimeout(() => {client.controller!.resetVideo()}, 500) ;
                 }
             },
 
@@ -167,6 +173,8 @@ export class ScrcpyServer {
                 this.scrcpyOptions
             );
 
+            // Store the controller of new client
+            this.scrcpyClients.push(client);
 
             // Print output of Scrcpy server
             if (useVerbose) void client.stdout.pipeTo(
