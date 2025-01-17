@@ -1,0 +1,4 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a problem regarding SIMPLE's GAMA/Unity toolchain
+    url:  https://github.com/project-SIMPLE/simple.toolchain/issues/new/choose

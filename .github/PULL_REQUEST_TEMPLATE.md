@@ -1,10 +1,3 @@
----
-name: Simple Pull Request
-description: A simple pull request template
-assignees: []
-reviewers: ["RoiArthurB"]
----
-
 <!--
 Thank you for your contribution! Please fill out the sections below.
 -->
