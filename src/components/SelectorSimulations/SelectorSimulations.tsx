@@ -54,8 +54,6 @@ const SelectorSimulations = () => {
     console.log(`Restart button clicked for headset ${index}`);
     // Logic for restart button ...
   };
-
-
   // Loop which try to connect to Gama
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -82,11 +80,13 @@ const SelectorSimulations = () => {
   }, [gama.connected, t]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-white p-8">
+    <div className="flex flex-col items-center justify-between min-h-screen bg-white p-8 ">
+      <div className="flex items-center w-full justify-around vertical-center">
+      <Navigation />
 
      <LanguageSelector />   
       
-      <Navigation />
+      </div>
 
       {loading ? (
         <div className="text-center">
@@ -99,9 +99,9 @@ const SelectorSimulations = () => {
         
         // Display simulations cards
         <div className="flex flex-col items-center justify-center bg-white p-8">
-        <div className="flex items-center justify-between ">
+        <div className="flex items-center justify-between">
           
-          <div className="grid grid-cols-3 mt-5 mb-8" style={{ gap: '55px' }}>
+          <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
             {simulationList.map((simulation, index) => (
               <div
               className={`bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer ${
@@ -120,7 +120,7 @@ const SelectorSimulations = () => {
                 
               >
                 <h2
-                  className="text-gray-500 text-sm text-center"
+                  className="text-gray-500 text-sm text-center mt"
                   style={{
                     marginTop: '80px',
                   }}

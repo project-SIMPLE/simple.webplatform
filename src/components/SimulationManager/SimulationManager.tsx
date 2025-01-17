@@ -128,7 +128,7 @@ const SimulationManager = () => {
       <div className="flex flex-col min-h-screen bg-gray-100">
         {/* <Navigation /> */}
         <MiniNavigation />
-        <div className="flex flex-col items-center justify-center bg-gray-100 bg-white p-8 pt-0  shadow-lg rounded-lg text-center mt-12" style={{marginRight:'60px', marginLeft:'60px', marginTop:'100px'}}>
+        <div className="flex flex-col items-center justify-center bg-gray-100 p-8 pt-0  shadow-lg rounded-lg text-center mt-12" style={{marginRight:'60px', marginLeft:'60px', marginTop:'100px'}}>
 
 
           {selectedSimulation ? (
