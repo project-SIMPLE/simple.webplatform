@@ -3,8 +3,8 @@ param(
   [string]$ip_adresses
 )
 
-$DebugPreference = "Continue" #variable used to specify the level of verbosity of debug messages         
-# change to SilentlyContinue to remove them
+$DebugPreference = "SilentlyContinue" #variable used to specify the level of verbosity of debug messages         
+# change to SilentlyContinue to remove them ( affects write-debug statements)
 
 #function checking if a given IP adress is valid by comparing it's input to a RegEx pattern
 function is_ip_valid($ip) {
@@ -14,7 +14,7 @@ function is_ip_valid($ip) {
 
 &adb start-server #starts the adb server
 if ($ip_adresses -eq 0) {
-  Write-Debug "No IP addresses provided"
+  Write-Host "ERROR no IP adresses provided"
   exit 1
 }
 foreach ($ip in $ip_adresses) {
@@ -28,18 +28,18 @@ foreach ($ip in $ip_adresses) {
     $open_ports = (&nmap -p $port_range -oG - $ip_adresses ) | Select-String -Pattern "open" | ForEach-Object { $PSItem -replace ".*Ports: (\d+)/.*", '$1' }
     #checks if the list is empty
     if (-not $open_ports) {
-      Write-Host "ERROR. couldn't find a suitable port on ip:$ip"
+      Write-Host "ERROR: Couldn't find a suitable port for the ip:$ip"
     }
     else {
       Write-Host "Found open ports: $open_ports"
       foreach ($port in $open_ports) {
         Write-Debug "Connecting to $ip on port $port"
-        &adb connect ${ip}:${port} > $null
+        &adb connect ${ip}:${port} > $null #we do not require the output of this command to be sent back to the device finder, so we redirect it to null
         
       } 
       
         
-      Write-Host("OK") #this is what is read back by the device finder, it ignores exit codes other than 0
+      Write-Host("OK") #this is what is read back by the device finder and is used to determine the script state, it ignores exit codes other than 1
     }
   }
 }
