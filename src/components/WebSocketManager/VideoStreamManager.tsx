@@ -1,10 +1,18 @@
 import React, { useEffect } from "react";
-import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
+
+import {
+  VideoFrameRenderer,
+  WebGLVideoFrameRenderer,
+  BitmapVideoFrameRenderer,
+  WebCodecsVideoDecoder,
+} from "@yume-chan/scrcpy-decoder-webcodecs";
+import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
+
 import {HEADSET_COLOR} from "../../api/constants.ts";
 
-const host = window.location.hostname;
-//const port = process.env.VIDEO_WS_PORT || '8082';
-const port = "8082";
+const host: string = window.location.hostname;
+//const port: string = process.env.VIDEO_WS_PORT || '8082';
+const port: string = '8082';
 
 // Deserialize the data into ScrcpyMediaStreamPacket
 const deserializeData = (serializedData: string) => {
@@ -36,6 +44,19 @@ interface VideoStreamManagerProps {
   targetRef: React.RefObject<HTMLDivElement>;
 }
 
+function createVideoFrameRenderer(): VideoFrameRenderer {
+
+  if (WebGLVideoFrameRenderer.isSupported) {
+    console.log("[SCRCPY] Using WebGLVideoFrameRenderer");
+    return new WebGLVideoFrameRenderer();
+  } else {
+    console.warn("[SCRCPY] WebGL isn't supported... ");
+  }
+
+  console.log("[SCRCPY] Using fallback BitmapVideoFrameRenderer");
+  return new BitmapVideoFrameRenderer();
+}
+
 // The React component
 const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
 
@@ -56,32 +77,28 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
    * @returns A ReadableStream that can be enqueued with data stream
    */
   async function newVideoStream(deviceId: string) {
-    console.log("[Scrcpy] Create new ReadableStream for ", deviceId);
 
     // Wait for HTML to be available
     while (!targetRef.current){
       await new Promise( resolve => setTimeout(resolve, 1) );
     }
 
-    // Create new entry for keyframe's initialisation
-    isDecoderHasConfig.set(deviceId, false);
+    if (document.getElementById(deviceId)){
+      console.log("[Scrcpy] Restarting new RedableStream for", deviceId);
+      document.getElementById(deviceId)!.remove();
+    } else {
+      // Create new stream
+      console.log("[Scrcpy] Create new ReadableStream for", deviceId);
+    }
 
-    // Create new ReadableStream used for scrcpy decoding
-    const stream = new ReadableStream({
-      start(controller) {
-        readableControllers.set(deviceId, controller);
-      },
-      cancel() {
-        readableControllers.delete(deviceId); // Clean up when the stream is canceled
-      },
-    });
+    // Prepare video stream =======================
 
-    // Create new decoder object
-    const d = new TinyH264Decoder();
+    const renderer: VideoFrameRenderer = createVideoFrameRenderer();
 
     // Create HTML wrapper to stylize the video stream
-    const wrapper = document.createElement('div');
+    const wrapper: HTMLDivElement = document.createElement('div');
     wrapper.classList.add(...["m-4", "p-2", "rounded-md"]);
+    wrapper.id = deviceId;
 
     // Add background color
     const ipIdentifier: string = deviceId.split(":")[0].split(".")[deviceId.split(".").length -1];
@@ -93,16 +110,54 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
     }
 
     // @ts-ignore
-    wrapper.appendChild(d.renderer);
+    wrapper.appendChild(renderer.canvas as HTMLCanvasElement);
+
     // Add to final page
     targetRef.current.appendChild(wrapper);
 
-    // Feed the scrcpy stream to the video decoder
-    stream.pipeTo(d.writable).catch((err) => {
-      console.error("[Scrcpy] Error piping to decoder writable stream:", err);
+    await VideoDecoder.isConfigSupported({
+      // Check if h264 is supported
+      codec: "avc1.4D401E",
+    }).then((supported) => {
+      if (supported.supported) {
+        const decoder = new WebCodecsVideoDecoder({
+          codec:  ScrcpyVideoCodecId.H264,
+          renderer: renderer,
+        });
+
+        // Create new ReadableStream used for scrcpy decoding
+        const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
+          start(controller) {
+            readableControllers.set(deviceId, controller);
+
+            // Create new entry for keyframe's initialisation
+            isDecoderHasConfig.set(deviceId, false);
+          },
+          // Clean up when the stream is canceled
+          cancel() {
+            readableControllers.delete(deviceId);
+            isDecoderHasConfig.delete(deviceId);
+
+            // Remove canvas
+            wrapper.parentNode!.removeChild(wrapper);
+          },
+        });
+
+        // Feed the scrcpy stream to the video decoder
+        void stream.pipeTo(decoder.writable).catch((err) => {
+          console.error("[Scrcpy] Error piping to decoder writable stream:", err);
+        });
+
+        return stream;
+      } else {
+        console.error("[Scrcpy] Error piping to decoder writable stream");
+      }
+    }).catch((error) => {
+      console.error('Error checking H.264 configuration support:', error);
     });
-    return stream;
   }
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   useEffect(() => {
     // Open the WebSocket connection
@@ -110,18 +165,15 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
 
     // Handle incoming WebSocket messages
     socket.onmessage = (event) => {
-      const serializedMessage = event.data;
-
       // Deserialize the message and enqueue the data into the readable stream
-      const deserializedData = deserializeData(serializedMessage);
+      const deserializedData = deserializeData( event.data );
 
-      let controller = readableControllers.get(deserializedData!.streamId);
-
-      // Create stream and get ref if new stream
-      if (!controller) {
+      // Create stream if new stream
+      if (!readableControllers.has(deserializedData!.streamId)) {
         newVideoStream(deserializedData!.streamId);
-        controller = readableControllers.get(deserializedData!.streamId);
       }
+
+      const controller = readableControllers.get(deserializedData!.streamId);
 
       // Enqueue data package to decoder stream
       if (deserializedData!.packet) {
@@ -132,13 +184,10 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
           controller!.enqueue(deserializedData!.packet);
           // Ensure starting stream with a configuration package holding keyframe
         } else if (
-          !isDecoderHasConfig.get(deserializedData!.streamId) &&
+          //!isDecoderHasConfig.get(deserializedData!.streamId) &&
           deserializedData!.packet.type == "configuration"
         ) {
-          console.log(
-            "[Scrcpy] WebSocket decoder loaded for ",
-            deserializedData!.streamId,
-          );
+          console.log("[Scrcpy] WebSocket decoder loaded for ", deserializedData!.streamId );
           controller!.enqueue(deserializedData!.packet);
           isDecoderHasConfig.set(deserializedData!.streamId, true);
         }

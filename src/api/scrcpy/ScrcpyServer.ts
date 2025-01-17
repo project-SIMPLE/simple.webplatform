@@ -4,7 +4,7 @@ import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyOptions2_1 } from "@yume-chan/adb-scrcpy";
 import { BIN, VERSION } from "@yume-chan/fetch-scrcpy-server";
-import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyOptions3_0, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
+import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyOptions3_1, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
 import {useVerbose} from "../index.ts";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, {TemplatedApp} from "uWebSockets.js";
@@ -27,13 +27,14 @@ export class ScrcpyServer {
     // WebSocket
     private wsServer!: TemplatedApp;
     private wsClients: Set<uWS.WebSocket<any>>;
+    private scrcpyClients: AdbScrcpyClient[] = [];
 
     // =======================
     // Scrcpy server
     declare server: Buffer;
 
     readonly scrcpyOptions = new AdbScrcpyOptions2_1(
-        new ScrcpyOptions3_0({
+        new ScrcpyOptions3_1({
             // scrcpy options
             videoCodec: "h264",
             videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
@@ -51,7 +52,7 @@ export class ScrcpyServer {
             stayAwake: true,
             // Clean feed
             audio: false,
-            control: false,
+            control: true,
         })
     )
 
@@ -92,6 +93,11 @@ export class ScrcpyServer {
                 // Send configuration message if scrcpy is already started
                 if(this.scrcpyStreamConfig){
                     ws.send(this.scrcpyStreamConfig, false, true);
+                }
+
+                for (const client of this.scrcpyClients) {
+                    // Add small delay to let the client finish to load webpage
+                    setTimeout(() => {client.controller!.resetVideo()}, 500) ;
                 }
             },
 
@@ -164,10 +170,11 @@ export class ScrcpyServer {
             const client: AdbScrcpyClient = await AdbScrcpyClient.start(
                 adbConnection,
                 DefaultServerPath,
-                VERSION,
                 this.scrcpyOptions
             );
 
+            // Store the controller of new client
+            this.scrcpyClients.push(client);
 
             // Print output of Scrcpy server
             if (useVerbose) void client.stdout.pipeTo(
@@ -184,6 +191,9 @@ export class ScrcpyServer {
                 log(metadata);
 
                 const myself = this;
+
+                // Enforce sending config package
+                setTimeout(() => {client.controller!.resetVideo()}, 500) ;
 
                 videoPacketStream
                     .pipeTo(

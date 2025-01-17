@@ -444,7 +444,12 @@ class PlayerManager {
         if (this.playerList.has(ipPlayer) && this.playerList.get(ipPlayer)!.connected )
             jsonPlayer = this.playerList.get(ipPlayer)!;
         else{
-            logError("Can't send a message to player", ipPlayer);
+            if (useExtraVerbose)
+                if (!this.playerList.has(ipPlayer))
+                     logError("Missing player - Can't send a message to player", ipPlayer);
+                else
+                    logWarn("Disconnected player - Can't send a message to player", ipPlayer);
+
             return -1;
         }
 
