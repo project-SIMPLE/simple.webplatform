@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useScreenModeState, useScreenModeSetter } from '../ScreenModeContext/ScreenModeContext';
 import MiniNavigation from '../Navigation/MiniNavigation';
 import { useTranslation } from 'react-i18next';
+import Footer from '../Footer/Footer';
 interface Player {
   connected: boolean;
   date_connection: string;
@@ -126,8 +127,8 @@ const SimulationManager = () => {
 
   return (
       <div className="flex flex-col min-h-screen bg-gray-100">
-        {/* <Navigation /> */}
-        <MiniNavigation />
+<div className='m-5'>
+        <MiniNavigation /></div>
         <div className="flex flex-col items-center justify-center bg-gray-100 p-8 pt-0  shadow-lg rounded-lg text-center mt-12" style={{marginRight:'60px', marginLeft:'60px', marginTop:'100px'}}>
 
 
@@ -136,7 +137,7 @@ const SimulationManager = () => {
 
               <div>
 
-                <div className="text-3xl mb-4">{selectedSimulation.name}</div>
+                <p className="text-3xl mb-4">{selectedSimulation.name}</p>
 
                 <div className="flex justify-center mt-8 space-x-4 mb-2">
 
@@ -154,7 +155,7 @@ const SimulationManager = () => {
 
                           {showPopUpManageHeadset && (
                               <>
-                                {/* Grey Overley */}
+                                {/* Grey Overlay */}
                                 <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-50"></div>
 
                                 <div className="fixed inset-0 flex items-center justify-center z-50" onClick={togglePopUpshowPopUpManageHeadset}>
@@ -207,9 +208,9 @@ const SimulationManager = () => {
                                 }
                                 onClick={togglePopUpshowPopUpManageHeadset}
                                 // onClick={() => handleRemove(key)}
-                            >
+                            />
 
-                            </Button>
+                            
                           </div>
                         </div>
                     );
@@ -372,18 +373,7 @@ const SimulationManager = () => {
 
 
         {/* Footer of the page */}
-        <footer className="flex justify-between items-center p-4 border-t border-gray-300  w-full" style={{ marginTop: '20px' }} >
-          <div className='flex'>
-            <img src="/images/global-gateway-euro.png" alt="Global Gateway" className="h-8" />
-            <img src="/images/funded-by-ue.png" alt="Global Gateway" className="h-8" />
-          </div>
-
-          <div className='flex gap-3' >
-            <img src="images/IRD-logo.png" alt="IRD" className="h-8" />
-            <img src="images/nstda-logo.png" alt="CTU" className="h-8" />
-            <img src="images/ctu-logo.png" alt="NSTDA" className="h-8" />
-          </div>
-        </footer>
+            <Footer/>
 
 
       </div>

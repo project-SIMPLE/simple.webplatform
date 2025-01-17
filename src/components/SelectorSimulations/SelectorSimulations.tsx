@@ -6,7 +6,7 @@ import Navigation from '../Navigation/Navigation';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import LanguageSelector from '../LanguageSelector/LanguageSelector';
 import { useTranslation } from 'react-i18next';
-
+import Footer from '../Footer/Footer';
 const SelectorSimulations = () => {
   const { ws, isWsConnected, simulationList, playerList, gama } = useWebSocket();
   const [directoryPath, setDirectoryPath] = useState<string>('');
@@ -311,19 +311,7 @@ const SelectorSimulations = () => {
       
 
       {/* Footer of the page */}
-      <footer className="flex justify-between items-center p-4 border-t border-gray-300  w-full" style={{ marginTop: '100px' }} >
-        <div className='flex'>
-          <img src="/images/global-gateway-euro.png" alt="Global Gateway" className="h-8" />
-          <img src="/images/funded-by-ue.png" alt="Global Gateway" className="h-8" />
-        </div>
-
-        <div className='flex gap-3' >
-          <img src="images/IRD-logo.png" alt="IRD" className="h-8" />
-          <img src="images/nstda-logo.png" alt="CTU" className="h-8" />
-          <img src="images/ctu-logo.png" alt="NSTDA" className="h-8" />
-        </div>
-      </footer>
-
+      <Footer />
     </div>
   );
 };
