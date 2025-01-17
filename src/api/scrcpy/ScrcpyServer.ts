@@ -192,6 +192,9 @@ export class ScrcpyServer {
 
                 const myself = this;
 
+                // Enforce sending config package
+                setTimeout(() => {client.controller!.resetVideo()}, 500) ;
+
                 videoPacketStream
                     .pipeTo(
                         //@ts-ignore

@@ -184,7 +184,7 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
           controller!.enqueue(deserializedData!.packet);
           // Ensure starting stream with a configuration package holding keyframe
         } else if (
-          !isDecoderHasConfig.get(deserializedData!.streamId) &&
+          //!isDecoderHasConfig.get(deserializedData!.streamId) &&
           deserializedData!.packet.type == "configuration"
         ) {
           console.log("[Scrcpy] WebSocket decoder loaded for ", deserializedData!.streamId );
