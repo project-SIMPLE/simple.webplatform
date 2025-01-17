@@ -1,7 +1,10 @@
 ---
-name: Simple Feature Request
-description: A simple feature request template
-labels: "🤗 Enhancement"
+name: Feature Request
+about: Suggest an idea for this project
+title: ''
+labels: "\U0001F917 Enhancement"
+assignees: ''
+
 ---
 
 <!--
@@ -24,4 +27,3 @@ Thank you for your feature request! Please fill out the sections below.
 
 ### Additional Notes
 <!-- Any other information or context that might be helpful. -->
-
