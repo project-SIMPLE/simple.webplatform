@@ -32,7 +32,14 @@ Built with **React**, **TypeScript**, and **Vite**, this project leverages moder
 ### Prerequisites  
 - Node.js >= v22
 - npm or yarn  
-
+### Installing Node and npm
+- To install Node.js, go to [https://nodejs.org/en/download](https://nodejs.org/en/download)
+- From here, select the operating system of your machine, and use either the command or the installer.
+- if you selected the installer option, you can check Node and npm were installed correctly using the command:
+  ```bash
+   node -v npm -v
+  ```
+this command should return the version of both tools.
 ### Installation  
 
 1. Clone the repository:  
