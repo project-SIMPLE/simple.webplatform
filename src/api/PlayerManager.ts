@@ -266,6 +266,19 @@ class PlayerManager {
     }
 
     /**
+     * Gets the in_game ID of a specific player
+     * NB: The `playerWsId` is different from the in_game ID as the first one represent the IP address connecting to the mw
+     * @param {string} playerWsId - Player ID
+     * @returns {string} - The ID player
+     */
+    getPlayerId(playerWsId: string): string|void {
+        if (this.playerList.has(playerWsId)){
+            return this.playerList.get(playerWsId)!.id;
+        } else
+        if(useVerbose) logWarn("Can't find player with ws ID" + playerWsId);
+    }
+
+    /**
      * Gets array with all players under a format which can be JSON.stringify
      * Removed attribute `ws` which is very verbose and not necessary
      */
