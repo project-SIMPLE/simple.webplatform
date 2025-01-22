@@ -168,6 +168,10 @@ class GamaConnector {
                     const message = JSON.parse(event.data as string);
                     const type = message.type;
 
+                    if (useExtraVerbose) {
+                        log("[DEBUG] Message received from Gama Server:", message);
+                    }
+
                     switch (type) {
                         case "SimulationStatus":
                             if (useVerbose) log("[DEBUG] Message received from Gama Server: SimulationStatus = " + message.content);
@@ -193,6 +197,7 @@ class GamaConnector {
                         case "CommandExecutedSuccessfully":
                             if (useExtraVerbose) {
                                 log("[DEBUG] Message received from Gama Server: CommandExecutedSuccessfully");
+                                log("[DEBUG]", message);
                             }
 
                             this.setGamaContentError('');
@@ -286,7 +291,9 @@ class GamaConnector {
             try {
                 if (this.gama_socket != null)
                     if (typeof message === "function") {
+
                         this.gama_socket.send( JSON.stringify( message() ) );
+
                         if (useVerbose)
                             if (message().expr !== undefined)
                                 log("Expression sent to Gama Server: " + '\'' + message().expr + '\'' + " Waiting for the answer (if any)...");
@@ -301,6 +308,9 @@ class GamaConnector {
                 logError(e);
             }
             finally {
+                if (useExtraVerbose) {
+                    logWarn("[DEBUG] Message sent to GAMA:", message );
+                }
                 this.listMessages.splice(this.listMessages.indexOf(message), 1);
             }
         }

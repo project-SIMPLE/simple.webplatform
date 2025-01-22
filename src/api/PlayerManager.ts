@@ -40,6 +40,7 @@ class PlayerManager {
         ).listen(Number(process.env.HEADSET_WS_PORT), (token) => {
             if (token) {
                 log(`Creating monitor server on: ws://0.0.0.0:${Number(process.env.HEADSET_WS_PORT)}`);
+                if (useVerbose) log(token);
             } else {
                 logError('Failed to listen on the specified port', process.env.HEADSET_WS_PORT);
             }
@@ -85,11 +86,13 @@ class PlayerManager {
 
             message: (ws, message) => {
                 const playerIP = Buffer.from(ws.getRemoteAddressAsText()).toString();
-
                 const jsonPlayer: JsonPlayer = JSON.parse(Buffer.from(message).toString());
-                const type = JSON.parse(Buffer.from(message).toString()).type;
 
-                switch (type) {
+                // Alive as received any message
+                if (this.playerList.has(playerIP))
+                    this.playerList.get(playerIP)!.is_alive = true;
+
+                switch (jsonPlayer.type) {
                     case "pong":
                         this.playerList.get(playerIP)!.is_alive = true;
                         break;
@@ -105,6 +108,7 @@ class PlayerManager {
                         if ( ! this.playerList.has(playerIP) ) {
                             log('New connection of the player of id ' + jsonPlayer.id);
                             // Create new player in the list
+
                             this.playerList.set(playerIP, {
                                 id: jsonPlayer.id,
                                 ws: ws,
