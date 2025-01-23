@@ -93,10 +93,9 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
     //     console.log("The screenMode has changed to :", screenMode);
     // }, [screenMode]);
 
-
     useEffect(() => {
         const host = window.location.hostname;
-        const port = import.meta.env.VITE_MONITOR_WS_PORT || '8001';
+        const port = process.env.MONITOR_WS_PORT || '8001';
 
         const socket = new WebSocket(`ws://${host}:${port}`);
         setWs(socket);
