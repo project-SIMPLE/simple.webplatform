@@ -14,6 +14,17 @@ import Controller from "../controller.ts";
 import {useVerbose} from "../index.ts";
 import {ScrcpyServer} from "../scrcpy/ScrcpyServer.ts";
 
+// Override the log function
+const log = (...args: any[]) => {
+    console.log("\x1b[36m[ADB MANAGER]\x1b[0m", ...args);
+};
+const logWarn = (...args: any[]) => {
+    console.warn("\x1b[36m[ADB MANAGER]\x1b[0m", "\x1b[43m", ...args, "\x1b[0m");
+};
+const logError = (...args: any[]) => {
+    console.error("\x1b[36m[ADB MANAGER]\x1b[0m", "\x1b[41m", ...args, "\x1b[0m");
+};
+
 export class AdbManager {
     controller: Controller;
     adbServer!: AdbServerClient;
@@ -29,9 +40,9 @@ export class AdbManager {
                 new AdbServerNodeTcpConnector({ host: '127.0.0.1', port: 5037 })
             );
         }catch (e) {
-            console.error("[ADB MANAGER] Can't connect to device's ADB server", e);
+            logError("Can't connect to device's ADB server", e);
         }
-        console.log("[ADB MANAGER] Connect to device's ADB server");
+        log("Connect to device's ADB server");
 
         this.videoStreamServer = new ScrcpyServer();
 
@@ -48,9 +59,9 @@ export class AdbManager {
     async getClientList() {
         this.adbClientList = await this.adbServer.getDevices();
         if (this.adbClientList.length) {
-            if (useVerbose) console.log('[ADB MANAGER] Devices found on ADB server:', this.adbClientList);
+            if (useVerbose) log('Devices found on ADB server:', this.adbClientList);
         } else {
-            if (useVerbose) console.log('[ADB MANAGER] No devices found on ADB server...');
+            if (useVerbose) log('No devices found on ADB server...');
         }
     }
 
@@ -59,7 +70,7 @@ export class AdbManager {
             await this.startStreaming(device.serial);
 
             // Cooldown to let client properly create streams' canvas
-            if (useVerbose) console.log("[ADB MANAGER] Waiting 2s before starting a new stream...");
+            if (useVerbose) log("Waiting 2s before starting a new stream...");
             await new Promise( resolve => setTimeout(resolve, 2000) );
         }
     }
@@ -67,7 +78,7 @@ export class AdbManager {
     async startStreaming(serial: string) {
         // Ensure having only one streaming per device
         if(this.clientCurrentlyStreaming.includes(serial)) {
-            if (useVerbose) console.warn('[ADB MANAGER] Device', serial, 'already streaming. Skipping new stream...');
+            if (useVerbose) logWarn('Device', serial, 'already streaming. Skipping new stream...');
             return;
         }else{
             // Add new device streaming
@@ -78,7 +89,7 @@ export class AdbManager {
             const transport = await this.adbServer.createTransport(deviceToStream);
             const adb = new Adb(transport);
 
-            if (useVerbose) console.log('[ADB MANAGER] Starting streaming for :', serial);
+            if (useVerbose) log('Starting streaming for :', serial);
 
             await this.videoStreamServer.startStreaming(adb);
         }

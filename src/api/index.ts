@@ -97,14 +97,14 @@ async function isCommandAvailable(commandName: string): Promise<boolean> {
     try {
       await new DeviceFinder(c).scanAndConnect();
     } catch (error) {
-      console.error("[ADB FINDER] Error:", error);
+      console.error("\x1b[36m[ADB FINDER]\x1b[0m Error:", error);
     }
   } else {
     console.error(
-      "[ADB FINDER] One or several of those tools are not available on your computer:",
+      "\x1b[36m[ADB FINDER]\x1b[0m One or several of those tools are not available on your computer:",
       "zsh, nmap, adb"
     );
-    console.error("[ADB FINDER] Skipping finder now...");
+    console.error("\x1b[36m[ADB FINDER]\x1b[0m Skipping finder now...");
   }
 //TODO remove these when this works on windows
 } else {
@@ -120,10 +120,10 @@ async function isCommandAvailable(commandName: string): Promise<boolean> {
     }
   } else {
     console.error(
-      "[ADB FINDER] One or several of those tools are not available on your computer:",
+      "\x1b[36m[ADB FINDER]\x1b[0m One or several of those tools are not available on your computer:",
       "zsh, nmap, adb"
     );
-    console.error("[ADB FINDER] Skipping finder now...");
+    console.error("\x1b[36m[ADB FINDER]\x1b[0m Skipping finder now...");
   }
 
 //    console.warn("[ADB FINDER] Sorry, this feature is not available on Windows.");

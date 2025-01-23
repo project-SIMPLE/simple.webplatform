@@ -1,15 +1,27 @@
-import { WebSocketServer, WebSocket } from 'ws';
+import uWS, {TemplatedApp} from 'uWebSockets.js';
 
 import { Controller } from './controller';
 import { JsonMonitor } from "./constants.ts"
+import {useVerbose} from "./index.ts";
+
+// Override the log function
+const log = (...args: any[]) => {
+    console.log("\x1b[33m[MONITOR SERVER]\x1b[0m", ...args);
+};
+const logWarn = (...args: any[]) => {
+    console.warn("\x1b[33m[MONITOR SERVER]\x1b[0m", "\x1b[43m", ...args, "\x1b[0m");
+};
+const logError = (...args: any[]) => {
+    console.error("\x1b[33m[MONITOR SERVER]\x1b[0m", "\x1b[41m", ...args, "\x1b[0m");
+};
 
 /**
  * Creates a Websocket Server for handling monitor connections
  */
 export class MonitorServer {
     private controller: Controller;
-    private monitorSocketClients: WebSocket[];
-    private monitorSocket!: WebSocketServer;
+    private wsClients: Set<uWS.WebSocket<any>>;
+    private wsServer!: TemplatedApp;//: WebSocketServer;
 
     /**
      * Creates the websocket server
@@ -17,111 +29,165 @@ export class MonitorServer {
      */
     constructor(controller: Controller) {
         this.controller = controller;
-        this.monitorSocketClients = [];
+        this.wsClients = new Set<uWS.WebSocket<any>>();
 
-        try {
-            const host = process.env.WEB_APPLICATION_HOST || 'localhost';
-            const port = parseInt(process.env.MONITOR_WS_PORT || '8080', 10);
+        const host = process.env.WEB_APPLICATION_HOST || 'localhost';
+        const port = parseInt(process.env.MONITOR_WS_PORT || '8080', 10);
 
-            this.monitorSocket = new WebSocketServer({ host, port });
-            console.log(`[MONITOR SERVER] Creating monitor server on: ws://${host}:${port}`);
-        } catch (e) {
-            console.error("[MONITOR SERVER] Failed to create WebSocket server", e);
-        }
+        this.wsServer = uWS.App(); //new WebSocketServer({ host, port });
 
-        this.monitorSocket.on('connection', (socket: WebSocket) => {
-            this.monitorSocketClients.push(socket);
-            console.log("[MONITOR SERVER] Connected to monitor server");
-            this.sendMonitorGamaState();
-            this.sendMonitorJsonSettings();
-            socket.on('message', (message) => {
-                try {
-                    const jsonMonitor: JsonMonitor = JSON.parse(message.toString());
-                    const type = jsonMonitor.type;
-                    switch (type) {
-                        case "launch_experiment":
-                            this.controller.launchExperiment();
-                            break;
-                        case "stop_experiment":
-                            this.controller.stopExperiment();
-                            break;
-                        case "pause_experiment":
-                            this.controller.pauseExperiment();
-                            break;
-                        case "resume_experiment":
-                            this.controller.resumeExperiment();
-                            break;
-                        case "try_connection":
-                            this.controller.connectGama();
-                            break;
-                        case "add_player_headset":
-                            if (jsonMonitor.id) {
-                                this.controller.addInGamePlayer(jsonMonitor.id);
-                            }
-                            break;
-                        case "remove_player_headset":
-                            if (jsonMonitor.id) {
-                                this.controller.purgePlayer(jsonMonitor.id);
-                            } else {
-                                console.error("[MONITOR] Failed to remove player headset, missing PlayerID");
-                            }
-                            break;
-                        case "get_simulation_informations":
-                            // send to the Web socket Manager
-                            // @ts-ignore
-                            socket.send(this.controller.getSimulationInformations());
-                            break;
-                        case "get_simulation_by_index":
-                             const index = jsonMonitor.simulationIndex;
-
-                             if (index !== undefined && index >= 0 && index < this.controller.model_manager.getModelList().length) {
-                                 // Retrieve the simulation based on the index
-                                 this.controller.model_manager.setActiveModelByIndex(index);
-
-                                 const selectedSimulation = this.controller.model_manager.getActiveModel();
-
-                                 socket.send(JSON.stringify({
-                                     type: "get_simulation_by_index",
-                                     simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
-                                 }));
-                                 console.log(selectedSimulation.getJsonSettings());
-                             } else {
-                                 console.error("Invalid index received or out of bounds");
-                             }
-                         break;
-
-                        // in the component that displays the monitoring screens, create a useEffect that listens to this variable
-                        // directly use the variable in the component with conditional rendering
-                        case "set_gama_screen":
-                            socket.send(JSON.stringify({
-                                type: "setMonitorScreen",
-                                mode: 'gama_screen'
-                            }));
-                            break;
-                        case "set_shared_screen":
-                            console.log("shared screen !");
-                            socket.send(JSON.stringify({
-                                type: "setMonitorScreen",
-                                mode: 'shared_screen'
-                            }));
-                            break;
-                        default:
-                            console.warn("\x1b[31m-> The last message received from the monitor had an unknown type.\x1b[0m");
-                            console.warn(jsonMonitor);
-                    }
-                } catch (exception) {
-                    console.error("\x1b[31m-> The last message received from the monitor created an internal error.\x1b[0m");
-                    console.error(exception);
-                }
-            });
+        this.wsServer.listen(host, port, (token) => {
+            if (token) {
+                log(`Creating monitor server on: ws://${host}:${port}`);
+            } else {
+                logError('Failed to listen on the specified port and host');
+            }
         });
 
-        this.monitorSocket.on('error', (err: Error) => {
-            if ('code' in err && err.code === 'EADDRINUSE') {
-                console.log(`\x1b[31m-> The port ${process.env.MONITOR_WS_PORT} is already in use. Choose a different port in settings.json.\x1b[0m`);
-            } else {
-                console.log(`\x1b[31m-> An error occurred for the monitor server, code: ${(err as any).code}\x1b[0m`);
-            }
+        this.wsServer.ws('/*', {
+            compression: uWS.SHARED_COMPRESSOR, // Enable compression
+            // .send() - Compressed automatically if client supports it
+
+            // Maximum length of *received* message.
+            maxPayloadLength: 16 * 1024,
+
+            idleTimeout: 30, // 30 seconds timeout
+
+            open: (ws) => {
+                log("Connected to monitor server");
+                this.wsClients.add(ws);
+                this.sendMonitorGamaState();
+                this.sendMonitorJsonSettings();
+            },
+            message: (ws, message) => {
+                const jsonMonitor: JsonMonitor = JSON.parse(Buffer.from(message).toString());
+                const type = jsonMonitor.type;
+
+                switch (type) {
+                    case "launch_experiment":
+                        this.controller.launchExperiment();
+                        break;
+
+                    case "stop_experiment":
+                        this.controller.stopExperiment();
+                        break;
+
+                    case "pause_experiment":
+                        this.controller.pauseExperiment();
+                        break;
+
+                    case "resume_experiment":
+                        this.controller.resumeExperiment();
+                        break;
+
+                    case "try_connection":
+                        this.controller.connectGama();
+                        break;
+
+                    case "add_player_headset":
+                        if (jsonMonitor.id) {
+                            this.controller.addInGamePlayer(jsonMonitor.id);
+                        }
+                        break;
+
+                    case "remove_player_headset":
+                        if (jsonMonitor.id) {
+                            this.controller.purgePlayer(jsonMonitor.id);
+                        } else {
+                            logError("Failed to remove player headset, missing PlayerID");
+                        }
+                        break;
+
+                    case "get_simulation_informations":
+                        //log(this.controller.getSimulationInformations());
+                        // data processed on the front-end by the Web socket Manager
+                        ws.send(this.controller.getSimulationInformations(), false, true); // Force message compression
+                    break;
+
+                    case "get_simulation_by_index":
+                        const index = jsonMonitor.simulationIndex;
+
+                        if (index !== undefined && index >= 0 && index < this.controller.model_manager.getModelList().length) {
+                            // Retrieve the simulation based on the index
+                            this.controller.model_manager.setActiveModelByIndex(index);
+
+                            const selectedSimulation = this.controller.model_manager.getActiveModel();
+
+                            const success = ws.send(JSON.stringify({
+                                type: "get_simulation_by_index",
+                                simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
+                            }), false, true); // Force message compression
+                            if (!success) {logError('Backpressure detected. Data not sent.')}
+
+                            if (useVerbose) log("Opening virtual universe", selectedSimulation.getJsonSettings());
+                        } else {
+                            logError("Invalid index received or out of bounds");
+                        }
+                        break;
+
+                    // TODO : Add way to change layout on M2L2 main screen
+                    // in the component that displays the monitoring screens, create a useEffect that listens to this variable
+                    // directly use the variable in the component with conditional rendering
+                    // case "set_gama_screen":
+                    //     const success = ws.send(JSON.stringify({
+                    //         type: "setMonitorScreen",
+                    //         mode: 'gama_screen'
+                    //     }));
+                    //     if (!success) {logError('[Backpressure detected. Data not sent.')}
+                    //     break;
+                    //
+                    // //
+                    // case "set_shared_screen":
+                    //     log("shared screen !");
+                    //     const success = ws.send(JSON.stringify({
+                    //         type: "setMonitorScreen",
+                    //         mode: 'shared_screen'
+                    //     }));
+                    //     if (!success) {logError('Backpressure detected. Data not sent.')}
+                    //     break;
+
+                    default:
+                        logWarn("The last message received from the monitor had an unknown type.");
+                        logWarn(jsonMonitor);
+                }
+            },
+
+            close: (ws, code: number, message) => {
+                try {
+                    this.wsClients.delete(ws);
+                    log(`Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
+
+                    // Handle specific close codes
+                    switch (code) {
+                        case 1001:
+                            logWarn('Connection timed out...');
+                            break;
+
+                        case 1003:
+                            logError('Unsupported data sent by the client.');
+                            break;
+
+                        case 1006:
+                        case 1009:
+                            logError('Message too big!');
+                            if (message) {
+                                logError('Message :', message);
+                                if (typeof message.byteLength !== 'undefined') {
+                                    logError('Message size:', message.byteLength, 'bytes');
+                                }
+                            }
+                            break;
+
+                        default:
+                            if (code !== 1000) // 1000 = Normal Closure
+                                logError('Unexpected closure');
+                            else
+                                if (useVerbose) log(`Closing normally`);
+                    }
+                } catch (err) {
+                    logError('Error during close handling:', err);
+                }
+            },
         });
     }
 
@@ -129,13 +195,13 @@ export class MonitorServer {
      * Sends the json_state to the monitor
      */
     sendMonitorGamaState(): void {
-        if (this.monitorSocketClients !== undefined && this.controller.model_manager.getActiveModel() !== undefined) {
-            this.monitorSocketClients.forEach((client: WebSocket) => {
+        if (this.wsClients !== undefined && this.controller.model_manager.getActiveModel() !== undefined) {
+            this.wsClients.forEach((client) => {
                 client.send(JSON.stringify({
                     type: "json_state",
                     gama: this.controller.gama_connector.getJsonGama(),
                     player: this.controller.player_manager.getArrayPlayerList(),
-                }));
+                }), false, true); // Force message compression
             });
         }
     }
@@ -144,9 +210,9 @@ export class MonitorServer {
      * Send the json_setting to the monitor
      */
     sendMonitorJsonSettings(): void {
-        if (this.monitorSocketClients !== undefined && this.controller.model_manager.getActiveModel() !== undefined) {
-            this.monitorSocketClients.forEach((client: WebSocket) => {
-                client.send(JSON.stringify(this.controller.model_manager.getActiveModel().getJsonSettings()));
+        if (this.wsClients !== undefined && this.controller.model_manager.getActiveModel() !== undefined) {
+            this.wsClients.forEach((client) => {
+                client.send(JSON.stringify(this.controller.model_manager.getActiveModel().getJsonSettings()), false, true); // Force message compression
             });
         }
     }
@@ -155,7 +221,7 @@ export class MonitorServer {
      * Closes the websocket server
      */
     close(): void {
-        this.monitorSocket.close();
+        this.wsServer.close();
     }
 }
 
