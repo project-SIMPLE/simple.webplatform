@@ -86,7 +86,7 @@ const SimulationManager = () => {
   const togglePopUp = (mode?: string) => {
     if (mode) {
       setScreenModeDisplay(mode); // Update screenModeDisplay from the context
-      console.log(`Selected mode: ${mode}, current screenModeDisplay: ${screenModeDisplay}`);
+      console.log(`Selected mode: ${mode}, current screenModeDisplay: ${screenModeDisplay}`); //todo attention, code de production, à enlever
       setSelectedButton(mode);
     }
     setShowPopUp(!showPopUp); // Toggle pop-up visibility

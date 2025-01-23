@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { useScreenModeState } from "../ScreenModeContext/ScreenModeContext";
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
-
+import Button from "../Button/Button";
 const StreamPlayerScreen: React.FC = () => {
   const screenModeDisplay = useScreenModeState();
 
@@ -18,7 +18,10 @@ const StreamPlayerScreen: React.FC = () => {
 
       {screenModeDisplay === "shared_screen" && (
           <div className="flex flex-wrap justify-center items-center h-screen bg-gray-100" ref={videoContainerRef}>
+            shared screen
           </div>
+
+
       )}
 
       {screenModeDisplay === "gama_screen" && (
@@ -34,7 +37,7 @@ const StreamPlayerScreen: React.FC = () => {
           </div>
         )}
     </>
-  );
+  );  
 };
 
 export default StreamPlayerScreen;

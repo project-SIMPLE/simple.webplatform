@@ -4,13 +4,18 @@ import { useTranslation } from 'react-i18next';
 const LanguageSelector = () => {
   const { t, i18n } = useTranslation();
   const [showPopup, setShowPopup] = useState(false);
+  const button_red = "mt-4 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-300"
+  const button_green = "px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-300"; //factorisation of button attributes for better readability and ease of modification
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
     setShowPopup(false); // close pop up after changing language
+
+
+
   };
-
-
+  
+  
   return (
     
     <div className="relative">
@@ -31,26 +36,25 @@ const LanguageSelector = () => {
 
             <div className="flex flex-col space-y-2">
               <button 
-                onClick={() => changeLanguage('en')}
-                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-300"
+                className= {button_green}  
               >
                 English
               </button>
               <button 
                 onClick={() => changeLanguage('fr')}
-                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-300"
+                className= {button_green}
               >
                 Français
               </button>
               <button 
                 onClick={() => changeLanguage('vn')}
-                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-300"
+                className= {button_green}
               >
                 Việt
               </button>
               <button 
                 onClick={() => changeLanguage('th')}
-                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-300"
+                className=  {button_green}
               >
                 แบบไทย
               </button>
@@ -58,7 +62,7 @@ const LanguageSelector = () => {
 
             <button 
               onClick={() => setShowPopup(false)}
-              className="mt-4 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-300"
+              className=  {button_red}
             >
               {t('close')}
             </button>
