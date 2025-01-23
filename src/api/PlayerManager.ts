@@ -266,7 +266,7 @@ class PlayerManager {
             const player: Player = this.playerList.get(playerWsId)!;
             return {connected: player.connected, in_game: player.in_game, date_connection: player.date_connection}
         } else
-        if(useVerbose) logWarn("Can't find player with ID" + playerWsId);
+        if(useVerbose) logWarn("Can't find player with ID", playerWsId);
     }
 
     /**
@@ -279,7 +279,7 @@ class PlayerManager {
         if (this.playerList.has(playerWsId)){
             return this.playerList.get(playerWsId)!.id;
         } else
-        if(useVerbose) logWarn("Can't find player with ws ID" + playerWsId);
+        if(useVerbose) logWarn("Can't find player with ws ID", playerWsId);
     }
 
     /**
@@ -364,16 +364,20 @@ class PlayerManager {
      * Sets all players' in-game status to false
      */
     removeAllPlayerInGame() {
+        if (useVerbose) log("Remove every player at once");
+
         for (const [playerWsId] of this.playerList) {
             this.togglePlayerInGame(playerWsId, false)
         }
     }
 
     addEveryPlayer(): void {
+        if (useVerbose) log("Add every player at once");
+
         for (const [playerWsId, player] of this.playerList) {
 
             if (!player.in_game){
-                this.controller.gama_connector.addInGamePlayer(player.id);
+                this.controller.gama_connector.addInGamePlayer(playerWsId);
                 this.togglePlayerInGame(playerWsId, true);
             }
         }
