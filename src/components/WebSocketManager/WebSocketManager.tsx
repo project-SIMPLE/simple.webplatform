@@ -106,8 +106,14 @@ const WebSocketManager: React.FC<WebSocketManagerProps> = ({ children }) => {
         };
 
         socket.onmessage = (event: MessageEvent) => {
-            const data = JSON.parse(event.data);
-            
+            let data = JSON.parse(event.data);
+            if (typeof data == "string"){
+                try{
+                    data = JSON.parse(data);
+                }catch (e){
+                    console.error("Can't JSON parse this received string", data);
+                }
+            }
 
             if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
                 setSimulationList(data.map(sim => sim.jsonSettings));

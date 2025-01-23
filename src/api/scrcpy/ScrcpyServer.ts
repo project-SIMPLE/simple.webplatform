@@ -244,8 +244,7 @@ export class ScrcpyServer {
 
         } catch (error) {
             logError("Error in startStreaming:", error);
-
-            throw error;
+            logError("=== This error probably comes from the cropping value out-of-bound on a classical Android device; but by default set for Meta Quest 3 value ===");
         }
     }
 
