@@ -168,7 +168,7 @@ export class ScrcpyServer {
                                         );
                                         break;
                                     default:
-                                        console.warn("[ScrcpyServer] Unkown packet from video pipe: ", packet);
+                                        console.warn("[ScrcpyServer] Unknown packet from video pipe: ", packet);
                                 }
                             },
                         }),

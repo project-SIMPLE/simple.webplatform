@@ -1,6 +1,6 @@
 import Button from '../Button/Button';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
-const SimulationManagerButtons : React.FC = () => {
+const SimulationManagerButtons = () => {
     const { ws, gama} = useWebSocket();
 
       const handlePlayPause = () => {

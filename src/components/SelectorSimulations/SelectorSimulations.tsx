@@ -166,7 +166,7 @@ const SelectorSimulations = () => {
         </div>
 
 
-        {/* Display the statue, ask for the user to connect to Gama if still not */}
+        {/* Display the status, ask for the user to connect to Gama if still not */}
       <div className='flex gap-2 mt-6'>
         <span className={gama.connected ? 'text-green-500'  : 'text-red-500'}>    
            {gama.connected ? '' : connectionStatus }
