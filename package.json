@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "start": "concurrently \"npx tsx src/api/index.ts\" \"vite\" ",
-    "install": "npm install --save",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
