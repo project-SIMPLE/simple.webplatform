@@ -3,7 +3,6 @@ import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import { useNavigate } from 'react-router-dom';
-import { useScreenModeState, useScreenModeSetter } from '../ScreenModeContext/ScreenModeContext';
 import MiniNavigation from '../Navigation/MiniNavigation';
 import { useTranslation } from 'react-i18next';
 import Footer from '../Footer/Footer';
@@ -21,6 +20,12 @@ const SimulationManager = () => {
   const [showPopUpHeadset, setShowPopUpHeadset] = useState(false);
   const { t } = useTranslation();
   const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen");
+  const channel = new BroadcastChannel('sim'); //TODO add a more specific channel name
+  const updateDisplay = (screenModeDisplay: string) => {
+    setScreenModeDisplay(screenModeDisplay);
+    channel.postMessage({ screenModeDisplay });
+    console.log(`Screen mode display updated to ${screenModeDisplay}`); //TODO remove this debug line
+  };
   // Separate hooks for reading and updating screenModeDisplay
   // const screenModeDisplay = useScreenModeState();
   // const setScreenModeDisplay = useScreenModeSetter();
@@ -79,15 +84,6 @@ const SimulationManager = () => {
   const togglePopUpshowPopUpManageHeadset = () => {
     setshowPopUpManageHeadset(!showPopUpManageHeadset);
   };
-
-  // const togglePopUp = (mode?: string) => {
-  //   if (mode) {
-  //     setScreenModeDisplay(mode); // Update screenModeDisplay from the context
-  //     console.log(`Selected mode: ${mode}, current screenModeDisplay: ${screenModeDisplay}`);
-  //     setSelectedButton(mode);
-  //   }
-  //   setShowPopUp(!showPopUp); // Toggle pop-up visibility
-  // };
 
 
 
@@ -307,14 +303,14 @@ const SimulationManager = () => {
                         showText={true}
                         className={`border-0 hover:border-none hover:bg-white focus:outline-none ${screenModeDisplay === "gama_screen" ? "" : "opacity-50"}`} // No border or color change on hover
                         icon={<img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '120px', height: '120px' }} />}
-                        onClick={() => setScreenModeDisplay("gama_screen")}
+                        onClick={() => updateDisplay("gama_screen")}
                       />
                       <Button
                         bgColor={"bg-white"}
                         showText={true}
                         className={`border-0 hover:border-none hover:bg-white focus:outline-none ${screenModeDisplay === "shared_screen" ? "" : "opacity-50"}`} 
                         icon={<img src="/images/shared_screen.png" alt="shared_screen" style={{ width: '120px', height: '120px' }} />}
-                        onClick={() => setScreenModeDisplay("shared_screen")}
+                        onClick={() => updateDisplay("shared_screen")}
                       />
                      <p>{screenModeDisplay}</p>
 

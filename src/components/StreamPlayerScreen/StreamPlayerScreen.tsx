@@ -1,35 +1,40 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useScreenModeState } from "../ScreenModeContext/ScreenModeContext";
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
 import Button from "../Button/Button";
 const StreamPlayerScreen = () => {
-  let screenModeDisplay = useScreenModeState();
+  const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen"); // Get the screen mode display from the context
+  const channel = new BroadcastChannel("sim"); // get the data from the simulation manager control panel
   const videoContainerRef = useRef<HTMLDivElement>(null); // Add ref for the target div
 
   useEffect(() => {
-    console.log("Screen Mode Display updated:", screenModeDisplay);
-  }, [screenModeDisplay]);
+    channel.onmessage = (event) => {
+      console.log("Message received in StreamPlayerScreen", event.data);
+      setScreenModeDisplay(event.data.screenModeDisplay);
+    };
+  return() => {
+    channel.close();};
+  
+  }, []);
 
   // Rendu basé sur la valeur de screenModeDisplay
   return (
     <>
-      <VideoStreamManager targetRef={videoContainerRef} />
 
-      {screenModeDisplay === "shared_screen" && (
-          <div className="flex flex-wrap justify-center items-center h-screen bg-gray-100" ref={videoContainerRef}>
-            shared screen
-            <Button
-            onClick={() => {screenModeDisplay = "gama_screen"}}
-            text={"Click me"}
-            bgColor="bg-green-500"
-            showText={true}
-          />
-              <Button //TODO retirer ce bouton de debug
+    
+<Button //TODO retirer ce bouton de debug
               onClick={() => { console.log(screenModeDisplay); }}
               text={"Check display mode"}
               bgColor="bg-green-500"
               showText={true}
               />
+
+      <VideoStreamManager targetRef={videoContainerRef} />
+
+      {screenModeDisplay === "shared_screen" && (
+          <div className="flex flex-wrap justify-center items-center h-screen bg-gray-100" ref={videoContainerRef}>
+            shared screen
+
           </div>
       )}
 
