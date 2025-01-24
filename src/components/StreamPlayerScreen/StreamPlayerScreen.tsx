@@ -4,8 +4,9 @@ import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
 import Button from "../Button/Button";
 const StreamPlayerScreen = () => {
   const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen"); // Get the screen mode display from the context
-  const channel = new BroadcastChannel("sim"); // get the data from the simulation manager control panel
+  const channel = new BroadcastChannel("simulation-to-stream"); // get the data from the simulation manager control panel
   const videoContainerRef = useRef<HTMLDivElement>(null); // Add ref for the target div
+
 
   useEffect(() => {
     channel.onmessage = (event) => {

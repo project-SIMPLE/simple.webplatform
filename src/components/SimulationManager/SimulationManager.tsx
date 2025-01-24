@@ -12,19 +12,17 @@ interface Player {
   in_game: boolean;
 }
 const SimulationManager = () => {
-  const { ws, gama, playerList, selectedSimulation, isWsConnected } = useWebSocket(); // `removePlayer` is now available
+  const { ws, gama, playerList, selectedSimulation } = useWebSocket(); // `removePlayer` is now available
   const navigate = useNavigate();
   const [userInfos, setUserInfos] = useState<Player | null>(null);
   const [clickedUserInfos, setClickedUserInfos] = useState<boolean>(false);
-  const [showPopUp, setShowPopUp] = useState(false);
-  const [showPopUpHeadset, setShowPopUpHeadset] = useState(false);
+
   const { t } = useTranslation();
   const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen");
-  const channel = new BroadcastChannel('sim'); //TODO add a more specific channel name
+  const channel = new BroadcastChannel('simulation-to-stream'); 
   const updateDisplay = (screenModeDisplay: string) => {
     setScreenModeDisplay(screenModeDisplay);
     channel.postMessage({ screenModeDisplay });
-    console.log(`Screen mode display updated to ${screenModeDisplay}`); //TODO remove this debug line
   };
   // Separate hooks for reading and updating screenModeDisplay
   // const screenModeDisplay = useScreenModeState();
