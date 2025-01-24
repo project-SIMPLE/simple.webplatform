@@ -33,9 +33,6 @@ const SimulationManager = () => {
   const [showPopUpManageHeadset, setshowPopUpManageHeadset] = useState(false);
   let [simulationStarted, setSimulationStarted] = useState(false);
 
-  const [selectedButton, setSelectedButton] = useState<string | null>(selectedSimulation?.selected_monitoring || null);
-
-
   // Calcul du nombre de casques non détectés (casques vides)
   const remainingPlayers = Number(maxPlayers) - detectedPlayers.length;
 
@@ -308,14 +305,14 @@ const SimulationManager = () => {
                       <Button
                         bgColor={"bg-white"}
                         showText={true}
-                        className={`border-0 hover:border-none hover:bg-white focus:outline-none ${selectedButton === "gama_screen" ? "" : "opacity-50"}`} // No border or color change on hover
+                        className={`border-0 hover:border-none hover:bg-white focus:outline-none ${screenModeDisplay === "gama_screen" ? "" : "opacity-50"}`} // No border or color change on hover
                         icon={<img src="/images/gama_screen.png" alt="Monitoring" style={{ width: '120px', height: '120px' }} />}
                         onClick={() => setScreenModeDisplay("gama_screen")}
                       />
                       <Button
                         bgColor={"bg-white"}
                         showText={true}
-                        className={`border-0 hover:border-none hover:bg-white focus:outline-none ${selectedButton === "shared_screen" ? "" : "opacity-50"}`} // No border or color change on hover
+                        className={`border-0 hover:border-none hover:bg-white focus:outline-none ${screenModeDisplay === "shared_screen" ? "" : "opacity-50"}`} 
                         icon={<img src="/images/shared_screen.png" alt="shared_screen" style={{ width: '120px', height: '120px' }} />}
                         onClick={() => setScreenModeDisplay("shared_screen")}
                       />
