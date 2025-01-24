@@ -74,13 +74,18 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 
             return updatedPlayerList;
         });
-
+        // console.log(" This player have been removed from playerList : ", id);
     };
 
 
+    // This useEffect will log the updated screenMode value
+    // useEffect(() => {
+    //     console.log("The screenMode has changed to :", screenMode);
+    // }, [screenMode]);
+
     useEffect(() => {
         const host = window.location.hostname;
-        const port = import.meta.env.VITE_MONITOR_WS_PORT || '8001';
+        const port = process.env.MONITOR_WS_PORT || '8001';
 
         const socket = new WebSocket(`ws://${host}:${port}`);
         setWs(socket);
@@ -91,8 +96,14 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
         };
 
         socket.onmessage = (event: MessageEvent) => {
-            const data = JSON.parse(event.data);
-
+            let data = JSON.parse(event.data);
+            if (typeof data == "string"){
+                try{
+                    data = JSON.parse(data);
+                }catch (e){
+                    console.error("Can't JSON parse this received string", data);
+                }
+            }
 
             if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
                 setSimulationList(data.map(sim => sim.jsonSettings));

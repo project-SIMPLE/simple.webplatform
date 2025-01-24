@@ -1,8 +1,8 @@
 import uWS, {TemplatedApp} from 'uWebSockets.js';
 
 import { Controller } from './controller';
-import { JsonMonitor } from "./constants.ts"
-import {useVerbose} from "./index.ts";
+import {JsonMonitor} from "./constants.ts"
+import {useExtraVerbose, useVerbose} from "./index.ts";
 
 // Override the log function
 const log = (...args: any[]) => {
@@ -32,7 +32,7 @@ export class MonitorServer {
         this.wsClients = new Set<uWS.WebSocket<any>>();
 
         const host = process.env.WEB_APPLICATION_HOST || 'localhost';
-        const port = parseInt(process.env.MONITOR_WS_PORT || '8080', 10);
+        const port = parseInt(process.env.MONITOR_WS_PORT || '8001', 10);
 
         this.wsServer = uWS.App(); //new WebSocketServer({ host, port });
 
@@ -45,12 +45,7 @@ export class MonitorServer {
         });
 
         this.wsServer.ws('/*', {
-            compression: uWS.SHARED_COMPRESSOR, // Enable compression
-            // .send() - Compressed automatically if client supports it
-
-            // Maximum length of *received* message.
-            maxPayloadLength: 16 * 1024,
-
+            compression: (uWS.SHARED_COMPRESSOR | uWS.SHARED_DECOMPRESSOR), // Enable compression
             idleTimeout: 30, // 30 seconds timeout
 
             open: (ws) => {
@@ -99,9 +94,7 @@ export class MonitorServer {
                         break;
 
                     case "get_simulation_informations":
-                        //log(this.controller.getSimulationInformations());
-                        // data processed on the front-end by the Web socket Manager
-                        ws.send(this.controller.getSimulationInformations(), false, true); // Force message compression
+                        this.sendMessageByWs(this.controller.getSimulationInformations(), ws);
                     break;
 
                     case "get_simulation_by_index":
@@ -113,11 +106,10 @@ export class MonitorServer {
 
                             const selectedSimulation = this.controller.model_manager.getActiveModel();
 
-                            const success = ws.send(JSON.stringify({
+                            this.sendMessageByWs({
                                 type: "get_simulation_by_index",
                                 simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
-                            }), false, true); // Force message compression
-                            if (!success) {logError('Backpressure detected. Data not sent.')}
+                            }, ws);
 
                             if (useVerbose) log("Opening virtual universe", selectedSimulation.getJsonSettings());
                         } else {
@@ -195,13 +187,12 @@ export class MonitorServer {
      * Sends the json_state to the monitor
      */
     sendMonitorGamaState(): void {
-        if (this.wsClients !== undefined && this.controller.model_manager.getActiveModel() !== undefined) {
-            this.wsClients.forEach((client) => {
-                client.send(JSON.stringify({
-                    type: "json_state",
-                    gama: this.controller.gama_connector.getJsonGama(),
-                    player: this.controller.player_manager.getArrayPlayerList(),
-                }), false, true); // Force message compression
+        if (this.controller.model_manager.getActiveModel() !== undefined
+            && this.controller.gama_connector !== undefined) {
+            this.sendMessageByWs({
+                type: "json_state",
+                gama: this.controller.gama_connector.getJsonGama(),
+                player: this.controller.player_manager.getArrayPlayerList(),
             });
         }
     }
@@ -210,9 +201,37 @@ export class MonitorServer {
      * Send the json_setting to the monitor
      */
     sendMonitorJsonSettings(): void {
-        if (this.wsClients !== undefined && this.controller.model_manager.getActiveModel() !== undefined) {
+        if (this.controller.model_manager.getActiveModel() !== undefined) {
+            this.sendMessageByWs(this.controller.model_manager.getActiveModel().getJsonSettings());
+        }
+    }
+
+    /**
+     *
+     * @param message Any string which will be JSON.stringify before sending
+     * @param clientWsId (optional) WS to send the the message to
+     * @return void
+     */
+    sendMessageByWs(message: any, clientWsId?: any): void {
+        if (this.wsClients !== undefined){
             this.wsClients.forEach((client) => {
-                client.send(JSON.stringify(this.controller.model_manager.getActiveModel().getJsonSettings()), false, true); // Force message compression
+                if (clientWsId == undefined || clientWsId == client) {
+                    const r: number = client.send(
+                        JSON.stringify(message),
+                        false, true); // Force message compression
+
+                    switch (r){
+                        case 0:
+                            logWarn('Backpressure is building up. Data will be drain overtime to client', client.getRemoteAddressAsText());
+                            break;
+                        case 2:
+                            logError('Backpressure detected. Data not sent to client', client.getRemoteAddressAsText());
+                            break;
+                        default:
+                        case 1:
+                            if (useExtraVerbose) log("[DEBUG] Properly sent message", message, "to client", client.getRemoteAddressAsText());
+                    }
+                }
             });
         }
     }

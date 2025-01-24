@@ -168,6 +168,10 @@ class GamaConnector {
                     const message = JSON.parse(event.data as string);
                     const type = message.type;
 
+                    if (useExtraVerbose) {
+                        log("[DEBUG] Message received from Gama Server:", message);
+                    }
+
                     switch (type) {
                         case "SimulationStatus":
                             if (useVerbose) log("[DEBUG] Message received from Gama Server: SimulationStatus = " + message.content);
@@ -193,6 +197,7 @@ class GamaConnector {
                         case "CommandExecutedSuccessfully":
                             if (useExtraVerbose) {
                                 log("[DEBUG] Message received from Gama Server: CommandExecutedSuccessfully");
+                                log("[DEBUG]", message);
                             }
 
                             this.setGamaContentError('');
@@ -286,7 +291,9 @@ class GamaConnector {
             try {
                 if (this.gama_socket != null)
                     if (typeof message === "function") {
+
                         this.gama_socket.send( JSON.stringify( message() ) );
+
                         if (useVerbose)
                             if (message().expr !== undefined)
                                 log("Expression sent to Gama Server: " + '\'' + message().expr + '\'' + " Waiting for the answer (if any)...");
@@ -301,6 +308,9 @@ class GamaConnector {
                 logError(e);
             }
             finally {
+                if (useExtraVerbose) {
+                    logWarn("[DEBUG] Message sent to GAMA:", message );
+                }
                 this.listMessages.splice(this.listMessages.indexOf(message), 1);
             }
         }
@@ -384,19 +394,19 @@ class GamaConnector {
 
     /**
      * Asks Gama to add a player in the simulation
-     * @param {string} idPlayer - The id of the player to be added
+     * @param {string} playerWsId - The id of the player to be added
      */
-    addInGamePlayer(idPlayer: string) {
+    addInGamePlayer(playerWsId: string) {
         if (['NONE', "NOTREADY"].includes(this.jsonGamaState.experiment_state))
             return;
 
-        if (this.controller.player_manager.getPlayerState(idPlayer) && this.controller.player_manager.getPlayerState(idPlayer).in_game)
+        if (this.controller.player_manager.getPlayerState(playerWsId) && this.controller.player_manager.getPlayerState(playerWsId)!.in_game)
             return;
 
-        this.listMessages = [this.jsonTogglePlayer("create", idPlayer)];
+        this.listMessages = [this.jsonTogglePlayer("create", this.controller.player_manager.getPlayerId(playerWsId)!)];
 
         this.sendMessages(() => {
-            log("-> The Player " + idPlayer + " has been added to Gama");
+            log("-> The Player " + playerWsId + " has been added to Gama");
         });
     }
 
