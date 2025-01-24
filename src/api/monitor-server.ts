@@ -45,7 +45,7 @@ export class MonitorServer {
         });
 
         this.wsServer.ws('/*', {
-            compression: (uWS.SHARED_COMPRESSOR | uWS.SHARED_DECOMPRESSOR), // Enable compression
+           // compression: (uWS.SHARED_COMPRESSOR | uWS.SHARED_DECOMPRESSOR), // Enable compression
             idleTimeout: 30, // 30 seconds timeout
 
             open: (ws) => {

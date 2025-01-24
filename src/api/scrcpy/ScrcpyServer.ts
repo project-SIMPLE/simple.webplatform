@@ -82,7 +82,7 @@ export class ScrcpyServer {
         });
 
         this.wsServer.ws('/*', {
-            compression: uWS.SHARED_COMPRESSOR, // Enable compression
+           // compression: uWS.SHARED_COMPRESSOR, // Enable compression
             maxPayloadLength: 3 * 1024 * 1024,  // 2 MB: Adjust based on expected video bitrate
             idleTimeout: 30, // 30 seconds timeout
 
