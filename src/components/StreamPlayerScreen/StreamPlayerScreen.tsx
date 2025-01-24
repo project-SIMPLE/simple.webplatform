@@ -1,10 +1,9 @@
 import React, { useEffect, useRef } from "react";
 import { useScreenModeState } from "../ScreenModeContext/ScreenModeContext";
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
-
-const StreamPlayerScreen: React.FC = () => {
-  const screenModeDisplay = useScreenModeState();
-
+import Button from "../Button/Button";
+const StreamPlayerScreen = () => {
+  let screenModeDisplay = useScreenModeState();
   const videoContainerRef = useRef<HTMLDivElement>(null); // Add ref for the target div
 
   useEffect(() => {
@@ -18,23 +17,42 @@ const StreamPlayerScreen: React.FC = () => {
 
       {screenModeDisplay === "shared_screen" && (
           <div className="flex flex-wrap justify-center items-center h-screen bg-gray-100" ref={videoContainerRef}>
+            shared screen
+            <Button
+            onClick={() => {screenModeDisplay = "gama_screen"}}
+            text={"Click me"}
+            bgColor="bg-green-500"
+            showText={true}
+          />
+              <Button //TODO retirer ce bouton de debug
+              onClick={() => { console.log(screenModeDisplay); }}
+              text={"Check display mode"}
+              bgColor="bg-green-500"
+              showText={true}
+              />
           </div>
       )}
 
       {screenModeDisplay === "gama_screen" && (
         <div className="bg-gray-400 relative w-full h-screen flex">
+          gama screen
           {/* Your content for gama_screen */}
         </div>
       )}
 
       {screenModeDisplay !== "gama_screen" &&
         screenModeDisplay !== "shared_screen" && (
+          
           <div className="bg-red-400 relative w-full h-screen flex items-center justify-center">
             <p>Unknown screen mode: {screenModeDisplay}</p>
           </div>
         )}
+
     </>
   );
 };
+
+
+
 
 export default StreamPlayerScreen;
