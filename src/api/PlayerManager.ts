@@ -325,14 +325,21 @@ class PlayerManager {
         const playerIP: string = this.playerList.has(playerWsId) ? playerWsId : this.getIndexByPlayerId(playerWsId)!;
 
         if ( this.playerList.has(playerIP) ) {
-            // Properly close web socket
-            this.playerList.get(playerIP)!.ws.end(1000, playerIP);
+            try {
+                // Properly close web socket
+                this.playerList.get(playerIP)!.ws.end(1000, playerIP);
+            } catch (e) {
+                logWarn(playerIP, "is already disconnected from middleware");
+                logWarn("Full log of player: ", this.playerList.get(playerIP));
+            }
 
             if (useAggressiveDisconnect) {
                 log("Aggressively deleting player");
                 // Remove player
                 this.playerList.delete(playerIP);
             }
+        } else {
+            logWarn("Can't remove un-existing player", playerIP);
         }
     }
 
