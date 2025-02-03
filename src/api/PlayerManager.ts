@@ -336,6 +336,17 @@ class PlayerManager {
         }
     }
 
+    /**
+     * Disconnect every players
+     */
+    removeAllPlayer() {
+        if (useVerbose) log("Disconnect every player at once");
+
+        for (const [playerWsId] of this.playerList) {
+            this.removePlayer(playerWsId);
+        }
+    }
+
     closePlayerWS(playerWsId: string) {
         if(this.playerList.has(playerWsId)){
             this.playerList.get(playerWsId)!.connected = false;
@@ -363,8 +374,8 @@ class PlayerManager {
     /**
      * Sets all players' in-game status to false
      */
-    removeAllPlayerInGame() {
-        if (useVerbose) log("Remove every player at once");
+    disableAllPlayerInGame() {
+        if (useVerbose) log("Change in-game status of every player at once");
 
         for (const [playerWsId] of this.playerList) {
             this.togglePlayerInGame(playerWsId, false)

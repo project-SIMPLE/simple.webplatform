@@ -128,9 +128,8 @@ export class Controller {
     }
 
     stopExperiment() {
-        this.player_manager.removeAllPlayerInGame()
-
         this.gama_connector.stopExperiment();
+        this.player_manager.removeAllPlayer();
 
         this.notifyMonitor();
     }
