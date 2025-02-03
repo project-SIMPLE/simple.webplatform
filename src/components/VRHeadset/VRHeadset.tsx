@@ -36,7 +36,7 @@ const VRHeadset: React.FC<VRHeadsetProps> = ({ selectedPlayer, className, player
   return (
     <>
       <div
-        className={`flex flex-col items-center ${className} ${isAvailable ? 'grayscale-0' : 'opacity-50 cursor-not-allowed'}`}
+        className={`flex flex-col items-center ${className} ${isAvailable && selectedPlayer.connected ? 'grayscale-0' : 'opacity-50 cursor-not-allowed'}`}
         style={{ transition: 'all 0.3s ease', cursor: isAvailable ? 'pointer' : 'not-allowed' }}
       >
         <img
