@@ -1,21 +1,21 @@
-import { WebSocketServer, WebSocket } from 'ws';
+import uWS, {TemplatedApp} from 'uWebSockets.js';
 
 import {useExtraVerbose, useVerbose, useAggressiveDisconnect} from './index.js';
-import { PlayerSocket, PlayerJson, JsonOutput, PlayerState } from "./constants.ts";
+import {JsonPlayer, JsonOutput, PlayerState, Player, JsonPlayerAsk} from "./constants.ts";
 import Controller from "./controller.ts";
+import {clearInterval} from "node:timers";
 
-export interface Player {
-    //id: string,
-    // Player Socket
-    ws: WebSocket,
-    ping_interval: number,
-    is_alive: boolean,
-    timeout?: NodeJS.Timeout,
-    // Player State
-    connected: boolean,
-    in_game: boolean,
-    date_connection: string,
-}
+
+// Override the log function
+const log = (...args: any[]) => {
+    console.log("\x1b[32m[PLAYER MANAGER]\x1b[0m", ...args);
+};
+const logWarn = (...args: any[]) => {
+    console.warn("\x1b[32m[PLAYER MANAGER]\x1b[0m", "\x1b[43m", ...args, "\x1b[0m");
+};
+const logError = (...args: any[]) => {
+    console.error("\x1b[32m[PLAYER MANAGER]\x1b[0m", "\x1b[41m", ...args, "\x1b[0m");
+};
 
 /**
  * Creates a websocket server to handle player connections
@@ -23,8 +23,9 @@ export interface Player {
 class PlayerManager {
     controller: Controller;
 
-    webSocketServer: WebSocketServer;
+    webSocketServer: TemplatedApp;
 
+    //playerList: Map<WS ID/IP ADDRESS, Player>;
     playerList: Map<string, Player>;
 
     /**
@@ -33,147 +34,252 @@ class PlayerManager {
      */
     constructor(controller: Controller) {
         this.controller = controller;
-        this.webSocketServer = new WebSocketServer({ port: Number(process.env.HEADSET_WS_PORT) });
-
         this.playerList = new Map<string, Player>()
 
-        this.webSocketServer.on('connection', (ws: PlayerSocket) => {
-            ws.on('message', (message: string) => {
-                ws.isAlive = true;
-                try {
-                    const jsonPlayer: PlayerJson = JSON.parse(message);
-                    const type = jsonPlayer.type;
-                    
-                    switch (type) {
-                        case "pong":
-                            ws.isAlive = true;
-                            break;
-
-                        case "ping":
-                            ws.send(JSON.stringify({
-                                type: "pong",
-                                id: jsonPlayer.id
-                            }));
-                            break;
-
-                        case "connection":
-                            if (this.playerList.has(jsonPlayer.id)) {
-                                console.log('[PLAYER MANAGER] Reconnection of the player of id ' + jsonPlayer.id);
-                                this.playerList.get(jsonPlayer.id)!.ws = ws;
-                                this.playerList.get(jsonPlayer.id)!.connected = true;
-
-                                // Add in simulation if not already the case
-                                if (!this.playerList.get(jsonPlayer.id)!.in_game) this.addPlayerConnection(jsonPlayer.id, true);
-                                this.notifyPlayerChange(jsonPlayer.id);
-                            } else {
-                                console.log('[PLAYER MANAGER] New connection of the player of id ' + jsonPlayer.id);
-                                // Create new player in the list
-                                this.playerList.set(jsonPlayer.id, {
-                                    ws: ws,
-                                    ping_interval: jsonPlayer.heartbeat || 5000,
-                                    is_alive: true,
-                                    connected: false,
-                                    in_game: false,
-                                    date_connection: "",
-                                })
-
-                                this.addPlayerConnection(jsonPlayer.id, true);
-                            }
-
-                            // Trigger heartbeat per client
-                            this.playerList.get(jsonPlayer.id)!.timeout = setTimeout(() => this.sendHeartbeat(jsonPlayer.id), jsonPlayer.heartbeat || 5000);
-                            break;
-
-                        case "restart":
-                            // Restart the headset logic
-                            break;
-
-                        case "expression":
-                            if (useExtraVerbose) console.log("[PLAYER " + this.getIdClient(ws) + "] Sent expression:", jsonPlayer.expr);
-                            this.controller.sendExpression(this.getIdClient(ws), jsonPlayer.expr!);
-                            break;
-
-                        case "ask":
-                            if (useExtraVerbose) console.log("[PLAYER " + this.getIdClient(ws) + "] Sent ask:", jsonPlayer);
-                            this.controller.sendAsk(jsonPlayer);
-                            break;
-
-                        case "disconnect_properly":
-                            this.controller.purgePlayer(this.getIdClient(ws));
-                            ws.close();
-                            break;
-
-                        default:
-                            console.warn("\x1b[31m[PLAYER MANAGER] The last message received from " + this.getIdClient(ws) + " had an unknown type.\x1b[0m");
-                            console.warn(jsonPlayer);
-                    }
-                } catch (exception) {
-                    console.error("\x1b[31m[PLAYER MANAGER] The last message received from " + this.getIdClient(ws) + " created an internal error.\x1b[0m");
-                    console.error(message);
-                    console.error(JSON.parse(message));
-                    console.error(exception);
-                }
-            });
-
-            ws.on('close', () => {
-                const idPlayer = this.getIdClient(ws);
-                if (this.playerList.has(idPlayer)) {
-                    if (useAggressiveDisconnect){
-                        this.controller.purgePlayer(idPlayer);
-                    } else {
-                        this.playerList.get(idPlayer)!.connected = false;
-                        this.playerList.get(idPlayer)!.date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
-
-                        console.log("[PLAYER MANAGER] The player " + idPlayer + " disconnected");
-                    }
-                }
-            });
-
-            ws.on('error', (error) => {
-                const idPlayer = this.getIdClient(ws);
-
-                console.error("[PLAYER MANAGER] The player " + idPlayer + " had an error and disconnected");
-                console.error(error);
-
-                if (useAggressiveDisconnect){
-                    this.controller.purgePlayer(idPlayer);
-                } else {
-                    this.playerList.get(idPlayer)!.connected = false;
-                    this.playerList.get(idPlayer)!.date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
-                }
-            });
-        });
-
-        this.webSocketServer.on('error', (err: NodeJS.ErrnoException) => {
-            if (err.code === 'EADDRINUSE') {
-                console.error(`\x1b[31m[PLAYER MANAGER] The port ${process.env.HEADSET_WS_PORT} is already in use. Choose a different port in settings.json.\x1b[0m`);
+        this.webSocketServer = uWS.App(
+        ).listen(Number(process.env.HEADSET_WS_PORT), (token) => {
+            if (token) {
+                log(`Creating monitor server on: ws://0.0.0.0:${Number(process.env.HEADSET_WS_PORT)}`);
+                if (useVerbose) log(token);
             } else {
-                console.error(`\x1b[31m[PLAYER MANAGER] An error occurred for the player server, code: ${err.code}\x1b[0m`);
-                console.error(err);
+                logError('Failed to listen on the specified port', process.env.HEADSET_WS_PORT);
+            }
+        }).ws('/*', {
+            // Server doesn't compress yet
+            // WebSocketSharp (Unity side) doesn't support deflating messages
+            // https://github.com/sta/websocket-sharp/issues/580
+            //: (uWS.SHARED_COMPRESSOR | uWS.SHARED_DECOMPRESSOR),
+
+            open: (ws) => {
+                const playerWsId: string = Buffer.from(ws.getRemoteAddressAsText()).toString();
+
+                // Check if known player or not
+                if ( this.playerList.has(playerWsId) ) {
+                    const player: Player = this.playerList.get( playerWsId )!;
+
+                    log('[PLAYER MANAGER] Reconnection of the player of id ' + player.id);
+                    player.ws = ws;
+                    player.connected = true;
+                    player.is_alive = true;
+                    player.date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+
+
+                    // Add in simulation if game already started and player is reconnecting
+                    if (!player.in_game) {
+                        this.addPlayerConnection(playerWsId, true);
+                    }
+
+                    // Restart ping interval
+                    player.timeout = setInterval(() => this.sendHeartbeat(playerWsId), player.ping_interval);
+
+                    // Update new version of player
+                    this.playerList.set( playerWsId, player );
+
+                    this.notifyPlayerChange(playerWsId);
+                    this.controller.notifyMonitor();
+                } else {
+                    if (useVerbose) log(`New ws connection from ${playerWsId}, waiting for connection message...`);
+                    if (useExtraVerbose) log(ws.toString());
+                }
+            },
+            // ======================================
+
+            message: (ws, message) => {
+                const playerIP = Buffer.from(ws.getRemoteAddressAsText()).toString();
+                const jsonPlayer: JsonPlayer = JSON.parse(Buffer.from(message).toString());
+
+                // Alive as received any message
+                if (this.playerList.has(playerIP))
+                    this.playerList.get(playerIP)!.is_alive = true;
+
+                switch (jsonPlayer.type) {
+                    case "pong":
+                        this.playerList.get(playerIP)!.is_alive = true;
+                        break;
+
+                    case "ping":
+                        this.sendMessageByWs(playerIP, {
+                            type: "pong",
+                            id: jsonPlayer.id
+                        });
+                        break;
+
+                    case "connection":
+                        if ( ! this.playerList.has(playerIP) ) {
+                            log('New connection of the player of id ' + jsonPlayer.id);
+                            // Create new player in the list
+
+                            this.playerList.set(playerIP, {
+                                id: jsonPlayer.id,
+                                ws: ws,
+                                ping_interval: jsonPlayer.heartbeat || 5000,
+                                is_alive: true,
+                                connected: false,
+                                in_game: false,
+                                date_connection: "",
+                            })
+
+                            this.addPlayerConnection(playerIP, true);
+
+                            // Trigger heartbeat
+                            this.playerList.get(playerIP)!.timeout = setInterval(() => this.sendHeartbeat(playerIP), jsonPlayer.heartbeat || 5000);
+
+                            this.notifyPlayerChange(playerIP);
+                            this.controller.notifyMonitor();
+                        } // Reconnection managed on WS opening
+                        break;
+
+                    // case "restart":
+                    //     // Restart the headset logic
+                    //     break;
+
+                    case "expression":
+                        if (useExtraVerbose) log("\x1b[34m[PLAYER " + this.playerList.get(playerIP)!.id + "]\x1b[0m", "Sent expression:", jsonPlayer.expr);
+                        this.controller.sendExpression(this.playerList.get(playerIP)!.id, jsonPlayer.expr!);
+                        break;
+
+                    case "ask":
+                        const askJsonPlayer: JsonPlayerAsk = JSON.parse(Buffer.from(message).toString());
+                        if (useExtraVerbose) log("\x1b[34m[PLAYER " + this.playerList.get(playerIP)!.id + "]\x1b[0m", "Sent ask:", askJsonPlayer);
+                        this.controller.sendAsk(askJsonPlayer);
+                        break;
+
+                    case "disconnect_properly":
+                        ws.end(1000, playerIP);
+                        this.controller.purgePlayer(this.playerList.get(playerIP)!.id);
+                        break;
+
+                    default:
+                        logWarn("The last message received from " + this.playerList.get(playerIP)!.id + " had an unknown type");
+                        logWarn(jsonPlayer);
+                }
+
+                // Client is alive as he just communicated
+                if (this.playerList.has(playerIP))
+                    this.playerList.get(playerIP)!.is_alive = true;
+            },
+
+            // ======================================
+
+            close: (ws, code: number, message) => {
+                let playerIP!: string;
+                try {
+                    playerIP = this.getIndexByPlayerWs(ws)!;
+                } catch (e) {
+                    logWarn("Can't find player from websocket, trying fallback method...")
+                    try {
+                        playerIP = Buffer.from(ws.getRemoteAddressAsText()).toString();
+                    } catch (e) {
+                        playerIP = Buffer.from(message).toString();
+                    }
+                }
+
+                if (playerIP == "" || playerIP == undefined)
+                    logError("Can't find which WebSocket been closed...");
+                else try {
+                    log(`Connection closed with ${this.playerList.get(playerIP)!.id} - ${playerIP}.\n\tCode: ${code}`,
+                        (code != 1000) ? `, Reason: ${Buffer.from(message).toString()}` : "");
+
+                    if (useVerbose) log("Flagging player as disconnected");
+                    this.playerList.get(playerIP)!.connected = false;
+                    clearInterval(this.playerList.get(playerIP)!.timeout);
+
+                } catch (err) {
+                    logError('Error during close handling:', err);
+                }
+
+                // Handle specific close codes
+                switch (code) {
+                    case 1003:
+                        logError('Unsupported data sent by the client.');
+                        logError('Message :', message);
+                        break;
+
+                    case 1006:
+                        logWarn("====");
+                        logError("Abnormal websocket closure with message:", Buffer.from(message).toString());
+                        logWarn("====");
+                        break;
+
+                    case 1009:
+                        logError('Message too big!');
+                        if (message) {
+                            try {
+                                logError(`${playerIP} - Message :`, Buffer.from(message).toString());
+                                if (typeof message.byteLength !== 'undefined') {
+                                    logError('Message size:', message.byteLength, 'bytes');
+                                }
+                            } catch {}
+                        }
+                        break;
+
+                    case 1005:
+                        logWarn("Closed without reason; the game probably been closed in Unity IDE");
+                        break;
+
+                    default:
+                        if (code !== 1000) // 1000 = Normal Closure
+                            logError('Unexpected closure');
+                        else
+                            if (useVerbose) log('Closing normally');
+                }
+
+                this.controller.notifyMonitor();
             }
         });
     }
 
     // Getters
-    getIdClient(ws: PlayerSocket): string {
-        let toReturn: string = "";
+    getIndexByPlayerId(id: string): string | undefined {
+        let toReturn = undefined;
+        for (const [key, player] of this.playerList) {
+            if (player.id === id) {
+                toReturn = key;
+                break;
+            }
+        }
+        if (toReturn == undefined) logError("Cannot find player with ID" + id);
+
+        return toReturn;
+    }
+
+    getIndexByPlayerWs(ws: uWS.WebSocket<unknown>): string | undefined {
+        let toReturn = undefined;
         for (const [key, player] of this.playerList) {
             if (player.ws === ws) {
                 toReturn = key;
                 break;
             }
         }
+        if (toReturn == undefined) logError("Cannot find player with WS" + ws);
+
         return toReturn;
     }
 
     /**
      * Gets the state of a specific player
-     * @param {string} idPlayer - Player ID
+     * @param {string} playerWsId - Player WS ID
      * @returns {PlayerState} - The state of the player
      */
-    getPlayerState(idPlayer: string): PlayerState {
-        const player: Player = this.playerList.get(idPlayer)!;
-        return {connected: player.connected, in_game: player.in_game, date_connection: player.date_connection}
+    getPlayerState(playerWsId: string): PlayerState|void {
+        if (this.playerList.has(playerWsId)){
+            const player: Player = this.playerList.get(playerWsId)!;
+            return {connected: player.connected, in_game: player.in_game, date_connection: player.date_connection}
+        } else
+        if(useVerbose) logWarn("Can't find player with ID", playerWsId);
+    }
+
+    /**
+     * Gets the in_game ID of a specific player
+     * NB: The `playerWsId` is different from the in_game ID as the first one represent the IP address connecting to the mw
+     * @param {string} playerWsId - Player ID
+     * @returns {string} - The ID player
+     */
+    getPlayerId(playerWsId: string): string|void {
+        if (this.playerList.has(playerWsId)){
+            return this.playerList.get(playerWsId)!.id;
+        } else
+        if(useVerbose) logWarn("Can't find player with ws ID", playerWsId);
     }
 
     /**
@@ -184,40 +290,73 @@ class PlayerManager {
         // Turn Map to a dictionnary
         // Remove very verbose `ws` attribute
         return Object.fromEntries(
-            Array.from(this.playerList.entries()).map(([key, value]) => [key, { ...value, timeout: undefined, ws: undefined }])
+            Array.from(this.playerList.entries()).map(
+                ([, value]) => [value.id, { ...value, timeout: undefined, ws: undefined }]
+            )
         );
     }
-
-    // Setters
 
     // Managing Player list
 
     /**
-     * Withdraws a player
-     * @param {string} idPlayer - Player ID
+     * Sets the connection state of a player
+     * @param {string} playerWsId - Player ID
+     * @param {boolean} connected - Connection status
      */
-    removePlayer(idPlayer: string) {
-        if (useVerbose) console.log("[PLAYER MANAGER] Deleting player", idPlayer);
-        // Properly close web socket
-        this.playerList.get(idPlayer)!.ws.close();
-        // Remove player
-        this.playerList.delete(idPlayer);
-        this.controller.notifyMonitor();
+    addPlayerConnection(playerWsId: string, connected: boolean) {
+        this.playerList.get(playerWsId)!.connected = connected;
+        this.playerList.get(playerWsId)!.date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+
+        if ( !['NONE', "NOTREADY"].includes(this.controller.gama_connector.jsonGamaState.experiment_state) ) {
+            if (useVerbose) log("Adding player " + this.playerList.get(playerWsId)!.id + " to GAMA simulation...");
+            this.controller.addInGamePlayer(playerWsId);
+            this.togglePlayerInGame(playerWsId, true);
+        }
+    }
+
+    /**
+     * Withdraws a player
+     * @param {string} playerWsId - Player ID
+     */
+    removePlayer(playerWsId: string) {
+        if (useVerbose) log("Deleting player", playerWsId);
+
+        // Manage both working with Player ID or Player IP
+        const playerIP: string = this.playerList.has(playerWsId) ? playerWsId : this.getIndexByPlayerId(playerWsId)!;
+
+        if ( this.playerList.has(playerIP) ) {
+            // Properly close web socket
+            this.playerList.get(playerIP)!.ws.end(1000, playerIP);
+
+            if (useAggressiveDisconnect) {
+                log("Aggressively deleting player");
+                // Remove player
+                this.playerList.delete(playerIP);
+            }
+        }
+    }
+
+    closePlayerWS(playerWsId: string) {
+        if(this.playerList.has(playerWsId)){
+            this.playerList.get(playerWsId)!.connected = false;
+            this.playerList.get(playerWsId)!.ws.end(1000, playerWsId);
+        }
     }
 
     // Interact with Player
     /**
      * Sets the in-game status of a player
-     * @param {string} idPlayer - Player ID
+     * @param {string} playerWsId - Player ID
      * @param {boolean} inGame - In-game status
      */
-    togglePlayerInGame(idPlayer: string, inGame: boolean) {
-        if (this.playerList.has(idPlayer)) {
-            this.playerList.get(idPlayer)!.in_game = inGame;
-            this.notifyPlayerChange(idPlayer, this.playerList.get(idPlayer)!);
-            this.controller.notifyMonitor();
+    togglePlayerInGame(playerWsId: string, inGame: boolean) {
+        const playerIP: string = this.playerList.has(playerWsId) ? playerWsId : this.getIndexByPlayerId(playerWsId)!;
+
+        if (this.playerList.has(playerIP)) {
+            this.playerList.get(playerIP)!.in_game = inGame;
+            this.notifyPlayerChange(playerIP);
         } else {
-            console.error("[PLAYER MANAGER] Something strange happened while try to change in_game status for", idPlayer, inGame);
+            logError("Something strange happened while try to change in_game status for", playerWsId, inGame);
         }
     }
 
@@ -225,64 +364,49 @@ class PlayerManager {
      * Sets all players' in-game status to false
      */
     removeAllPlayerInGame() {
-        for (const [idPlayer] of this.playerList) {
-            this.togglePlayerInGame(idPlayer, false)
-        }
-    }
-    /**
-     * Sets the connection state of a player
-     * @param {string} idPlayer - Player ID
-     * @param {boolean} connected - Connection status
-     */
-    addPlayerConnection(idPlayer: string, connected: boolean) {
-        this.playerList.get(idPlayer)!.connected = connected;
-        this.playerList.get(idPlayer)!.date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+        if (useVerbose) log("Remove every player at once");
 
-        if ( !['NONE', "NOTREADY"].includes(this.controller.gama_connector.jsonGamaState.experiment_state) ) {
-            if (useVerbose) console.log("[PLAYER MANAGER] Automatically adding new " + idPlayer + " to GAMA simulation...");
-            this.controller.addInGamePlayer(idPlayer);
-            this.togglePlayerInGame(idPlayer, true);
+        for (const [playerWsId] of this.playerList) {
+            this.togglePlayerInGame(playerWsId, false)
         }
-
-        this.notifyPlayerChange(idPlayer, this.playerList.get(idPlayer)!);
-        this.controller.notifyMonitor();
     }
 
     addEveryPlayer(): void {
-        for (const [idPlayer] of this.playerList) {
-            this.controller.gama_connector.addInGamePlayer(idPlayer);
-            this.togglePlayerInGame(idPlayer, true)
+        if (useVerbose) log("Add every player at once");
+
+        for (const [playerWsId, player] of this.playerList) {
+
+            if (!player.in_game){
+                this.controller.gama_connector.addInGamePlayer(playerWsId);
+                this.togglePlayerInGame(playerWsId, true);
+            }
         }
     }
 
     /**
      * Automatically send Heartbeat ping message to every player's open websocket
      */
-    sendHeartbeat(idPlayer: string): void {
+    sendHeartbeat(playerWsId: string): void {
         // Stop pinging if player already disconnected
-        if(!this.playerList.has(idPlayer) || !this.playerList.get(idPlayer)!.connected) {
-            if (useVerbose) console.log("[PLAYER MANAGER] " + idPlayer + " is already disconnected, stop pinging...");
-            if (this.playerList.has(idPlayer)) clearTimeout(this.playerList.get(idPlayer)!.timeout);
+        if(!this.playerList.has(playerWsId) || !this.playerList.get(playerWsId)!.connected) {
+            if (useVerbose) log(playerWsId + " is already disconnected, stop pinging...");
+            if (this.playerList.has(playerWsId)) clearInterval(this.playerList.get(playerWsId)!.timeout);
             return;
-        } else {
-            clearTimeout(this.playerList.get(idPlayer)!.timeout);
+        } else if (!this.playerList.get(playerWsId)!.is_alive) { // Terminate ws of disconnected player
+            logWarn('Terminating dead socket from ' + this.playerList.get(playerWsId)!.id);
+            this.closePlayerWS(playerWsId);
+            this.controller.notifyMonitor();
+            return;
         }
 
-        const playerSocket = this.playerList.get(idPlayer)!.ws as PlayerSocket;
-
-        if (!playerSocket.isAlive) {
-            console.warn('[PLAYER MANAGER] Terminating dead socket from ' + idPlayer);
-            this.removePlayer(idPlayer);
-            return playerSocket.terminate();
+        this.playerList.get(playerWsId)!.is_alive = false;
+        try {
+            this.sendMessageByWs(playerWsId, { type: "ping" })
+        } catch (e) {
+            logError(`Error while sending ping to ${this.playerList.get(playerWsId)!.id})`, e);
         }
 
-        playerSocket.isAlive = false;
-        playerSocket.send(JSON.stringify({ type: "ping" }));
-
-        if (useVerbose) console.log("[PLAYER MANAGER] Sending ping to " + idPlayer);
-
-        // Recall in `ping_interval` ms time
-        this.playerList.get(idPlayer)!.timeout = setTimeout(() => this.sendHeartbeat(idPlayer), this.playerList.get(idPlayer)!.ping_interval);
+        if (useVerbose) log("Sending ping to " + this.playerList.get(playerWsId)!.id);
     }
 
     /**
@@ -295,47 +419,75 @@ class PlayerManager {
         try {
             jsonOutput.contents.forEach((element) => {
                 element.id.forEach((idPlayer) => {
-                    if (this.playerList.has(idPlayer)) {
+                    const playerIp: string | undefined = this.getIndexByPlayerId(idPlayer);
+                    if (playerIp !== undefined) {
                         const jsonOutputPlayer = {
                             contents: element.contents,
                             type: "json_output"
                         };
-                        this.playerList.get(idPlayer)!.ws.send(JSON.stringify(jsonOutputPlayer));
+                        this.sendMessageByWs(playerIp, jsonOutputPlayer);
                     }
                 });
             });
         } catch (exception) {
-            console.error("\x1b[31m[PLAYER MANAGER] The following message hasn't the correct format:\x1b[0m");
-            console.error(jsonOutput);
+            logError("The following message hasn't the correct format:", jsonOutput);
         }
     }
 
     /**
      * Notifies players about a change in their state
-     * @param {number} idPlayer - The id of the player that needs to be informed about a change
+     * @param {number} playerWsId - The id of the player that needs to be informed about a change
      * @param {object} jsonPlayer - The jsonPlayer to be sent
      */
-    notifyPlayerChange(idPlayer: string, jsonPlayer?: Player) {
-        if (jsonPlayer == undefined)
-            jsonPlayer = this.playerList.get(idPlayer);
+    notifyPlayerChange(playerWsId: string) {
+        if (this.playerList.has(playerWsId)) {
+            const jsonPlayer: Player = this.playerList.get(playerWsId)!;
 
-        const { ws, timeout, ...newJsonPlayer } = jsonPlayer!;
-        if (this.playerList.has(idPlayer)) {
+            const { ws, timeout, ...newJsonPlayer } = jsonPlayer!;
+
             const jsonStatePlayer = {
                 type: "json_state",
-                id_player: idPlayer
+                id_player: jsonPlayer!.id
             };
 
-            this.playerList.get(idPlayer)!.ws.send(JSON.stringify({...jsonStatePlayer, ...newJsonPlayer}));
-            if (useVerbose) console.log(`[PLAYER MANAGER][DEBUG Player ${idPlayer}] Sending state update ${JSON.stringify({...jsonStatePlayer, ...newJsonPlayer})}`);
+            this.sendMessageByWs(playerWsId, {...jsonStatePlayer, ...newJsonPlayer});
+            if (useVerbose) log(`\x1b[34m[DEBUG Player ${jsonPlayer!.id}]\x1b[0m`, `Sending state update ${JSON.stringify({...jsonStatePlayer, ...newJsonPlayer})}`);
         }
+    }
+
+    /**
+     *
+     * @param playerWsId
+     * @param message
+     * @return Returns 1 for success, 2 for dropped due to backpressure limit, and 0 for built up backpressure that will drain over time.
+     * @return -1 if playerWsId missing or not connected
+     */
+    sendMessageByWs(playerWsId: string, message: any): number {
+        let jsonPlayer!: Player;
+        if (this.playerList.has(playerWsId) && this.playerList.get(playerWsId)!.connected )
+            jsonPlayer = this.playerList.get(playerWsId)!;
+        else{
+            if (useExtraVerbose)
+                if (!this.playerList.has(playerWsId))
+                     logError("Missing player - Can't send a message to player", playerWsId);
+                else
+                    logWarn("Disconnected player - Can't send a message to player", playerWsId);
+
+            return -1;
+        }
+
+        return jsonPlayer.ws.send(
+            JSON.stringify(message),
+            false, true); // not binary, compress
     }
 
     close() {
         // Notify players that they are removed
-        for (const [idPlayer] of this.playerList) {
-            this.removePlayer(idPlayer)
+        for (const [, value] of this.playerList) {
+            this.removePlayer(value.id)
         }
+
+        this.controller.notifyMonitor();
 
         this.webSocketServer.close();
     }

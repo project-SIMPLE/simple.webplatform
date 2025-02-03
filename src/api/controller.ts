@@ -4,7 +4,18 @@ import ModelManager from './model-manager.ts';
 import {MonitorServer} from './monitor-server.ts';
 import {AdbManager} from "./adb/AdbManager.ts";
 import {useAdb} from "./index.ts";
-import { JsonSettings, JsonPlayer, JsonOutput } from "./constants.ts";
+import {JsonPlayerAsk, JsonOutput} from "./constants.ts";
+
+// Override the log function
+const log = (...args: any[]) => {
+    console.log("\x1b[31m[CONTROLLER]\x1b[0m", ...args);
+};
+const logWarn = (...args: any[]) => {
+    console.warn("\x1b[31m[CONTROLLER]\x1b[0m", "\x1b[43m", ...args, "\x1b[0m");
+};
+const logError = (...args: any[]) => {
+    console.error("\x1b[31m[CONTROLLER]\x1b[0m", "\x1b[41m", ...args, "\x1b[0m");
+};
 
 export class Controller {
     model_manager: ModelManager;
@@ -23,7 +34,7 @@ export class Controller {
         if(useAdb){
             this.adb_manager = new AdbManager(this);
         } else {
-            console.warn("[CONTROLLER] Couldn't find ADB working or started, cancelling ADB management")
+            logWarn("Couldn't find ADB working or started, cancelling ADB management")
         }
     }
 
@@ -64,10 +75,6 @@ export class Controller {
     =============================
      */
 
-    notifyPlayerChange(id_player: string, json_player: JsonPlayer) {
-        this.player_manager.notifyPlayerChange(id_player, json_player);
-    }
-
     broadcastSimulationOutput(json_output: JsonOutput) {
         this.player_manager.broadcastSimulationOutput(json_output);
     }
@@ -83,7 +90,7 @@ export class Controller {
     }
 
     purgePlayer(id_player: string) {
-        console.log("[CONNECTOR] Remove player", id_player);
+        log("Remove player", id_player);
 
         // Remove from GAMA
         this.gama_connector.removeInGamePlayer(id_player);
@@ -103,7 +110,7 @@ export class Controller {
         this.gama_connector.sendExpression(id_player, expr);
     }
 
-    sendAsk(json: JsonSettings) {
+    sendAsk(json: JsonPlayerAsk) {
         this.gama_connector.sendAsk(json);
     }
 
@@ -116,6 +123,7 @@ export class Controller {
                 clearInterval(interval);
                 this.player_manager.addEveryPlayer();
             }
+            this.notifyMonitor();
         }, 100);
     }
 

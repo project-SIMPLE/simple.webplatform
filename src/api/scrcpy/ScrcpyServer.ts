@@ -1,28 +1,40 @@
 import fs from "fs/promises";
-import { WebSocket, WebSocketServer } from 'ws';
 
 import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyOptions2_1 } from "@yume-chan/adb-scrcpy";
 import { BIN, VERSION } from "@yume-chan/fetch-scrcpy-server";
-import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyOptions3_0, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
+import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyOptions3_1, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
 import {useVerbose} from "../index.ts";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
+import uWS, {TemplatedApp} from "uWebSockets.js";
+
+// Override the log function
+const log = (...args: any[]) => {
+    console.log("\x1b[34m[ScrcpyServer]\x1b[0m", ...args);
+};
+const logWarn = (...args: any[]) => {
+    console.warn("\x1b[34m[ScrcpyServer]\x1b[0m", "\x1b[43m", ...args, "\x1b[0m");
+};
+const logError = (...args: any[]) => {
+    console.error("\x1b[34m[ScrcpyServer]\x1b[0m", "\x1b[41m", ...args, "\x1b[0m");
+};
 
 const H264Capabilities = TinyH264Decoder.capabilities.h264;
 
 export class ScrcpyServer {
     // =======================
     // WebSocket
-    private wsServer!: WebSocketServer;
-    private wsClients: WebSocket[] = [];
+    private wsServer!: TemplatedApp;
+    private wsClients: Set<uWS.WebSocket<any>>;
+    private scrcpyClients: AdbScrcpyClient[] = [];
 
     // =======================
     // Scrcpy server
     declare server: Buffer;
 
     readonly scrcpyOptions = new AdbScrcpyOptions2_1(
-        new ScrcpyOptions3_0({
+        new ScrcpyOptions3_1({
             // scrcpy options
             videoCodec: "h264",
             videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
@@ -40,7 +52,7 @@ export class ScrcpyServer {
             stayAwake: true,
             // Clean feed
             audio: false,
-            control: false,
+            control: true,
         })
     )
 
@@ -49,32 +61,77 @@ export class ScrcpyServer {
     private scrcpyStreamConfig!: string;
 
     constructor() {
+        this.wsClients = new Set<uWS.WebSocket<any>>();
+
         const host = process.env.WEB_APPLICATION_HOST || 'localhost';
         const port = parseInt(process.env.VIDEO_WS_PORT || '8082', 10);
 
         try {
-            this.wsServer = new WebSocketServer({ host, port });
-            console.log(`[ScrcpyServer WS] Creating video stream server on: ws://${host}:${port}`);
+            this.wsServer = uWS.App(); //new WebSocketServer({ host, port });
+            log(`Creating video stream server on: ws://${host}:${port}`);
         } catch (e) {
-            console.error('[ScrcpyServer WS] Failed to create a new websocket', e);
+            logError('Failed to create a new websocket', e);
         }
 
-        this.wsServer.on('connection', async (socket: WebSocket) => {
-
-            this.wsClients.push(socket);
-            console.log("[ScrcpyServer WS] Web view connected");
-
-            // Send configuration message if scrcpy is already started
-            if(this.scrcpyStreamConfig){
-                socket.send(this.scrcpyStreamConfig);
+        this.wsServer.listen(host, port, (token) => {
+            if (token) {
+                log(`Creating monitor server on: ws://${host}:${port}`);
+            } else {
+                logError('Failed to listen on the specified port and host');
             }
-
-            socket.on('close', () => {
-                this.wsClients = this.wsClients.filter(client => client !== socket);
-                console.log("[ScrcpyServer WS] Client disconnected");
-            });
         });
-        if (useVerbose) console.log("[ScrcpyServer] Using scrcpy version", VERSION);
+
+        this.wsServer.ws('/*', {
+           // compression: uWS.SHARED_COMPRESSOR, // Enable compression
+            maxPayloadLength: 3 * 1024 * 1024,  // 2 MB: Adjust based on expected video bitrate
+            idleTimeout: 30, // 30 seconds timeout
+
+            open: (ws) => {
+                this.wsClients.add(ws);
+                log("Web view connected");
+
+                // Send configuration message if scrcpy is already started
+                if(this.scrcpyStreamConfig){
+                    ws.send(this.scrcpyStreamConfig, false, true);
+                }
+
+                for (const client of this.scrcpyClients) {
+                    // Add small delay to let the client finish to load webpage
+                    setTimeout(() => {client.controller!.resetVideo()}, 500) ;
+                }
+            },
+
+            close: (ws, code: number, message) => {
+                try {
+                    this.wsClients.delete(ws)
+                    log(`Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
+
+                    // Handle specific close codes
+                    switch (code) {
+                        case 1003:
+                            logError('Unsupported data sent by the client.');
+                            break;
+
+                        case 1006:
+                        case 1009:
+                            logError('Message too big!');
+                            logError('Message size:', message.byteLength, 'bytes');
+                            logError('Message :', message);
+                            break;
+
+                        default:
+                            if (code !== 1000) // 1000 = Normal Closure
+                                logError('Unexpected closure');
+                            else
+                            if (useVerbose) log(`Connection normally`);
+                    }
+                } catch (err) {
+                    logError('Error during close handling:', err);
+                }
+            }
+        });
+
+        if (useVerbose) log("Using scrcpy version", VERSION);
     }
 
     async loadScrcpyServer(){
@@ -87,11 +144,11 @@ export class ScrcpyServer {
                 await this.loadScrcpyServer();
             }
 
-            console.log(`[ScrcpyServer] Starting scrcpy for ${adbConnection.serial} ===`)
+            log(`Starting scrcpy for ${adbConnection.serial} ===`)
 
             const myself = this;
 
-            if (useVerbose) console.log(`[ScrcpyServer] Pushing scrcpy server to ${adbConnection.serial} ===`);
+            if (useVerbose) log(`Pushing scrcpy server to ${adbConnection.serial} ===`);
             const sync = await adbConnection.sync();
             try {
                 await sync.write({
@@ -104,35 +161,39 @@ export class ScrcpyServer {
                     }),
                 });
             } catch (error) {
-                console.error(`[ScrcpyServer] Error writing scrcpy server to  ${adbConnection.serial}: ${error}`);
+                logError(`Error writing scrcpy server to  ${adbConnection.serial}: ${error}`);
             } finally {
                 await sync.dispose();
             }
 
-            if (useVerbose) console.log(`[ScrcpyServer] Starting scrcpy server from ${adbConnection.serial} ===`);
+            if (useVerbose) log(`Starting scrcpy server from ${adbConnection.serial} ===`);
             const client: AdbScrcpyClient = await AdbScrcpyClient.start(
                 adbConnection,
                 DefaultServerPath,
-                VERSION,
                 this.scrcpyOptions
             );
 
+            // Store the controller of new client
+            this.scrcpyClients.push(client);
 
             // Print output of Scrcpy server
             if (useVerbose) void client.stdout.pipeTo(
                 // @ts-ignore
                 new WritableStream<string>({
                     write(chunk: string): void {
-                        console.debug("\x1b[41m[ScrcpyServer DEBUG]\x1b[0m", chunk);
+                        console.debug("\x1b[41m[DEBUG]\x1b[0m", chunk);
                     },
                 }),
             );
 
             if (client.videoStream) {
                 const { metadata, stream: videoPacketStream } = await client.videoStream;
-                console.log(metadata);
+                log(metadata);
 
                 const myself = this;
+
+                // Enforce sending config package
+                setTimeout(() => {client.controller!.resetVideo()}, 500) ;
 
                 videoPacketStream
                     .pipeTo(
@@ -168,31 +229,28 @@ export class ScrcpyServer {
                                         );
                                         break;
                                     default:
-                                        console.warn("[ScrcpyServer] Unknown packet from video pipe: ", packet);
+                                        logWarn("Unkown packet from video pipe: ", packet);
                                 }
                             },
                         }),
                     )
                     .catch((e) => {
-                        console.error(`[ScrcpyServer] Error while piping video stream of ${adbConnection.serial} ===`)
-                        console.error(e);
+                        logError(`Error while piping video stream of ${adbConnection.serial} ===`)
+                        logError(e);
                     });
             } else {
-                console.error(`[ScrcpyServer] Couldn't find a video stream from ${adbConnection.serial}'s scrcpy server ===`)
+                logError(`Couldn't find a video stream from ${adbConnection.serial}'s scrcpy server ===`)
             }
 
         } catch (error) {
-            console.error("Error in startStreaming:", error);
-
-            throw error;
+            logError("Error in startStreaming:", error);
+            logError("=== This error probably comes from the cropping value out-of-bound on a classical Android device; but by default set for Meta Quest 3 value ===");
         }
     }
 
     broadcastToClients(packetJson: string): void {
         this.wsClients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(packetJson);
-            }
+            client.send(packetJson, false, true);
         });
     }
 }

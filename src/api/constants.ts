@@ -2,16 +2,9 @@
     INTERFACES  ========================================
  */
 
-import {WebSocket} from "ws";
+import uWS from "uWebSockets.js";
 
-export interface JsonSettings {
-    // Define the structure of your JSON settings here
-}
-
-export interface JsonPlayer {
-    // Define the structure of your JSON player here
-}
-
+// JSON WS ==============================================
 export interface JsonOutput {
     contents?: Array<{
         id: string[];
@@ -30,6 +23,28 @@ export interface JsonMonitor {
     simulationIndex?: number;
 }
 
+export interface JsonPlayerAsk {
+    type: string;
+    action: string;
+    args: string;   // JsonConvert.SerializeObject(Dictionary<string, string>)
+    agent: string;
+}
+
+export interface JsonPlayer {
+    id: string;
+    type: string;
+    expr?: string;
+    heartbeat?: number;
+}
+
+// Internal message exchange ==============================================
+
+export interface PlayerState {
+    connected: boolean;
+    in_game: boolean;
+    date_connection: string;
+}
+
 export interface GamaState {
     connected: boolean;
     experiment_state: string;
@@ -39,22 +54,17 @@ export interface GamaState {
     experiment_name: string;
 }
 
-
-export interface PlayerSocket extends WebSocket {
-    isAlive: boolean;
-}
-
-export interface PlayerJson {
-    id: string;
-    type: string;
-    expr?: string;
-    heartbeat?: number;
-}
-
-export interface PlayerState {
-    connected: boolean;
-    in_game: boolean;
-    date_connection: string;
+export interface Player {
+    id: string,
+    // Player Socket
+    ws: uWS.WebSocket<unknown>,
+    ping_interval: number,
+    is_alive: boolean,
+    timeout?: NodeJS.Timeout,
+    // Player State
+    connected: boolean,
+    in_game: boolean,
+    date_connection: string,
 }
 
 /*
