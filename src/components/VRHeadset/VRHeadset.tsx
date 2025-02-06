@@ -8,7 +8,7 @@ interface VRHeadsetProps {
   playerId?: string;
 }
 
-const VRHeadset: React.FC<VRHeadsetProps> = ({ selectedPlayer, className, playerId }) => {
+const VRHeadset= ({ selectedPlayer, className, playerId }: VRHeadsetProps) => {
   const [showPopUp, setShowPopUp] = useState(false);
   const {t} = useTranslation();
 
