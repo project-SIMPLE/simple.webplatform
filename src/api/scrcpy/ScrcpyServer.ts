@@ -27,6 +27,8 @@ export class ScrcpyServer {
     // WebSocket
     private wsServer!: TemplatedApp;
     private wsClients: Set<uWS.WebSocket<any>>;
+    private maxBackpressure: number = 1 * 1024 * 1024; // 1MB
+
     private scrcpyClients: AdbScrcpyClient[] = [];
 
     // =======================
@@ -44,7 +46,7 @@ export class ScrcpyServer {
             // Video settings
             video: true,
             maxSize: 700,
-            maxFps: 20,
+            maxFps: 30,
             //videoBitRate: 200,
             angle: 25,
             crop: "1508:1708:300:200",
@@ -82,8 +84,10 @@ export class ScrcpyServer {
         });
 
         this.wsServer.ws('/*', {
-           // compression: uWS.SHARED_COMPRESSOR, // Enable compression
-            maxPayloadLength: 3 * 1024 * 1024,  // 2 MB: Adjust based on expected video bitrate
+            compression: uWS.SHARED_COMPRESSOR, // Enable compression
+            maxPayloadLength: 20 * 1024, // 20 KB: Adjust based on expected video bitrate
+                                         // Experimental max < 10KB
+            maxBackpressure: this.maxBackpressure,
             idleTimeout: 30, // 30 seconds timeout
 
             open: (ws) => {
@@ -98,6 +102,16 @@ export class ScrcpyServer {
                 for (const client of this.scrcpyClients) {
                     // Add small delay to let the client finish to load webpage
                     setTimeout(() => {client.controller!.resetVideo()}, 500) ;
+                }
+            },
+
+            drain: (ws) => {
+                // Reset stream to prevent having too much artefacts on stream
+                if (ws.getBufferedAmount() < this.maxBackpressure) {
+                    if (useVerbose) log("Backpressure drained, restart stream to prevent visual glitch")
+                    for (const client of this.scrcpyClients) {
+                        client.controller!.resetVideo();
+                    }
                 }
             },
 
