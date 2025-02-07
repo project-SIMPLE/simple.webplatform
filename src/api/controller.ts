@@ -25,8 +25,13 @@ export class Controller {
     gama_connector: GamaConnector;
     // @ts-ignore
     adb_manager: AdbManager;
+    mDnsService: mDnsService;
+
 
     constructor(useAdb:boolean) {
+
+        this.mDnsService = new mDnsService(process.env.WEB_HOSTNAME);
+
         this.model_manager = new ModelManager(this);
         this.monitor_server = new MonitorServer(this);
         this.player_manager = new PlayerManager(this);
