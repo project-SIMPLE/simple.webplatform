@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
     host: env.WEB_APPLICATION_HOST,
     port: Number(env.WEB_APPLICATION_PORT),
     strictPort: true,
+    allowedHosts: ["simple.local", env.WEB_HOSTNAME+".local"],
   };
 
   return {

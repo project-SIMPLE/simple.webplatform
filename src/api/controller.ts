@@ -5,6 +5,7 @@ import {MonitorServer} from './monitor-server.ts';
 import {AdbManager} from "./adb/AdbManager.ts";
 import {useAdb} from "./index.ts";
 import {JsonPlayerAsk, JsonOutput} from "./constants.ts";
+import {mDnsService} from "./services/mDnsService.ts";
 
 // Override the log function
 const log = (...args: any[]) => {
