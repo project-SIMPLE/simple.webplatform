@@ -2,11 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import { useEffect, useState } from 'react';
 import Button from '../Button/Button';
-import Navigation from '../Navigation/Navigation';
 import VRHeadset from '../VRHeadset/VRHeadset';
-import LanguageSelector from '../LanguageSelector/LanguageSelector';
 import { useTranslation } from 'react-i18next';
 import Footer from '../Footer/Footer';
+import Header from '../Header/Header';
 const SelectorSimulations = () => {
   const { ws, isWsConnected, simulationList, playerList, gama } = useWebSocket();
   const [directoryPath, setDirectoryPath] = useState<string>('');
@@ -80,17 +79,16 @@ const SelectorSimulations = () => {
   }, [gama.connected, t]);
 
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen bg-white p-8 ">
-      <div className="flex items-center w-full justify-around vertical-center">
-      <Navigation />
-
-     <LanguageSelector />   
+    <div className="flex flex-col items-center justify-between min-h-screen bg-white">
       
-      </div>
+      <Header needsMiniNav/> 
+       {/* header also has a prop to specify whether it should use the small version of the navigation */}
+      
+      
 
       {loading ? (
         <div className="text-center">
-          <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4 -z-50"></div>
+          <div className="animate-pulse ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4 -z-50"></div>
           
           <h2 className="text-gray-700">{t('loading')}</h2>
         
@@ -98,7 +96,7 @@ const SelectorSimulations = () => {
       ) : (
         
         // Display simulations cards
-        <div className="flex flex-col items-center justify-center bg-white p-8">
+        <div className="flex flex-col items-center justify-center bg-white">
         <div className="flex items-center justify-between">
           
           <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>

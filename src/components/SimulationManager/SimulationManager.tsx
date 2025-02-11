@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import { useNavigate } from 'react-router-dom';
-import MiniNavigation from '../Navigation/MiniNavigation';
 import { useTranslation } from 'react-i18next';
 import Footer from '../Footer/Footer';
 import SimulationManagerPlayer from './SimulationManagerPlayer';
-import x_cross from '../../../public/svg_logos/x_cross.svg';
+import x_cross from '/src/svg_logos/x_cross.svg';
+import Header from '../Header/Header';
 export interface Player {
   connected: boolean;
   date_connection: string;
@@ -97,9 +97,8 @@ const SimulationManager = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
-      <div className='m-5'>
-        <MiniNavigation /></div>
-      <div className="flex flex-col items-center justify-center bg-gray-100 p-8 pt-0  shadow-lg rounded-lg text-center mt-12" style={{ marginRight: '60px', marginLeft: '60px', marginTop: '100px' }}>
+        <Header needsMiniNav={true}/>
+      <div className="flex flex-col items-center justify-center bg-gray-100 pt-0  shadow-lg rounded-lg text-center mt-12" style={{ marginRight: '60px', marginLeft: '60px', marginTop: '100px' }}>
 
 
         {selectedSimulation ? (
