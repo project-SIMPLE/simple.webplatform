@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
+import letterswitch from '/src/svg_logos/letter_switch.svg';
 const LanguageSelector = () => {
   const { t, i18n } = useTranslation();
   const [showPopup, setShowPopup] = useState(false);
@@ -18,13 +18,14 @@ const LanguageSelector = () => {
   
   return (
     
-    <div className="relative">
+    <div>
       {/* Button pour open the popup */}
       <button 
         onClick={() => setShowPopup(true)}
-        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300"
+        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-300 flex items-center"
       >
         {t('change_language')}
+        <img src={letterswitch} alt="switch language" className='ml-2' />
       </button>
 
 
@@ -33,6 +34,7 @@ const LanguageSelector = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10">
           <div className="bg-white p-6 rounded-lg shadow-lg w-80">
             <h3 className="text-lg font-semibold mb-4">{t('select_language')}</h3>
+            
 
             <div className="flex flex-col space-y-2">
               <button 
