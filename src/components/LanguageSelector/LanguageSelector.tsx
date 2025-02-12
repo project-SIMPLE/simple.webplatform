@@ -38,6 +38,7 @@ const LanguageSelector = () => {
 
             <div className="flex flex-col space-y-2">
               <button 
+                onClick={() => changeLanguage('en')}
                 className= {button_green}  
               >
                 English
