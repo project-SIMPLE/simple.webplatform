@@ -53,7 +53,7 @@ const SimulationManagerPlayer = ({ Playerkey }: PlayerProps) => {
 
 
           {showPopUpManageHeadset ?
-          <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-50">
+          <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-10">
           <div className="fixed inset-0 flex items-center justify-center z-50" onClick={togglePopUpshowPopUpManageHeadset}  >
             
              <div className="bg-white p-6 rounded-lg shadow-lg w-72 text-center"  >

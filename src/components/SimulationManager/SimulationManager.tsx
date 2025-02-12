@@ -96,9 +96,9 @@ const SimulationManager = () => {
 
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
+    <div className="flex flex-col h-full bg-gray-100 justify-between">
         <Header needsMiniNav={true}/>
-      <div className="flex flex-col items-center justify-center bg-gray-100 pt-0  shadow-lg rounded-lg text-center mt-12" style={{ marginRight: '60px', marginLeft: '60px', marginTop: '100px' }}>
+      <div className="flex flex-col items-center justify-center rounded-lg text-center h-2/3 mx-16 " style={{backgroundColor: "#A1D2FF"}}>
 
 
         {selectedSimulation ? (
@@ -126,10 +126,6 @@ const SimulationManager = () => {
                       Playerkey={key}/>
                       </div>
 
-
- //! générer des joueurs en fonction de la quantité demandée par linkto unity, avec une clé nulle s'il n'y a pas vraiment de joueur
-                  //<div key={key} className="flex flex-col items-center">
-                  // </div>
 
 
         
@@ -180,8 +176,8 @@ const SimulationManager = () => {
 
                       <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4">
                         <Button
-                          onClick={handlePlayPause}
-                          customStyle={{ width: '100px', height: '50px' }}
+                          onClick={handlePlayPause} //set themaximum height to be twice the size of the font size
+                          customStyle={{ maxWidth: '150', maxHeight: '2.4em', wordWrap: "break-word" }}
                           bgColor="bg-green-500"
                           showText={true}
                           text={t('button_begin_anyway')}
