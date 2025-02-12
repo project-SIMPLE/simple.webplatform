@@ -9,7 +9,7 @@
     "wait_minim_players_1":"Waiting for",
     "wait_minim_players_2":"more players to reach minimum players",
     "wait_maximum_players_1":"more players to reach maximum players",
-    "popop_question": "Do you really want to disconnect and remove",
+    "popup_question": "Do you really want to disconnect and remove",
     "remove": "Remove",
     "relaunch": "Relaunch",
     "button_begin_anyway": "Begin anyway",

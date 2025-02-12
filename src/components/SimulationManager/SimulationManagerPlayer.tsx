@@ -7,9 +7,13 @@ import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import trashbin from '/src/svg_logos/trashbin.svg';
 interface PlayerProps {
   Playerkey: string
+  selectedPlayer?: any;  
+  className?: string;
+  playerId?: string;
+  
 }
 
-const SimulationManagerPlayer = ({ Playerkey }: PlayerProps) => {
+const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerId }: PlayerProps) => {
   const { t } = useTranslation();
 
   const { ws, gama, playerList, selectedSimulation } = useWebSocket(); // `removePlayer` is now available
@@ -17,7 +21,7 @@ const SimulationManagerPlayer = ({ Playerkey }: PlayerProps) => {
 
   const [showPopUpManageHeadset, setshowPopUpManageHeadset] = useState(false);
   
-  const togglePopUpshowPopUpManageHeadset = () => {
+  const toggleShowPopUpManageHeadset = () => {
     setshowPopUpManageHeadset(!showPopUpManageHeadset);
   };
 
@@ -26,7 +30,7 @@ const SimulationManagerPlayer = ({ Playerkey }: PlayerProps) => {
       console.log(`ID headset ${id}`);
       ws.send(JSON.stringify({ "type": "remove_player_headset", id }));
       // removePlayer(id);  // already did in WebSocketManagers
-      togglePopUpshowPopUpManageHeadset();
+      toggleShowPopUpManageHeadset();
     } else {
       console.error('WebSocket is not connected');
     }
@@ -53,13 +57,16 @@ const SimulationManagerPlayer = ({ Playerkey }: PlayerProps) => {
 
 
           {showPopUpManageHeadset ?
+
           <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-10">
-          <div className="fixed inset-0 flex items-center justify-center z-50" onClick={togglePopUpshowPopUpManageHeadset}  >
+ 
+          <div className="fixed inset-0 flex items-center justify-center z-50" onClick={toggleShowPopUpManageHeadset}  >
             
              <div className="bg-white p-6 rounded-lg shadow-lg w-72 text-center"  >
+              
               <h2 className="text-lg font-semibold mb-4"  >
                 
-                {t('popop_question')} {Playerkey} ?
+                {t('popup_question')} {Playerkey} ?
               </h2>
 
               <div className='flex gap-5 ml-3'  >
@@ -84,7 +91,7 @@ const SimulationManagerPlayer = ({ Playerkey }: PlayerProps) => {
 
               <button
                 className="bg-red-500 text-white px-4 py-2 mt-6 rounded"
-                onClick={togglePopUpshowPopUpManageHeadset}  >
+                onClick={toggleShowPopUpManageHeadset}  >
 
                 {t('cancel')}
               </button>
@@ -92,16 +99,23 @@ const SimulationManagerPlayer = ({ Playerkey }: PlayerProps) => {
           </div>
           </div>   : null}
 
-          <div className='flex gap-3 mt-2'  >
-            <p style={{ marginTop: '3px' }}  > {Playerkey} </p>
-            <Button
+          <div className='flex flex-col gap-3 bg-slate-200 shadow-sm rounded-xl hover:scale-105 items-center'  >
+            <div className='bg-slate-400 w-full rounded-t-xl cursor-pointer' onClick={toggleShowPopUpManageHeadset} >
+            <p> {Playerkey} </p></div>
+          <VRHeadset
+                      key={Playerkey}
+                      selectedPlayer={selectedPlayer}
+                      playerId={Playerkey}/>
+            {/* <Button
               bgColor='bg-red-500'
               icon={<img src={trashbin}/>}
-              onClick={togglePopUpshowPopUpManageHeadset}
-            />
-
-
-          </div>
+              onClick={toggleShowPopUpManageHeadset}
+            /> */}
+           
+            <div className= {`rounded-b-xl hover:scale-105 justify-center w-full`}  >
+              
+            </div>
+            </div>
 
   
         </>

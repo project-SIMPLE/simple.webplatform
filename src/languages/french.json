@@ -9,7 +9,7 @@
     "wait_minim_players_1": "En attente de",
     "wait_minim_players_2": "d'autres joueurs pour atteindre le nombre minimum de joueurs",
     "wait_maximum_players_1": "d'autres joueurs pour atteindre le nombre maximum de joueurs",
-    "popop_question": "Voulez-vous vraiment vous déconnecter et supprimer",
+    "popup_question": "Voulez-vous vraiment vous déconnecter et supprimer",
     "remove": "Supprimer",
     "relaunch": "Relancer",
     "button_begin_anyway": "Commencer quand même",
