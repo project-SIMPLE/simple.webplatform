@@ -250,41 +250,7 @@ const SimulationManager = () => {
         )}
       </div>
 
-      {/* Get Player */}
-      <div className="w-2/3 mt-8 grid grid-cols-2 gap-4">
-        {
-          import.meta.env.VITE_APP_ENV === 'development' && (
-            <div></div>
 
-            // BUTTON get handletGetPlayerList (debug)
-            // <div>
-            //   {/* <div className="text-lg mt-3 mb-3">Get Players connected:</div> */}
-            //   <Button onClick={handleGetPlayers} text="Get Player list logs" bgColor="bg-purple-500" showText={true}
-
-            //     icon= {
-            //       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
-            //         <circle cx="12" cy="12" r="10" fill="none" stroke="white" strokeWidth="2"/>
-            //         <line x1="12" y1="17" x2="12" y2="12" stroke="white" strokeWidth="2"/>
-            //         <circle cx="12" cy="8.5" r="1" fill="white"/>
-            //       </svg>
-            //     }
-            //   />
-            // </div>
-          )}
-
-        {/* Column 2 */}
-        <div>
-          {userInfos && clickedUserInfos && playerList ? (
-            <div>
-              <div className="text-xl mt-3 mb-3">Informations Player:</div>
-              <p>Connected ? : {String(userInfos.connected)}</p>
-              <p>Hour of connection : {userInfos.date_connection}</p>
-              <p>Connected in game ? : {String(userInfos.in_game)}</p>
-            </div>
-
-          ) : null}
-        </div>
-      </div>
 
 
       {/* Footer of the page */}
