@@ -79,7 +79,7 @@ const SelectorSimulations = () => {
   }, [gama.connected, t]);
 
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen bg-white">
+    <div className="flex flex-col items-center justify-between bg-red-300 h-full">
       
       <Header needsMiniNav/> 
        {/* header also has a prop to specify whether it should use the small version of the navigation */}
@@ -95,8 +95,8 @@ const SelectorSimulations = () => {
         </div>
       ) : (
         
-        // Display simulations cards
-        <div className="flex flex-col items-center justify-center bg-white">
+        // Display simulations cards //todo Changer ça
+        <div className="flex flex-col items-center justify-center w-4/5 rounded-md" style={{"backgroundColor" : "#A1D2FF" , "height":"200px"}}>
         <div className="flex items-center justify-between">
           
           <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
