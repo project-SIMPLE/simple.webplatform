@@ -58,7 +58,7 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
 
           {showPopUpManageHeadset ?
 
-          <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-10">
+          <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-50">
  
           <div className="fixed inset-0 flex items-center justify-center z-50" onClick={toggleShowPopUpManageHeadset}  >
             
@@ -112,8 +112,8 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
               onClick={toggleShowPopUpManageHeadset}
             /> */}
            
-            <div className= {`rounded-b-xl hover:scale-105 justify-center w-full`}  >
-              
+            <div className= {`rounded-b-xl hover:scale-105 justify-center w-full ${selectedPlayer.connected ? 'bg-green-500' : 'bg-red-500' }`}>
+              {selectedPlayer.connected ? <p>connecté</p> : <p>erreur</p> }
             </div>
             </div>
 

@@ -96,7 +96,7 @@ const SelectorSimulations = () => {
       ) : (
         
         // Display simulations cards 
-        <div className="flex flex-col items-center justify-center w-4/5 h-2/3 rounded-md" style={{"backgroundColor" : "#A1D2FF"}}>
+        <div className="flex flex-col items-center justify-center w-5/6 h-2/3 rounded-md" style={{"backgroundColor" : "#A1D2FF"}}>
           <h2>{t('select_simulation')} </h2>   {/* //TODO add translation for Viet & Thai language */}
          
         <div className="flex items-center justify-between">
