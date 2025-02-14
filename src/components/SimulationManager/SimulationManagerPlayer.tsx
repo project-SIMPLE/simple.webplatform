@@ -5,6 +5,7 @@ import Button from "../Button/Button";
 import { useState } from 'react';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import trashbin from '/src/svg_logos/trashbin.svg';
+import cross from '/src/svg_logos/x_cross.svg'
 interface PlayerProps {
   Playerkey: string
   selectedPlayer?: any;
@@ -58,46 +59,45 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
 
         {showPopUpManageHeadset ?
 
-          <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-50">
 
-            <div className="fixed inset-0 flex items-center justify-center z-50" onClick={toggleShowPopUpManageHeadset}  >
 
-              <div className="bg-white p-6 rounded-lg shadow-lg w-72 text-center"  >
+          <div className="fixed inset-0 flex items-center justify-center bg-slate-800 bg-opacity-75 z-10" onClick={toggleShowPopUpManageHeadset}  >
 
-                <h2 className="text-lg font-semibold mb-4"  >
+            <div className="rounded-md shadow-lg w-72 text-center z-20" onClick={(e)=> e.stopPropagation()}  > {/*this prevent event bubbling, so that clicking the child div does not close the popup window*/}
+              <div className="p-3 flex items-top bg-slate-300 rounded-t-md justify-between">
+                <h2 className="text-lg font-semibold"  >
+                  informations de {Playerkey}:  {/* //TODO ajouter les traduction ici  */}
+                </h2> {/* //TODO ajouter couleur du joueur ici pour que ça soit plus parlant  */}
+                <img src={cross} alt="close cross" className="w-8 h-8 rounded-full cursor-pointer mix-blend-difference hover:bg-gray-800" onClick={toggleShowPopUpManageHeadset} />
+              </div>
 
-                  {t('popup_question')} {Playerkey} ?
-                </h2>
+              <div className='bg-slate-200 p-2 text-left'>
+                <p>Player: {String(playerId)}</p>
+                <p>{t('Status')} : {String(selectedPlayer.connected)}</p>
+                <p>{t('Hour of connection')} : {selectedPlayer.date_connection}</p>
+                <p>{t('In game')} : {String(selectedPlayer.in_game)}</p>
+              </div>
 
-                <div className='flex gap-5 ml-3'  >
-
-                  <button
-                    className="bg-red-500 text-white px-4 py-2 mt-4 rounded"
+              <div className="bg-red-300 pb-3 rounded-b-md">
+                <button
+                    className="bg-red-500 text-white px-4 py-2 mt-4 rounded-l-md rounded-r-none"
                     onClick={() => handleRemove(Playerkey)}  >
 
                     {t('remove')}
                   </button>
-
+              {/* bouton vers le mirror d ece casque spécifiquement */}
                   <button
-                    className="bg-orange-500 text-white px-4 py-2 mt-4 rounded"
+                    className="bg-orange-500 text-white px-4 py-2 mt-4 rounded-r-md rounded-l-none"
                     onClick={() => handleRestart(Playerkey)}  >
 
                     {t('relaunch')}
-                  </button>
-
-                </div>
+                  </button> 
 
 
-
-                <button
-                  className="bg-red-500 text-white px-4 py-2 mt-6 rounded"
-                  onClick={toggleShowPopUpManageHeadset}>
-
-                  {t('cancel')}
-                </button>
               </div>
             </div>
-          </div> : null}
+          </div>
+          : null}
 
         <div className='flex flex-col bg-slate-200 shadow-sm rounded-xl hover:scale-105 items-center' onClick={toggleShowPopUpManageHeadset}>
           <div className='bg-slate-400 w-full rounded-t-xl cursor-pointer'  >

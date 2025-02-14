@@ -12,6 +12,8 @@ const Header = ({ needsMiniNav = false }) => {
         <header  className="flex w-full h-20 justify-around items-center" style={{ borderBottomLeftRadius: "40px", borderBottomRightRadius: "40px", backgroundColor: "#58FFCA"}}>
            
             {needsMiniNav ? <MiniNavigation /> : <Navigation/>}
+<div className="w-1 h-4/5 border-l border-white"></div>
+
             <LanguageSelector />
             
         </header>
