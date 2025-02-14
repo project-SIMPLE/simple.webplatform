@@ -7,10 +7,10 @@ import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import trashbin from '/src/svg_logos/trashbin.svg';
 interface PlayerProps {
   Playerkey: string
-  selectedPlayer?: any;  
+  selectedPlayer?: any;
   className?: string;
   playerId?: string;
-  
+
 }
 
 const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerId }: PlayerProps) => {
@@ -20,7 +20,7 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
 
 
   const [showPopUpManageHeadset, setshowPopUpManageHeadset] = useState(false);
-  
+
   const toggleShowPopUpManageHeadset = () => {
     setshowPopUpManageHeadset(!showPopUpManageHeadset);
   };
@@ -52,80 +52,83 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
 
   {
 
-      return (
-        <>
+    return (
+      <>
 
 
-          {showPopUpManageHeadset ?
+        {showPopUpManageHeadset ?
 
           <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-50">
- 
-          <div className="fixed inset-0 flex items-center justify-center z-50" onClick={toggleShowPopUpManageHeadset}  >
-            
-             <div className="bg-white p-6 rounded-lg shadow-lg w-72 text-center"  >
-              
-              <h2 className="text-lg font-semibold mb-4"  >
-                
-                {t('popup_question')} {Playerkey} ?
-              </h2>
 
-              <div className='flex gap-5 ml-3'  >
+            <div className="fixed inset-0 flex items-center justify-center z-50" onClick={toggleShowPopUpManageHeadset}  >
+
+              <div className="bg-white p-6 rounded-lg shadow-lg w-72 text-center"  >
+
+                <h2 className="text-lg font-semibold mb-4"  >
+
+                  {t('popup_question')} {Playerkey} ?
+                </h2>
+
+                <div className='flex gap-5 ml-3'  >
+
+                  <button
+                    className="bg-red-500 text-white px-4 py-2 mt-4 rounded"
+                    onClick={() => handleRemove(Playerkey)}  >
+
+                    {t('remove')}
+                  </button>
+
+                  <button
+                    className="bg-orange-500 text-white px-4 py-2 mt-4 rounded"
+                    onClick={() => handleRestart(Playerkey)}  >
+
+                    {t('relaunch')}
+                  </button>
+
+                </div>
+
+
 
                 <button
-                  className="bg-red-500 text-white px-4 py-2 mt-4 rounded"
-                  onClick={() => handleRemove(Playerkey)}  >
+                  className="bg-red-500 text-white px-4 py-2 mt-6 rounded"
+                  onClick={toggleShowPopUpManageHeadset}>
 
-                  {t('remove')}
+                  {t('cancel')}
                 </button>
-
-                <button
-                  className="bg-orange-500 text-white px-4 py-2 mt-4 rounded"
-                  onClick={() => handleRestart(Playerkey)}  >
-
-                  {t('relaunch')}
-                </button>
-
               </div>
+            </div>
+          </div> : null}
 
-
-
-              <button
-                className="bg-red-500 text-white px-4 py-2 mt-6 rounded"
-                onClick={toggleShowPopUpManageHeadset}  >
-
-                {t('cancel')}
-              </button>
-          </div>
-          </div>
-          </div>   : null}
-
-          <div className='flex flex-col gap-3 bg-slate-200 shadow-sm rounded-xl hover:scale-105 items-center'  >
-            <div className='bg-slate-400 w-full rounded-t-xl cursor-pointer' onClick={toggleShowPopUpManageHeadset} >
+        <div className='flex flex-col bg-slate-200 shadow-sm rounded-xl hover:scale-105 items-center' onClick={toggleShowPopUpManageHeadset}>
+          <div className='bg-slate-400 w-full rounded-t-xl cursor-pointer'  >
             <p> {Playerkey} </p></div>
           <VRHeadset
-                      key={Playerkey}
-                      selectedPlayer={selectedPlayer}
-                      playerId={Playerkey}/>
-            {/* <Button
+            key={Playerkey}
+            selectedPlayer={selectedPlayer}
+            playerId={Playerkey} />
+          {/* <Button
               bgColor='bg-red-500'
               icon={<img src={trashbin}/>}
-              onClick={toggleShowPopUpManageHeadset}
-            /> */}
-           
-            <div className= {`rounded-b-xl hover:scale-105 justify-center w-full ${selectedPlayer.connected ? 'bg-green-500' : 'bg-red-500' }`}>
-              {selectedPlayer.connected ? <p>connecté</p> : <p>erreur</p> }
-            </div>
-            </div>
+              onClick={toggleShowPopUpManageHeadset}/> */}
 
-  
-        </>
 
-      );
-66
-     
-    
-  
-}
+          {/*//TODO add translation for connection status */}
+          <div className={`rounded-b-xl justify-center w-full ${selectedPlayer.connected ? 'bg-green-500' : 'bg-red-500'}`}>
+            {selectedPlayer.connected ?
+              selectedPlayer.in_game ? <p>en jeu</p> :
+                <p>connecté</p> : <p>erreur</p>}
+          </div>
+        </div>
+
+
+      </>
+
+    );
+    66
+
+
+
+  }
 }
 
 
