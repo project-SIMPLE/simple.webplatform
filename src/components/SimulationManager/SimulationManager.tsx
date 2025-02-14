@@ -108,7 +108,7 @@ const SimulationManager = () => {
 
             <h1 className="text-3xl mb-4">{selectedSimulation.name}</h1>
 
-            <div className="flex justify-center mt-8 space-x-4 mb-2">
+            <div className="flex justify-center items-center  space-x-4 ">
 
               {/*Display Headset Connected */}
               {Object.keys(playerList).map((key) => {
@@ -151,7 +151,7 @@ const SimulationManager = () => {
 
             {/* Buttons Simulations : Play Button, Pause Button, Stop Button  */}
 
-            <div>
+            <>
               <div>
                 {gama.experiment_state === 'NONE' || gama.experiment_state === 'NOTREADY' ? (
 
@@ -211,7 +211,7 @@ const SimulationManager = () => {
                         className="w-20"
                         customStyle={{ width: '100px', height: '50px' }}
                         bgColor="bg-red-500"
-                        icon={x_cross}
+                        icon={<img src={x_cross} style={{width: "50px", height: "50px"}}/>}
                         showText={true}
                       />
                     </div>
@@ -238,7 +238,7 @@ const SimulationManager = () => {
                 ) : null}
 
               </div>
-            </div>
+            </>
 
 
 
