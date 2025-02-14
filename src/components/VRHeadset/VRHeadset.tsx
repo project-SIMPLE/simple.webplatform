@@ -39,15 +39,11 @@ const VRHeadset= ({ selectedPlayer, className, playerId }: VRHeadsetProps) => {
         className={`flex flex-col items-center ${className} ${isAvailable ? 'grayscale-0' : 'opacity-50 cursor-not-allowed'}`}
         style={{ transition: 'all 0.3s ease', cursor: isAvailable ? 'pointer' : 'not-allowed' }}
       >
-        <img
+        <img 
           src={getHeadsetColor()}
           alt="VR Headset"
-          className={`w-32 h-32 object-cover mb-2 ${isAvailable ? 'hover:scale-105' : ''}`} 
-          onClick={() => {
-            if (isAvailable) {
-              togglePopUp(); 
-            }
-          }}
+           className={`w-32 h-32 object-cover mb-2 border-black border- `}
+
         />
 
       {/* Pop-up pour afficher les informations du joueur */}
@@ -55,10 +51,8 @@ const VRHeadset= ({ selectedPlayer, className, playerId }: VRHeadsetProps) => {
         
       {showPopUp && isAvailable && (
         <>
-          {/* Grey Overlay */}
-          <div className="fixed inset-0 bg-gray-800 bg-opacity-75 z-50"></div>
 
-          <div className="fixed inset-0 flex items-center justify-center z-50" onClick={togglePopUp}>
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-slate-800 opacity-75">
               <div className="bg-white p-6 rounded-lg shadow-lg w-72 text-center">
                   <h2 className="text-lg font-semibold mb-4">Player Informations</h2>
                   <p>Player: {String(playerId)}</p>
@@ -68,7 +62,6 @@ const VRHeadset= ({ selectedPlayer, className, playerId }: VRHeadsetProps) => {
 
                   <button
                       className="bg-red-500 text-white px-4 py-2 mt-4 rounded"
-                      onClick={togglePopUp}
                   >
                       {t('cancel')}
                   </button>

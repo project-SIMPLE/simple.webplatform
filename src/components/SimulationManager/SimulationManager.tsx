@@ -96,7 +96,7 @@ const SimulationManager = () => {
 
 
   return (
-    <div className="flex flex-col h-full bg-gray-100 justify-between">
+    <div className="flex flex-col h-full bg-slate-100 justify-between">
         <Header needsMiniNav={true}/>
       <div className="flex flex-col items-center justify-center rounded-lg text-center h-2/3 mx-16 " style={{backgroundColor: "#A1D2FF"}}>
 

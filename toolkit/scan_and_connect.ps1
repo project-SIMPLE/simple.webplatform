@@ -39,7 +39,7 @@ foreach ($ip in $ip_adresses) {
       } 
       
         
-      Write-Host("OK") #this is what is read back by the device finder and is used to determine the script state, it ignores exit codes other than 1
+      Write-Host("OK") #this is what is read back by the device finder and is used to determine the script state,as it ignores exit codes other than 1
     }
   }
 }
