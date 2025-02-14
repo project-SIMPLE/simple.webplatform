@@ -88,7 +88,6 @@ async function isCommandAvailable(commandName: string): Promise<boolean> {
 // Disabled while not properly documented
 
   if (os.platform() !== "win32") {
-  //TODO remove this ↑ condition when this works on windows
   if (
     useAdb &&
     (await isCommandAvailable("nmap")) &&
@@ -107,7 +106,6 @@ async function isCommandAvailable(commandName: string): Promise<boolean> {
     );
     console.error("\x1b[36m[ADB FINDER]\x1b[0m Skipping finder now...");
   }
-//TODO remove these when this works on windows
 } else {
    if(
     useAdb &&
