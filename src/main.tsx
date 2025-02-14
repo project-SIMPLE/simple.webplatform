@@ -1,4 +1,5 @@
 import ReactDOM from 'react-dom/client';
+import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './index.css';
 import { ScreenModeProvider } from './components/ScreenModeContext/ScreenModeContext';
@@ -31,10 +32,8 @@ const container = document.getElementById('root')!;
 const root = ReactDOM.createRoot(container);
 
 root.render(
-  // <Provider store={store}>  
-  // <React.StrictMode>
+   <React.StrictMode>
       <App />
-  //  </React.StrictMode> 
-    // </Provider>
+    </React.StrictMode> 
 );
 
