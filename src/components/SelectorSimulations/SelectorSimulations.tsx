@@ -2,12 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import { useEffect, useState } from 'react';
 import Button from '../Button/Button';
-import VRHeadset from '../VRHeadset/VRHeadset';
 import { useTranslation } from 'react-i18next';
 import Footer from '../Footer/Footer';
 import Header from '../Header/Header';
 const SelectorSimulations = () => {
-  const { ws, isWsConnected, simulationList, playerList, gama } = useWebSocket();
+  const { ws, isWsConnected, simulationList, gama } = useWebSocket();
   const [directoryPath, setDirectoryPath] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [showCustomInput, setShowCustomInput] = useState<boolean>(false); 
@@ -41,18 +40,6 @@ const SelectorSimulations = () => {
     }
   };
 
-  const handleRemove = (index: number) => {
-    if (ws !== null) {
-      ws.send(JSON.stringify({"type": "remove_player_headset", "id": index}));
-    } else {
-      console.error("WS is null");
-    }
-  };
-
-  const handleRestart = (index: number) => {
-    console.log(`Restart button clicked for headset ${index}`);
-    // Logic for restart button ...
-  };
   // Loop which try to connect to Gama
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -82,7 +69,7 @@ const SelectorSimulations = () => {
     <div className="flex flex-col items-center justify-between h-full">
       
       <Header needsMiniNav/> 
-       {/* header also has a prop to specify whether it should use the small version of the navigation */}
+       {/*         ↑ prop to specify whether it should use the small version of the navigation bar */}
       
       
 
@@ -97,7 +84,7 @@ const SelectorSimulations = () => {
         
         // Display simulations cards 
         <div className="flex flex-col items-center justify-center w-5/6 h-2/3 rounded-md" style={{"backgroundColor" : "#A1D2FF"}}>
-          <h2>{t('select_simulation')} </h2>   {/* //TODO add translation for Viet & Thai language */}
+          <h2>{t('select_simulation')} </h2>   {/* //TODO add translation for Thai language */}
          
         <div className="flex items-center justify-between">
           
@@ -152,7 +139,7 @@ const SelectorSimulations = () => {
                 
               >
                 <h2
-                  className="text-gray-500 text-sm text-center "
+                  className="text-gray-500 text-sm text-center"
                   style={{
                     marginTop: '80px',
                   }}
