@@ -120,7 +120,7 @@ async function isCommandAvailable(commandName: string): Promise<boolean> {
   } else {
     console.error(
       "\x1b[36m[ADB FINDER]\x1b[0m One or several of those tools are not available on your computer:",
-      "zsh, nmap, adb"
+      "nmap, adb"
     );
     console.error("\x1b[36m[ADB FINDER]\x1b[0m Skipping finder now...");
   }
