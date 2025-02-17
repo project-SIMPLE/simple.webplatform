@@ -7,8 +7,8 @@ import SimulationManager from './components/SimulationManager/SimulationManager'
 import Navigation from './components/Navigation/Navigation';
 import SelectorSimulations from './components/SelectorSimulations/SelectorSimulations';
 import WebSocketManager from './components/WebSocketManager/WebSocketManager';
-import StreamPlayerScreen from './components/StreamPlayerScreen/StreamPlayerScreen';
 import './i18next/i18n';
+import StreamPlayerScreenControl from './components/StreamPlayerScreen/StreamPlayerScreenControl';
 
 
 const App = () => {
@@ -20,7 +20,7 @@ const App = () => {
                     <Route index element={<SelectorSimulations />} />
                     <Route path="navigation" element={<Navigation />} />
                     <Route path="simulationManager" element={<SimulationManager />} />
-                    <Route path="streamPlayerScreen" element={ <StreamPlayerScreen /> } />
+                    <Route path="streamPlayerScreen" element={ <StreamPlayerScreenControl /> } />
                 </Routes>
               </ScreenModeProvider>
             </WebSocketManager>
