@@ -15,7 +15,7 @@ return (
     <div className="flex" >
   <button
     onClick={onClick}
-    className={`${bgColor} text-white py-1 px-1 rounded-lg flex flex-col items-center justify-center gap-1 ${className}`}
+    className={`${bgColor} text-white py-1 px-1 rounded-lg flex flex-row items-center justify-center gap-1 ${className}`}
     style={customStyle}
   >
     {icon}
