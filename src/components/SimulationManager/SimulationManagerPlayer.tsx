@@ -5,7 +5,8 @@ import Button from "../Button/Button";
 import { useState } from 'react';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import trashbin from '/src/svg_logos/trashbin.svg';
-import cross from '/src/svg_logos/x_cross.svg'
+import cross from '/src/svg_logos/x_cross.svg';
+import visibility from "/src/svg_logos/visibility.svg";
 interface PlayerProps {
   Playerkey: string
   selectedPlayer?: any;
@@ -66,9 +67,9 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
             <div className="rounded-md shadow-lg w-72 text-center z-20" onClick={(e)=> e.stopPropagation()}  > {/*this prevent event bubbling, so that clicking the child div does not close the popup window*/}
               <div className="p-3 flex items-top bg-slate-300 rounded-t-md justify-between">
                 <h2 className="text-lg font-semibold"  >
-                  informations de {Playerkey}:  {/* //TODO ajouter les traduction ici  */}
+                   {Playerkey}:  {/* //TODO ajouter les traduction ici  */}
                 </h2> {/* //TODO ajouter couleur du joueur ici pour que ça soit plus parlant  */}
-                <img src={cross} alt="close cross" className="w-8 h-8 rounded-full cursor-pointer mix-blend-difference hover:bg-gray-800" onClick={toggleShowPopUpManageHeadset} />
+                <img src={cross} alt="X" className="w-8 h-8 rounded-full cursor-pointer mix-blend-difference hover:bg-gray-800" onClick={toggleShowPopUpManageHeadset} />
               </div>
 
               <div className='bg-slate-200 p-2 text-left'>
@@ -115,8 +116,8 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
           {/*//TODO add translation for connection status */}
           <div className={`rounded-b-xl justify-center w-full ${selectedPlayer.connected ? 'bg-green-500' : 'bg-red-500'}`}>
             {selectedPlayer.connected ?
-              selectedPlayer.in_game ? <p>en jeu</p> :
-                <p>connecté</p> : <p>erreur</p>}
+              selectedPlayer.in_game ? <p>{t("in_game")}</p> :
+                <p>{t("connected")}</p> : <p>{t("error")}</p>}
           </div>
         </div>
 

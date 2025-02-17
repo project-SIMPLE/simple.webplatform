@@ -22,6 +22,9 @@
     "Monitoring Screen": "Gama Screen",
     "Shared Screen": "Shared Screen",
     "loading": "Loading simulations..", 
-    "ask_launch_gama": "Please launch Gama.."
+    "ask_launch_gama": "Please launch Gama..",
+    "in_game": "In game",
+    "connected": "Connected",
+    "error": "Error"
   }
   

@@ -22,7 +22,9 @@
     "Shared Screen": "Màn hình chia sẻ",
     "loading": "Đang tải mô phỏng..", 
     "ask_launch_gama": "Hãy chạy gama..",
-    "select_simulation" : "Chọn trình mô phỏng để khởi chạy"
-    
+    "select_simulation" : "Chọn trình mô phỏng để khởi chạy",
+    "in_game": "Trong trò chơi",
+    "connected": "Đã kết nối", 
+    "error": "Lỗi"
 
 }
