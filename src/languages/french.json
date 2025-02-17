@@ -25,7 +25,7 @@
     "ask_launch_gama": "Veuillez lancer, Gama..",
     "in_game": "En jeu",
     "connected" : "Connecté",
-    "error" : "Erreur"
-    
+    "error" : "Erreur",
+    "simulation_loading": "Chargement de la simulation"
 
 }
