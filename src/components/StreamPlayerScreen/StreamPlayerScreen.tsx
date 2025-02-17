@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useScreenModeState } from "../ScreenModeContext/ScreenModeContext";
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
 import Button from "../Button/Button";
+
 const StreamPlayerScreen = () => {
   const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen"); // Get the screen mode display from the context
   const channel = new BroadcastChannel("simulation-to-stream"); // get the data from the simulation manager control panel
@@ -21,15 +22,6 @@ const StreamPlayerScreen = () => {
   // Rendu basé sur la valeur de screenModeDisplay
   return (
     <>
-
-    
-<Button //TODO retirer ce bouton de debug
-              onClick={() => { console.log(screenModeDisplay); }}
-              text={"Check display mode"}
-              bgColor="bg-green-500"
-              showText={true}
-              />
-
       <VideoStreamManager targetRef={videoContainerRef} />
 
       {screenModeDisplay === "shared_screen" && (
