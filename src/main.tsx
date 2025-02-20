@@ -1,15 +1,15 @@
 import ReactDOM from 'react-dom/client';
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import './i18next/i18n';
 import './index.css';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ScreenModeProvider } from './components/ScreenModeContext/ScreenModeContext';
 import SimulationManager from './components/SimulationManager/SimulationManager';
 import Navigation from './components/Navigation/Navigation';
 import SelectorSimulations from './components/SelectorSimulations/SelectorSimulations';
 import WebSocketManager from './components/WebSocketManager/WebSocketManager';
-import './i18next/i18n';
 import StreamPlayerScreenControl from './components/StreamPlayerScreen/StreamPlayerScreenControl';
-
+import StreamPlayerScreen from './components/StreamPlayerScreen/StreamPlayerScreen';
 
 const App = () => {
   return (
@@ -20,7 +20,8 @@ const App = () => {
                     <Route index element={<SelectorSimulations />} />
                     <Route path="navigation" element={<Navigation />} />
                     <Route path="simulationManager" element={<SimulationManager />} />
-                    <Route path="streamPlayerScreen" element={ <StreamPlayerScreenControl /> } />
+                    <Route path="streamPlayerScreen" element={ <StreamPlayerScreen /> } />
+                    <Route path="streamPlayerScreenControl" element={ <StreamPlayerScreenControl /> } />
                 </Routes>
               </ScreenModeProvider>
             </WebSocketManager>
@@ -32,8 +33,8 @@ const container = document.getElementById('root')!;
 const root = ReactDOM.createRoot(container);
 
 root.render(
-   <React.StrictMode>
+  //  <React.StrictMode>
       <App />
-    </React.StrictMode> 
+    // </React.StrictMode>  
 );
 
