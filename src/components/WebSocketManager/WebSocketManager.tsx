@@ -118,12 +118,8 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
                     case 'get_simulation_by_index':
                         setSelectedSimulation(data.simulation);
                         break;
-                    case 'setMonitorScreen':
-
-
-
+                    case 'screen_control':
                         break;
-
                     default:
                         console.warn('[WebSocketManager] Message not processed', data);
                 }
