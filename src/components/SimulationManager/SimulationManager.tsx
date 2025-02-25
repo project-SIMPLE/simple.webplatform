@@ -197,7 +197,7 @@ const SimulationManager = () => {
                           }/>
                           
                         
-                        <Link to={"../streamPlayerScreen"} className='bg-white rounded-lg'>
+                        <Link to={"../streamPlayerScreenControl"} className='bg-white rounded-lg'>
                           <Button bgColor='bg-purple-500'
                             text="Displays"
                             icon={<img src={visibility} />}
