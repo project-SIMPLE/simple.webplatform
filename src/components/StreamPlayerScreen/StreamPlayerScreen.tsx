@@ -2,17 +2,56 @@ import { useEffect, useRef, useState } from "react";
 import { useScreenModeState } from "../ScreenModeContext/ScreenModeContext";
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
 import Button from "../Button/Button";
-import socket  from "../../socket";
+import visibility_off from '../../svg_logos/visibility_off.svg';
+import gama from '/images/gama_example.png?url';
 const StreamPlayerScreen = () => {
   const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen"); // Get the screen mode display from the context
   const videoContainerRef = useRef<HTMLDivElement>(null); // Add ref for the target div
+  const placeholdercontrol2 = ` size-full bg-green-100 items-center justify-center flex flex-col`
+  const placeholdercontrol = ` size-full items-center justify-center flex flex-col `
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [isWsConnected, setIsWsConnected] = useState<boolean>(false);
+  const host = window.location.hostname;
+  const port = process.env.MONITOR_WS_PORT || '8001';
+  const socket = new WebSocket(`ws://${host}:${port}`);
+
 
   useEffect(() => {
-    socket.on('message', (newState) => {
-        console.log("received",newState);
-        setScreenModeDisplay(newState);
-    });
-});
+
+      setWs(socket);
+      socket.onopen = () => {
+          console.log('[TVControlSocket] WebSocket connected to backend');
+          setIsWsConnected(true);
+      };
+
+      socket.onmessage = (event: MessageEvent) => {
+          let data = JSON.parse(event.data);
+          if (typeof data == "string") {
+              try {
+                  data = JSON.parse(data);
+              } catch (e) {
+                  console.error("Can't JSON parse this received string", data);
+              }
+          }
+
+          if (data.type == 'screen_control') {
+              console.log(data);
+              setScreenModeDisplay(data.display_type);
+
+          }
+      }
+
+      socket.onclose = () => {
+          console.log('[WebSocketManager] WebSocket disconnected');
+          setIsWsConnected(false);
+      };
+
+      return () => {
+          if (socket) {
+              socket.close();
+          }
+      };
+  }, []);
 
   // Rendu basé sur la valeur de screenModeDisplay
   return (
@@ -21,17 +60,31 @@ const StreamPlayerScreen = () => {
 
       {screenModeDisplay === "shared_screen" && (
         <div className="flex flex-wrap justify-center items-center h-screen bg-slate-100" ref={videoContainerRef}>
-          shared screen
+          <div className='flex flex-row items-center justify-center h-full w-full'>
+            <div className='w-5/6 h-5/6 rounded-md place-items-center justify-center grid grid-rows-2 grid-cols-3' style={{ backgroundColor: '#a1d2ff' }}>
+              <div className={`${placeholdercontrol} `}> <img src={visibility_off} className='mix-blend-difference size-40' />  </div>
+              <div className={`${placeholdercontrol2} `}> <img src={visibility_off} className='mix-blend-difference size-40' />  </div>
+              <div className={`${placeholdercontrol} `}> <img src={visibility_off} className='mix-blend-difference size-40' />  </div>
+              <div className={`${placeholdercontrol2} `}> <img src={visibility_off} className='mix-blend-difference size-40' />  </div>
+              <div className={`${placeholdercontrol} `}> <img src={visibility_off} className='mix-blend-difference size-40' />  </div>
+              <div className={`${placeholdercontrol2} `}> <img src={visibility_off} className='mix-blend-difference size-40' />  </div>
+            </div>
 
+            <div className='flex flex-col'>
+              <div className={`${placeholdercontrol2} `}> <img src={gama} className=' border-2 border-black' />  </div>
+            </div>
+          </div>
         </div>
 
 
       )}
 
       {screenModeDisplay === "gama_screen" && (
-        <div className="bg-gray-400 relative w-full h-screen flex">
-          gama screen
-          {/* Your content for gama_screen */}
+        <div className="bg-slate-100 relative w-full h-screen flex">
+
+          <div className="size-full items-center justify-center flex bg-slate-100" > <img src={gama} className="border-2 border-black" />
+
+          </div>
         </div>
       )}
 
