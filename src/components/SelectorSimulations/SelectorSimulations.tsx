@@ -104,7 +104,7 @@ const SelectorSimulations = () => {
           <div className="grid grid-cols-3 mt-5 mb-8" style={{ gap: '55px' }}>
             {simulationList.map((simulation, index) => (
               <div
-              className={`bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer ${
+              className={`bg-gray-300 shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer ${
                 !gama.connected ? 'opacity-50 cursor-not-allowed' : ''
               }`}                
               
