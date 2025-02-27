@@ -9,6 +9,7 @@ import {
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 
 import {HEADSET_COLOR} from "../../api/constants.ts";
+import { read } from "fs";
 
 const host: string = window.location.hostname;
 //const port: string = process.env.VIDEO_WS_PORT || '8082';
@@ -119,6 +120,8 @@ const VideoStreamManager = ({targetRef}: VideoStreamManagerProps) => {
       // Check if h264 is supported
       codec: "avc1.4D401E",
     }).then((supported) => {
+      console.log(supported)
+      console.log("COUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU")
       if (supported.supported) {
         const decoder = new WebCodecsVideoDecoder({
           codec:  ScrcpyVideoCodecId.H264,
