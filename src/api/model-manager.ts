@@ -68,6 +68,10 @@ class ModelManager {
         this.activeModel = this.models[index];
     }
 
+    setActiveModelByFilePath(filePath: string) {
+        return this.models.find(model => model.getModelFilePath() === filePath);
+    }
+
     getActiveModel(){
         return this.activeModel !== undefined ? this.activeModel : this.models[0];
     }
