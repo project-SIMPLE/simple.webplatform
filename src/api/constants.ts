@@ -80,8 +80,7 @@ export const GAMA_ERROR_MESSAGES = [
     "UnableToExecuteRequest"
 ];
 
-export const HEADSET_COLOR = { //TODO retirer la couleur 36 présente a des fins de débugage
-    "36": "blue",
+export const HEADSET_COLOR = {
     "101": "blue",
     "102": "red",
     "103": "green",
