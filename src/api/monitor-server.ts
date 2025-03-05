@@ -86,7 +86,7 @@ export class MonitorServer {
                         break;
 
                     case "screen_control": //TODO
-                        const messageString = JSON.parse(Buffer.from(message).toString()); //can't parse the payload of the jsonMonitor for some reason
+                        const messageString = JSON.parse(Buffer.from(message).toString()); //? can't parse the payload of the jsonMonitor for some reason
                         logWarn(`[MONITOR SERVER] data recieved:${messageString.display_type}`);
                         this.sendMessageByWs({type: "screen_control", display_type: messageString.display_type});
                         break;
@@ -124,26 +124,21 @@ export class MonitorServer {
                         }
                         break;
 
-                    // TODO : Add way to change layout on M2L2 main screen
-                    // in the component that displays the monitoring screens, create a useEffect that listens to this variable
-                    // directly use the variable in the component with conditional rendering
-                    // case "set_gama_screen":
-                    //     const success = ws.send(JSON.stringify({
-                    //         type: "setMonitorScreen",
-                    //         mode: 'gama_screen'
-                    //     }));
-                    //     if (!success) {logError('[Backpressure detected. Data not sent.')}
-                    //     break;
-                    //
-                    // //
-                    // case "set_shared_screen":
-                    //     log("shared screen !");
-                    //     const success = ws.send(JSON.stringify({
-                    //         type: "setMonitorScreen",
-                    //         mode: 'shared_screen'
-                    //     }));
-                    //     if (!success) {logError('Backpressure detected. Data not sent.')}
-                    //     break;
+                        
+                        case "send_simulation":
+                            const simulationFromStream = JSON.parse(Buffer.from(message).toString());
+                            // console.log(JSON.stringify(simulationFromStream));
+                            console.log("simulationFromStream.type",simulationFromStream.simulation.model_file_path)
+                            console.log("[MONITOR SERVER] case send_simulation: JSON recieved");
+                            this.controller.model_manager.setActiveModelByFilePath(simulationFromStream.simulation.model_file_path);
+                            const selectedSimulation = this.controller.model_manager.getActiveModel();
+                            console.log(selectedSimulation.getJsonSettings()); //TODO
+                            
+                            this.sendMessageByWs({
+                                type: "get_simulation_by_index",
+                                simulation: selectedSimulation.getJsonSettings()
+                            }, ws);
+                            break;
 
                     default:
                         logWarn("The last message received from the monitor had an unknown type.");
