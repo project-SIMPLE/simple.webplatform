@@ -122,11 +122,6 @@ const SimulationManager = () => {
                 return (
 
                   <div key={key} className="flex flex-col items-center" >
-                    {/* <VRHeadset
-                      key={key}
-                      selectedPlayer={player}
-                      playerId={key} />  */}
-
 
                     <SimulationManagerPlayer
                       Playerkey={key}
