@@ -125,7 +125,7 @@ const SelectorSimulations = () => {
 
         // ws.send(JSON.stringify({ type: 'get_simulation_by_index', simulationIndex: index }));
         console.log("[SELECTOR SIMULATIONS] json settings, subproject.length = 0",simulationList[index])
-        ws.send(JSON.stringify({ type: 'send_simulation', simulation: simulationList[1] }));
+        ws.send(JSON.stringify({ type: 'send_simulation', simulation: simulationList[index] }));
         setTimeout(() => {
           navigate('/simulationManager');
         }, 100);
