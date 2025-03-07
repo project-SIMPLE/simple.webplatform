@@ -7,19 +7,19 @@ import Footer from '../Footer/Footer';
 import Header from '../Header/Header';
 import SimulationList from './SimulationList';
 const SelectorSimulations = () => {
-  const { ws, isWsConnected, gama, simulationList } = useWebSocket();
+  const { ws, isWsConnected, gama } = useWebSocket();
   const [directoryPath, setDirectoryPath] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const [showCustomInput, setShowCustomInput] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<string>('Waiting for connection ...');
   const { t } = useTranslation();
   const [subProjectsList, setSubProjectsList] = useState<any[]>([]); //? unused for now, but will be used to store the sub-projects list
+  const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
 
-
-  let simulationList2 = [ //TODO remettre "simulationList" ça dans les brackets ligne 9, enlever cette valeur débug
+  let simulationList = [ //TODO remettre "simulationList" ça dans les brackets ligne 9, enlever cette valeur débug
     {
       "type": "catalog",
       "name":"test catalog",
+      "splashscreen" : "learning-packages/demo/splashscreen/demoOne.png",
       "entries": [
         {
           "type": "json_settings",
@@ -111,20 +111,19 @@ const SelectorSimulations = () => {
       return;
     }
 
-    if (subProjectsList.length <= 0) { //no subproject is selected
+    if (subProjectsList.length <= 0) { //no subproject is selected, we either enter a folder or launch a simulation
       if (simulationList[index].type == "catalog") { //?  we additionaly check if the simulation is a catalog, not necessary but allows for adding extra types
         //@ts-ignore                                                                                ↓ this is a catalog, which means it must have an "entries" attribute
         console.log(`[HANDLE SIMULATION]: catalog detected, subprojectList: ${JSON.stringify(simulationList[index].entries)}`);
         try {
           //@ts-ignore        ↓ this is a list, so assigning it to another list should be fine
           setSubProjectsList(simulationList[index].entries);
+          //@ts-ignore
+          setSelectedSplashscreen(simulationList[index].splashscreen);
           console.log("[SELECTOR SIMULATION] handlesimulation, simulationList[index].type == catalog", subProjectsList[index].name);
-        } // in any case, we catch the error and log it if any
+        }
         catch (e) { console.log("no subprojects", e); }
       }else if (simulationList[index].type == "json_settings") {
-
-        // ws.send(JSON.stringify({ type: 'get_simulation_by_index', simulationIndex: index }));
-        console.log("[SELECTOR SIMULATIONS] json settings, subproject.length = 0",simulationList[index])
         ws.send(JSON.stringify({ type: 'send_simulation', simulation: simulationList[index] }));
         setTimeout(() => {
           navigate('/simulationManager');
@@ -140,7 +139,6 @@ const SelectorSimulations = () => {
 
       } else {
         if (subProjectsList[index].type == "catalog") {
-          console.log(`[HANDLE SIMULATION]: catalog detected, subprojectList: ${JSON.stringify(subProjectsList[index].entries)}`);
           try {
             //@ts-ignore        ↓ this is a list, so assigning it to another list should be fine
             setSubProjectsList(subProjectsList[index].entries);
@@ -196,14 +194,14 @@ return (
       </div>
     ) : (
 
-      // Subproject group display card
+      // disable  
       <div className="flex flex-col items-center justify-center w-5/6 h-2/3 rounded-md relative" style={{ "backgroundColor": "#A1D2FF" }}>
         {subProjectsList.length > 0 ? <div
           className={`bg-white shadow-lg rounded-xl p-6 flex flex-col items-center size-12 cursor-pointer ${!gama.connected ? 'opacity-50 cursor-not-allowed' : ''
             }`}
 
           style={{
-            backgroundImage: `url(/images/codecode.png)`,
+            backgroundImage: `url(${selectedSplashscreen ? selectedSplashscreen : "/images/codecode.png"})`,
             backgroundSize: 'cover',
             width: '48px',
             height: '48px',
@@ -215,9 +213,9 @@ return (
           onClick={() => setSubProjectsList([])}
         >
 
-
-        </div> : null}
-        {subProjectsList.length > 0 ? <h2>{t('select_subproject')}</h2> : <h2>{t('select_simulation')} </h2>}
+        </div>
+         : null}
+        {subProjectsList.length > 0 ? <h2 className='font-medium'>{t('select_subproject')}</h2> : <h2>{t('select_simulation')} </h2>}
 
         {/* //TODO add translation for Thai language */}
 
@@ -229,40 +227,6 @@ return (
               : <SimulationList list={simulationList} handleSimulation={handleSimulation} gama={gama} />}
           </div>
 
-          {/* Right Button from the grid 
-          //TODO unused dev mode, remove it maybe ?
-          */}
-          {/* {import.meta.env.VITE_APP_ENV === 'development' && (
-            <div className="ml-20 ">
-
-              <div
-              className={`bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer ${
-                !gama.connected ? 'opacity-50 cursor-not-allowed' : ''
-              }`}                
-              
-              style={{
-                  backgroundImage: `url(/images/codecode.png)`,
-                  backgroundSize: 'cover',
-                  width: '100px',
-                  height: '100px',
-                  marginBottom:'13px'
-                }}
-                // key={index}
-                onClick={() => setShowCustomInput(!showCustomInput)}
-                
-              >
-                <h2
-                  className="text-gray-500 text-sm text-center"
-                  style={{
-                    marginTop: '80px',
-                  }}
-                >
-                  DevMode
-                </h2>
-              </div>
-
-            </div>
-          )} */}
         </div>
 
 
@@ -278,56 +242,6 @@ return (
 
 
     )}
-
-
-    {/* Show hidden sections*/}
-    {showCustomInput && (
-
-      // Section: path to start a simulation
-      <div className="mt-4 w-full" style={{ marginTop: '20px', marginBottom: '-25px' }} >
-
-        <h1 className="text-lg font-bold mb-4"> {t('enter_path')} </h1>
-        <input
-          type="text"
-          value={directoryPath}
-          onChange={(e) => setDirectoryPath(e.target.value)}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700"
-          placeholder="C:/path/to/your/project"
-        />
-        <Button
-          onClick={() => {
-            if (isWsConnected && ws !== null) {
-              ws.send(JSON.stringify({ type: 'get_simulation_informations' }));
-            } else {
-              console.error('WebSocket is not connected');
-            }
-          }}
-          text={t('launch_path')}
-          bgColor="bg-green-500"
-          showText={true}
-        />
-
-
-        {/* // Section: Get simulation informations */}
-        <div className="mt-7">
-          <h1 className="text-lg font-bold mb-5"> {t('get_sim_infos')} </h1>
-          <Button
-            onClick={() => {
-              if (isWsConnected && ws !== null) {
-                ws.send(JSON.stringify({ type: 'get_simulation_informations' }));
-              } else {
-                console.error('WebSocket is not connected');
-              }
-            }}
-            text={t('get_sim_infos')}
-            bgColor="bg-green-500"
-            showText={true}
-          />
-        </div>
-      </div>
-
-    )}
-
 
 
     <Footer />

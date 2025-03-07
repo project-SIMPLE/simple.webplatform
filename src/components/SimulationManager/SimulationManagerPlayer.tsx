@@ -125,7 +125,6 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
       </>
 
     );
-    66
 
 
 

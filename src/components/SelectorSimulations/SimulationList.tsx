@@ -18,7 +18,7 @@ return (
                     }`}
 
                   style={{
-                    backgroundImage: simulation.type == "json_settings" ? `url(${simulation.splashscreen})` : `url(/images/codecode.png)`,
+                    backgroundImage: simulation.type == "json_settings" ? `url(${simulation.splashscreen})` : simulation.splashscreen ? `url(${simulation.splashscreen})` : `url(/images/codecode.png)`,
                     backgroundSize: 'cover',
                     width: '100px',
                     height: '100px',
@@ -34,8 +34,9 @@ return (
                     style={{
                       marginTop: '80px',
                     }}
-                  >
-                    {simulation.type == "json_settings" ? simulation.name : "sub-projects"}
+                  >                     
+                  {/*                                                                                                                     ↓ added one for folders to start at 1 instead of 0 */}                                                        
+                    {simulation.type == "json_settings" ? simulation.name : simulation.name ? simulation.name : `subprojects folder n°${index+1}`}
                   </h2>
                 </div>
               ))}
