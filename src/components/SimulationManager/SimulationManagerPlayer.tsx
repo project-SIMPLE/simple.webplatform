@@ -1,12 +1,8 @@
 import VRHeadset from "../VRHeadset/VRHeadset";
 import { useTranslation } from "react-i18next";
-import Footer from "../Footer/Footer";
-import Button from "../Button/Button";
 import { useState } from 'react';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
-import trashbin from '/src/svg_logos/trashbin.svg';
 import cross from '/src/svg_logos/x_cross.svg';
-import visibility from "/src/svg_logos/visibility.svg";
 interface PlayerProps {
   Playerkey: string
   selectedPlayer?: any;
@@ -18,7 +14,7 @@ interface PlayerProps {
 const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerId }: PlayerProps) => {
   const { t } = useTranslation();
 
-  const { ws, gama, playerList, selectedSimulation } = useWebSocket(); // `removePlayer` is now available
+  const { ws,  playerList } = useWebSocket(); // `removePlayer` is now available
 
 
   const [showPopUpManageHeadset, setshowPopUpManageHeadset] = useState(false);
@@ -68,8 +64,8 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
               <div className="p-3 flex items-top bg-slate-300 rounded-t-md justify-between">
                 <h2 className="text-lg font-semibold"  >
                    {Playerkey}:  {/* //TODO ajouter les traduction ici  */}
-                </h2> {/* //TODO ajouter couleur du joueur ici pour que ça soit plus parlant  */}
-                <img src={cross} alt="X" className="w-8 h-8 rounded-full cursor-pointer mix-blend-difference hover:bg-gray-800" onClick={toggleShowPopUpManageHeadset} />
+                </h2>
+                <img src={cross} alt="X" className={`w-8 h-8 rounded-full cursor-pointer mix-blend-difference hover:bg-gray-800 ${className}`} onClick={toggleShowPopUpManageHeadset} />
               </div>
 
               <div className='bg-slate-200 p-2 text-left'>
@@ -78,7 +74,7 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
                 <p>{t('Hour of connection')} : {selectedPlayer.date_connection}</p>
                 <p>{t('In game')} : {String(selectedPlayer.in_game)}</p>
               </div>
-
+              {/* //*   */}
               <div className="bg-red-300 pb-3 rounded-b-md">
                 <button
                     className="bg-red-500 text-white px-4 py-2 mt-4 rounded-l-md rounded-r-none"
@@ -107,13 +103,7 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
             key={Playerkey}
             selectedPlayer={selectedPlayer}
             playerId={Playerkey} />
-          {/* <Button
-              bgColor='bg-red-500'
-              icon={<img src={trashbin}/>}
-              onClick={toggleShowPopUpManageHeadset}/> */}
 
-
-          {/*//TODO add translation for connection status */}
           <div className={`rounded-b-xl justify-center w-full ${selectedPlayer.connected ? 'bg-green-500' : 'bg-red-500'}`}>
             {selectedPlayer.connected ?
               selectedPlayer.in_game ? <p>{t("in_game")}</p> :
