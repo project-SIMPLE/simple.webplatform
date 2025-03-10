@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import Footer from '../Footer/Footer';
 import Header from '../Header/Header';
 import SimulationList from './SimulationList';
+import arrow_back from "/src/svg_logos/arrow_back.svg";
 const SelectorSimulations = () => {
   const { ws, isWsConnected, gama } = useWebSocket();
   const [directoryPath, setDirectoryPath] = useState<string>('');
@@ -196,25 +197,27 @@ return (
 
       // disable  
       <div className="flex flex-col items-center justify-center w-5/6 h-2/3 rounded-md relative" style={{ "backgroundColor": "#A1D2FF" }}>
-        {subProjectsList.length > 0 ? <div
-          className={`bg-white shadow-lg rounded-xl p-6 flex flex-col items-center size-12 cursor-pointer ${!gama.connected ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+        {subProjectsList.length > 0 ? 
+        <div
+          className={`shadow-lg rounded-xl flex flex-col items-center absolute justify-center size-14 cursor-pointer`}
 
           style={{
             backgroundImage: `url(${selectedSplashscreen ? selectedSplashscreen : "/images/codecode.png"})`,
             backgroundSize: 'cover',
-            width: '48px',
-            height: '48px',
+            // width: '48px',
+            // height: '48px',
             zIndex: 1,
-            position: 'absolute',
+            // position: 'absolute',
             top: '10px',
             left: '10px',
           }}
           onClick={() => setSubProjectsList([])}
         >
+           <img src={arrow_back} className='rounded-full bg-slate-700 opacity-75 size-8' /> 
 
         </div>
          : null}
+
         {subProjectsList.length > 0 ? <h2 className='font-medium'>{t('select_subproject')}</h2> : <h2>{t('select_simulation')} </h2>}
 
         {/* //TODO add translation for Thai language */}
@@ -226,6 +229,7 @@ return (
               <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
               : <SimulationList list={simulationList} handleSimulation={handleSimulation} gama={gama} />}
           </div>
+
 
         </div>
 
