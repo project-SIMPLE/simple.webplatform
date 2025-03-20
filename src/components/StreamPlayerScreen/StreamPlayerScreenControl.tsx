@@ -2,7 +2,7 @@ import Header from '../Header/Header';
 import { useState, useEffect } from 'react';
 import visibility_off from '../../svg_logos/visibility_off.svg';
 import Button from '../Button/Button';
-
+import VideoStreamManager from '../WebSocketManager/VideoStreamManager';
 const StreamPlayerScreenControl = () => {
     const placeholdercontrol2 = ` size-full bg-green-100 items-center justify-center flex flex-col`
     const placeholdercontrol = ` size-full items-center justify-center flex flex-col `
@@ -74,13 +74,8 @@ const StreamPlayerScreenControl = () => {
             <Header needsMiniNav />
             <h1 className='text-center'>Controls screen placeholder</h1>
             <div className='flex flex-row items-center justify-center h-full'>
-                <div className='w-5/6 h-5/6 rounded-md place-items-center justify-center grid grid-rows-2 grid-cols-3' style={{ backgroundColor: '#a1d2ff' }}>
-                    <div className={`${placeholdercontrol} `}> <img src={visibility_off} className='mix-blend-difference size-40' />  </div>
-                    <div className={`${placeholdercontrol2} `}> <img src={visibility_off} className='mix-blend-difference size-40' />  </div>
-                    <div className={`${placeholdercontrol} `}> <img src={visibility_off} className='mix-blend-difference size-40' />  </div>
-                    <div className={`${placeholdercontrol2} `}> <img src={visibility_off} className='mix-blend-difference size-40' />  </div>
-                    <div className={`${placeholdercontrol} `}> <img src={visibility_off} className='mix-blend-difference size-40' />  </div>
-                    <div className={`${placeholdercontrol2} `}> <img src={visibility_off} className='mix-blend-difference size-40' />  </div>
+                <div className='w-5/6 h-5/6 rounded-md flex flex-col justify-center ' style={{ backgroundColor: '#a1d2ff' }}>
+                    <VideoStreamManager/>
                 </div>
                 <div className='flex flex-col'>
                     <h2>tv display mode</h2>
