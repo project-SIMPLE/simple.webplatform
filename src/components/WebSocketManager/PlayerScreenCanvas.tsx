@@ -30,7 +30,8 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder }: PlayerScreenCanvasPro
     return (
         !isPlaceholder ?
         <div id={id} ref={canvasref} className={`border-4 bg-orange-400 ${isColoredHeadset ?  bgColor : "bg-slate-400 border-slate-300"} p-2 rounded-lg h-fit items-center justify-center flex flex-col`}>
-            <div>
+            <div> 
+         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
                 <p>player:{id}</p>
                 <p>identifier:{ipIdentifier} couleur: ({HEADSET_COLOR[ipIdentifier]})</p>
             </div>
