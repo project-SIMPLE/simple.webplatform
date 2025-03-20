@@ -80,7 +80,7 @@ export const GAMA_ERROR_MESSAGES = [
     "UnableToExecuteRequest"
 ];
 
-export const HEADSET_COLOR = {
+export const HEADSET_COLOR: Record<string,string> = {
     "101": "blue",
     "102": "red",
     "103": "green",
