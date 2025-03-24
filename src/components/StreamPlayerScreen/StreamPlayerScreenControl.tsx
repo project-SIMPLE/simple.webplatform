@@ -1,14 +1,10 @@
 import Header from '../Header/Header';
 import { useState, useEffect } from 'react';
-import visibility_off from '../../svg_logos/visibility_off.svg';
 import Button from '../Button/Button';
 import VideoStreamManager from '../WebSocketManager/VideoStreamManager';
 const StreamPlayerScreenControl = () => {
-    const placeholdercontrol2 = ` size-full bg-green-100 items-center justify-center flex flex-col`
-    const placeholdercontrol = ` size-full items-center justify-center flex flex-col `
+
     const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen");
-    const channel = new BroadcastChannel('simulation-to-stream'); //using the broadcast api to update display type in the streamPlayerScreen
-    
     const [ws, setWs] = useState<WebSocket | null>(null);
     const [isWsConnected, setIsWsConnected] = useState<boolean>(false);
     const host = window.location.hostname;
@@ -56,12 +52,12 @@ const StreamPlayerScreenControl = () => {
 
 
 
-     const emitDisplay = (displayType: string) => {
-         let payload = {"type":'screen_control', display_type:  displayType};
-         console.log(`emitted message:${JSON.stringify(payload)}`);
-         socket.send((JSON.stringify(payload)));
-        
-     }
+    const emitDisplay = (displayType: string) => {
+        let payload = { "type": 'screen_control', display_type: displayType };
+        console.log(`emitted message:${JSON.stringify(payload)}`);
+        socket.send((JSON.stringify(payload)));
+
+    }
 
 
 
@@ -75,7 +71,7 @@ const StreamPlayerScreenControl = () => {
             <h1 className='text-center'>Controls screen placeholder</h1>
             <div className='flex flex-row items-center justify-center h-full'>
                 <div className='w-5/6 h-5/6 rounded-md flex flex-col justify-center ' style={{ backgroundColor: '#a1d2ff' }}>
-                    <VideoStreamManager/>
+                    <VideoStreamManager needsInteractivity={true} />
                 </div>
                 <div className='flex flex-col'>
                     <h2>tv display mode</h2>
