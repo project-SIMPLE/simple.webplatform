@@ -58,18 +58,29 @@ function createVideoFrameRenderer(): VideoFrameRenderer {
   return new BitmapVideoFrameRenderer();
 }
 
+interface VideoStreamManagerProps {
+  needsInteractivity?: boolean;
+
+}
+
 // The React component
-const VideoStreamManager = () => {
+const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
   const maxElements = 6;
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length;
   const placeholders = Array.from({ length: placeholdersNeeded });
+  const [activeCanvas, setActiveCanvas] = useState<[string, HTMLCanvasElement | undefined ]>(["",undefined])
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
     string,
     ReadableStreamDefaultController
   >();
   const isDecoderHasConfig = new Map<string, boolean>();
+
+
+  const handleActiveCanvas = (headsetIp: string, canvas: HTMLCanvasElement) => {
+    setActiveCanvas([headsetIp,canvas])
+  }
 
   /**
    * Creates a new ReadableStream for receiving and decoding H.264 video data associated with a specific device.
@@ -191,19 +202,22 @@ const VideoStreamManager = () => {
 
   return (
     <>
-    {/* <div className="h-max w-max">     */ }
-      <div className=" grid grid-cols-3 auto-rows-auto gap-4 items-center p-4">
+    {activeCanvas[0] !== null ?
+    <div className="size-full bg-slate-800 opacity-75">
+      <PlayerScreenCanvas canvasSize="size-60"/>
+    </div>    
+    : null}
 
+      <div className=" grid grid-cols-3 auto-rows-auto gap-4 items-center p-4">
+      
         {Object.entries(canvasList).map(([key, canvas]) =>
-          <PlayerScreenCanvas key={key} id={key} canvas={canvas} />
+          <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/>
         )}
         {placeholders.map((_, index) => (
-          <PlayerScreenCanvas isPlaceholder id={index.toString()}/>
+          <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
         ))} 
 
-
       </div>
-  {/* </div> */ }
      </>
   );
 };
