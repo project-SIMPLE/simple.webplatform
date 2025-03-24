@@ -16,181 +16,165 @@ const SelectorSimulations = () => {
   const [subProjectsList, setSubProjectsList] = useState<any[]>([]); //? unused for now, but will be used to store the sub-projects list
   const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
 
-  let simulationList = [ //TODO remettre "simulationList" ça dans les brackets ligne 9, enlever cette valeur débug
+  let simulationList = //TODO remettre "simulationList" ça dans les brackets ligne 9, enlever cette valeur débug
+    [
+      {
+        "name": "Management subprojects",
+        "type": "catalog",
+        "splashscreen": "learning-packages/demo/splashscreen/demoOne.png",
+        "entries": [
+          {
+            "type": "catalog",
+            "name": "Data management",
+            "entries": [
+              {
+                "type": "json_settings",
+                "name": "Static data management",
+                "splashscreen": "./includes/splashscreen/screen.png",
+                "model_file_path": "./Models/Code Examples/Send Static data.gaml",
+                "experiment_name": "vr_xp",
+                "minimal_players": "0",
+                "maximal_players": "1",
+                "selected_monitoring": "gama_screen"
+              },
+              {
+                "type": "json_settings",
+                "name": "Dynamic data management",
+                "splashscreen": "./includes/splashscreen/screen.png",
+                "model_file_path": "./Models/Code Examples/Send Dynamic data.gaml",
+                "experiment_name": "vr_xp",
+                "minimal_players": "0",
+                "maximal_players": "1",
+                "selected_monitoring": "gama_screen"
+              }
+            ]
+          },
+          {
+            "type": "json_settings",
+            "name": "DEM management",
+            "splashscreen": "./includes/splashscreen/screen.png",
+            "model_file_path": "./Models/Code Examples/Send DEM.gaml",
+            "experiment_name": "vr_xp",
+            "minimal_players": "0",
+            "maximal_players": "1",
+            "selected_monitoring": "gama_screen"
+          },
+          {
+            "type": "json_settings",
+            "name": "Water management",
+            "splashscreen": "./includes/splashscreen/screen.png",
+            "model_file_path": "./Models/Code Examples/Send Water data.gaml",
+            "experiment_name": "vr_xp",
+            "minimal_players": "0",
+            "maximal_players": "1",
+            "selected_monitoring": "gama_screen"
+          },
+          {
+            "type": "json_settings",
+            "name": "Message management",
+            "splashscreen": "./includes/splashscreen/screen.png",
+            "model_file_path": "./Models/Code Examples/Send Receive Messages.gaml",
+            "experiment_name": "vr_xp",
+            "minimal_players": "0",
+            "maximal_players": "1",
+            "selected_monitoring": "gama_screen"
+          },
+          {
+            "type": "json_settings",
+            "name": "User interaction management",
+            "splashscreen": "./includes/splashscreen/screen.png",
+            "model_file_path": "./Models/Code Examples/Send Water data.gaml",
+            "experiment_name": "vr_xp",
+            "minimal_players": "0",
+            "maximal_players": "1",
+            "selected_monitoring": "gama_screen"
+          },
+          {
+            "type": "json_settings",
+            "name": "Player movement management",
+            "splashscreen": "./includes/splashscreen/screen.png",
+            "model_file_path": "./Models/Code Examples/Limit Player Movement.gaml",
+            "experiment_name": "vr_xp",
+            "minimal_players": "0",
+            "maximal_players": "1",
+            "selected_monitoring": "gama_screen"
+          },
+          {
+            "type": "json_settings",
+            "name": "Agent animation management",
+            "splashscreen": "./includes/splashscreen/screen.png",
+            "model_file_path": "./Models/Code Examples/Manage Animation for Agents.gaml",
+            "experiment_name": "vr_xp",
+            "minimal_players": "0",
+            "maximal_players": "1",
+            "selected_monitoring": "gama_screen"
+          },
+          {
+            "type": "json_settings",
+            "name": "Multi-player game management",
+            "splashscreen": "./includes/splashscreen/screen.png",
+            "model_file_path": "./Models/Code Examples/Mutli player game.gaml",
+            "experiment_name": "vr_xp",
+            "minimal_players": "2",
+            "maximal_players": "4",
+            "selected_monitoring": "gama_screen"
+          }
+        ]
+      },
+      {
+        "type": "catalog",
+        "name": "Players demos subprojects",
+        "entries": [
+          {
+            "type": "json_settings",
+            "name": "Single-player game demo",
+            "splashscreen": "./includes/splashscreen/screen.png",
+            "model_file_path": "./Models/Demo/Simple Player Game/DemoModelVR.gaml",
+            "experiment_name": "vr_xp",
+            "minimal_players": "0",
+            "maximal_players": "1",
+            "selected_monitoring": "gama_screen"
+          },
+          {
+            "type": "json_settings",
+            "name": "Multi-player game demo",
+            "splashscreen": "./includes/splashscreen/screen.png",
+            "model_file_path": "./Models/Demo/Multi Player Game/RaceVR.gaml",
+            "experiment_name": "vr_xp",
+            "minimal_players": "0",
+            "maximal_players": "1",
+            "selected_monitoring": "gama_screen"
+          }
+        ]
+      },
+      {
+        "type": "catalog",
+        "name": "Unity utility subprojects",
+        "entries": [
+          {
+            "type": "json_settings",
+            "name": "Utility: import geometries from Unity",
+            "splashscreen": "./includes/splashscreen/screen.png",
+            "model_file_path": "./Models/Utilities/ImportGeometriesFromUnity.gaml",
+            "experiment_name": "LoadGeometriesFromUnity",
+            "minimal_players": "1",
+            "maximal_players": "1",
+            "selected_monitoring": "gama_screen"
+          },
+          {
+            "type": "json_settings",
+            "name": "Utility: send geometries to Unity",
+            "splashscreen": "./includes/splashscreen/screen.png",
+            "model_file_path": "./Models/Utilities/SendGeometriesToUnity.gaml",
+            "experiment_name": "SendGeometriesToUnity",
+            "minimal_players": "1",
+            "maximal_players": "1",
+            "selected_monitoring": "gama_screen"
+          }
+        ]
+      }
+    ]
 
-    {
-      "type": "catalog",
-      "name": "Management subprojects",
-      "splashscreen": "learning-packages/demo/splashscreen/demoOne.png",
-      "entries": [
-
-        {
-          "type" : "catalog",
-          "name" : "Data management",
-          "entries" : [
-            {
-              "type": "json_settings",
-              "name": "Static data management",
-              "splashscreen": "./includes/splashscreen/screen.png",
-              "model_file_path": "./Models/Code Examples/Send Static data.gaml",
-              "experiment_name": "vr_xp",
-              "minimal_players": "0",
-              "maximal_players": "1",
-              "selected_monitoring": "gama_screen"
-            },
-            {
-              "type": "json_settings",
-              "name": "Dynamic data management",
-              "splashscreen": "./includes/splashscreen/screen.png",
-              "model_file_path": "./Models/Code Examples/Send Dynamic data.gaml",
-              "experiment_name": "vr_xp",
-              "minimal_players": "0",
-              "maximal_players": "1",
-              "selected_monitoring": "gama_screen"
-            },
-          ]
-        },
-        {
-          "type": "json_settings",
-          "name": "DEM management",
-          "splashscreen": "./includes/splashscreen/screen.png",
-          "model_file_path": "./Models/Code Examples/Send DEM.gaml",
-          "experiment_name": "vr_xp",
-          "minimal_players": "0",
-          "maximal_players": "1",
-          "selected_monitoring": "gama_screen"
-        },
-        {
-          "type": "json_settings",
-          "name": "Water management",
-          "splashscreen": "./includes/splashscreen/screen.png",
-          "model_file_path": "./Models/Code Examples/Send Water data.gaml",
-          "experiment_name": "vr_xp",
-          "minimal_players": "0",
-          "maximal_players": "1",
-          "selected_monitoring": "gama_screen"
-        },
-    
-    
-        {
-          "type": "json_settings",
-          "name": "Message management",
-          "splashscreen": "./includes/splashscreen/screen.png",
-          "model_file_path": "./Models/Code Examples/Send Receive Messages.gaml",
-          "experiment_name": "vr_xp",
-          "minimal_players": "0",
-          "maximal_players": "1",
-          "selected_monitoring": "gama_screen"
-        },
-        {
-          "type": "json_settings",
-          "name": "User interaction management",
-          "splashscreen": "./includes/splashscreen/screen.png",
-          "model_file_path": "./Models/Code Examples/Send Water data.gaml.gaml",
-          "experiment_name": "vr_xp",
-          "minimal_players": "0",
-          "maximal_players": "1",
-          "selected_monitoring": "gama_screen"
-        },
-    
-    
-        {
-          "type": "json_settings",
-          "name": "Player movement management",
-          "splashscreen": "./includes/splashscreen/screen.png",
-          "model_file_path": "./Models/Code Examples/Limit Player Movement.gaml",
-          "experiment_name": "vr_xp",
-          "minimal_players": "0",
-          "maximal_players": "1",
-          "selected_monitoring": "gama_screen"
-        },
-    
-    
-        {
-          "type": "json_settings",
-          "name": "Agent animation management",
-          "splashscreen": "./includes/splashscreen/screen.png",
-          "model_file_path": "./Models/Code Examples/Manage Animation for Agents.gaml",
-          "experiment_name": "vr_xp",
-          "minimal_players": "0",
-          "maximal_players": "1",
-          "selected_monitoring": "gama_screen"
-        },
-    
-    
-        {
-          "type": "json_settings",
-          "name": "Multi-player game management",
-          "splashscreen": "./includes/splashscreen/screen.png",
-          "model_file_path": "./Models/Code Examples/Mutli player game.gaml",
-          "experiment_name": "vr_xp",
-          "minimal_players": "2",
-          "maximal_players": "4",
-          "selected_monitoring": "gama_screen"
-        }
-      ]
-    },
-
-
-{"type": "catalog",
-  "name": "Players demos subprojects",
-  "entries": [    {
-    "type": "json_settings",
-    "name": "Single-player game demo",
-    "splashscreen": "./includes/splashscreen/screen.png",
-    "model_file_path": "./Models/Demo/Simple Player Game/DemoModelVR.gaml",
-    "experiment_name": "vr_xp",
-    "minimal_players": "0",
-    "maximal_players": "1",
-    "selected_monitoring": "gama_screen"
-  },
-
-  {
-    "type": "json_settings",
-    "name": "Single-player game demo",
-    "splashscreen": "./includes/splashscreen/screen.png",
-    "model_file_path": "./Models/Demo/Multi Player Game/RaceVR.gaml",
-    "experiment_name": "vr_xp",
-    "minimal_players": "0",
-    "maximal_players": "1",
-    "selected_monitoring": "gama_screen"
-  },
-
-  ]
-},
-{
-  "type" :"catalog",
-  "name" : "Unity utility subprojects",
-  "entries": [
-    {
-      "type": "json_settings",
-      "name": "Utility: import geometries from Unity",
-      "splashscreen": "./includes/splashscreen/screen.png",
-      "model_file_path": "./Models/Utilities/ImportGemetriesFromUnity.gaml",
-      "experiment_name": "LoadGeometriesFromUnity",
-      "minimal_players": "1",
-      "maximal_players": "1",
-      "selected_monitoring": "gama_screen"
-    },
-
-    {
-      "type": "json_settings",
-      "name": "Utility: send geometries to Unity",
-      "splashscreen": "./includes/splashscreen/screen.png",
-      "model_file_path": "./Models/Utilities/SentGemetriesToUnity.gaml",
-      "experiment_name": "SendGeometriesToUnity",
-      "minimal_players": "1",
-      "maximal_players": "1",
-      "selected_monitoring": "gama_screen"
-    },
-  ]
-}
-
-
-
-
-
-  ]
 
   const navigate = useNavigate();
 
@@ -286,8 +270,6 @@ const SelectorSimulations = () => {
 
       <Header needsMiniNav />
       {/* ↑ prop to specify whether it should use the small version of the navigation bar */}
-
-
 
       {loading ? (
         <div className="text-center">
