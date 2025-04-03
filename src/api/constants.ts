@@ -82,11 +82,13 @@ export const GAMA_ERROR_MESSAGES = [
 
 export const HEADSET_COLOR: Record<string,string> = {
     "101": "blue",
-    "102": "red",
-    "103": "green",
-    "104": "yellow",
+    "102": "bg-red-300",
+    "103": "bg-green-300",
+    "104": "red",
     "105": "black",
     "106": "white",
+    "110":"bg-green-400",
     "190": "red",
-    "21": "blue"
+    "21": "blue",
+    "15":"bg-blue-300"
 };

@@ -66,7 +66,7 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const maxElements = 2;
+  const maxElements = 4;
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length;
   const placeholders = Array.from({ length: placeholdersNeeded });
   const [activeCanvas, setActiveCanvas] = useState<[string, HTMLCanvasElement | undefined ]>(["",undefined])
@@ -208,7 +208,7 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
     </div>    
     : null} */}
 
-      <div className=" flex flex-row items-stretch justify-evenly gap-4  p-4">
+      <div className=" grid grid-rows-2 grid-cols-2 items-stretch justify-evenly gap-4  p-4">
       
         {Object.entries(canvasList).map(([key, canvas]) =>
           <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/>
