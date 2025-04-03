@@ -68,7 +68,6 @@ const StreamPlayerScreenControl = () => {
     return (
         <div className='h-full flex flex-col'>
             <Header needsMiniNav />
-            <h1 className='text-center'>Controls screen placeholder</h1>
             <div className='flex flex-row items-center justify-center h-full'>
                 <div className='w-5/6 h-5/6 rounded-md flex flex-col justify-center ' style={{ backgroundColor: '#a1d2ff' }}>
                     <VideoStreamManager needsInteractivity={true} />

@@ -24,7 +24,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
 
     useEffect(() => {
         if (canvas) {
-            canvas.classList.add(...[canvasSize ? canvasSize : "max-w-32", "rounded-lg"])
+            canvas.classList.add(...[canvasSize ? canvasSize : "max-w-96", "rounded-lg"])
             if (canvasref.current) {
                 canvasref.current.appendChild(canvas);
             }
@@ -34,7 +34,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
     if (needsInteractivity) {
         return (
             !isPlaceholder ?
-                <div id={id} ref={canvasref} className={`border-4 bg-orange-400 ${isColoredHeadset ? bgColor : "bg-slate-400 border-slate-300"} p-2 rounded-lg h-fit items-center justify-center flex flex-col`}>
+                <div id={id} ref={canvasref} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-400 border-slate-300"} p-2 rounded-lg h-fit w-fit items-center justify-center flex flex-col`}>
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
                         <p>player:{id}</p>
@@ -44,9 +44,8 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 :
 
                 <div className="flex flex-col border-4 border-slate-300 p-2 rounded-lg bg-blue-300 items-center justify-center">
-                    <p>Placeholder ici</p>
-                    <button onClick={() => setActiveCanvas?.([id,canvas])}>set active canvas ici</button>
-                    <img src={visibility_off} alt="" className="mix-blend-difference size-40" />
+                    <button onClick={() => setActiveCanvas?.([id,canvas])}>activer canvas</button>
+                    <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
                 </div>
 
         )
@@ -54,7 +53,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
     } else {
         return (
             !isPlaceholder ?
-                <div id={id} ref={canvasref} className={`border-4 bg-orange-400 ${isColoredHeadset ? bgColor : "bg-slate-400 border-slate-300"} p-2 rounded-lg h-fit items-center justify-center flex flex-col`}>
+                <div id={id} ref={canvasref} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-400 border-slate-300"} p-2 rounded-lg h-fit items-center justify-center flex flex-col`}>
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
                         <p>player:{id}</p>
@@ -63,9 +62,9 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 </div>
                 :
 
-                <div className="flex flex-col border-4 border-slate-300 p-2 rounded-lg bg-blue-300 items-center justify-center">
+                <div className="flex flex-col border-4 border-slate-300 p-2 rounded-lg bg-blue-300 items-center justify-center size-60">
                     <p>Placeholder ici</p>
-                    <img src={visibility_off} alt="" className="mix-blend-difference size-40" />
+                    <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
                 </div>
 
         )

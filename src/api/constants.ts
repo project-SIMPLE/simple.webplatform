@@ -86,5 +86,7 @@ export const HEADSET_COLOR: Record<string,string> = {
     "103": "green",
     "104": "yellow",
     "105": "black",
-    "106": "white"
+    "106": "white",
+    "190": "red",
+    "21": "blue"
 };
