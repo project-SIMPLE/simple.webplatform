@@ -72,7 +72,7 @@ const StreamPlayerScreenControl = () => {
                 <div className='w-fit-content h-5/6 rounded-md flex flex-col justify-center ' style={{ backgroundColor: '#a1d2ff' }}>
                     <VideoStreamManager needsInteractivity={true} />
                 </div>
-                <div className='flex flex-col'>
+                {/* <div className='flex flex-col'>
                     <h2>tv display mode</h2>
 
                     <Button
@@ -93,7 +93,7 @@ const StreamPlayerScreenControl = () => {
 
 
 
-                </div>
+                </div> */}
             </div>
         </div>
     );
