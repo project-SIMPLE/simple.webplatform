@@ -208,7 +208,7 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
     </div>    
     : null} */}
 
-      <div className=" grid grid-rows-2 grid-cols-2 items-stretch justify-evenly gap-4  p-4">
+      <div className=" flex flex-row items-stretch justify-evenly gap-4  p-4">
       
         {Object.entries(canvasList).map(([key, canvas]) =>
           <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/>
