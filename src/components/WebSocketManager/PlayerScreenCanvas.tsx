@@ -41,7 +41,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
                         <p>player:{id}</p>
-                        {isColoredHeadset ? <p>identifier:{ipIdentifier} couleur: ({HEADSET_COLOR[ipIdentifier]})</p> : null}
+                        {/* {isColoredHeadset ? <p>identifier:{ipIdentifier} couleur: ({HEADSET_COLOR[ipIdentifier]})</p> : null} */}
                     </div>
                 </div>
                 :
