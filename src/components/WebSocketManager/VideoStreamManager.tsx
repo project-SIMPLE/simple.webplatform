@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import PlayerScreenCanvas from "./PlayerScreenCanvas.tsx";
 import {
   VideoFrameRenderer,
@@ -66,7 +66,7 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const maxElements = 4;
+  const [maxElements, setMaxElements] = useState<number>(4);
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length;
   const placeholders = Array.from({ length: placeholdersNeeded });
   const [activeCanvas, setActiveCanvas] = useState<[string, HTMLCanvasElement | undefined ]>(["",undefined])
@@ -208,8 +208,7 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
     </div>    
     : null} */}
 
-      <div className=" flex flex-row items-stretch justify-evenly gap-4  p-4">
-      
+      <div className={`${  Object.keys(canvasList).length +placeholders.length > 4 ? "grid grid-rows-2 grid-flow-col" : "flex flex-row"} items-stretch justify-evenly gap-4 w-full h-full p-4`}>
         {Object.entries(canvasList).map(([key, canvas]) =>
           <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/>
         )}
@@ -217,7 +216,9 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
           <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
         ))} 
 
-      </div>
+      </div><div>
+      <button className="bg-green-300 w-fit" onClick={() => setMaxElements(maxElements.valueOf()+1)}>add</button>
+      <button className="bg-red-300 w-fit" onClick={() => setMaxElements(maxElements.valueOf()-1)}>remove</button></div>
      </>
   );
 };

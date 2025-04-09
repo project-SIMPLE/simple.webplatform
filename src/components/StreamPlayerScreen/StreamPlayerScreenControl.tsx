@@ -69,10 +69,12 @@ const StreamPlayerScreenControl = () => {
         <div className='h-full flex flex-col'>
             <Header needsMiniNav />
             <div className='flex flex-row items-center justify-center h-full'>
-                <div className='w-fit-content h-5/6 rounded-md flex flex-col justify-center ' style={{ backgroundColor: '#a1d2ff' }}>
+                <div className='h-[calc(100%-2rem)] w-[calc(100%-2rem)] rounded-md flex flex-col justify-center m-8 ' style={{ backgroundColor: '#a1d2ff' }}>
+                    {/*//? the weird values used here are to ensure that the blue container takes up the full screen, an sets the size as full screen minus the margin (m-8) 
+                       //? if we simply used w-full, the margin would push the size beyond the border, and visually the margin would not be applied */}
                     <VideoStreamManager needsInteractivity={true} />
                 </div>
-                {/* <div className='flex flex-col'>
+                {/* <div className='flex flex-col'> //TODO ensure functionnality of these buttons affect the display, not necessary for now as it would require the gama stream to be working
                     <h2>tv display mode</h2>
 
                     <Button
