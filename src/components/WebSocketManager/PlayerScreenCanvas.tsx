@@ -35,7 +35,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
 
         return (
             !isPlaceholder ?
-                <div id={id} ref={canvasref} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-400 border-slate-300"} p-2 rounded-lg h-fit items-center justify-center flex flex-col`} onClick={needsInteractivity ? () => {setActiveCanvas!()}: undefined}>
+                <div id={id} ref={canvasref} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-400 border-slate-300"} p-2 rounded-lg items-center justify-center flex flex-col aspect-square h-[33.333dvh] w-[20dvw]`} onClick={needsInteractivity ? () => {setActiveCanvas!()}: undefined}>
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
                         <p>player:{id}</p>
