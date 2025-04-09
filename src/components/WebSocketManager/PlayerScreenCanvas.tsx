@@ -44,7 +44,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 </div>
                 :
 
-                <div className={`flex flex-col border-4 border-slate-300 p-2 rounded-lg items-center  bg-stone-200 justify-center h-[33.333] w-[20vw]`}>
+                <div className={`flex flex-col border-4 border-slate-300 p-2 rounded-lg items-center  bg-stone-200 justify-center h-[33.333] w-[20vw] aspect-square`}>
                     {/* <p>Placeholder ici</p> */}
                     <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
                 </div>
