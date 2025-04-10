@@ -1,18 +1,17 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import React from 'react';
+import './i18next/i18n';
 import './index.css';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ScreenModeProvider } from './components/ScreenModeContext/ScreenModeContext';
 import SimulationManager from './components/SimulationManager/SimulationManager';
 import Navigation from './components/Navigation/Navigation';
 import SelectorSimulations from './components/SelectorSimulations/SelectorSimulations';
 import WebSocketManager from './components/WebSocketManager/WebSocketManager';
+import StreamPlayerScreenControl from './components/StreamPlayerScreen/StreamPlayerScreenControl';
 import StreamPlayerScreen from './components/StreamPlayerScreen/StreamPlayerScreen';
-import TestMonitoringScreen from './components/TestMonitoringScreen/TestMonitoringScreen';
-import './i18next/i18n';
 
-
-const App: React.FC = () => {
+const App = () => {
   return (
     <BrowserRouter>
             <WebSocketManager>
@@ -22,7 +21,7 @@ const App: React.FC = () => {
                     <Route path="navigation" element={<Navigation />} />
                     <Route path="simulationManager" element={<SimulationManager />} />
                     <Route path="streamPlayerScreen" element={ <StreamPlayerScreen /> } />
-                    <Route path="TestMonitoringScreen" element={ <TestMonitoringScreen /> } />
+                    <Route path="streamPlayerScreenControl" element={ <StreamPlayerScreenControl /> } />
                 </Routes>
               </ScreenModeProvider>
             </WebSocketManager>
@@ -34,10 +33,8 @@ const container = document.getElementById('root')!;
 const root = ReactDOM.createRoot(container);
 
 root.render(
-  // <Provider store={store}>  
-//  <React.StrictMode>
+  //  <React.StrictMode>
       <App />
-//  </React.StrictMode>
-    // </Provider>
+    // </React.StrictMode>  
 );
 

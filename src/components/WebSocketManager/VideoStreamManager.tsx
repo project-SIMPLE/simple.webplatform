@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-
+import React, { useEffect, useState, useRef } from "react";
+import PlayerScreenCanvas from "./PlayerScreenCanvas.tsx";
 import {
   VideoFrameRenderer,
   WebGLVideoFrameRenderer,
@@ -8,11 +8,13 @@ import {
 } from "@yume-chan/scrcpy-decoder-webcodecs";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 
-import {HEADSET_COLOR} from "../../api/constants.ts";
+import { HEADSET_COLOR } from "../../api/constants.ts";
 
 const host: string = window.location.hostname;
 //const port: string = process.env.VIDEO_WS_PORT || '8082';
 const port: string = '8082';
+
+
 
 // Deserialize the data into ScrcpyMediaStreamPacket
 const deserializeData = (serializedData: string) => {
@@ -40,11 +42,10 @@ const deserializeData = (serializedData: string) => {
   }
 };
 
-interface VideoStreamManagerProps {
-  targetRef: React.RefObject<HTMLDivElement>;
-}
+
 
 function createVideoFrameRenderer(): VideoFrameRenderer {
+
 
   if (WebGLVideoFrameRenderer.isSupported) {
     console.log("[SCRCPY] Using WebGLVideoFrameRenderer");
@@ -57,15 +58,29 @@ function createVideoFrameRenderer(): VideoFrameRenderer {
   return new BitmapVideoFrameRenderer();
 }
 
-// The React component
-const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
+interface VideoStreamManagerProps {
+  needsInteractivity?: boolean;
 
+}
+
+// The React component
+const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
+  const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
+  const maxElements = 4;
+  const placeholdersNeeded = maxElements - Object.keys(canvasList).length;
+  const placeholders = Array.from({ length: placeholdersNeeded });
+  const [activeCanvas, setActiveCanvas] = useState<[string, HTMLCanvasElement | undefined ]>(["",undefined])
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
     string,
     ReadableStreamDefaultController
   >();
   const isDecoderHasConfig = new Map<string, boolean>();
+
+
+  const handleActiveCanvas = (headsetIp: string, canvas: HTMLCanvasElement) => {
+    setActiveCanvas([headsetIp,canvas])
+  }
 
   /**
    * Creates a new ReadableStream for receiving and decoding H.264 video data associated with a specific device.
@@ -79,52 +94,34 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
   async function newVideoStream(deviceId: string) {
 
     // Wait for HTML to be available
-    while (!targetRef.current){
-      await new Promise( resolve => setTimeout(resolve, 1) );
-    }
 
-    if (document.getElementById(deviceId)){
-      console.log("[Scrcpy] Restarting new RedableStream for", deviceId);
+    if (document.getElementById(deviceId)) {
+      console.log("[Scrcpy-VideoStreamManager] Restarting new ReadableStream for", deviceId);
       document.getElementById(deviceId)!.remove();
     } else {
       // Create new stream
-      console.log("[Scrcpy] Create new ReadableStream for", deviceId);
+      console.log("[Scrcpy-VideoStreamManager] Create new ReadableStream for", deviceId);
     }
 
     // Prepare video stream =======================
 
     const renderer: VideoFrameRenderer = createVideoFrameRenderer();
 
-    // Create HTML wrapper to stylize the video stream
-    const wrapper: HTMLDivElement = document.createElement('div');
-    wrapper.classList.add(...["m-4", "p-2", "rounded-md"]);
-    wrapper.id = deviceId;
-
-    // Add background color
-    const ipIdentifier: string = deviceId.split(":")[0].split(".")[deviceId.split(".").length -1];
-    if (ipIdentifier in HEADSET_COLOR) {
-      // @ts-ignore
-      wrapper.classList.add(...[`bg-${HEADSET_COLOR[ipIdentifier]}-500`]);
-    } else {
-      wrapper.classList.add(...["bg-white-500", "border-4", "border-slate-300"]);
-    }
-
-    // @ts-ignore
-    wrapper.appendChild(renderer.canvas as HTMLCanvasElement);
-
-    // Add to final page
-    targetRef.current.appendChild(wrapper);
+    // get the canvas from the renderer (renderer as any is used to ensure ts knows that canvas is a property of the renderer)
+    const canvas = (renderer as any ).canvas as HTMLCanvasElement
+    setCanvasList(prevCanvasList => ({ ...prevCanvasList, [deviceId]: canvas }));
+    console.log("canvasList:", canvasList);
 
     await VideoDecoder.isConfigSupported({
       // Check if h264 is supported
       codec: "avc1.4D401E",
     }).then((supported) => {
+      console.log("supported", supported)
       if (supported.supported) {
         const decoder = new WebCodecsVideoDecoder({
-          codec:  ScrcpyVideoCodecId.H264,
+          codec: ScrcpyVideoCodecId.H264,
           renderer: renderer,
         });
-
         // Create new ReadableStream used for scrcpy decoding
         const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
           start(controller) {
@@ -137,9 +134,9 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
           cancel() {
             readableControllers.delete(deviceId);
             isDecoderHasConfig.delete(deviceId);
+            canvasList[deviceId].remove();
 
             // Remove canvas
-            wrapper.parentNode!.removeChild(wrapper);
           },
         });
 
@@ -157,6 +154,8 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
     });
   }
 
+
+
   // -------------------------------------------------------------------------------------------------------------------
 
   useEffect(() => {
@@ -166,7 +165,7 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
     // Handle incoming WebSocket messages
     socket.onmessage = (event) => {
       // Deserialize the message and enqueue the data into the readable stream
-      const deserializedData = deserializeData( event.data );
+      const deserializedData = deserializeData(event.data);
 
       // Create stream if new stream
       if (!readableControllers.has(deserializedData!.streamId)) {
@@ -187,7 +186,7 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
           //!isDecoderHasConfig.get(deserializedData!.streamId) &&
           deserializedData!.packet.type == "configuration"
         ) {
-          console.log("[Scrcpy] WebSocket decoder loaded for ", deserializedData!.streamId );
+          console.log("[Scrcpy] WebSocket decoder loaded for ", deserializedData!.streamId);
           controller!.enqueue(deserializedData!.packet);
           isDecoderHasConfig.set(deserializedData!.streamId, true);
         }
@@ -197,11 +196,30 @@ const VideoStreamManager: React.FC<VideoStreamManagerProps> = ({targetRef}) => {
     };
 
     socket.onclose = () => {
-      console.log("[Scrcpy] Closing readable");
+      console.log("[Scrcpy-VideoStreamManager] Closing readable");
     };
   }, []);
 
-  return null;
+  return (
+    <>
+    {/* {activeCanvas[0] !== null ?
+    <div className="size-full bg-slate-800 opacity-75">
+      <PlayerScreenCanvas canvasSize="size-60"/>
+    </div>    
+    : null} */}
+
+      <div className=" flex flex-row items-stretch justify-evenly gap-4  p-4">
+      
+        {Object.entries(canvasList).map(([key, canvas]) =>
+          <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/>
+        )}
+        {placeholders.map((_, index) => (
+          <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
+        ))} 
+
+      </div>
+     </>
+  );
 };
 
-export default VideoStreamManager;
+export default VideoStreamManager

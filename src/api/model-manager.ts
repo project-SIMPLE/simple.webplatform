@@ -67,6 +67,18 @@ class ModelManager {
     setActiveModelByIndex(index: number) {
         this.activeModel = this.models[index];
     }
+    
+    // -------------------
+
+    /**
+    *returns the model with the model_file_path specified 
+    * @filepath the path of the model, specified in the settings.json of the model
+    * @returns {Model} sets the active model to the model found 
+    */
+    setActiveModelByFilePath(filePath: string) {
+        let modelFound = this.models.find(model => model.getJsonSettings().model_file_path === filePath);
+        return this.activeModel = modelFound 
+    }
 
     getActiveModel(){
         return this.activeModel !== undefined ? this.activeModel : this.models[0];

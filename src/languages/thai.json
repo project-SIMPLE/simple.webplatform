@@ -9,7 +9,7 @@
     "wait_minim_players_1": "รอ",
     "wait_minim_players_2": "ผู้เล่นเพิ่มเติมเพื่อให้ครบตามจำนวนขั้นต่ำ",
     "wait_maximum_players_1": "ผู้เล่นเพิ่มเติมเพื่อให้ครบตามจำนวนสูงสุด",
-    "popop_question": "คุณต้องการตัดการเชื่อมต่อและลบออกจริงหรือไม่",
+    "popup_question": "คุณต้องการตัดการเชื่อมต่อและลบออกจริงหรือไม่",
     "remove": "ลบ",
     "relaunch": "เริ่มใหม่",
     "button_begin_anyway": "เริ่มต้นต่อไป",
@@ -19,8 +19,11 @@
     "Hour of connection": "เวลาที่เชื่อมต่อ",
     "In game": "ในเกม",
     "Monitoring Screen": "หน้าจอการเฝ้าระวัง",
+    "select_subproject": "เลือกโปรเจคย่อยที่จะเริ่ม",
     "Shared Screen": "หน้าจอที่แชร์", 
     "loading": "กำลังโหลดแบบจำลอง..", 
-    "ask_launch_gama": "กรุณาเรียกใช้กามา.."
-
+    "ask_launch_gama": "กรุณาเรียกใช้กามา..",
+    "in_game": "ในเกม",
+    "connected": "เชื่อมต่อ",
+    "error": "ข้อผิดพลาด"
 }

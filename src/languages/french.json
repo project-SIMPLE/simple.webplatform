@@ -9,7 +9,7 @@
     "wait_minim_players_1": "En attente de",
     "wait_minim_players_2": "d'autres joueurs pour atteindre le nombre minimum de joueurs",
     "wait_maximum_players_1": "d'autres joueurs pour atteindre le nombre maximum de joueurs",
-    "popop_question": "Voulez-vous vraiment vous déconnecter et supprimer",
+    "popup_question": "Voulez-vous vraiment vous déconnecter et supprimer",
     "remove": "Supprimer",
     "relaunch": "Relancer",
     "button_begin_anyway": "Commencer quand même",
@@ -17,11 +17,16 @@
     "player_informations": "Informations du joueur",
     "Status": "Statut",
     "Hour of connection": "Heure de connexion",
+    "select_simulation": "sélectionnez la simulation à exécuter",
+    "select_subproject": "sélectionnez le sous projet à lancer",
     "In game": "En jeu",
     "Monitoring Screen": "Écran de gama",
     "Shared Screen": "Écran partagé",
     "loading": "Chargement des simulations..",
-    "ask_launch_gama": "Veuillez lancer, Gama.."
-
+    "ask_launch_gama": "Veuillez lancer, Gama..",
+    "in_game": "En jeu",
+    "connected" : "Connecté",
+    "error" : "Erreur",
+    "simulation_loading": "Chargement de la simulation"
 
 }

@@ -48,7 +48,7 @@ class PlayerManager {
             // Server doesn't compress yet
             // WebSocketSharp (Unity side) doesn't support deflating messages
             // https://github.com/sta/websocket-sharp/issues/580
-            //compression: (uWS.SHARED_COMPRESSOR | uWS.SHARED_DECOMPRESSOR),
+            //: (uWS.SHARED_COMPRESSOR | uWS.SHARED_DECOMPRESSOR),
 
             open: (ws) => {
                 const playerWsId: string = Buffer.from(ws.getRemoteAddressAsText()).toString();

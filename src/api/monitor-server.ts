@@ -1,8 +1,8 @@
-import uWS, {TemplatedApp} from 'uWebSockets.js';
+import uWS, { TemplatedApp } from 'uWebSockets.js';
 
 import { Controller } from './controller';
-import {JsonMonitor} from "./constants.ts"
-import {useExtraVerbose, useVerbose} from "./index.ts";
+import { JsonMonitor } from "./constants.ts"
+import { useExtraVerbose, useVerbose } from "./index.ts";
 
 // Override the log function
 const log = (...args: any[]) => {
@@ -45,7 +45,7 @@ export class MonitorServer {
         });
 
         this.wsServer.ws('/*', {
-            compression: (uWS.SHARED_COMPRESSOR | uWS.SHARED_DECOMPRESSOR), // Enable compression
+            // compression: (uWS.SHARED_COMPRESSOR | uWS.SHARED_DECOMPRESSOR), // Enable compression
             idleTimeout: 30, // 30 seconds timeout
 
             open: (ws) => {
@@ -85,6 +85,13 @@ export class MonitorServer {
                         }
                         break;
 
+                    case "screen_control": //TODO
+                        const messageString = JSON.parse(Buffer.from(message).toString()); //? can't parse the payload of the jsonMonitor for some reason
+                        logWarn(`[MONITOR SERVER] data recieved:${messageString.display_type}`);
+                        this.sendMessageByWs({type: "screen_control", display_type: messageString.display_type});
+                        break;
+                        
+
                     case "remove_player_headset":
                         if (jsonMonitor.id) {
                             this.controller.purgePlayer(jsonMonitor.id);
@@ -95,7 +102,7 @@ export class MonitorServer {
 
                     case "get_simulation_informations":
                         this.sendMessageByWs(this.controller.getSimulationInformations(), ws);
-                    break;
+                        break;
 
                     case "get_simulation_by_index":
                         const index = jsonMonitor.simulationIndex;
@@ -117,26 +124,17 @@ export class MonitorServer {
                         }
                         break;
 
-                    // TODO : Add way to change layout on M2L2 main screen
-                    // in the component that displays the monitoring screens, create a useEffect that listens to this variable
-                    // directly use the variable in the component with conditional rendering
-                    // case "set_gama_screen":
-                    //     const success = ws.send(JSON.stringify({
-                    //         type: "setMonitorScreen",
-                    //         mode: 'gama_screen'
-                    //     }));
-                    //     if (!success) {logError('[Backpressure detected. Data not sent.')}
-                    //     break;
-                    //
-                    // //
-                    // case "set_shared_screen":
-                    //     log("shared screen !");
-                    //     const success = ws.send(JSON.stringify({
-                    //         type: "setMonitorScreen",
-                    //         mode: 'shared_screen'
-                    //     }));
-                    //     if (!success) {logError('Backpressure detected. Data not sent.')}
-                    //     break;
+                        
+                        case "send_simulation":
+                            const simulationFromStream = JSON.parse(Buffer.from(message).toString());
+                            this.controller.model_manager.setActiveModelByFilePath(simulationFromStream.simulation.model_file_path);
+                            const selectedSimulation = this.controller.model_manager.getActiveModel();
+                            
+                            this.sendMessageByWs({
+                                type: "get_simulation_by_index",
+                                simulation: selectedSimulation.getJsonSettings()
+                            }, ws);
+                            break;
 
                     default:
                         logWarn("The last message received from the monitor had an unknown type.");
@@ -213,14 +211,14 @@ export class MonitorServer {
      * @return void
      */
     sendMessageByWs(message: any, clientWsId?: any): void {
-        if (this.wsClients !== undefined){
+        if (this.wsClients !== undefined) {
             this.wsClients.forEach((client) => {
                 if (clientWsId == undefined || clientWsId == client) {
                     const r: number = client.send(
                         JSON.stringify(message),
                         false, true); // Force message compression
 
-                    switch (r){
+                    switch (r) {
                         case 0:
                             logWarn('Backpressure is building up. Data will be drain overtime to client', client.getRemoteAddressAsText());
                             break;

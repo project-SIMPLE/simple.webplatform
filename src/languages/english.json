@@ -9,18 +9,24 @@
     "wait_minim_players_1":"Waiting for",
     "wait_minim_players_2":"more players to reach minimum players",
     "wait_maximum_players_1":"more players to reach maximum players",
-    "popop_question": "Do you really want to disconnect and remove",
+    "popup_question": "Do you really want to disconnect and remove",
     "remove": "Remove",
     "relaunch": "Relaunch",
     "button_begin_anyway": "Begin anyway",
     "cancel": "Cancel", 
     "player_informations": "Player Informations",
     "Status": "Status",
+    "select_simulation" : "Select the simulation to launch",
+    "select_subproject" : "Select the subproject to launch",
     "Hour of connection": "Hour of connection",
     "In game": "In game",
     "Monitoring Screen": "Gama Screen",
     "Shared Screen": "Shared Screen",
     "loading": "Loading simulations..", 
-    "ask_launch_gama": "Please launch Gama.."
+    "ask_launch_gama": "Please launch Gama..",
+    "in_game": "In game",
+    "connected": "Connected",
+    "error": "Error",
+    "simulation_loading": "Simulation loading"
   }
   
