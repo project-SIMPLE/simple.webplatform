@@ -9,7 +9,7 @@ const Navigation = () => {
       <ul className="flex items-center space-x-4">
         <Link to="/" className="text-white hover:text-gray-400">
           <li>
-            <img src={logoSimple} alt="Logo" className="h-10 w-10 mr-4" style={{ height: '111px', width: 'auto' }} /> 
+            <img src={logoSimple} alt="Logo" className="h-10 w-10 mr-4" style={{ height: '80px', width: 'auto' }} /> 
           </li>
         </Link>
       </ul>
