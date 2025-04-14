@@ -13,6 +13,7 @@ export interface JsonOutput {
 }
 
 export interface JsonSettings {
+    type?: string;
     model_file_path: string;
     experiment_name: string;
 }
@@ -89,6 +90,21 @@ export const HEADSET_COLOR: Record<string,string> = {
     "106": "white",
     "110":"bg-green-500",
     "190": "red",
-    "21": "blue",
+    "21": "bg-blue-500",
     "15":"bg-blue-300"
 };
+
+/**
+ * ANSI colors for console output
+ */
+export const ANSI_COLORS: Record<string,string> ={
+    "black": "\x1b[30m",
+    "red": "\x1b[31m",
+    "green": "\x1b[32m",
+    "yellow": "\x1b[33m",
+    "blue": "\x1b[34m",
+    "magenta": "\x1b[35m",
+    "cyan": "\x1b[36m",
+    "white": "\x1b[37m",
+    "reset": "\x1b[0m"
+}
