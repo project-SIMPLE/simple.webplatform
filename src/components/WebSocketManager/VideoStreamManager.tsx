@@ -70,6 +70,7 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length;
   const placeholders = Array.from({ length: placeholdersNeeded });
   const [activeCanvas, setActiveCanvas] = useState<[string, HTMLCanvasElement | undefined ]>(["",undefined])
+  const [showPopup, setShowPopup] = useState<boolean>(false);
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
     string,
@@ -201,14 +202,15 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
   }, []);
 
   return (
-    <>
-    {/* {activeCanvas[0] !== null ?
-    <div className="size-full bg-slate-800 opacity-75">
+    <div className="w-full h-full flex flex-col items-center"> {/*↓ if there is at least one canvas, and it has been selected, show the popup */}
+     {activeCanvas[0] !== "" && showPopup== true ?
+<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10" onClick={() => setShowPopup(false)}>
+ <p className="bg-red-500"> {`canvas actif:${activeCanvas[0]}`}</p>
       <PlayerScreenCanvas canvasSize="size-60"/>
-    </div>    
-    : null} */}
-
-      <div className={`${  Object.keys(canvasList).length +placeholders.length > 4 ? "grid grid-rows-2 grid-flow-col" : "flex flex-row"} items-stretch justify-evenly gap-4 w-full h-full p-4`}>
+    </div>
+    : null} 
+{/*                          this is the main container containing the canvases: if there are at least 4 elements, they are displayed in a 2 row grid, else they are displayed side by side. grow is used to ensure that the div takes as much space as possible without overflowing   */}
+      <div className={`${  Object.keys(canvasList).length +placeholders.length > 4 ? "grid grid-rows-2 grid-flow-col" : "flex flex-row"} items-center justify-evenly gap-4 grow p-4`}>
         {Object.entries(canvasList).map(([key, canvas]) =>
           <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/>
         )}
@@ -216,10 +218,13 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
           <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
         ))} 
 
-      </div><div>
-      <button className="bg-green-300 w-fit" onClick={() => setMaxElements(maxElements.valueOf()+1)}>add</button>
+      </div>
+      <div>  
+        {/*//TODO remove layout test buttons*/}
+       <button className="bg-green-300 w-fit" onClick={() => setMaxElements(maxElements.valueOf()+1)}>add</button>
       <button className="bg-red-300 w-fit" onClick={() => setMaxElements(maxElements.valueOf()-1)}>remove</button></div>
-     </>
+     </div> 
+      
   );
 };
 

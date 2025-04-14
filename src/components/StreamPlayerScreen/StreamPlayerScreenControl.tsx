@@ -66,10 +66,10 @@ const StreamPlayerScreenControl = () => {
 
 
     return (
-        <div className='h-full flex flex-col'>
+        <div className='flex flex-col h-[100dvh] w-[100dvw]'>
             <Header needsMiniNav />
-            <div className='flex flex-row items-center justify-center h-full'>
-                <div className='h-[calc(100%-2rem)] w-[calc(100%-2rem)] rounded-md flex flex-col justify-center m-8 ' style={{ backgroundColor: '#a1d2ff' }}>
+            <div className='grow flex flex-col items-center justify-center'>
+                <div className='grow rounded-md flex flex-col justify-center m-8 bg-[#a1d2ff]'>
                     {/*//? the weird values used here are to ensure that the blue container takes up the full screen, an sets the size as full screen minus the margin (m-8) 
                        //? if we simply used w-full, the margin would push the size beyond the border, and visually the margin would not be applied */}
                     <VideoStreamManager needsInteractivity={true} />

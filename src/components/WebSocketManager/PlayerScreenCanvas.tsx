@@ -26,7 +26,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
 
     useEffect(() => {
         if (canvas) {
-            canvas.classList.add(...[canvasSize ? canvasSize : "max-w-96", "rounded-lg"])
+            canvas.classList.add(...[canvasSize ? canvasSize : "max-h-64", "aspect-square", "rounded-lg"])
             if (canvasref.current) {
                 canvasref.current.appendChild(canvas);
             }
@@ -35,7 +35,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
 
         return (
             !isPlaceholder ?
-                <div id={id} ref={canvasref} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-400 border-slate-300"} p-2 rounded-lg items-center justify-center flex flex-col aspect-square h-[33.333dvh] w-[20dvw]`} onClick={needsInteractivity ? () => {setActiveCanvas!()}: undefined}>
+                <div id={id} ref={canvasref} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500 border-slate-300"} grow pb-2 rounded-lg items-center justify-center flex flex-col aspect-square`} onClick={needsInteractivity ? () => {setActiveCanvas!()}: undefined}>
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
                         <p>player:{id}</p>
@@ -44,7 +44,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 </div>
                 :
 
-                <div className={`flex flex-col border-4 border-slate-300 p-2 rounded-lg items-center  bg-stone-200 justify-center h-[33.333] w-[20vw] aspect-square`}>
+                <div className={`flex flex-col border-4 border-slate-300 p-2 rounded-lg items-center  bg-stone-200 justify-center grow aspect-square`}>
                     {/* <p>Placeholder ici</p> */}
                     <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
                 </div>
