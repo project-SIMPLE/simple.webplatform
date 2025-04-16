@@ -14,11 +14,12 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
     <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
 
       {list.map((simulation, index) => (
-        <div className='items-center text-center w-24'>       
+        <div className='items-center text-center w-24' key={index}>       
+        {/* //TODO changer ce qu'il y a dans le key (mettre un index défini par l'élément, passer ça en prop ?) tel quel, si la liste change, alors l'index de chaque élément peut changer, donc l'affichage est pseudo aléatoire */}
           <div
           className={`bg-white shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer
                     ${className} 
-                    ${!gama.connected ? 'opacity-50 cursor-not-allowed' : ''} 
+                    ${!gama.connected ? 'opacity-50' : null} 
                     ${simulation.type == "catalog"}  
                     `}
 

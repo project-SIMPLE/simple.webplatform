@@ -8,7 +8,6 @@ import {
 } from "@yume-chan/scrcpy-decoder-webcodecs";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 
-import { HEADSET_COLOR } from "../../api/constants.ts";
 
 const host: string = window.location.hostname;
 //const port: string = process.env.VIDEO_WS_PORT || '8082';
@@ -45,9 +44,9 @@ const deserializeData = (serializedData: string) => {
 
 
 function createVideoFrameRenderer(): VideoFrameRenderer {
+ 
 
-
-  if (WebGLVideoFrameRenderer.isSupported) {
+  if (WebGLVideoFrameRenderer.isSupported) {  
     console.log("[SCRCPY] Using WebGLVideoFrameRenderer");
     return new WebGLVideoFrameRenderer();
   } else {
