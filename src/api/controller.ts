@@ -62,7 +62,7 @@ export class Controller {
      */
 
     getSimulationInformations(): string {
-        return this.model_manager.getModelListJSON();
+        return this.model_manager.getCatalogListJSON();
     }
 
     /*
