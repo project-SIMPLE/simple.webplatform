@@ -1,7 +1,7 @@
 import uWS, { TemplatedApp } from 'uWebSockets.js';
 
 import { Controller } from './controller';
-import { JsonMonitor } from "./constants.ts"
+import { JsonMonitor, ANSI_COLORS as color } from "./constants.ts"
 import { useExtraVerbose, useVerbose } from "./index.ts";
 
 // Override the log function
@@ -185,8 +185,10 @@ export class MonitorServer {
      * Sends the json_state to the monitor
      */
     sendMonitorGamaState(): void {
+        console.log("état du controller:",this.controller.model_manager.getActiveModel() !== undefined) //TODO retirer cette ligne de débug
         if (this.controller.model_manager.getActiveModel() !== undefined
             && this.controller.gama_connector !== undefined) {
+                console.log("updated the gama state to aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             this.sendMessageByWs({
                 type: "json_state",
                 gama: this.controller.gama_connector.getJsonGama(),
@@ -227,7 +229,7 @@ export class MonitorServer {
                             break;
                         default:
                         case 1:
-                            if (useExtraVerbose) log("[DEBUG] Properly sent message", message, "to client", client.getRemoteAddressAsText());
+                            if (useExtraVerbose) log(`${color.yellow}[DEBUG]${color.green} Properly sent message: ${color.reset}${message} ${color.green}to client${color.reset}`, client.getRemoteAddressAsText());
                     }
                 }
             });
