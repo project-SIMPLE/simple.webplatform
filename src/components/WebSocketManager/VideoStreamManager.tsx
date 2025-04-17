@@ -218,10 +218,6 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
         ))} 
 
       </div>
-      <div>  
-        {/*//TODO remove layout test buttons*/}
-       <button className="bg-green-300 w-fit" onClick={() => setMaxElements(maxElements.valueOf()+1)}>add</button>
-      <button className="bg-red-300 w-fit" onClick={() => setMaxElements(maxElements.valueOf()-1)}>remove</button></div>
      </div> 
       
   );

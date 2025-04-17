@@ -185,10 +185,8 @@ export class MonitorServer {
      * Sends the json_state to the monitor
      */
     sendMonitorGamaState(): void {
-        console.log("état du controller:",this.controller.model_manager.getActiveModel() !== undefined) //TODO retirer cette ligne de débug
         if (this.controller.model_manager.getActiveModel() !== undefined
             && this.controller.gama_connector !== undefined) {
-                console.log("updated the gama state to aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             this.sendMessageByWs({
                 type: "json_state",
                 gama: this.controller.gama_connector.getJsonGama(),

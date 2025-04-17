@@ -129,9 +129,6 @@ class ModelManager {
     }
 
     getActiveModel() {
-        console.log("model actif trouvé: (normalement c'est le premier de la liste, donc non nul",this.models[0
-
-        ])
         return this.activeModel !== undefined ? this.activeModel : this.models[0];
     }
 
