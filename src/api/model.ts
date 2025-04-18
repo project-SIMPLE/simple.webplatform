@@ -1,7 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import { JsonSettings, ANSI_COLORS as color } from "./constants.ts";
-
+interface Settings {
+    type: "json_settings";
+    model_file_path: string;
+    name: string;
+}
 class Model {
     readonly #jsonSettings: JsonSettings;
     readonly #modelFilePath: string;
@@ -12,11 +16,8 @@ class Model {
      * @param {string} settingsPath - Path to the settings file
      * @param {string} modelFilePath - an optionnnal parameter, if not present, the function defaults to searching for the path the old way
      */
-    constructor(settingsPath: string, modelFilePath? : string) {
-        if (!modelFilePath){
-            console.log(`${color.red} [MODEL CONSTRUCTOR] ${color.reset} No model file path found`)
-        }
-        this.#jsonSettings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8')) as JsonSettings;
+    constructor(settingsPath: string, jsonSettings: string, modelFilePath? : string) {
+        this.#jsonSettings = JSON.parse(jsonSettings);
         modelFilePath ? this.#modelFilePath = modelFilePath :
         this.#modelFilePath = path.join(path.dirname(settingsPath), this.#jsonSettings.model_file_path);
     }
@@ -59,6 +60,10 @@ class Model {
             jsonSettings: this.#jsonSettings,
             modelFilePath: this.#modelFilePath
         };
+    }
+
+    toString(){
+        return this.#modelFilePath;
     }
 
 

@@ -109,6 +109,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
                     // this case is launch too much time
                     case 'json_state':
                         setGama(data.gama);
+                        console.log('json_state gama_state', data.gama.connected)
                         setPlayerList(data.player);
                         break;
                     case 'get_simulation_by_index':
@@ -118,6 +119,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
                         break;
                     default:
                         console.warn('[WebSocketManager] Message not processed', data);
+                        setSimulationList(data) 
                 }
             }
         };
@@ -135,6 +137,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
         };
     }, []);
 
+     
 
 
 

@@ -79,6 +79,7 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
 
 
   const handleActiveCanvas = (headsetIp: string, canvas: HTMLCanvasElement) => {
+    setShowPopup(true);
     setActiveCanvas([headsetIp,canvas])
   }
 
@@ -205,7 +206,8 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
      {activeCanvas[0] !== "" && showPopup== true ?
 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10" onClick={() => setShowPopup(false)}>
  <p className="bg-red-500"> {`canvas actif:${activeCanvas[0]}`}</p>
-      <PlayerScreenCanvas canvasSize="size-60"/>
+      <PlayerScreenCanvas canvasSize="size-60"/> 
+      {/* ↑ this canvas is a placeholder */}
     </div>
     : null} 
 {/*                          this is the main container containing the canvases: if there are at least 4 elements, they are displayed in a 2 row grid, else they are displayed side by side. grow is used to ensure that the div takes as much space as possible without overflowing   */}

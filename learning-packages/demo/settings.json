@@ -8,7 +8,7 @@
       {
         "type": "catalog",
         "name": "Data management",
-        "entries": [
+        "entries": [        
           {
             "type": "json_settings",
             "name": "Static data management",

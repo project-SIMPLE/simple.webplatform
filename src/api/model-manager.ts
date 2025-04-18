@@ -73,9 +73,9 @@ class ModelManager {
                         }
                         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
                         this.jsonList.push(settings); // add the settings file to the list of json files
+                        console.log(this.jsonList)
                         if (useVerbose){
                             console.log(`${color.magenta}[MODEL MANAGER] ${color.reset} Found settings file in " + ${folderPath}`);
-                            console.log(settings)
                         }
                         if (settings.type === "catalog") { //it's a catalog, i.e it contains a subset of catalogs and models
                             if (useVerbose) {
@@ -93,9 +93,10 @@ class ModelManager {
                                 this.parseCatalog(item, modelList, settingsPath)
                             }
 
-                        } else{
+                        } else if (settings.type === "json_settings"){
+                            console.log("settings.model_file_path",settings.model_file_path)
                         modelList = modelList.concat(
-                            new Model(settingsPath)
+                            new Model(settingsPath,settings,settings.model_file_path)
                         );}
                         console.log(modelList.toString())
                     } else {
@@ -168,10 +169,13 @@ class ModelManager {
     parseCatalog(catalog: Catalog, list: Model[], settingsPath: string) {
         for (const entry of catalog.entries) {
             if ('type' in entry) {
+                console.log("entry found:",entry)
                 if (entry.type === "json_settings") {
                     console.log(`${color.magenta}[MODEL MANAGER] ${color.reset} ${entry.name}`)
-                    list.push(new Model(settingsPath, entry.model_file_path));
-                    console.log(list)
+        
+                    const model= new Model(settingsPath, JSON.stringify(entry), entry.model_file_path);
+                    console.log(model.toString())
+                    list.push(model);
                 } else if (entry.type === "catalog") {
                     this.parseCatalog(entry, list, settingsPath);
                 }

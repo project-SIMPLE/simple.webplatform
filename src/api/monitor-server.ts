@@ -127,9 +127,10 @@ export class MonitorServer {
                         
                         case "send_simulation":
                             const simulationFromStream = JSON.parse(Buffer.from(message).toString());
+                            
                             this.controller.model_manager.setActiveModelByFilePath(simulationFromStream.simulation.model_file_path);
                             const selectedSimulation = this.controller.model_manager.getActiveModel();
-                            
+                            console.log("[MONITOR SERVER] selected simulation sent to gama:",selectedSimulation.getJsonSettings())
                             this.sendMessageByWs({
                                 type: "get_simulation_by_index",
                                 simulation: selectedSimulation.getJsonSettings()

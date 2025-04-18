@@ -38,10 +38,9 @@ const SelectorSimulations = () => {
    * @param index 
    */
   const handleSimulation = (index: number) => {
-    console.log("[SELECTOR SIMULATION] handle simulation, initial index log:", index, console.log(simulationList));
 
     if (!isWsConnected || ws === null) {
-      console.log("Websocket not connected: !wsIsconnected or ws null",isWsConnected,ws)
+      console.log("Websocket not connected: !wsIsconnected or ws null", isWsConnected, ws)
       return;
     }
 
@@ -62,7 +61,7 @@ const SelectorSimulations = () => {
         setTimeout(() => {
           navigate('/simulationManager');
         }, 100);
-      } else if (Array.isArray(simulationList[index])){
+      } else if (Array.isArray(simulationList[index])) {
         console.log(simulationList[index])
         setSubProjectsList(simulationList[index]);
       }
@@ -120,14 +119,14 @@ const SelectorSimulations = () => {
       <Header needsMiniNav />
       {/* ↑ prop to specify whether it should use the small version of the navigation bar */}
       <button onClick={() => console.log(simulationList[0])}>print simulationList</button>
-      
+
       {loading ? (
         <div className="text-center">
-          {"simulationList ici"+ simulationList.toString()}
+          {"simulationList ici" + simulationList.toString()}
           <div className="animate-pulse ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4 -z-50"></div>
 
           <h2 className="text-gray-700">{t('loading')}</h2>
- 
+
 
         </div>
       ) : (
@@ -143,7 +142,7 @@ const SelectorSimulations = () => {
                 backgroundSize: 'cover',
                 // width: '48px',
                 // height: '48px',
-                zIndex: 1, 
+                zIndex: 1,
                 // position: 'absolute',
                 top: '10px',
                 left: '10px',
@@ -162,11 +161,11 @@ const SelectorSimulations = () => {
           <div className="flex items-center justify-between">
 
             <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
-              {  subProjectsList.length > 0 ?
-                 <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
-                 : <SimulationList list={simulationList} handleSimulation={handleSimulation} gama={gama} />
-                 }
-              
+              {subProjectsList.length > 0 ?
+                <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
+                : <SimulationList list={simulationList} handleSimulation={handleSimulation} gama={gama} />
+              }
+
             </div>
 
 
@@ -177,7 +176,6 @@ const SelectorSimulations = () => {
           <div className='flex gap-2 mt-6'>
             <span className={gama.connected ? 'text-green-500' : 'text-red-500'}>
               {gama.connected ? '' : connectionStatus}
-              <p>gama se connecte pas for some reason</p>
             </span>
 
           </div>
