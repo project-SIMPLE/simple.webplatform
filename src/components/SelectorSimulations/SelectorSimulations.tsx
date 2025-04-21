@@ -46,16 +46,9 @@ const SelectorSimulations = () => {
         if (list[index].entries.length > 0) {
           //@ts-ignore
           list = list[index].entries
-          console.log("y'a des entries dans la liste", list[index])
         } else {
-          console.log("list in the useffect", list)
-          console.log("list[index] in the useffect", list[index])
-          console.log("entries de la liste actuelle", list.entries.length > 0)
-          //@ts-ignore
-          console.log("list[index] contient entries:", list[index].entries.length > 0)
           //@ts-ignore
           list = list[index]
-
         }
         setSubProjectsList(list)
       }
@@ -68,7 +61,7 @@ const SelectorSimulations = () => {
   }
 
   const back = () => {
-    if (path.length > 0) {
+    if (path.length > 1) {
       setPath([...path.slice(0, -1)])
     }
   }
@@ -161,8 +154,6 @@ const SelectorSimulations = () => {
     <div className="flex flex-col items-center justify-between h-full">
 
       <Header needsMiniNav />
-      <button onClick={() => console.log(path)} className='bg-blue-100'>afficher path</button>
-      <button onClick={() => setPath([])} className='bg-red-100'>reset path</button>
       {/* ↑ prop to specify whether it should use the small version of the navigation bar */}
 
       {loading ? (
