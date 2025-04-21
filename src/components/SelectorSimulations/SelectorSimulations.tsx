@@ -15,7 +15,7 @@ const SelectorSimulations = () => {
   const { t } = useTranslation();
   const [subProjectsList, setSubProjectsList] = useState<any[]>([]); //? unused for now, but will be used to store the sub-projects list
   const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
-
+  const [path, setPath] = useState<number[]>([]);
 
 
   const navigate = useNavigate();
@@ -30,12 +30,51 @@ const SelectorSimulations = () => {
   useEffect(() => {
     if (simulationList.length > 0) {
       setLoading(false);
+      if (simulationList.length === 1) {
+        simulationList
+      }
     }
   }, [simulationList]);
 
+
+  useEffect(() => {
+    if (path.length > 0) {
+      let list = simulationList
+      for (const index of path) {
+        console.log("index in the use effect:", index)
+          //@ts-ignore
+        if (list[index].entries.length > 0) {
+          //@ts-ignore
+          list = list[index].entries
+          console.log("y'a des entries dans la liste", list[index])
+        } else {
+          console.log("list in the useffect", list)
+          console.log("list[index] in the useffect", list[index])
+          console.log("entries de la liste actuelle", list.entries.length > 0)
+          //@ts-ignore
+          console.log("list[index] contient entries:", list[index].entries.length > 0)
+          //@ts-ignore
+          list = list[index]
+
+        }
+        setSubProjectsList(list)
+      }
+    }
+  })
+
+
+  const addToPath = (index: number) => {
+    setPath([...path, index])
+  }
+
+  const back = () => {
+    if (path.length > 0) {
+      setPath([...path.slice(0, -1)])
+    }
+  }
   /**
-   * 
-   * @param index 
+   * handles either navigating through the list of projects or launch a simulation
+   * @param index index of the current selected element
    */
   const handleSimulation = (index: number) => {
 
@@ -51,11 +90,12 @@ const SelectorSimulations = () => {
         try {
           //@ts-ignore        ↓ this is a list, so assigning it to another list should be fine
           setSubProjectsList(simulationList[index].entries);
-          //@ts-ignore
-          setSelectedSplashscreen(simulationList[index].splashscreen);
+          addToPath(index)
+          if ('splashscreen' in simulationList[index]) { setSelectedSplashscreen(simulationList[index].splashscreen); }
           console.log("[SELECTOR SIMULATION] handlesimulation, simulationList[index].type == catalog", subProjectsList[index].name);
         }
         catch (e) { console.log("no subprojects", e); }
+
       } else if (simulationList[index].type == "json_settings") {
         ws.send(JSON.stringify({ type: 'send_simulation', simulation: simulationList[index] }));
         setTimeout(() => {
@@ -63,8 +103,11 @@ const SelectorSimulations = () => {
         }, 100);
       } else if (Array.isArray(simulationList[index])) {
         console.log(simulationList[index])
-        setSubProjectsList(simulationList[index]);
+        // setSubProjectsList(simulationList[index]); 
+        console.log(index)
+        addToPath(index)
       }
+
       // ---------------------------------------------------------  sub project selected
     } else if (subProjectsList.length > 0) {
       if (subProjectsList[index].type == "json_settings") {
@@ -77,7 +120,8 @@ const SelectorSimulations = () => {
         if (subProjectsList[index].type == "catalog") {
           try {
             //@ts-ignore        ↓ this is a list, so assigning it to another list should be fine
-            setSubProjectsList(subProjectsList[index].entries);
+            // setSubProjectsList(subProjectsList[index].entries);
+            addToPath(index)
             console.log("[SELECTOR SIMULATION] handlesimulation, simulationList[index].type == catalog", subProjectsList[0].name);
           } // in any case, we catch the error and log it if any
           catch (e) {
@@ -117,12 +161,12 @@ const SelectorSimulations = () => {
     <div className="flex flex-col items-center justify-between h-full">
 
       <Header needsMiniNav />
+      <button onClick={() => console.log(path)} className='bg-blue-100'>afficher path</button>
+      <button onClick={() => setPath([])} className='bg-red-100'>reset path</button>
       {/* ↑ prop to specify whether it should use the small version of the navigation bar */}
-      <button onClick={() => console.log(simulationList[0])}>print simulationList</button>
 
       {loading ? (
         <div className="text-center">
-          {"simulationList ici" + simulationList.toString()}
           <div className="animate-pulse ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4 -z-50"></div>
 
           <h2 className="text-gray-700">{t('loading')}</h2>
@@ -147,7 +191,7 @@ const SelectorSimulations = () => {
                 top: '10px',
                 left: '10px',
               }}
-              onClick={() => setSubProjectsList([])}
+              onClick={() => back()}
             >
               <img src={arrow_back} className='rounded-full bg-slate-700 opacity-75 size-8' />
 
