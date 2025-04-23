@@ -8,8 +8,6 @@ import {
 } from "@yume-chan/scrcpy-decoder-webcodecs";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 
-import { HEADSET_COLOR } from "../../api/constants.ts";
-
 const host: string = window.location.hostname;
 //const port: string = process.env.VIDEO_WS_PORT || '8082';
 const port: string = '8082';
@@ -64,9 +62,9 @@ interface VideoStreamManagerProps {
 }
 
 // The React component
-const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
+const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {;
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const maxElements = 4;
+  const maxElements= process.env.HEADSETS_IP ? process.env.HEADSETS_IP.split(";").length : 0
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length;
   const placeholders = Array.from({ length: placeholdersNeeded });
   const [activeCanvas, setActiveCanvas] = useState<[string, HTMLCanvasElement | undefined ]>(["",undefined])
@@ -209,12 +207,13 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
     : null} */}
 
       <div className=" flex flex-row items-stretch justify-evenly gap-4  p-4">
+        <button onClick={()=> console.log(maxElements) }> </button>
       
         {Object.entries(canvasList).map(([key, canvas]) =>
           <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/>
         )}
         {placeholders.map((_, index) => (
-          <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
+          <PlayerScreenCanvas isPlaceholder key={index.toString()} id={index.toString()} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
         ))} 
 
       </div>
