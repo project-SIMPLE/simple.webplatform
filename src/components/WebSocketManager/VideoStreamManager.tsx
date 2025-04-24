@@ -207,7 +207,6 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {;
     : null} */}
 
       <div className=" flex flex-row items-stretch justify-evenly gap-4  p-4">
-        <button onClick={()=> console.log(maxElements) }> </button>
       
         {Object.entries(canvasList).map(([key, canvas]) =>
           <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/>
