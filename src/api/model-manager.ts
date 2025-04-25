@@ -173,7 +173,7 @@ class ModelManager {
                 if (entry.type === "json_settings") {
                     console.log(`${color.magenta}[MODEL MANAGER] ${color.reset} ${entry.name}`)
         
-                    const model= new Model(settingsPath, JSON.stringify(entry), entry.model_file_path);
+                    const model= new Model(settingsPath, JSON.stringify(entry));
                     console.log(model.toString())
                     list.push(model);
                 } else if (entry.type === "catalog") {
