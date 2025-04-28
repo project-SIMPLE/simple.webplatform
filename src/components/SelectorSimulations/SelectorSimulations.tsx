@@ -168,7 +168,10 @@ const SelectorSimulations = () => {
 
         // disable  
         <div className="flex flex-col items-center justify-center w-5/6 h-2/3 rounded-md relative" style={{ "backgroundColor": "#A1D2FF" }}>
-          {subProjectsList.length > 0 ?
+          
+          {
+            //the content of this bracket is the back button
+          subProjectsList.length > 0 && path.length>1 ?
             <div
               className={`shadow-lg rounded-xl flex flex-col items-center absolute justify-center size-14 cursor-pointer`}
 
