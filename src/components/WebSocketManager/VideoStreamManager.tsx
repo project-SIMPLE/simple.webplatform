@@ -67,7 +67,6 @@ const VideoStreamManager = ({ needsInteractivity }: VideoStreamManagerProps) => 
   const [maxElements, setMaxElements] = useState<number>(4);
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length;
   const placeholders = Array.from({ length: placeholdersNeeded });
-  const [activeCanvas, setActiveCanvas] = useState<{ ip: string, canvas: HTMLCanvasElement | undefined }>({ ip: "", canvas: undefined });
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
     string,
@@ -76,11 +75,6 @@ const VideoStreamManager = ({ needsInteractivity }: VideoStreamManagerProps) => 
   const isDecoderHasConfig = new Map<string, boolean>();
 
 
-  const handleActiveCanvas = (headsetIp: [string,HTMLCanvasElement]) => {
-    console.log(headsetIp[0])
-    console.log(headsetIp[1])
-    setActiveCanvas({ ip: headsetIp[0], canvas: headsetIp[1] })
-  }
 
   /**
    * Creates a new ReadableStream for receiving and decoding H.264 video data associated with a specific device.
