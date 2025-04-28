@@ -10,9 +10,7 @@ import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 
 
 const host: string = window.location.hostname;
-//const port: string = process.env.VIDEO_WS_PORT || '8082';
 const port: string = '8082';
-
 
 
 // Deserialize the data into ScrcpyMediaStreamPacket
@@ -43,10 +41,11 @@ const deserializeData = (serializedData: string) => {
 
 
 
-function createVideoFrameRenderer(): VideoFrameRenderer {
- 
 
-  if (WebGLVideoFrameRenderer.isSupported) {  
+function createVideoFrameRenderer(): VideoFrameRenderer {
+
+
+  if (WebGLVideoFrameRenderer.isSupported) {
     console.log("[SCRCPY] Using WebGLVideoFrameRenderer");
     return new WebGLVideoFrameRenderer();
   } else {
@@ -63,13 +62,12 @@ interface VideoStreamManagerProps {
 }
 
 // The React component
-const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
+const VideoStreamManager = ({ needsInteractivity }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
   const [maxElements, setMaxElements] = useState<number>(4);
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length;
   const placeholders = Array.from({ length: placeholdersNeeded });
-  const [activeCanvas, setActiveCanvas] = useState<[string, HTMLCanvasElement | undefined ]>(["",undefined])
-  const [showPopup, setShowPopup] = useState<boolean>(false);
+  const [activeCanvas, setActiveCanvas] = useState<{ ip: string, canvas: HTMLCanvasElement | undefined }>({ ip: "", canvas: undefined });
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
     string,
@@ -78,9 +76,10 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
   const isDecoderHasConfig = new Map<string, boolean>();
 
 
-  const handleActiveCanvas = (headsetIp: string, canvas: HTMLCanvasElement) => {
-    setShowPopup(true);
-    setActiveCanvas([headsetIp,canvas])
+  const handleActiveCanvas = (headsetIp: [string,HTMLCanvasElement]) => {
+    console.log(headsetIp[0])
+    console.log(headsetIp[1])
+    setActiveCanvas({ ip: headsetIp[0], canvas: headsetIp[1] })
   }
 
   /**
@@ -109,7 +108,7 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
     const renderer: VideoFrameRenderer = createVideoFrameRenderer();
 
     // get the canvas from the renderer (renderer as any is used to ensure ts knows that canvas is a property of the renderer)
-    const canvas = (renderer as any ).canvas as HTMLCanvasElement
+    const canvas = (renderer as any).canvas as HTMLCanvasElement
     setCanvasList(prevCanvasList => ({ ...prevCanvasList, [deviceId]: canvas }));
     console.log("canvasList:", canvasList);
 
@@ -203,25 +202,27 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {
 
   return (
     <div className="w-full h-full flex flex-col items-center"> {/*↓ if there is at least one canvas, and it has been selected, show the popup */}
-     {activeCanvas[0] !== "" && showPopup== true ?
-<div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-10" onClick={() => setShowPopup(false)}>
- <p className="bg-red-500"> {`canvas actif:${activeCanvas[0]}`}</p>
-      <PlayerScreenCanvas canvasSize="size-60"/> 
-      {/* ↑ this canvas is a placeholder */}
-    </div>
-    : null} 
-{/*                          this is the main container containing the canvases: if there are at least 4 elements, they are displayed in a 2 row grid, else they are displayed side by side. grow is used to ensure that the div takes as much space as possible without overflowing   */}
-      <div className={`${  Object.keys(canvasList).length +placeholders.length > 4 ? "grid grid-rows-2 grid-flow-col" : "flex flex-row"} items-center justify-evenly gap-4 grow p-4`}>
+      {/* {activeCanvas !== null && showPopup == true ?
+        <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 z-10" onClick={() => setShowPopup(false)}>
+          <p className="bg-red-500"> {`canvas actif:${activeCanvas.canvas}`}</p>
+          <PlayerScreenCanvas id="0" canvas={activeCanvas.canvas}></PlayerScreenCanvas>
+
+
+        </div>
+        : null} */}
+      {/*                          this is the main container containing the canvases: if there are at least 4 elements, they are displayed in a 2 row grid, else they are displayed side by side. grow is used to ensure that the div takes as much space as possible without overflowing   */}
+      <div className={`${Object.keys(canvasList).length + placeholders.length > 4 ? "grid grid-rows-2 grid-flow-col" : "flex flex-row"} items-center justify-evenly gap-4 grow p-4`}>
         {Object.entries(canvasList).map(([key, canvas]) =>
-          <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/>
+          <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity}  />
+          
         )}
         {placeholders.map((_, index) => (
-          <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
-        ))} 
+          <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
+        ))}
 
       </div>
-     </div> 
-      
+    </div>
+
   );
 };
 
