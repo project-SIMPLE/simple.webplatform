@@ -38,11 +38,12 @@ const SelectorSimulations = () => {
 
 
   useEffect(() => {
+    // the path here is a list of nested indexes, which are used to see which catalogs the user clicked
     if (path.length > 0) {
       let list = simulationList
       for (const index of path) {
         console.log("index in the use effect:", index)
-          //@ts-ignore
+        //@ts-ignore
         if (list[index].entries.length > 0) {
           //@ts-ignore
           list = list[index].entries
@@ -63,6 +64,10 @@ const SelectorSimulations = () => {
   const back = () => {
     if (path.length > 1) {
       setPath([...path.slice(0, -1)])
+    }
+    if (path.length === 1) {
+      setPath([])
+      setSubProjectsList([])
     }
   }
   /**
@@ -168,29 +173,29 @@ const SelectorSimulations = () => {
 
         // disable  
         <div className="flex flex-col items-center justify-center w-5/6 h-2/3 rounded-md relative" style={{ "backgroundColor": "#A1D2FF" }}>
-          
+
           {
             //the content of this bracket is the back button
-          subProjectsList.length > 0 && path.length>1 ?
-            <div
-              className={`shadow-lg rounded-xl flex flex-col items-center absolute justify-center size-14 cursor-pointer`}
+            subProjectsList.length > 0 && path.length >= 1 ?
+              <div
+                className={`shadow-lg rounded-xl flex flex-col items-center absolute justify-center size-14 cursor-pointer`}
 
-              style={{
-                backgroundImage: `url(${selectedSplashscreen ? selectedSplashscreen : "/images/codecode.png"})`,
-                backgroundSize: 'cover',
-                // width: '48px',
-                // height: '48px',
-                zIndex: 1,
-                // position: 'absolute',
-                top: '10px',
-                left: '10px',
-              }}
-              onClick={() => back()}
-            >
-              <img src={arrow_back} className='rounded-full bg-slate-700 opacity-75 size-8' />
+                style={{
+                  backgroundImage: `url(${selectedSplashscreen ? selectedSplashscreen : "/images/codecode.png"})`,
+                  backgroundSize: 'cover',
+                  // width: '48px',
+                  // height: '48px',
+                  zIndex: 1,
+                  // position: 'absolute',
+                  top: '10px',
+                  left: '10px',
+                }}
+                onClick={() => back()}
+              >
+                <img src={arrow_back} className='rounded-full bg-slate-700 opacity-75 size-8' />
 
-            </div>
-            : null}
+              </div>
+              : null}
 
           {subProjectsList.length > 0 ? <h2 className='font-medium'>{t('select_subproject')}</h2> : <h2>{t('select_simulation')} </h2>}
 
