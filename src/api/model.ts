@@ -20,7 +20,7 @@ class Model {
         this.#jsonSettings = JSON.parse(jsonSettings);
         //if the path is relative, we rebuild it using the path of the settings.json it is found in
         const modelFilePath = this.#jsonSettings.model_file_path
-        if (!path.isAbsolute(modelFilePath)) {
+        if (path.isAbsolute(modelFilePath)) {
             this.#modelFilePath = modelFilePath;
         } else {
             this.#modelFilePath = path.join(path.dirname(settingsPath), this.#jsonSettings.model_file_path);
