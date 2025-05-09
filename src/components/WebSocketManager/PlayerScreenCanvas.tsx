@@ -24,15 +24,17 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
     const bgColor = HEADSET_COLOR[ipIdentifier] //careful, the constant file has been modified, these are now tailwind values
     const [showPopup, setShowPopup] = useState<boolean>(false);
     const isColoredHeadset = HEADSET_COLOR[ipIdentifier] !== undefined;
-    const CanvasStyle = "flex flex-col border-4 border-slate-300 p-2 rounded-lg items-center justify-center grow aspect-square"
-    //TODO set the style of the container div here to affect both placeholder and canvas, these should be the same, and if needed we can just add them after in the classname
+    const CanvasStyle = "flex flex-col w-fit border-4 border-slate-300 p-2 rounded-lg items-center justify-center overflow-hidden"
+    
     //**
-    //* this hook is used to add the canvases to the proper divs.
-    //* by default, it will use the base display (canvasref) that is the element of the list.
-    //* when the element is clicked, it will change showPopup to  True, and this hook will use the
-    //* other ref, which is popupref, that represents the popup window. additionnal parameters are 
-    //* passed to determine the size of the canvas on the screen 
+    // this hook is used to add the canvases to the proper divs.
+    // by default, it will use the base display (canvasref) that is the element of the list.
+    // when the element is clicked, it will change showPopup to  True, and this hook will use the
+    // other ref, which is popupref, that represents the popup window. additionnal parameters are 
+    // passed to determine the size of the canvas on the screen 
     //  */
+
+
     useEffect(() => {
         if (canvas) {
 
@@ -45,7 +47,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 }
             } else {
                 if (canvasref.current) {
-                    canvas.classList.add(...[canvasSize ? canvasSize : "max-h-64", "aspect-square", "rounded-lg"])
+                    canvas.classList.add(...[canvasSize ? canvasSize : "max-h-64","rounded-lg","w-[480px"])
                     console.log(ipIdentifier, "identifieur ip")
                     canvasref.current.appendChild(canvas);
                 }
@@ -58,8 +60,8 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
             {showPopup === true ?
                 <div className={`backdrop-blur-md w-full h-full fixed inset-0 flex flex-col items-center justify-center z-10`} onClick={() => setShowPopup(false)}>
                     {/* <div ref={popupref} className={` ${isColoredHeadset ? bgColor : "bg-slate-500"} size-2/3 flex flex-col items-center justify-center`}> */}
-                    <div className={`bg-blue rounded-md p-4 m-4 h-3/4 w-1/2 min-w-fit ${isColoredHeadset ? bgColor : "bg-slate-300"} border-slate-200 border-4  flex flex-col items-center relative`} onClick={(e) => e.stopPropagation()}>
-                        <div ref={popupref} className="h-full w-fit flex flex-col "><p className="bg-slate-200  rounded-t-md p-1 text-center"> {`Player: ${id}`}</p></div>
+                    <div className={`bg-blue rounded-md p-4 m-4 h-3/4 w-1/2 ${isColoredHeadset ? bgColor : "bg-slate-300"} border-slate-200 border-4  flex flex-col items-center relative`} onClick={(e) => e.stopPropagation()}>
+                        <div ref={popupref} className="h-full flex flex-col "><p className="bg-slate-200  rounded-t-md p-1 text-center "> {`Player: ${id}`}</p></div>
                         
                         <button
                             onClick={() => setShowPopup(false)}
@@ -74,12 +76,14 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 : null}
 
             {!isPlaceholder ?
-                <div id={id} ref={canvasref} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500 border-slate-300"} ${CanvasStyle}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
+                <div id={id} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500 border-slate-300 "} ${CanvasStyle}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
                         <p>player:{id}</p>
-                        {isColoredHeadset ? <p>identifier:{ipIdentifier} {true ? `couleur: (${HEADSET_COLOR[ipIdentifier]})` : null}</p> : null}
-                    </div>
+<p>                        {isColoredHeadset ? <p className="w-full text-center">identifier:{ipIdentifier} {false ? `couleur: (${HEADSET_COLOR[ipIdentifier]})` : null}</p> : null}
+</p>                    </div>
+                        <div ref={canvasref} className="overflow-hidden w-[240px] aspect-square rounded-full rotate-[22deg]">
+                        </div>
                 </div>
                 :
 

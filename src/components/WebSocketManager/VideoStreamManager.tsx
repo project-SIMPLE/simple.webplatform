@@ -64,7 +64,7 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({ needsInteractivity }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const [maxElements, setMaxElements] = useState<number>(4);
+  const [maxElements, setMaxElements] = useState<number>(1);
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length;
   const placeholders = Array.from({ length: placeholdersNeeded });
   // Tables storing data for decoding scrcpy streams

@@ -100,9 +100,8 @@ const SelectorSimulations = () => {
           navigate('/simulationManager');
         }, 100);
       } else if (Array.isArray(simulationList[index])) {
-        console.log(simulationList[index])
+        console.log(simulationList[index].model_file_path)
         // setSubProjectsList(simulationList[index]); 
-        console.log(index)
         addToPath(index)
       }
 
@@ -181,7 +180,7 @@ const SelectorSimulations = () => {
                 className={`shadow-lg rounded-xl flex flex-col items-center absolute justify-center size-14 cursor-pointer`}
 
                 style={{
-                  backgroundImage: `url(${selectedSplashscreen ? selectedSplashscreen : "/images/codecode.png"})`,
+                  backgroundImage: `url(${selectedSplashscreen ? selectedSplashscreen : "/images/simple_logo.png"})`,
                   backgroundSize: 'cover',
                   // width: '48px',
                   // height: '48px',
@@ -202,6 +201,8 @@ const SelectorSimulations = () => {
           {/* //TODO add translation for Thai language */}
 
           <div className="flex items-center justify-between">
+
+            
 
             <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
               {subProjectsList.length > 0 ?
