@@ -56,38 +56,38 @@ const StreamPlayerScreen = () => {
 
   // Rendu basé sur la valeur de screenModeDisplay
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-4">
-      <Header hideTranslation/>
+    <div className="w-full h-full flex flex-col items-center justify-around">
+      <Header hideTranslation />
 
+      <div className="w-full h-full flex flex-col items-center">
+        {screenModeDisplay === "shared_screen" && (
+          <div className="flex justify-center items-center h-screen bg-[#a1d2ff]'" ref={videoContainerRef}>
+            <Header needsMiniNav />
 
-      {screenModeDisplay === "shared_screen" && (
-        <div className="flex justify-center items-center h-screen bg-[#a1d2ff]'" ref={videoContainerRef}>
-          <Header needsMiniNav />
-          <div className='flex flex-col items-center justify-center h-full w-full'>
-            <VideoStreamManager/>
+            <VideoStreamManager />
             <div className='flex flex-col'>
               {/* <div className={`${placeholdercontrol2} `}> <img src={gama} className=' border-2 border-black' />  </div> */}
             </div>
           </div>
-        </div>
 
 
-      )}
+        )}
 
-      {screenModeDisplay === "gama_screen" && (
-        <div className="relative h-5-6 w-5/6 flex grow bg-[#a1d2ff] mb-4">
-          <VideoStreamManager />
-          {/* <div className="w-1/2 items-center justify-center flex bg-slate-100" ref={videoContainerRef}> <img src={gama} className="border-2 border-black" />    </div> */}
-        </div>
-      )}
-
-      {screenModeDisplay !== "gama_screen" &&
-        screenModeDisplay !== "shared_screen" && (
-
-          <div className="bg-red-400 relative w-full h-screen flex items-center justify-center">
-            <p>Unknown screen mode: {screenModeDisplay}</p>
+        {screenModeDisplay === "gama_screen" && (
+          <div className="relative h-5-6 w-5/6 flex grow bg-[#a1d2ff] m-4 rounded-md">
+            <VideoStreamManager />
+            {/* <div className="w-1/2 items-center justify-center flex bg-slate-100" ref={videoContainerRef}> <img src={gama} className="border-2 border-black" />    </div> */}
           </div>
         )}
+
+        {screenModeDisplay !== "gama_screen" &&
+          screenModeDisplay !== "shared_screen" && (
+
+            <div className="bg-red-400 relative w-full h-screen flex items-center justify-center">
+              <p>Unknown screen mode: {screenModeDisplay}</p>
+            </div>
+          )}
+      </div>
 
     </div>
   );
