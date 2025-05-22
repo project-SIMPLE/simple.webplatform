@@ -45,7 +45,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 }
             } else {
                 if (canvasref.current) {
-                    canvas.classList.add(...[canvasSize ? canvasSize : "h-full","rounded-lg"])
+                    canvas.classList.add(...[canvasSize ? canvasSize : "h-full", "rounded-lg", "h-[500px]"])
                     canvasref.current.appendChild(canvas);
                 }
             }
