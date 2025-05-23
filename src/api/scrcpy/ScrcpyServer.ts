@@ -48,8 +48,8 @@ export class ScrcpyServer {
             maxSize: 700,
             maxFps: 30,
             //videoBitRate: 200,
-           angle: 25,
-           crop: "1508:1708:300:200",
+            angle: 25,
+             crop: "1508:1708:300:200",
             // // Android soft settings
             stayAwake: true,
             // Clean feed
@@ -57,7 +57,7 @@ export class ScrcpyServer {
             control: true,
             //TODO ajouter un ternaire qui permet de choisir entre le vrai cropping et le faux cropping moche du front
         }
-    ))
+        ))
 
     // =======================
     // Scrcpy stream
