@@ -74,7 +74,7 @@ const StreamPlayerScreen = () => {
         )}
 
         {screenModeDisplay === "gama_screen" && (
-          <div className="relative h-5-6 w-5/6 flex grow bg-[#a1d2ff] m-4 rounded-md">
+          <div className="relative h-5-6 min-w-5/6 w-fit flex grow bg-[#a1d2ff] m-4 rounded-md">
             <VideoStreamManager />
             {/* <div className="w-1/2 items-center justify-center flex bg-slate-100" ref={videoContainerRef}> <img src={gama} className="border-2 border-black" />    </div> */}
           </div>
