@@ -24,7 +24,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
     const bgColor = HEADSET_COLOR[ipIdentifier] //careful, the constant file has been modified, these are now tailwind values
     const [showPopup, setShowPopup] = useState<boolean>(false);
     const isColoredHeadset = HEADSET_COLOR[ipIdentifier] !== undefined;
-    const CanvasStyle = "flex flex-col border-4 m-0 p-0 border-slate-300 p-2 rounded-lg items-center"
+    const CanvasStyle = "flex flex-col border-4 m-0 p-0 border-slate-300 p-2 rounded-lg size-fit items-center"
     const croppingWorkaround = process.env.CROPPING_WORKAROUND;
     /**
     // this hook is used to add the canvases to the proper divs.
@@ -74,7 +74,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 : null}
 
             {!isPlaceholder ?
-                <div id={id} ref={!croppingWorkaround ? canvasref : null} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500"} border-slate-300 ${CanvasStyle} size-fit`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
+                <div id={id} ref={!croppingWorkaround ? canvasref : null} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500"} border-slate-300 ${CanvasStyle}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
                         <p>player:{id}</p>
