@@ -5,9 +5,9 @@ import { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyOptions2_1 } from "@yume-chan/adb-scrcpy";
 import { BIN, VERSION } from "@yume-chan/fetch-scrcpy-server";
 import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyOptions3_1, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
-import {useVerbose} from "../index.ts";
+import { useVerbose } from "../index.ts";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
-import uWS, {TemplatedApp} from "uWebSockets.js";
+import uWS, { TemplatedApp } from "uWebSockets.js";
 
 // Override the log function
 const log = (...args: any[]) => {
@@ -49,14 +49,15 @@ export class ScrcpyServer {
             maxFps: 30,
             //videoBitRate: 200,
             angle: 25,
-            crop: "1508:1708:300:200",
-            // Android soft settings
+             crop: "1508:1708:300:200",
+            // // Android soft settings
             stayAwake: true,
             // Clean feed
             audio: false,
             control: true,
-        })
-    )
+            //TODO ajouter un ternaire qui permet de choisir entre le vrai cropping et le faux cropping moche du front
+        }
+        ))
 
     // =======================
     // Scrcpy stream
@@ -86,7 +87,7 @@ export class ScrcpyServer {
         this.wsServer.ws('/*', {
             compression: uWS.SHARED_COMPRESSOR, // Enable compression
             maxPayloadLength: 20 * 1024, // 20 KB: Adjust based on expected video bitrate
-                                         // Experimental max < 10KB
+            // Experimental max < 10KB
             maxBackpressure: this.maxBackpressure,
             idleTimeout: 30, // 30 seconds timeout
 
@@ -95,13 +96,13 @@ export class ScrcpyServer {
                 log("Web view connected");
 
                 // Send configuration message if scrcpy is already started
-                if(this.scrcpyStreamConfig){
+                if (this.scrcpyStreamConfig) {
                     ws.send(this.scrcpyStreamConfig, false, true);
                 }
 
                 for (const client of this.scrcpyClients) {
                     // Add small delay to let the client finish to load webpage
-                    setTimeout(() => {client.controller!.resetVideo()}, 500) ;
+                    setTimeout(() => { client.controller!.resetVideo() }, 500);
                 }
             },
 
@@ -137,7 +138,7 @@ export class ScrcpyServer {
                             if (code !== 1000) // 1000 = Normal Closure
                                 logError('Unexpected closure');
                             else
-                            if (useVerbose) log(`Connection normally`);
+                                if (useVerbose) log(`Connection normally`);
                     }
                 } catch (err) {
                     logError('Error during close handling:', err);
@@ -148,13 +149,13 @@ export class ScrcpyServer {
         if (useVerbose) log("Using scrcpy version", VERSION);
     }
 
-    async loadScrcpyServer(){
+    async loadScrcpyServer() {
         this.server = await fs.readFile(BIN)
     }
 
     async startStreaming(adbConnection: Adb) {
         try {
-            if (this.server == null){
+            if (this.server == null) {
                 await this.loadScrcpyServer();
             }
 
@@ -207,7 +208,7 @@ export class ScrcpyServer {
                 const myself = this;
 
                 // Enforce sending config package
-                setTimeout(() => {client.controller!.resetVideo()}, 500) ;
+                setTimeout(() => { client.controller!.resetVideo() }, 500);
 
                 videoPacketStream
                     .pipeTo(
@@ -218,10 +219,10 @@ export class ScrcpyServer {
                                     case "configuration":
                                         // Handle configuration packet
                                         const newStreamConfig = JSON.stringify({
-                                                streamId: adbConnection.serial,
-                                                type: "configuration",
-                                                data: Buffer.from(packet.data).toString('base64'), // Convert Uint8Array to Base64 string
-                                            });
+                                            streamId: adbConnection.serial,
+                                            type: "configuration",
+                                            data: Buffer.from(packet.data).toString('base64'), // Convert Uint8Array to Base64 string
+                                        });
                                         myself.broadcastToClients(newStreamConfig);
 
                                         // Save packet for clients after this first packet emission

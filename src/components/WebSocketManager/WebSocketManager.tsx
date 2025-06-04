@@ -78,11 +78,6 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
     };
 
 
-    // This useEffect will log the updated screenMode value
-    // useEffect(() => {
-    //     console.log("The screenMode has changed to :", screenMode);
-    // }, [screenMode]);
-
     useEffect(() => {
         const host = window.location.hostname;
         const port = process.env.MONITOR_WS_PORT || '8001';
@@ -96,6 +91,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
         };
 
         socket.onmessage = (event: MessageEvent) => {
+            console.log(`[WebSocketManager] message received`)
             let data = JSON.parse(event.data);
             if (typeof data == "string"){
                 try{
@@ -122,6 +118,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
                         break;
                     default:
                         console.warn('[WebSocketManager] Message not processed', data);
+                        setSimulationList(data) 
                 }
             }
         };
@@ -139,6 +136,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
         };
     }, []);
 
+     
 
 
 

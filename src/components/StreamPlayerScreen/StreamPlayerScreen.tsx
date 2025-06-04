@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useScreenModeState } from "../ScreenModeContext/ScreenModeContext";
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
-import Button from "../Button/Button";
-import visibility_off from '../../svg_logos/visibility_off.svg';
+import Header from "../Header/Header";
 import gama from '/images/gama_example.png?url';
 const StreamPlayerScreen = () => {
   const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen"); // Get the screen mode display from the context
@@ -51,45 +49,47 @@ const StreamPlayerScreen = () => {
         socket.close();
       }
     };
+
   }, []);
+
+
 
   // Rendu basé sur la valeur de screenModeDisplay
   return (
-    <>
+    <div className="w-full h-full flex flex-col items-center justify-around">
+      <Header hideTranslation />
 
+      <div className="w-full h-full flex flex-col items-center">
+        {screenModeDisplay === "shared_screen" && (
+          <div className="flex justify-center items-center h-screen bg-[#a1d2ff]'" ref={videoContainerRef}>
+            <Header needsMiniNav />
 
-      {screenModeDisplay === "shared_screen" && (
-        <div className="flex justify-center items-center h-screen bg-slate-100" ref={videoContainerRef}>
-          <div className='flex flex-row items-center justify-center h-full w-full'>
             <VideoStreamManager />
             <div className='flex flex-col'>
-              <div className={`${placeholdercontrol2} `}> <img src={gama} className=' border-2 border-black' />  </div>
+              {/* <div className={`${placeholdercontrol2} `}> <img src={gama} className=' border-2 border-black' />  </div> */}
             </div>
           </div>
-        </div>
 
 
-      )}
+        )}
 
-      {screenModeDisplay === "gama_screen" && (
-        <div className="bg-slate-100 relative w-full h-screen flex">
-          <VideoStreamManager/>
-
-          <div className="w-1/2 items-center justify-center flex bg-slate-100" ref={videoContainerRef}> <img src={gama} className="border-2 border-black" />
-
-          </div>
-        </div>
-      )}
-
-      {screenModeDisplay !== "gama_screen" &&
-        screenModeDisplay !== "shared_screen" && (
-
-          <div className="bg-red-400 relative w-full h-screen flex items-center justify-center">
-            <p>Unknown screen mode: {screenModeDisplay}</p>
+        {screenModeDisplay === "gama_screen" && (
+          <div className="relative h-5-6 min-w-[90%] w-fit flex grow bg-[#a1d2ff] m-4 rounded-md">
+            <VideoStreamManager />
+            {/* <div className="w-1/2 items-center justify-center flex bg-slate-100" ref={videoContainerRef}> <img src={gama} className="border-2 border-black" />    </div> */}
           </div>
         )}
 
-    </>
+        {screenModeDisplay !== "gama_screen" &&
+          screenModeDisplay !== "shared_screen" && (
+
+            <div className="bg-red-400 relative w-full h-screen flex items-center justify-center">
+              <p>Unknown screen mode: {screenModeDisplay}</p>
+            </div>
+          )}
+      </div>
+
+    </div>
   );
 };
 

@@ -15,8 +15,7 @@ const SelectorSimulations = () => {
   const { t } = useTranslation();
   const [subProjectsList, setSubProjectsList] = useState<any[]>([]); //? unused for now, but will be used to store the sub-projects list
   const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
-
-  
+  const [path, setPath] = useState<number[]>([]);
 
 
   const navigate = useNavigate();
@@ -31,14 +30,54 @@ const SelectorSimulations = () => {
   useEffect(() => {
     if (simulationList.length > 0) {
       setLoading(false);
+      if (simulationList.length === 1) {
+        simulationList
+      }
     }
   }, [simulationList]);
 
-  const handleSimulation = (index: number) => {
-    console.log("[SELECTOR SIMULATION] handle simulation, initial index log:", index);
 
-    if (!isWsConnected || ws == null) {
-      console.log("Websocket not connected")
+  useEffect(() => {
+    // the path here is a list of nested indexes, which are used to see which catalogs the user clicked
+    if (path.length > 0) {
+      let list = simulationList
+      for (const index of path) {
+        console.log("index in the use effect:", index)
+        //@ts-ignore
+        if (list[index].entries.length > 0) {
+          //@ts-ignore
+          list = list[index].entries
+        } else {
+          //@ts-ignore
+          list = list[index]
+        }
+        setSubProjectsList(list)
+      }
+    }
+  })
+
+
+  const addToPath = (index: number) => {
+    setPath([...path, index])
+  }
+
+  const back = () => {
+    if (path.length > 1) {
+      setPath([...path.slice(0, -1)])
+    }
+    if (path.length === 1) {
+      setPath([])
+      setSubProjectsList([])
+    }
+  }
+  /**
+   * handles either navigating through the list of projects or launch a simulation
+   * @param index index of the current selected element
+   */
+  const handleSimulation = (index: number) => {
+
+    if (!isWsConnected || ws === null) {
+      console.log("Websocket not connected: !wsIsconnected or ws null", isWsConnected, ws)
       return;
     }
 
@@ -49,17 +88,23 @@ const SelectorSimulations = () => {
         try {
           //@ts-ignore        ↓ this is a list, so assigning it to another list should be fine
           setSubProjectsList(simulationList[index].entries);
-          //@ts-ignore
-          setSelectedSplashscreen(simulationList[index].splashscreen);
+          addToPath(index)
+          if ('splashscreen' in simulationList[index]) { setSelectedSplashscreen(simulationList[index].splashscreen); }
           console.log("[SELECTOR SIMULATION] handlesimulation, simulationList[index].type == catalog", subProjectsList[index].name);
         }
         catch (e) { console.log("no subprojects", e); }
+
       } else if (simulationList[index].type == "json_settings") {
         ws.send(JSON.stringify({ type: 'send_simulation', simulation: simulationList[index] }));
         setTimeout(() => {
           navigate('/simulationManager');
         }, 100);
+      } else if (Array.isArray(simulationList[index])) {
+        console.log(simulationList[index].model_file_path)
+        // setSubProjectsList(simulationList[index]); 
+        addToPath(index)
       }
+
       // ---------------------------------------------------------  sub project selected
     } else if (subProjectsList.length > 0) {
       if (subProjectsList[index].type == "json_settings") {
@@ -72,7 +117,8 @@ const SelectorSimulations = () => {
         if (subProjectsList[index].type == "catalog") {
           try {
             //@ts-ignore        ↓ this is a list, so assigning it to another list should be fine
-            setSubProjectsList(subProjectsList[index].entries);
+            // setSubProjectsList(subProjectsList[index].entries);
+            addToPath(index)
             console.log("[SELECTOR SIMULATION] handlesimulation, simulationList[index].type == catalog", subProjectsList[0].name);
           } // in any case, we catch the error and log it if any
           catch (e) {
@@ -90,7 +136,7 @@ const SelectorSimulations = () => {
     if (ws && !gama.connected) {
       interval = setInterval(() => {
         ws.send(JSON.stringify({ type: 'try_connection' }));
-        console.log('Tentative de connexion à Gama...');
+        console.log('Tentative de connexion à Gama... état de la connexion:');
       }, 3000);
     }
 
@@ -120,31 +166,35 @@ const SelectorSimulations = () => {
 
           <h2 className="text-gray-700">{t('loading')}</h2>
 
+
         </div>
       ) : (
 
         // disable  
         <div className="flex flex-col items-center justify-center w-5/6 h-2/3 rounded-md relative" style={{ "backgroundColor": "#A1D2FF" }}>
-          {subProjectsList.length > 0 ?
-            <div
-              className={`shadow-lg rounded-xl flex flex-col items-center absolute justify-center size-14 cursor-pointer`}
 
-              style={{
-                backgroundImage: `url(${selectedSplashscreen ? selectedSplashscreen : "/images/codecode.png"})`,
-                backgroundSize: 'cover',
-                // width: '48px',
-                // height: '48px',
-                zIndex: 1,
-                // position: 'absolute',
-                top: '10px',
-                left: '10px',
-              }}
-              onClick={() => setSubProjectsList([])}
-            >
-              <img src={arrow_back} className='rounded-full bg-slate-700 opacity-75 size-8' />
+          {
+            //the content of this bracket is the back button
+            subProjectsList.length > 0 && path.length >= 1 ?
+              <div
+                className={`shadow-lg rounded-xl flex flex-col items-center absolute justify-center size-14 cursor-pointer`}
 
-            </div>
-            : null}
+                style={{
+                  backgroundImage: `url(${selectedSplashscreen ? selectedSplashscreen : "/images/simple_logo.png"})`,
+                  backgroundSize: 'cover',
+                  // width: '48px',
+                  // height: '48px',
+                  zIndex: 1,
+                  // position: 'absolute',
+                  top: '10px',
+                  left: '10px',
+                }}
+                onClick={() => back()}
+              >
+                <img src={arrow_back} className='rounded-full bg-slate-700 opacity-75 size-8' />
+
+              </div>
+              : null}
 
           {subProjectsList.length > 0 ? <h2 className='font-medium'>{t('select_subproject')}</h2> : <h2>{t('select_simulation')} </h2>}
 
@@ -152,10 +202,14 @@ const SelectorSimulations = () => {
 
           <div className="flex items-center justify-between">
 
+            
+
             <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
               {subProjectsList.length > 0 ?
                 <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
-                : <SimulationList list={simulationList} handleSimulation={handleSimulation} gama={gama} />}
+                : <SimulationList list={simulationList} handleSimulation={handleSimulation} gama={gama} />
+              }
+
             </div>
 
 

@@ -10,7 +10,6 @@ import x_cross from '/src/svg_logos/x_cross.svg';
 import visibility from '/src/svg_logos/visibility.svg'
 import Header from '../Header/Header';
 import { Link } from 'react-router-dom';
-import { start } from 'repl';
 export interface Player {
   connected: boolean;
   date_connection: string;

@@ -1,5 +1,4 @@
 import WebSocket from 'ws';
-
 import { useVerbose, useExtraVerbose } from './index.js';
 import {GamaState, GAMA_ERROR_MESSAGES, JsonPlayerAsk} from "./constants.ts";
 import Model from "./model.ts";
@@ -98,7 +97,7 @@ class GamaConnector {
             type: "load",
             model: model.getModelFilePath(),
             experiment: model.getExperimentName()
-        };
+        };  
     };
 
     /** 

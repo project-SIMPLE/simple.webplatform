@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import PlayerScreenCanvas from "./PlayerScreenCanvas.tsx";
 import {
   VideoFrameRenderer,
@@ -8,10 +8,9 @@ import {
 } from "@yume-chan/scrcpy-decoder-webcodecs";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 
-const host: string = window.location.hostname;
-//const port: string = process.env.VIDEO_WS_PORT || '8082';
-const port: string = '8082';
 
+const host: string = window.location.hostname;
+const port: string = '8082';
 
 
 // Deserialize the data into ScrcpyMediaStreamPacket
@@ -42,6 +41,7 @@ const deserializeData = (serializedData: string) => {
 
 
 
+
 function createVideoFrameRenderer(): VideoFrameRenderer {
 
 
@@ -67,7 +67,6 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {;
   const maxElements= process.env.HEADSETS_IP ? process.env.HEADSETS_IP.split(";").length : 0
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length;
   const placeholders = Array.from({ length: placeholdersNeeded });
-  const [activeCanvas, setActiveCanvas] = useState<[string, HTMLCanvasElement | undefined ]>(["",undefined])
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
     string,
@@ -76,9 +75,6 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {;
   const isDecoderHasConfig = new Map<string, boolean>();
 
 
-  const handleActiveCanvas = (headsetIp: string, canvas: HTMLCanvasElement) => {
-    setActiveCanvas([headsetIp,canvas])
-  }
 
   /**
    * Creates a new ReadableStream for receiving and decoding H.264 video data associated with a specific device.
@@ -106,7 +102,7 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {;
     const renderer: VideoFrameRenderer = createVideoFrameRenderer();
 
     // get the canvas from the renderer (renderer as any is used to ensure ts knows that canvas is a property of the renderer)
-    const canvas = (renderer as any ).canvas as HTMLCanvasElement
+    const canvas = (renderer as any).canvas as HTMLCanvasElement
     setCanvasList(prevCanvasList => ({ ...prevCanvasList, [deviceId]: canvas }));
     console.log("canvasList:", canvasList);
 
@@ -199,24 +195,28 @@ const VideoStreamManager = ({needsInteractivity}: VideoStreamManagerProps) => {;
   }, []);
 
   return (
-    <>
-    {/* {activeCanvas[0] !== null ?
-    <div className="size-full bg-slate-800 opacity-75">
-      <PlayerScreenCanvas canvasSize="size-60"/>
-    </div>    
-    : null} */}
+    <div className="w-full h-full flex flex-col items-center"> {/*↓ if there is at least one canvas, and it has been selected, show the popup */}
+      {/* {activeCanvas !== null && showPopup == true ?
+        <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 z-10" onClick={() => setShowPopup(false)}>
+          <p className="bg-red-500"> {`canvas actif:${activeCanvas.canvas}`}</p>
+          <PlayerScreenCanvas id="0" canvas={activeCanvas.canvas}></PlayerScreenCanvas>
 
-      <div className=" flex flex-row items-stretch justify-evenly gap-4  p-4">
-      
+
+        </div>
+        : null} */}
+      {/*                          this is the main container containing the canvases: if there are at least 4 elements, they are displayed in a 2 row grid, else they are displayed side by side. grow is used to ensure that the div takes as much space as possible without overflowing   */}
+      <div className={`${Object.keys(canvasList).length + placeholders.length > 4 ? "grid grid-rows-2 grid-flow-col" : "flex flex-row"} items-center justify-evenly gap-4 grow p-4`}>
         {Object.entries(canvasList).map(([key, canvas]) =>
-          <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/>
+          <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity}  />
+          
         )}
         {placeholders.map((_, index) => (
-          <PlayerScreenCanvas isPlaceholder key={index.toString()} id={index.toString()} needsInteractivity={needsInteractivity} setActiveCanvas={handleActiveCanvas}/> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
+          <PlayerScreenCanvas isPlaceholder key={index.toString()} id={index.toString()} needsInteractivity={needsInteractivity}/> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
         ))} 
 
       </div>
-     </>
+    </div>
+
   );
 };
 

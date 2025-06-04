@@ -1,7 +1,7 @@
 import uWS, { TemplatedApp } from 'uWebSockets.js';
 
 import { Controller } from './controller';
-import { JsonMonitor } from "./constants.ts"
+import { JsonMonitor, ANSI_COLORS as color } from "./constants.ts"
 import { useExtraVerbose, useVerbose } from "./index.ts";
 
 // Override the log function
@@ -127,9 +127,10 @@ export class MonitorServer {
                         
                         case "send_simulation":
                             const simulationFromStream = JSON.parse(Buffer.from(message).toString());
+                            
                             this.controller.model_manager.setActiveModelByFilePath(simulationFromStream.simulation.model_file_path);
                             const selectedSimulation = this.controller.model_manager.getActiveModel();
-                            
+                            console.log("[MONITOR SERVER] selected simulation sent to gama:",selectedSimulation.getJsonSettings())
                             this.sendMessageByWs({
                                 type: "get_simulation_by_index",
                                 simulation: selectedSimulation.getJsonSettings()
@@ -227,7 +228,7 @@ export class MonitorServer {
                             break;
                         default:
                         case 1:
-                            if (useExtraVerbose) log("[DEBUG] Properly sent message", message, "to client", client.getRemoteAddressAsText());
+                            if (useExtraVerbose) log(`${color.yellow}[DEBUG]${color.green} Properly sent message: ${color.reset}${message} ${color.green}to client${color.reset}`, client.getRemoteAddressAsText());
                     }
                 }
             });
