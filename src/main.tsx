@@ -10,6 +10,7 @@ import SelectorSimulations from './components/SelectorSimulations/SelectorSimula
 import WebSocketManager from './components/WebSocketManager/WebSocketManager';
 import StreamPlayerScreenControl from './components/StreamPlayerScreen/StreamPlayerScreenControl';
 import StreamPlayerScreen from './components/StreamPlayerScreen/StreamPlayerScreen';
+import StreamFullscreen from './components/StreamPlayerScreen/StreamFullscreen';
 
 const App = () => {
   return (
@@ -22,6 +23,7 @@ const App = () => {
                     <Route path="simulationManager" element={<SimulationManager />} />
                     <Route path="streamPlayerScreen" element={ <StreamPlayerScreen /> } />
                     <Route path="streamPlayerScreenControl" element={ <StreamPlayerScreenControl /> } />
+                    <Route path="streamFullscreen" element ={<StreamFullscreen/>}></Route>
                 </Routes>
               </ScreenModeProvider>
             </WebSocketManager>
