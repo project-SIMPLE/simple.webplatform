@@ -25,7 +25,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
     const bgColor = HEADSET_COLOR[ipIdentifier] //careful, the constant file has been modified, these are now tailwind values
     const [showPopup, setShowPopup] = useState<boolean>(false);
     const isColoredHeadset = HEADSET_COLOR[ipIdentifier] !== undefined;
-    const CanvasStyle = "flex flex-col border-4 m-0 p-0 border-slate-300 p-2 rounded-lg size- items-center"
+    const CanvasStyle = "flex flex-col border-4 m-0 p-0 border-slate-300 p-2 rounded-lg size-fit items-center"
     const croppingWorkaround = process.env.CROPPING_WORKAROUND;
     /**
     // this hook is used to add the canvases to the proper divs.
@@ -46,7 +46,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 }
             } else {
                 if (canvasref.current) {
-                    canvas.classList.add(...[canvasSize ? canvasSize : "h-[500px] w-500-px", "rounded-lg"])
+                    canvas.classList.add(...[canvasSize ? canvasSize : "h-[500px]", "rounded-lg"])
                     canvasref.current.appendChild(canvas);
                 }
             }
