@@ -10,9 +10,9 @@ const StreamFullscreen = () => {
     //removes all non numerical values in the string, be careful when using this
 
     return (
-        <>
-            <VideoStreamManager selectedCanvas={cleanId} />
-        </>
+        <div className="w-full flex flew-row items-center justify-center">
+            <VideoStreamManager selectedCanvas={cleanId} hideInfos={true} />
+        </div>
     )
 
 

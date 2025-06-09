@@ -59,11 +59,12 @@ function createVideoFrameRenderer(): VideoFrameRenderer {
 interface VideoStreamManagerProps {
   needsInteractivity?: boolean;
   selectedCanvas?: string;
+  hideInfos?: boolean; // boolean to be passed down as a prop to player screen canvas
 
 }
 
 // The React component
-const VideoStreamManager = ({ needsInteractivity, selectedCanvas }: VideoStreamManagerProps) => {
+const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
   const [maxElements, setMaxElements] = useState<number>(4);
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length;
@@ -106,7 +107,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas }: VideoStreamM
     const canvas = (renderer as any).canvas as HTMLCanvasElement
     if (selectedCanvas && selectedCanvas === deviceId.split(":")[0].split(".")[deviceId.split(".").length - 1]) {
       setCanvasList({ [deviceId]: canvas })
-    } else if(!selectedCanvas) {
+    } else if (!selectedCanvas) {
       setCanvasList(prevCanvasList => ({ ...prevCanvasList, [deviceId]: canvas }));
     }
     console.log("canvasList:", canvasList);
@@ -205,9 +206,9 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas }: VideoStreamM
   return (
 
     selectedCanvas ?
-      <div className="size-full">
+      <div className="w-fit">
         {Object.entries(canvasList).map(([key, canvas]) =>
-          <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} canvasSize="size-full" />
+          <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} canvasSize="h-full" hideInfos />
 
         )}
       </div>
@@ -232,11 +233,11 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas }: VideoStreamM
         {/*                          this is the main container containing the canvases: if there are at least 4 elements, they are displayed in a 2 row grid, else they are displayed side by side. grow is used to ensure that the div takes as much space as possible without overflowing   */}
         <div className={`${Object.keys(canvasList).length + placeholders.length > 4 ? "grid grid-rows-2 grid-flow-col" : "flex flex-row"} items-center justify-evenly gap-4 grow p-4`}>
           {Object.entries(canvasList).map(([key, canvas]) =>
-            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity}/>
+            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos />
 
           )}
           {placeholders.map((_, index) => (
-            <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
+            <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
           ))}
 
         </div>

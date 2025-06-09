@@ -10,10 +10,11 @@ interface PlayerScreenCanvasProps {
     id?: string;
     canvasSize?: string;
     setActiveCanvas?: Function; //function that is passed as a prop by the videostreammanager, this function here returns the canvas and the ip of the headset that need to be displayed in a popup window
+    hideInfos?: boolean; // boolean used in case you want to hide player id and identifier, used in case of fullscreen for example
 }
 
 
-const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, canvasSize, setActiveCanvas }: PlayerScreenCanvasProps) => {
+const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, canvasSize, hideInfos }: PlayerScreenCanvasProps) => {
     if (!id) {
         return null;
     }
@@ -45,7 +46,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 }
             } else {
                 if (canvasref.current) {
-                    canvas.classList.add(...[canvasSize ? canvasSize : "rounded-lg", "h-[500px]", "w-[500px]"])
+                    canvas.classList.add(...[canvasSize ? canvasSize : "h-[500px] w-500-px", "rounded-lg"])
                     canvasref.current.appendChild(canvas);
                 }
             }
@@ -59,7 +60,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 <div className={`backdrop-blur-md w-full h-full fixed inset-0 flex flex-col items-center justify-center z-10`} onClick={() => setShowPopup(false)}>
                     {/* <div ref={popupref} className={` ${isColoredHeadset ? bgColor : "bg-slate-500"} size-2/3 flex flex-col items-center justify-center`}> */}
                     <div className={`bg-blue rounded-md p-4 m-4 h-3/4 w-1/2 ${isColoredHeadset ? bgColor : "bg-slate-300"} border-slate-200 border-4  flex flex-col items-center relative`} onClick={(e) => e.stopPropagation()}>
-                        <div ref={popupref} className="h-full flex flex-col "><p className="bg-slate-200  rounded-t-md p-1 text-center "> {`Player: ${id}`}</p></div>
+                        {hideInfos ? null : <div ref={popupref} className="h-full flex flex-col "><p className="bg-slate-200  rounded-t-md p-1 text-center "> {`Player: ${id}`}</p></div>}
 
                         <button
                             onClick={() => setShowPopup(false)}
@@ -73,19 +74,25 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 </div>
                 : null}
 
+            {/* actually meaningfull content */}
             {!isPlaceholder ?
                 <div id={id} ref={!croppingWorkaround ? canvasref : null} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500"} border-slate-300 ${CanvasStyle}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
-                        <p>player:{id}</p>
-                        {isColoredHeadset ? <p className="w-full text-center">identifier:{ipIdentifier} {false ? `couleur: (${HEADSET_COLOR[ipIdentifier]})` : null}</p> : null}
+                        {hideInfos ? null :
+                            <>
+                                <p>player:{id}</p>
+                                {isColoredHeadset ? <p className="w-full text-center">identifier:{ipIdentifier} {false ? `couleur: (${HEADSET_COLOR[ipIdentifier]})` : null}</p> : null}
+                            </>
+                        }
+
                     </div>
                     {croppingWorkaround ? <div ref={canvasref} className="overflow-hidden w-[240px] aspect-square rounded-full rotate-[22deg]"></div> : null}
                 </div>
 
 
                 :
-
+                // placeholder, with an eye icon
                 <div className={`${CanvasStyle} bg-stone-100`}>
                     {/* <p>Placeholder ici</p> */}
                     <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
