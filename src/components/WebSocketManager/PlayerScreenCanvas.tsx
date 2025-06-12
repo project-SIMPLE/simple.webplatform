@@ -76,7 +76,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
 
             {/* actually meaningfull content */}
             {!isPlaceholder ?
-                <div id={id} ref={!croppingWorkaround ? canvasref : null} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500"} border-slate-300 ${CanvasStyle}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
+                <div id={id} ref={!croppingWorkaround ? canvasref : null} className={`border-4 ${  isColoredHeadset ? bgColor : "bg-slate-500"} border-slate-300 ${CanvasStyle}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
                         {hideInfos ? null :
@@ -87,7 +87,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                         }
 
                     </div>
-                    {croppingWorkaround ? <div ref={canvasref} className="overflow-hidden w-[240px] aspect-square rounded-full rotate-[22deg]"></div> : null}
+                    {croppingWorkaround ? <div ref={canvasref} className="overflow-hidden aspect-square rounded-sm rotate-[22deg]"></div> : null}
                 </div>
 
 
