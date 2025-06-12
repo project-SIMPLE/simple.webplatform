@@ -209,7 +209,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     selectedCanvas ?
       <div className="w-fit">
         {Object.entries(canvasList).map(([key, canvas]) =>
-          <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} canvasSize="h-full" hideInfos />
+          <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity}  hideInfos />
 
         )}
       </div>

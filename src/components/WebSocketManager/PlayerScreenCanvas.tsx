@@ -25,7 +25,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
     const bgColor = HEADSET_COLOR[ipIdentifier] //careful, the constant file has been modified, these are now tailwind values
     const [showPopup, setShowPopup] = useState<boolean>(false);
     const isColoredHeadset = HEADSET_COLOR[ipIdentifier] !== undefined;
-    const CanvasStyle = "flex flex-col border-4 m-0 p-0 border-slate-300 p-2 rounded-lg items-center"
+    const CanvasStyle = "flex flex-col border-4 m-0 p-0 border-none p-2 rounded-lg items-center"
     const croppingWorkaround = process.env.CROPPING_WORKAROUND;
     /**
     // this hook is used to add the canvases to the proper divs.
@@ -46,7 +46,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 }
             } else {
                 if (canvasref.current) {
-                    canvas.classList.add(...[canvasSize ? canvasSize : "h-[500px]", "rounded-lg"])
+                    canvas.classList.add(...[canvasSize ? canvasSize : "w-[200%]", "rounded-lg"])
                     canvasref.current.appendChild(canvas);
                 }
             }
@@ -59,7 +59,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
             {showPopup === true ?
                 <div className={`backdrop-blur-md w-full h-full fixed inset-0 flex flex-col items-center justify-center z-10`} onClick={() => setShowPopup(false)}>
                     {/* <div ref={popupref} className={` ${isColoredHeadset ? bgColor : "bg-slate-500"} size-2/3 flex flex-col items-center justify-center`}> */}
-                    <div className={`bg-blue rounded-md p-4 m-4 h-3/4 w-1/2 ${isColoredHeadset ? bgColor : "bg-slate-300"} border-slate-200 border-4  flex flex-col items-center relative`} onClick={(e) => e.stopPropagation()}>
+                    <div className={`bg-blue rounded-md p-4 m-4 h-3/4 w-1/2 ${isColoredHeadset ? bgColor : "bg-slate-300"} border-4  flex flex-col items-center relative`} onClick={(e) => e.stopPropagation()}>
                         {hideInfos ? null : <div ref={popupref} className="h-full flex flex-col "><p className="bg-slate-200  rounded-t-md p-1 text-center "> {`Player: ${id}`}</p></div>}
 
                         <button
@@ -76,7 +76,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
 
             {/* actually meaningfull content */}
             {!isPlaceholder ?
-                <div id={id} ref={!croppingWorkaround ? canvasref : null} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500"} border-slate-300 ${CanvasStyle} size-[350px]`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
+                <div id={id} ref={!croppingWorkaround ? canvasref : null} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500"} ${CanvasStyle} `} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
                         {hideInfos ? null :
@@ -89,8 +89,8 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                     </div>
                     {croppingWorkaround ? <div ></div> : null}
 
-                    <div className="absolute bg-green-500 z-50 size-[350px] overflow-hidden">
-                        <div ref={canvasref} className="relative overflow-hidden rotate-[23deg] inset-x-[-50px] inset-y-[-100px] w-[470px]" ></div>
+                    <div className="size-[52dvh] overflow-hidden rounded-md">
+                        <div ref={canvasref} className="relative size-[75dvh] overflow-hidden rotate-[22deg] inset-[-100px]"></div>
                     </div>
                 </div>
 
