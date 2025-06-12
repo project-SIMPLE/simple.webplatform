@@ -21,7 +21,7 @@ const logError = (...args: any[]) => {
 };
 
 const H264Capabilities = TinyH264Decoder.capabilities.h264;
-
+const crop = process.env.CROPPING_WORKAROUND // environment variable, if true, disables cropping in the backend (here) and insteads modifies the stream using html / css
 export class ScrcpyServer {
     // =======================
     // WebSocket
@@ -48,9 +48,12 @@ export class ScrcpyServer {
             maxSize: 700,
             maxFps: 30,
             //videoBitRate: 200,
-            angle: 25,
-             crop: "1508:1708:300:200",
-            // // Android soft settings
+
+            ...(crop && {
+                angle: 25,
+                crop: "1508:1708:300:200"
+            }),
+            // Android soft settings
             stayAwake: true,
             // Clean feed
             audio: false,
