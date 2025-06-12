@@ -85,7 +85,6 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                                 {isColoredHeadset ? <p className="w-full text-center">identifier:{ipIdentifier} {false ? `couleur: (${HEADSET_COLOR[ipIdentifier]})` : null}</p> : null}
                             </>
                         }
-
                     </div>
                     {croppingWorkaround ? <div ></div> : null}
 

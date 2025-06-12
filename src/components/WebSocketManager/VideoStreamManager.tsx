@@ -120,7 +120,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       console.log("supported", supported)
       if (supported.supported) {
         const decoder = new WebCodecsVideoDecoder({
-          codec: ScrcpyVideoCodecId.H264,
+          codec: ScrcpyVideoCodecId.H265,
           renderer: renderer,
         });
         // Create new ReadableStream used for scrcpy decoding

@@ -1,0 +1,12 @@
+diff a/src/components/WebSocketManager/PlayerScreenCanvas.tsx b/src/components/WebSocketManager/PlayerScreenCanvas.tsx	(rejected hunks)
+@@ -89,8 +89,8 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
+                     </div>
+                     {croppingWorkaround ? <div ></div> : null}
+ 
+-                    <div className="size-[52dvh] overflow-hidden rounded-md">
+-                        <div ref={canvasref} className="relative size-[75dvh] overflow-hidden rotate-[22deg] inset-[-100px]"></div>
++                    <div className="size-[85dvh] overflow-hidden rounded-md">
++                        <div ref={canvasref} className="relative size-[147%] overflow-hidden rotate-[22deg] inset-[-15dvh]"></div>
+                     </div>
+                 </div>
+ 
