@@ -86,8 +86,8 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                         }
                     </div>
 
-                    <div className="size-[55dvh] overflow-hidden rounded-md">
-                        <div ref={canvasref} className="relative size-[147%] overflow-hidden rotate-[22deg] inset-[-15dvh]"></div>
+                    <div ref={canvasref} className="size-[55dvh] overflow-hidden rounded-md">
+
                     </div>
                 </div>
 
