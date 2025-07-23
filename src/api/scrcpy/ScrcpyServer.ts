@@ -21,7 +21,7 @@ const logError = (...args: any[]) => {
 };
 
 const H264Capabilities = TinyH264Decoder.capabilities.h264;
-
+const crop = process.env.CROPPING_WORKAROUND // environment variable, if true, disables cropping in the backend (here) and insteads modifies the stream using html / css
 export class ScrcpyServer {
     // =======================
     // WebSocket
@@ -38,19 +38,22 @@ export class ScrcpyServer {
     readonly scrcpyOptions = new AdbScrcpyOptions2_1(
         new ScrcpyOptions3_1({
             // scrcpy options
-            videoCodec: "h264",
+            videoCodec: "h265",
             videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
                 profile: H264Capabilities.maxProfile,
                 level: H264Capabilities.maxLevel,
             }),
             // Video settings
             video: true,
-            maxSize: 700,
+            maxSize: 1500,
             maxFps: 30,
             //videoBitRate: 200,
-            angle: 25,
-             crop: "1508:1708:300:200",
-            // // Android soft settings
+
+            ...(crop && {
+                angle: 25,
+                crop: "1508:1708:300:200"
+            }),
+            // Android soft settings
             stayAwake: true,
             // Clean feed
             audio: false,
