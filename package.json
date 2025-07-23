@@ -7,8 +7,7 @@
     "start": "concurrently \"npx tsx src/api/index.ts\" \"vite\"",
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "postinstall": "npm update && fetch-scrcpy-server 3.1"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@homebridge/ciao": "^1.1.8",
@@ -24,7 +23,6 @@
     "@yume-chan/adb": "1.1.0",
     "@yume-chan/adb-scrcpy": "1.1.0",
     "@yume-chan/adb-server-node-tcp": "1.1.0",
-    "@yume-chan/fetch-scrcpy-server": "^1.0.0",
     "@yume-chan/scrcpy-decoder-tinyh264": "1.1.0",
     "@yume-chan/scrcpy-decoder-webcodecs": "1.1.0",
     "@yume-chan/stream-extra": "^1.0.0",

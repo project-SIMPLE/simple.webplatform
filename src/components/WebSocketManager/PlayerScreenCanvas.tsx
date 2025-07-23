@@ -26,7 +26,6 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
     const [showPopup, setShowPopup] = useState<boolean>(false);
     const isColoredHeadset = HEADSET_COLOR[ipIdentifier] !== undefined;
     const CanvasStyle = "flex flex-col border-4 m-0 p-0 border-none p-2 rounded-lg items-center"
-    const croppingWorkaround = process.env.CROPPING_WORKAROUND;
     /**
     // this hook is used to add the canvases to the proper divs.
     // by default, it will use the base display (canvasref) that is the element of the list.
@@ -76,7 +75,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
 
             {/* actually meaningfull content */}
             {!isPlaceholder ?
-                <div id={id} ref={!croppingWorkaround ? canvasref : null} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500"} ${CanvasStyle} `} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
+                <div id={id} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500"} ${CanvasStyle} `} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
                         {hideInfos ? null :
@@ -86,7 +85,6 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                             </>
                         }
                     </div>
-                    {croppingWorkaround ? <div ></div> : null}
 
                     <div className="size-[55dvh] overflow-hidden rounded-md">
                         <div ref={canvasref} className="relative size-[147%] overflow-hidden rotate-[22deg] inset-[-15dvh]"></div>

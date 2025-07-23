@@ -3,11 +3,11 @@ import fs from "fs/promises";
 import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyOptions2_1 } from "@yume-chan/adb-scrcpy";
-import { BIN, VERSION } from "@yume-chan/fetch-scrcpy-server";
 import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyOptions3_1, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
 import { useVerbose } from "../index.ts";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
+import path from "path";
 
 // Override the log function
 const log = (...args: any[]) => {
@@ -21,7 +21,6 @@ const logError = (...args: any[]) => {
 };
 
 const H264Capabilities = TinyH264Decoder.capabilities.h264;
-const crop = process.env.CROPPING_WORKAROUND // environment variable, if true, disables cropping in the backend (here) and insteads modifies the stream using html / css
 export class ScrcpyServer {
     // =======================
     // WebSocket
@@ -48,18 +47,14 @@ export class ScrcpyServer {
             maxSize: 1500,
             maxFps: 30,
             //videoBitRate: 200,
-
-            ...(crop && {
-                angle: 25,
-                crop: "1508:1708:300:200"
-            }),
+            angle: 25,
+            crop: "1508:1708:300:200",
             // Android soft settings
             stayAwake: true,
             // Clean feed
             audio: false,
             control: true,
-            //TODO ajouter un ternaire qui permet de choisir entre le vrai cropping et le faux cropping moche du front
-        }
+        }, "3.3.1" // Fix scrcpy-server version since we're using a custom one
         ))
 
     // =======================
@@ -149,11 +144,16 @@ export class ScrcpyServer {
             }
         });
 
-        if (useVerbose) log("Using scrcpy version", VERSION);
+        //if (useVerbose) log("Using scrcpy version", VERSION);
     }
 
     async loadScrcpyServer() {
-        this.server = await fs.readFile(BIN)
+        //this.server = await fs.readFile(BIN)
+
+        // Use custom hotfix from joranmarcy
+        // This fix 'simply' drop all the black frames to avoid seeing glitches on fw > 72
+        // https://github.com/Genymobile/scrcpy/compare/master...joranmarcy:scrcpy:fix/opengl-discard-blackframes
+        this.server = await fs.readFile( path.join(process.cwd(), 'toolkit', 'scrcpyServer-fixBlackClip') );
     }
 
     async startStreaming(adbConnection: Adb) {
