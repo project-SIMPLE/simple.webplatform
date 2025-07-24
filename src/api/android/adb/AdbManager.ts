@@ -57,7 +57,11 @@ export class AdbManager {
     }
 
     async getClientList() {
-        this.adbClientList = await this.adbServer.getDevices();
+        this.adbClientList = await this.adbServer.getDevices([
+            "unauthorized",
+        //    "offline",
+            "device",
+        ]);
         if (this.adbClientList.length) {
             if (useVerbose) log('Devices found on ADB server:', this.adbClientList);
         } else {

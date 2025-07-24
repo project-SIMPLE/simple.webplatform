@@ -97,7 +97,6 @@ class ModelManager {
                             console.log("settings.model_file_path", settings.model_file_path)
 
                             modelList = modelList.concat(
-
                                 new Model(settingsPath, JSON.stringify(settings), settings.model_file_path)
                             );
                         }

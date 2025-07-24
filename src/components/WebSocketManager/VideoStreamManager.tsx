@@ -8,10 +8,8 @@ import {
 } from "@yume-chan/scrcpy-decoder-webcodecs";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 
-
 const host: string = window.location.hostname;
 const port: string = '8082';
-
 
 // Deserialize the data into ScrcpyMediaStreamPacket
 const deserializeData = (serializedData: string) => {
@@ -39,11 +37,7 @@ const deserializeData = (serializedData: string) => {
   }
 };
 
-
-
-
 function createVideoFrameRenderer(): VideoFrameRenderer {
-
 
   if (WebGLVideoFrameRenderer.isSupported) {
     console.log("[SCRCPY] Using WebGLVideoFrameRenderer");
@@ -73,7 +67,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
     string,
-    ReadableStreamDefaultController
+    ReadableStreamDefaultController | undefined
   >();
   const isDecoderHasConfig = new Map<string, boolean>();
 
@@ -90,6 +84,9 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
    */
   async function newVideoStream(deviceId: string) {
 
+    // Avoid having controller creation hell if connection is too fast
+    readableControllers.set(deviceId, undefined);
+
     // Wait for HTML to be available
 
     if (document.getElementById(deviceId)) {
@@ -99,19 +96,24 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       // Create new stream
       console.log("[Scrcpy-VideoStreamManager] Create new ReadableStream for", deviceId);
     }
-
     // Prepare video stream =======================
 
     const renderer: VideoFrameRenderer = createVideoFrameRenderer();
 
     // get the canvas from the renderer (renderer as any is used to ensure ts knows that canvas is a property of the renderer)
     const canvas = (renderer as any).canvas as HTMLCanvasElement
-    if (selectedCanvas && selectedCanvas === deviceId.split(":")[0].split(".")[deviceId.split(".").length - 1]) {
+
+    // Catch cases with non IP devices (USB
+    const canvasId: string =
+        deviceId.split(":").length > 0 ?
+            deviceId.split(":")[0].split(".")[deviceId.split(".").length - 1]
+        : deviceId;
+
+    if (selectedCanvas && selectedCanvas === canvasId) {
       setCanvasList({ [deviceId]: canvas })
     } else if (!selectedCanvas) {
       setCanvasList(prevCanvasList => ({ ...prevCanvasList, [deviceId]: canvas }));
     }
-    console.log("canvasList:", canvasList);
 
     await VideoDecoder.isConfigSupported({
       // Check if h264 is supported
@@ -135,9 +137,11 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
           cancel() {
             readableControllers.delete(deviceId);
             isDecoderHasConfig.delete(deviceId);
-            canvasList[deviceId].remove();
-
-            // Remove canvas
+            try {
+              canvasList[deviceId].remove();
+            }catch (e) {
+              console.error("Can't delete canvas", canvasList, e);
+            }
           },
         });
 
@@ -175,28 +179,29 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
       const controller = readableControllers.get(deserializedData!.streamId);
 
-      // Enqueue data package to decoder stream
-      if (deserializedData!.packet) {
-        if (
-          isDecoderHasConfig.get(deserializedData!.streamId) &&
-          deserializedData!.packet.type == "data"
-        ) {
-          controller!.enqueue(deserializedData!.packet);
-          // Ensure starting stream with a configuration package holding keyframe
-        } else if (
-          //!isDecoderHasConfig.get(deserializedData!.streamId) &&
-          deserializedData!.packet.type == "configuration"
-        ) {
-          console.log("[Scrcpy] WebSocket decoder loaded for ", deserializedData!.streamId);
-          controller!.enqueue(deserializedData!.packet);
-          isDecoderHasConfig.set(deserializedData!.streamId, true);
+      // Since we set very early the entry before the controller exists,
+      // this catch potential race conditions where controller do not exists
+      if (controller != undefined) {
+        // Enqueue data package to decoder stream
+        if (deserializedData!.packet) {
+          if (
+              isDecoderHasConfig.get(deserializedData!.streamId) &&
+              deserializedData!.packet.type == "data"
+          ) {
+            controller!.enqueue(deserializedData!.packet);
+            // Ensure starting stream with a configuration package holding keyframe
+          } else if (
+              //!isDecoderHasConfig.get(deserializedData!.streamId) &&
+              deserializedData!.packet.type == "configuration"
+          ) {
+            controller!.enqueue(deserializedData!.packet);
+            isDecoderHasConfig.set(deserializedData!.streamId, true);
+          }
+        } else {
+          console.warn("[Scrcpy] Error piping to decoder writable stream, closing controller...");
+          controller!.close();
         }
-      } else {
-        controller!.close();
       }
-
-
-
     };
 
     socket.onclose = () => {

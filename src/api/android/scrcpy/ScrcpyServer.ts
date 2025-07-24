@@ -2,12 +2,11 @@ import fs from "fs/promises";
 
 import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
-import { AdbScrcpyClient, AdbScrcpyOptions2_1 } from "@yume-chan/adb-scrcpy";
-import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyOptions3_1, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
+import { AdbScrcpyClient, AdbScrcpyOptions3_3_1 } from "@yume-chan/adb-scrcpy";
+import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
 import { useVerbose } from "../../index.ts";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
-import path from "path";
 
 // Override the log function
 const log = (...args: any[]) => {
@@ -28,14 +27,13 @@ export class ScrcpyServer {
     private wsClients: Set<uWS.WebSocket<any>>;
     private maxBackpressure: number = 1 * 1024 * 1024; // 1MB
 
-    private scrcpyClients: AdbScrcpyClient[] = [];
+    private scrcpyClients: AdbScrcpyClient<AdbScrcpyOptions3_3_1<true>>[] = [];
 
     // =======================
     // Scrcpy server
-    declare server: Buffer;
+    declare server: Buffer; //ArrayBuffer;
 
-    readonly scrcpyOptions = new AdbScrcpyOptions2_1(
-        new ScrcpyOptions3_1({
+    readonly scrcpyOptions = new AdbScrcpyOptions3_3_1({
             // scrcpy options
             videoCodec: "h265",
             videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
@@ -54,8 +52,7 @@ export class ScrcpyServer {
             // Clean feed
             audio: false,
             control: true,
-        }, "3.3.1" // Fix scrcpy-server version since we're using a custom one
-        ))
+        }, {version: "3.3.1"})
 
     // =======================
     // Scrcpy stream
@@ -153,7 +150,10 @@ export class ScrcpyServer {
         // Use custom hotfix from joranmarcy
         // This fix 'simply' drop all the black frames to avoid seeing glitches on fw > 72
         // https://github.com/Genymobile/scrcpy/compare/master...joranmarcy:scrcpy:fix/opengl-discard-blackframes
-        this.server = await fs.readFile( path.join(process.cwd(), 'toolkit', 'scrcpyServer-fixBlackClip') );
+        //this.server = await fs.readFile( path.join(process.cwd(), 'toolkit', 'scrcpyServer-fixBlackClip') );
+        //const url = new URL(path.join(process.cwd(), 'toolkit', 'scrcpyServer-fixBlackClip'), import.meta.url);
+        const url = new URL(process.cwd() + '/toolkit/scrcpyServer-fixBlackClip', import.meta.url);
+        this.server = await fs.readFile(url);
     }
 
     async startStreaming(adbConnection: Adb) {
@@ -173,19 +173,20 @@ export class ScrcpyServer {
                     filename: DefaultServerPath,
                     file: new ReadableStream({
                         start: (controller) => {
-                            controller.enqueue(myself.server);
+                            controller.enqueue(new Uint8Array(myself.server));
                             controller.close();
                         },
                     }),
                 });
             } catch (error) {
                 logError(`Error writing scrcpy server to  ${adbConnection.serial}: ${error}`);
-            } finally {
+            }
+            finally {
                 await sync.dispose();
             }
 
             if (useVerbose) log(`Starting scrcpy server from ${adbConnection.serial} ===`);
-            const client: AdbScrcpyClient = await AdbScrcpyClient.start(
+            const client : AdbScrcpyClient<AdbScrcpyOptions3_3_1<true>> = await AdbScrcpyClient.start(
                 adbConnection,
                 DefaultServerPath,
                 this.scrcpyOptions
@@ -194,8 +195,10 @@ export class ScrcpyServer {
             // Store the controller of new client
             this.scrcpyClients.push(client);
 
+            // log("coco");
+
             // Print output of Scrcpy server
-            if (useVerbose) void client.stdout.pipeTo(
+            if (useVerbose) void client.output.pipeTo(
                 // @ts-ignore
                 new WritableStream<string>({
                     write(chunk: string): void {
