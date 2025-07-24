@@ -1,8 +1,8 @@
 import WebSocket from 'ws';
-import { useVerbose, useExtraVerbose } from './index.js';
-import {GamaState, GAMA_ERROR_MESSAGES, JsonPlayerAsk} from "./constants.ts";
-import Model from "./model.ts";
-import Controller from "./controller.ts";
+import { useVerbose, useExtraVerbose } from '../index.ts';
+import {GamaState, GAMA_ERROR_MESSAGES, JsonPlayerAsk} from "../core/Constants.ts";
+import Model from "./Model.ts";
+import Controller from "../core/Controller.ts";
 
 
 // Override the log function

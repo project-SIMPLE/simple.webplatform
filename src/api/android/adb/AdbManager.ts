@@ -10,8 +10,8 @@ import {Adb, AdbServerClient} from "@yume-chan/adb";
 import {AdbServerNodeTcpConnector} from "@yume-chan/adb-server-node-tcp";
 import Device = AdbServerClient.Device;
 
-import Controller from "../controller.ts";
-import {useVerbose} from "../index.ts";
+import Controller from "../../core/Controller.ts";
+import {useVerbose} from "../../index.ts";
 import {ScrcpyServer} from "../scrcpy/ScrcpyServer.ts";
 
 // Override the log function

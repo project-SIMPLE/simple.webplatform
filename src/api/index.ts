@@ -3,8 +3,8 @@ import * as os from "node:os";
 import {spawn} from "child_process";
 import dotenv from 'dotenv';
 
-import Controller from './controller';
-import DeviceFinder from './adb/DeviceFinder';
+import Controller from './core/Controller.ts';
+import DeviceFinder from './android/adb/DeviceFinder';
 
 // Load options
 dotenv.config();

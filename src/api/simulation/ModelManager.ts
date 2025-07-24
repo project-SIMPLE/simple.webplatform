@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import { isAbsolute } from 'path';
-import { ANSI_COLORS as color } from './constants.ts';
-import Model from './model';
-import { useVerbose } from './index';
-import Controller from "./controller.ts";
+import { ANSI_COLORS as color } from '../core/Constants.ts';
+import Model from './Model.ts';
+import { useVerbose } from '../index.ts';
+import Controller from "../core/Controller.ts";
 
 /**
  * Inteface to make manipulation of the json file easier 

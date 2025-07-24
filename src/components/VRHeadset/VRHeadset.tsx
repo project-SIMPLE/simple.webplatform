@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {HEADSET_COLOR} from "../../api/constants.ts";
+import {HEADSET_COLOR} from "../../api/core/Constants.ts";
 
 interface VRHeadsetProps {
   selectedPlayer?: any;  

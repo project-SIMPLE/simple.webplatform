@@ -1,11 +1,11 @@
-import GamaConnector from './gama_connector.ts';
-import PlayerManager from './PlayerManager.ts';
-import ModelManager from './model-manager.ts';
-import {MonitorServer} from './monitor-server.ts';
-import {AdbManager} from "./adb/AdbManager.ts";
-import {useAdb} from "./index.ts";
-import {JsonPlayerAsk, JsonOutput} from "./constants.ts";
-import {mDnsService} from "./services/mDnsService.ts";
+import GamaConnector from '../simulation/GamaConnector.ts';
+import PlayerManager from '../multiplayer/PlayerManager.ts';
+import ModelManager from '../simulation/ModelManager.ts';
+import {MonitorServer} from '../monitoring/MonitorServer.ts';
+import {AdbManager} from "../android/adb/AdbManager.ts";
+import {useAdb} from "../index.ts";
+import {JsonPlayerAsk, JsonOutput} from "./Constants.ts";
+import {mDnsService} from "../infra/mDnsService.ts";
 
 // Override the log function
 const log = (...args: any[]) => {

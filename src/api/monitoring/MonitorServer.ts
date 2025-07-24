@@ -1,8 +1,8 @@
 import uWS, { TemplatedApp } from 'uWebSockets.js';
 
-import { Controller } from './controller';
-import { JsonMonitor, ANSI_COLORS as color } from "./constants.ts"
-import { useExtraVerbose, useVerbose } from "./index.ts";
+import { Controller } from '../core/Controller.ts';
+import { JsonMonitor, ANSI_COLORS as color } from "../core/Constants.ts"
+import { useExtraVerbose, useVerbose } from "../index.ts";
 
 // Override the log function
 const log = (...args: any[]) => {

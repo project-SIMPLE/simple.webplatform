@@ -1,8 +1,8 @@
 import { spawn } from 'child_process';
 import path from 'path';
 
-import Controller from "../controller.ts";
-import {HEADSETS_IP, useExtraVerbose, useVerbose} from "../index.ts";
+import Controller from "../../core/Controller.ts";
+import {HEADSETS_IP, useExtraVerbose, useVerbose} from "../../index.ts";
 import * as os from "node:os"
 
 class DeviceFinder {
