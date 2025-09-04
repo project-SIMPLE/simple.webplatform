@@ -28,10 +28,10 @@ const logError = (...args: any[]) => {
 export class AdbManager {
     controller: Controller;
     adbServer!: AdbServerClient;
-    adbClientList!: Device[];
     videoStreamServer: ScrcpyServer;
     // Keep list of serial of devices with a stream already starting
-    clientCurrentlyStreaming: string[] = [];
+    clientCurrentlyStreaming: Device[] = [];
+    observer!: AdbServerClient.DeviceObserver;//!: AdbServerClient;
 
     constructor(controller: Controller) {
         this.controller = controller;
@@ -47,55 +47,75 @@ export class AdbManager {
         this.videoStreamServer = new ScrcpyServer();
 
         (async () => {
-            await this.getClientList();
+            // Init watching ADB clients
+            this.observer = await this.adbServer.trackDevices();
 
-            // If some devices are already connected, starting streaming for those
-            if (this.adbClientList.length != 0){
-                await this.startStreamingForAll();
+            if ( this.observer.current.length > 0){
+                if (useVerbose) for (const device of this.observer.current) {
+                    log('Devices found on ADB server:', device);
+                }
+
+                // startStreamingForAll
+                for (const device of this.observer.current) {
+                    await this.startStreaming(device);
+
+                    // Cooldown to let client properly create streams' canvas
+                    if (useVerbose) log("Waiting 2s before starting a new stream...");
+                    await new Promise( resolve => setTimeout(resolve, 2000) );
+                }
+                // !startStreamingForAll
+
+            } else {
+                if (useVerbose) log('No devices found on ADB server...');
             }
+
+            this.observer.onDeviceAdd((devices) => {
+                for (const device of devices) {
+                    if (useVerbose) log("New device added", device, "Starting streaming for this new device...");
+                    this.startStreaming(device);
+                }
+            });
+
+            this.observer.onDeviceRemove((devices) => {
+                logWarn("A device has been removed");
+                for (const device of devices) {
+                    logWarn(device);
+                    this.clientCurrentlyStreaming.filter((ele,) => ele !== device)
+                }
+            });
+
+            this.observer.onListChange((devices) => {
+                // Fallback mechanism as the onRemove isn't catching everything...
+                if (devices.length < this.clientCurrentlyStreaming.length){
+                    if (useVerbose) logWarn("A headset has been disconnected and is not well represented");
+                    for (const device of this.clientCurrentlyStreaming) {
+                        if (!devices.includes(device)){
+                            logWarn("A device has been removed", device);
+                            this.clientCurrentlyStreaming.filter((ele,) => ele !== device)
+                        }
+                    }
+                    logWarn(this.clientCurrentlyStreaming.length);
+                }
+            });
+
         })();
     }
 
-    async getClientList() {
-        this.adbClientList = await this.adbServer.getDevices([
-            "unauthorized",
-        //    "offline",
-            "device",
-        ]);
-        if (this.adbClientList.length) {
-            if (useVerbose) log('Devices found on ADB server:', this.adbClientList);
-        } else {
-            if (useVerbose) log('No devices found on ADB server...');
-        }
-    }
-
-    async startStreamingForAll() {
-        for (const device of this.adbClientList) {
-            await this.startStreaming(device.serial);
-
-            // Cooldown to let client properly create streams' canvas
-            if (useVerbose) log("Waiting 2s before starting a new stream...");
-            await new Promise( resolve => setTimeout(resolve, 2000) );
-        }
-    }
-
-    async startStreaming(serial: string) {
+    async startStreaming(device: Device) {
         // Ensure having only one streaming per device
-        if(this.clientCurrentlyStreaming.includes(serial)) {
-            if (useVerbose) logWarn('Device', serial, 'already streaming. Skipping new stream...');
+        if(this.clientCurrentlyStreaming.includes(device)) {
+            if (useVerbose) logWarn('Device', device.serial, 'already streaming. Skipping new stream...');
             return;
         }else{
             // Add new device streaming
-            this.clientCurrentlyStreaming.push(serial);
+            this.clientCurrentlyStreaming.push(device);
 
-            const deviceToStream = this.adbClientList.find(client => client.serial === serial);
-
-            const transport = await this.adbServer.createTransport(deviceToStream);
+            const transport = await this.adbServer.createTransport(device);
             const adb = new Adb(transport);
 
-            if (useVerbose) log('Starting streaming for :', serial);
+            if (useVerbose) log('Starting streaming for :', device.serial);
 
-            await this.videoStreamServer.startStreaming(adb);
+            await this.videoStreamServer.startStreaming(adb, device.model!);
         }
 
     }
