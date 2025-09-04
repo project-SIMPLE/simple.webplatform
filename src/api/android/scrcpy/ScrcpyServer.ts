@@ -4,7 +4,7 @@ import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyOptions3_3_1 } from "@yume-chan/adb-scrcpy";
 import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
-import { useVerbose } from "../../index.ts";
+import {useExtraVerbose, useVerbose} from "../../index.ts";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
 
@@ -32,27 +32,6 @@ export class ScrcpyServer {
     // =======================
     // Scrcpy server
     declare server: Buffer; //ArrayBuffer;
-
-    readonly scrcpyOptions = new AdbScrcpyOptions3_3_1({
-            // scrcpy options
-            videoCodec: "h265",
-            videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
-                profile: H264Capabilities.maxProfile,
-                level: H264Capabilities.maxLevel,
-            }),
-            // Video settings
-            video: true,
-            maxSize: 1500,
-            maxFps: 30,
-            //videoBitRate: 200,
-            angle: 25,
-            crop: "1508:1708:300:200",
-            // Android soft settings
-            stayAwake: true,
-            // Clean feed
-            audio: false,
-            control: true,
-        }, {version: "3.3.1"})
 
     // =======================
     // Scrcpy stream
@@ -156,7 +135,26 @@ export class ScrcpyServer {
         this.server = await fs.readFile(url);
     }
 
-    async startStreaming(adbConnection: Adb) {
+    async startStreaming(adbConnection: Adb, deviceModel: string) {
+        let scrcpyOptions = new AdbScrcpyOptions3_3_1({
+            // scrcpy options
+            videoCodec: "h265",
+            videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
+                profile: H264Capabilities.maxProfile,
+                level: H264Capabilities.maxLevel,
+            }),
+            // Video settings
+            video: true,
+            maxSize: 1570,
+            maxFps: 30,
+            videoBitRate: 200,
+            // Android soft settings
+            stayAwake: true,
+            // Clean feed
+            audio: false,
+            control: true,
+        }, {version: "3.3.1"})
+
         try {
             if (this.server == null) {
                 await this.loadScrcpyServer();
@@ -166,7 +164,7 @@ export class ScrcpyServer {
 
             const myself = this;
 
-            if (useVerbose) log(`Pushing scrcpy server to ${adbConnection.serial} ===`);
+            if (useVerbose) log(`Sync adb with ${adbConnection.serial} ===`);
             const sync = await adbConnection.sync();
             try {
                 await sync.write({
@@ -185,14 +183,25 @@ export class ScrcpyServer {
                 await sync.dispose();
             }
 
-            if (useVerbose) log(`Starting scrcpy server from ${adbConnection.serial} ===`);
+            // Apply different crop values to work with every devices
+            if (deviceModel == "Quest_3S"){
+                scrcpyOptions.value.crop = "1482:1570:170:150";
+            } else if (deviceModel == "Quest_3"){
+                scrcpyOptions.value.angle = 23;
+                scrcpyOptions.value.crop = "1482:1570:300:250";
+            } else {
+                logWarn("Device", deviceModel, "is unknown, so no cropping is applied");
+            }
+
+            if (useVerbose) log(`Prepare scrcpy server from ${adbConnection.serial} ===`);
             const client : AdbScrcpyClient<AdbScrcpyOptions3_3_1<true>> = await AdbScrcpyClient.start(
                 adbConnection,
                 DefaultServerPath,
-                this.scrcpyOptions
+                scrcpyOptions
             );
 
             // Store the controller of new client
+            if (useVerbose) log(`Pushing scrcpy server to ${adbConnection.serial} ===`);
             this.scrcpyClients.push(client);
 
             // log("coco");
@@ -202,7 +211,7 @@ export class ScrcpyServer {
                 // @ts-ignore
                 new WritableStream<string>({
                     write(chunk: string): void {
-                        console.debug("\x1b[41m[DEBUG]\x1b[0m", chunk);
+                        if(useExtraVerbose) console.debug("\x1b[41m[DEBUG]\x1b[0m", chunk);
                     },
                 }),
             );
