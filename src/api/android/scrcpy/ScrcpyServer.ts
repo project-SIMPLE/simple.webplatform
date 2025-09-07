@@ -7,6 +7,7 @@ import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyCodecOptions } from "
 import {useExtraVerbose, useVerbose} from "../../index.ts";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
+import os from "node:os";
 
 // Override the log function
 const log = (...args: any[]) => {
@@ -138,11 +139,12 @@ export class ScrcpyServer {
     async startStreaming(adbConnection: Adb, deviceModel: string) {
         let scrcpyOptions = new AdbScrcpyOptions3_3_1({
             // scrcpy options
-            videoCodec: "h265",
             videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
                 profile: H264Capabilities.maxProfile,
                 level: H264Capabilities.maxLevel,
             }),
+            // Enable h265 only for MacOS which is the only to truly supports it in browser
+            videoCodec: (os.platform() == 'darwin' ? "h265" : "h264"),
             // Video settings
             video: true,
             maxSize: 1570,

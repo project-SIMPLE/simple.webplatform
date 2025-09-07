@@ -7,6 +7,7 @@ import {
   WebCodecsVideoDecoder,
 } from "@yume-chan/scrcpy-decoder-webcodecs";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
+import os from "node:os";
 
 const host: string = window.location.hostname;
 const port: string = '8082';
@@ -122,7 +123,8 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       console.log("supported", supported)
       if (supported.supported) {
         const decoder = new WebCodecsVideoDecoder({
-          codec: ScrcpyVideoCodecId.H265,
+            // Enable h265 only for MacOS which is the only to truly supports it in browser
+          codec: (os.platform() == 'darwin' ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264),
           renderer: renderer,
         });
         // Create new ReadableStream used for scrcpy decoding
