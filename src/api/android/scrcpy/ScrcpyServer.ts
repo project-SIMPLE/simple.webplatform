@@ -4,7 +4,7 @@ import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyOptions3_3_1 } from "@yume-chan/adb-scrcpy";
 import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
-import {useExtraVerbose, useVerbose} from "../../index.ts";
+import {useExtraVerbose, useVerbose, ENV_SCRCPY_FORCE_H265} from "../../index.ts";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
 import os from "node:os";
@@ -144,7 +144,7 @@ export class ScrcpyServer {
                 level: H264Capabilities.maxLevel,
             }),
             // Enable h265 only for MacOS which is the only to truly supports it in browser
-            videoCodec: (os.platform() == 'darwin' ? "h265" : "h264"),
+            videoCodec: ((os.platform() == 'darwin' || ENV_SCRCPY_FORCE_H265) ? "h265" : "h264"),
             // Video settings
             video: true,
             maxSize: 1570,

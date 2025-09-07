@@ -10,17 +10,31 @@ import DeviceFinder from './android/adb/DeviceFinder';
 dotenv.config();
 
 // Default value for every option value
+// GAMA =====
 process.env.GAMA_WS_PORT =                process.env.GAMA_WS_PORT                || '1000';
 process.env.GAMA_IP_ADDRESS =             process.env.GAMA_IP_ADDRESS             || 'localhost';
-process.env.WEB_APPLICATION_PORT =        process.env.WEB_APPLICATION_PORT        || '5173';
-process.env.HEADSET_WS_PORT =             process.env.HEADSET_WS_PORT             || '8080';
-process.env.MONITOR_WS_PORT =             process.env.MONITOR_WS_PORT             || '8001';
 process.env.LEARNING_PACKAGE_PATH =       process.env.LEARNING_PACKAGE_PATH       || "./learning-packages";
 process.env.EXTRA_LEARNING_PACKAGE_PATH = process.env.EXTRA_LEARNING_PACKAGE_PATH || "";
-const HEADSETS_IP: string[] =             process.env.HEADSETS_IP ? process.env.HEADSETS_IP.split(';').filter((value) => value.trim() !== '') : [];
 
 const useAggressiveDisconnect: boolean = process.env.AGGRESSIVE_DISCONNECT !== undefined ? ['true', '1', 'yes'].includes(process.env.AGGRESSIVE_DISCONNECT.toLowerCase()) : false;
+// ! GAMA =====
 
+// Headsets  =====
+process.env.HEADSET_WS_PORT =             process.env.HEADSET_WS_PORT             || '8080';
+// ! Headsets  =====
+
+// Scrcpy =====
+const ENV_SCRCPY_FORCE_H265: boolean = process.env.SCRCPY_FORCE_H265 !== undefined ? ['true', '1', 'yes'].includes(process.env.SCRCPY_FORCE_H265.toLowerCase()) : false;
+// ! Scrcpy =====
+
+// Website =====
+process.env.WEB_APPLICATION_PORT =        process.env.WEB_APPLICATION_PORT        || '5173';
+process.env.MONITOR_WS_PORT =             process.env.MONITOR_WS_PORT             || '8001';
+
+const HEADSETS_IP: string[] =             process.env.HEADSETS_IP ? process.env.HEADSETS_IP.split(';').filter((value) => value.trim() !== '') : [];
+// ! Website  =====
+
+// Debug  =====
 const useExtraVerbose: boolean = process.env.EXTRA_VERBOSE !== undefined ? ['true', '1', 'yes'].includes(process.env.EXTRA_VERBOSE.toLowerCase()) : false;
 
 // Make verbose option more user friendly and ts-friendly
