@@ -3,7 +3,7 @@ import path from 'path';
 import { isAbsolute } from 'path';
 import { ANSI_COLORS as color } from '../core/Constants.ts';
 import Model from './Model.ts';
-import { useVerbose } from '../index.ts';
+import { ENV_VERBOSE } from '../index.ts';
 import Controller from "../core/Controller.ts";
 
 /**
@@ -68,26 +68,26 @@ class ModelManager {
                     const settingsPath = path.join(folderPath, "settings.json");
                     // Verify if there is a settings file
                     if (fs.existsSync(settingsPath)) {
-                        if (useVerbose) {
+                        if (ENV_VERBOSE) {
                             console.log(`${color.magenta}[MODEL MANAGER] ${color.reset} Append new package to ModelManager: ${folderPath}`);
                         }
                         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
                         this.jsonList.push(settings); // add the settings file to the list of json files
                         console.log(this.jsonList)
-                        if (useVerbose) {
+                        if (ENV_VERBOSE) {
                             console.log(`${color.magenta}[MODEL MANAGER] ${color.reset} Found settings file in " + ${folderPath}`);
                         }
                         if (settings.type === "catalog") { //it's a catalog, i.e it contains a subset of catalogs and models
-                            if (useVerbose) {
+                            if (ENV_VERBOSE) {
                                 console.log(`${color.magenta}[MODEL MANAGER] ${color.reset} Found catalog in " + ${folderPath}`);
                             }
                             this.parseCatalog(settings, modelList, settingsPath)
                         } else if (Array.isArray(settings)) {
-                            if (useVerbose) {
+                            if (ENV_VERBOSE) {
                                 console.log(`${color.magenta}[MODEL MANAGER] ${color.reset}  Found array in ${color.cyan}${folderPath}${color.reset},iterating through`);
                             }
                             for (const item of settings) {
-                                if (useVerbose) {
+                                if (ENV_VERBOSE) {
                                     console.log(`${color.magenta}[MODEL MANAGER] ${color.reset} item: ${item.type}`)
                                 }
                                 this.parseCatalog(item, modelList, settingsPath)
@@ -102,7 +102,7 @@ class ModelManager {
                         }
                         console.log(modelList.toString())
                     } else {
-                        if (useVerbose) {
+                        if (ENV_VERBOSE) {
                             console.warn(`${color.orange} Couldn't find settings file for folder ${color.green} ${folderPath}`);
                         }
                     }

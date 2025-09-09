@@ -4,7 +4,7 @@ import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyOptions3_3_1 } from "@yume-chan/adb-scrcpy";
 import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
-import {useExtraVerbose, useVerbose, ENV_SCRCPY_FORCE_H265} from "../../index.ts";
+import {ENV_EXTRA_VERBOSE, ENV_VERBOSE, ENV_SCRCPY_FORCE_H265} from "../../index.ts";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
 import os from "node:os";
@@ -84,7 +84,7 @@ export class ScrcpyServer {
             drain: (ws) => {
                 // Reset stream to prevent having too much artefacts on stream
                 if (ws.getBufferedAmount() < this.maxBackpressure) {
-                    if (useVerbose) log("Backpressure drained, restart stream to prevent visual glitch")
+                    if (ENV_VERBOSE) log("Backpressure drained, restart stream to prevent visual glitch")
                     for (const client of this.scrcpyClients) {
                         client.controller!.resetVideo();
                     }
@@ -113,7 +113,7 @@ export class ScrcpyServer {
                             if (code !== 1000) // 1000 = Normal Closure
                                 logError('Unexpected closure');
                             else
-                                if (useVerbose) log(`Connection normally`);
+                                if (ENV_VERBOSE) log(`Connection normally`);
                     }
                 } catch (err) {
                     logError('Error during close handling:', err);
@@ -121,7 +121,7 @@ export class ScrcpyServer {
             }
         });
 
-        //if (useVerbose) log("Using scrcpy version", VERSION);
+        //if (ENV_VERBOSE) log("Using scrcpy version", VERSION);
     }
 
     async loadScrcpyServer() {
@@ -166,7 +166,7 @@ export class ScrcpyServer {
 
             const myself = this;
 
-            if (useVerbose) log(`Sync adb with ${adbConnection.serial} ===`);
+            if (ENV_VERBOSE) log(`Sync adb with ${adbConnection.serial} ===`);
             const sync = await adbConnection.sync();
             try {
                 await sync.write({
@@ -195,7 +195,7 @@ export class ScrcpyServer {
                 logWarn("Device", deviceModel, "is unknown, so no cropping is applied");
             }
 
-            if (useVerbose) log(`Prepare scrcpy server from ${adbConnection.serial} ===`);
+            if (ENV_VERBOSE) log(`Prepare scrcpy server from ${adbConnection.serial} ===`);
             const client : AdbScrcpyClient<AdbScrcpyOptions3_3_1<true>> = await AdbScrcpyClient.start(
                 adbConnection,
                 DefaultServerPath,
@@ -203,17 +203,17 @@ export class ScrcpyServer {
             );
 
             // Store the controller of new client
-            if (useVerbose) log(`Pushing scrcpy server to ${adbConnection.serial} ===`);
+            if (ENV_VERBOSE) log(`Pushing scrcpy server to ${adbConnection.serial} ===`);
             this.scrcpyClients.push(client);
 
             // log("coco");
 
             // Print output of Scrcpy server
-            if (useVerbose) void client.output.pipeTo(
+            if (ENV_VERBOSE) void client.output.pipeTo(
                 // @ts-ignore
                 new WritableStream<string>({
                     write(chunk: string): void {
-                        if(useExtraVerbose) console.debug("\x1b[41m[DEBUG]\x1b[0m", chunk);
+                        if(ENV_EXTRA_VERBOSE) console.debug("\x1b[41m[DEBUG]\x1b[0m", chunk);
                     },
                 }),
             );

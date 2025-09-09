@@ -15,7 +15,7 @@ process.env.GAMA_IP_ADDRESS =             process.env.GAMA_IP_ADDRESS           
 process.env.LEARNING_PACKAGE_PATH =       process.env.LEARNING_PACKAGE_PATH       || "./learning-packages";
 process.env.EXTRA_LEARNING_PACKAGE_PATH = process.env.EXTRA_LEARNING_PACKAGE_PATH || "";
 
-const useAggressiveDisconnect: boolean = process.env.AGGRESSIVE_DISCONNECT !== undefined ? ['true', '1', 'yes'].includes(process.env.AGGRESSIVE_DISCONNECT.toLowerCase()) : false;
+const ENV_AGGRESSIVE_DISCONNECT: boolean = process.env.AGGRESSIVE_DISCONNECT !== undefined ? ['true', '1', 'yes'].includes(process.env.AGGRESSIVE_DISCONNECT.toLowerCase()) : false;
 // ! GAMA =====
 
 // Headsets  =====
@@ -34,16 +34,16 @@ const HEADSETS_IP: string[] =             process.env.HEADSETS_IP ? process.env.
 // ! Website  =====
 
 // Debug  =====
-const useExtraVerbose: boolean = process.env.EXTRA_VERBOSE !== undefined ? ['true', '1', 'yes'].includes(process.env.EXTRA_VERBOSE.toLowerCase()) : false;
+const ENV_EXTRA_VERBOSE: boolean = process.env.EXTRA_VERBOSE !== undefined ? ['true', '1', 'yes'].includes(process.env.EXTRA_VERBOSE.toLowerCase()) : false;
 
 // Make verbose option more user friendly and ts-friendly
-const useVerbose: boolean = useExtraVerbose ?
+const ENV_VERBOSE: boolean = ENV_EXTRA_VERBOSE ?
     true :
     process.env.VERBOSE !== undefined ?
         ['true', '1', 'yes'].includes(process.env.VERBOSE.toLowerCase())
         : false;
 
-if (useExtraVerbose) {
+if (ENV_EXTRA_VERBOSE) {
   console.log(process.env);
 }
 
@@ -143,10 +143,10 @@ async function isCommandAvailable(commandName: string): Promise<boolean> {
  }
 
 export {
-  useVerbose,
-  useExtraVerbose,
+  ENV_VERBOSE,
+  ENV_EXTRA_VERBOSE,
   useAdb,
-  useAggressiveDisconnect,
+  ENV_AGGRESSIVE_DISCONNECT,
   HEADSETS_IP,
     ENV_SCRCPY_FORCE_H265
 };

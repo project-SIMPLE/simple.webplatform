@@ -2,7 +2,7 @@ import uWS, { TemplatedApp } from 'uWebSockets.js';
 
 import { Controller } from '../core/Controller.ts';
 import { JsonMonitor, ANSI_COLORS as color } from "../core/Constants.ts"
-import { useExtraVerbose, useVerbose } from "../index.ts";
+import { ENV_EXTRA_VERBOSE, ENV_VERBOSE } from "../index.ts";
 
 // Override the log function
 const log = (...args: any[]) => {
@@ -118,7 +118,7 @@ export class MonitorServer {
                                 simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
                             }, ws);
 
-                            if (useVerbose) log("Opening virtual universe", selectedSimulation.getJsonSettings());
+                            if (ENV_VERBOSE) log("Opening virtual universe", selectedSimulation.getJsonSettings());
                         } else {
                             logError("Invalid index received or out of bounds");
                         }
@@ -173,7 +173,7 @@ export class MonitorServer {
                             if (code !== 1000) // 1000 = Normal Closure
                                 logError('Unexpected closure');
                             else
-                                if (useVerbose) log(`Closing normally`);
+                                if (ENV_VERBOSE) log(`Closing normally`);
                     }
                 } catch (err) {
                     logError('Error during close handling:', err);
@@ -228,7 +228,7 @@ export class MonitorServer {
                             break;
                         default:
                         case 1:
-                            if (useExtraVerbose) log(`${color.yellow}[DEBUG]${color.green} Properly sent message: ${color.reset}${message} ${color.green}to client${color.reset}`, client.getRemoteAddressAsText());
+                            if (ENV_EXTRA_VERBOSE) log(`${color.yellow}[DEBUG]${color.green} Properly sent message: ${color.reset}${message} ${color.green}to client${color.reset}`, client.getRemoteAddressAsText());
                     }
                 }
             });

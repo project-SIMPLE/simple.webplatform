@@ -11,7 +11,7 @@ import {AdbServerNodeTcpConnector} from "@yume-chan/adb-server-node-tcp";
 import Device = AdbServerClient.Device;
 
 import Controller from "../../core/Controller.ts";
-import {useVerbose} from "../../index.ts";
+import {ENV_VERBOSE} from "../../index.ts";
 import {ScrcpyServer} from "../scrcpy/ScrcpyServer.ts";
 
 // Override the log function
@@ -51,7 +51,7 @@ export class AdbManager {
             this.observer = await this.adbServer.trackDevices();
 
             if ( this.observer.current.length > 0){
-                if (useVerbose) for (const device of this.observer.current) {
+                if (ENV_VERBOSE) for (const device of this.observer.current) {
                     log('Devices found on ADB server:', device);
                 }
 
@@ -60,18 +60,18 @@ export class AdbManager {
                     await this.startStreaming(device);
 
                     // Cooldown to let client properly create streams' canvas
-                    if (useVerbose) log("Waiting 2s before starting a new stream...");
+                    if (ENV_VERBOSE) log("Waiting 2s before starting a new stream...");
                     await new Promise( resolve => setTimeout(resolve, 2000) );
                 }
                 // !startStreamingForAll
 
             } else {
-                if (useVerbose) log('No devices found on ADB server...');
+                if (ENV_VERBOSE) log('No devices found on ADB server...');
             }
 
             this.observer.onDeviceAdd((devices) => {
                 for (const device of devices) {
-                    if (useVerbose) log("New device added", device, "Starting streaming for this new device...");
+                    if (ENV_VERBOSE) log("New device added", device, "Starting streaming for this new device...");
                     this.startStreaming(device);
                 }
             });
@@ -87,7 +87,7 @@ export class AdbManager {
             this.observer.onListChange((devices) => {
                 // Fallback mechanism as the onRemove isn't catching everything...
                 if (devices.length < this.clientCurrentlyStreaming.length){
-                    if (useVerbose) logWarn("A headset has been disconnected and is not well represented");
+                    if (ENV_VERBOSE) logWarn("A headset has been disconnected and is not well represented");
                     for (const device of this.clientCurrentlyStreaming) {
                         if (!devices.includes(device)){
                             logWarn("A device has been removed", device);
@@ -104,7 +104,7 @@ export class AdbManager {
     async startStreaming(device: Device) {
         // Ensure having only one streaming per device
         if(this.clientCurrentlyStreaming.includes(device)) {
-            if (useVerbose) logWarn('Device', device.serial, 'already streaming. Skipping new stream...');
+            if (ENV_VERBOSE) logWarn('Device', device.serial, 'already streaming. Skipping new stream...');
             return;
         }else{
             // Add new device streaming
@@ -113,7 +113,7 @@ export class AdbManager {
             const transport = await this.adbServer.createTransport(device);
             const adb = new Adb(transport);
 
-            if (useVerbose) log('Starting streaming for :', device.serial);
+            if (ENV_VERBOSE) log('Starting streaming for :', device.serial);
 
             await this.videoStreamServer.startStreaming(adb, device.model!);
         }

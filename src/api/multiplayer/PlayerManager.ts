@@ -1,6 +1,6 @@
 import uWS, {TemplatedApp} from 'uWebSockets.js';
 
-import {useExtraVerbose, useVerbose, useAggressiveDisconnect} from '../index.ts';
+import {ENV_EXTRA_VERBOSE, ENV_VERBOSE, ENV_AGGRESSIVE_DISCONNECT} from '../index.ts';
 import {JsonPlayer, JsonOutput, PlayerState, Player, JsonPlayerAsk} from "../core/Constants.ts";
 import Controller from "../core/Controller.ts";
 import {clearInterval} from "node:timers";
@@ -40,7 +40,7 @@ class PlayerManager {
         ).listen(Number(process.env.HEADSET_WS_PORT), (token) => {
             if (token) {
                 log(`Creating monitor server on: ws://0.0.0.0:${Number(process.env.HEADSET_WS_PORT)}`);
-                if (useVerbose) log(token);
+                if (ENV_VERBOSE) log(token);
             } else {
                 logError('Failed to listen on the specified port', process.env.HEADSET_WS_PORT);
             }
@@ -78,8 +78,8 @@ class PlayerManager {
                     this.notifyPlayerChange(playerWsId);
                     this.controller.notifyMonitor();
                 } else {
-                    if (useVerbose) log(`New ws connection from ${playerWsId}, waiting for connection message...`);
-                    if (useExtraVerbose) log(ws.toString());
+                    if (ENV_VERBOSE) log(`New ws connection from ${playerWsId}, waiting for connection message...`);
+                    if (ENV_EXTRA_VERBOSE) log(ws.toString());
                 }
             },
             // ======================================
@@ -134,13 +134,13 @@ class PlayerManager {
                     //     break;
 
                     case "expression":
-                        if (useExtraVerbose) log("\x1b[34m[PLAYER " + this.playerList.get(playerIP)!.id + "]\x1b[0m", "Sent expression:", jsonPlayer.expr);
+                        if (ENV_EXTRA_VERBOSE) log("\x1b[34m[PLAYER " + this.playerList.get(playerIP)!.id + "]\x1b[0m", "Sent expression:", jsonPlayer.expr);
                         this.controller.sendExpression(this.playerList.get(playerIP)!.id, jsonPlayer.expr!);
                         break;
 
                     case "ask":
                         const askJsonPlayer: JsonPlayerAsk = JSON.parse(Buffer.from(message).toString());
-                        if (useExtraVerbose) log("\x1b[34m[PLAYER " + this.playerList.get(playerIP)!.id + "]\x1b[0m", "Sent ask:", askJsonPlayer);
+                        if (ENV_EXTRA_VERBOSE) log("\x1b[34m[PLAYER " + this.playerList.get(playerIP)!.id + "]\x1b[0m", "Sent ask:", askJsonPlayer);
                         this.controller.sendAsk(askJsonPlayer);
                         break;
 
@@ -180,7 +180,7 @@ class PlayerManager {
                     log(`Connection closed with ${this.playerList.get(playerIP)!.id} - ${playerIP}.\n\tCode: ${code}`,
                         (code != 1000) ? `, Reason: ${Buffer.from(message).toString()}` : "");
 
-                    if (useVerbose) log("Flagging player as disconnected");
+                    if (ENV_VERBOSE) log("Flagging player as disconnected");
                     this.playerList.get(playerIP)!.connected = false;
                     clearInterval(this.playerList.get(playerIP)!.timeout);
 
@@ -221,7 +221,7 @@ class PlayerManager {
                         if (code !== 1000) // 1000 = Normal Closure
                             logError('Unexpected closure');
                         else
-                            if (useVerbose) log('Closing normally');
+                            if (ENV_VERBOSE) log('Closing normally');
                 }
 
                 this.controller.notifyMonitor();
@@ -266,7 +266,7 @@ class PlayerManager {
             const player: Player = this.playerList.get(playerWsId)!;
             return {connected: player.connected, in_game: player.in_game, date_connection: player.date_connection}
         } else
-        if(useVerbose) logWarn("Can't find player with ID", playerWsId);
+        if(ENV_VERBOSE) logWarn("Can't find player with ID", playerWsId);
     }
 
     /**
@@ -279,7 +279,7 @@ class PlayerManager {
         if (this.playerList.has(playerWsId)){
             return this.playerList.get(playerWsId)!.id;
         } else
-        if(useVerbose) logWarn("Can't find player with ws ID", playerWsId);
+        if(ENV_VERBOSE) logWarn("Can't find player with ws ID", playerWsId);
     }
 
     /**
@@ -308,7 +308,7 @@ class PlayerManager {
         this.playerList.get(playerWsId)!.date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
 
         if ( !['NONE', "NOTREADY"].includes(this.controller.gama_connector.jsonGamaState.experiment_state) ) {
-            if (useVerbose) log("Adding player " + this.playerList.get(playerWsId)!.id + " to GAMA simulation...");
+            if (ENV_VERBOSE) log("Adding player " + this.playerList.get(playerWsId)!.id + " to GAMA simulation...");
             this.controller.addInGamePlayer(playerWsId);
             this.togglePlayerInGame(playerWsId, true);
         }
@@ -319,7 +319,7 @@ class PlayerManager {
      * @param {string} playerWsId - Player ID
      */
     removePlayer(playerWsId: string) {
-        if (useVerbose) log("Deleting player", playerWsId);
+        if (ENV_VERBOSE) log("Deleting player", playerWsId);
 
         // Manage both working with Player ID or Player IP
         const playerIP: string = this.playerList.has(playerWsId) ? playerWsId : this.getIndexByPlayerId(playerWsId)!;
@@ -333,7 +333,7 @@ class PlayerManager {
                 logWarn("Full log of player: ", this.playerList.get(playerIP));
             }
 
-            if (useAggressiveDisconnect) {
+            if (ENV_AGGRESSIVE_DISCONNECT) {
                 log("Aggressively deleting player");
                 // Remove player
                 this.playerList.delete(playerIP);
@@ -347,7 +347,7 @@ class PlayerManager {
      * Disconnect every players
      */
     removeAllPlayer() {
-        if (useVerbose) log("Disconnect every player at once");
+        if (ENV_VERBOSE) log("Disconnect every player at once");
 
         for (const [playerWsId] of this.playerList) {
             this.removePlayer(playerWsId);
@@ -382,7 +382,7 @@ class PlayerManager {
      * Sets all players' in-game status to false
      */
     disableAllPlayerInGame() {
-        if (useVerbose) log("Change in-game status of every player at once");
+        if (ENV_VERBOSE) log("Change in-game status of every player at once");
 
         for (const [playerWsId] of this.playerList) {
             this.togglePlayerInGame(playerWsId, false)
@@ -390,7 +390,7 @@ class PlayerManager {
     }
 
     addEveryPlayer(): void {
-        if (useVerbose) log("Add every player at once");
+        if (ENV_VERBOSE) log("Add every player at once");
 
         for (const [playerWsId, player] of this.playerList) {
 
@@ -407,7 +407,7 @@ class PlayerManager {
     sendHeartbeat(playerWsId: string): void {
         // Stop pinging if player already disconnected
         if(!this.playerList.has(playerWsId) || !this.playerList.get(playerWsId)!.connected) {
-            if (useVerbose) log(playerWsId + " is already disconnected, stop pinging...");
+            if (ENV_VERBOSE) log(playerWsId + " is already disconnected, stop pinging...");
             if (this.playerList.has(playerWsId)) clearInterval(this.playerList.get(playerWsId)!.timeout);
             return;
         } else if (!this.playerList.get(playerWsId)!.is_alive) { // Terminate ws of disconnected player
@@ -424,7 +424,7 @@ class PlayerManager {
             logError(`Error while sending ping to ${this.playerList.get(playerWsId)!.id})`, e);
         }
 
-        if (useVerbose) log("Sending ping to " + this.playerList.get(playerWsId)!.id);
+        if (ENV_VERBOSE) log("Sending ping to " + this.playerList.get(playerWsId)!.id);
     }
 
     /**
@@ -469,7 +469,7 @@ class PlayerManager {
             };
 
             this.sendMessageByWs(playerWsId, {...jsonStatePlayer, ...newJsonPlayer});
-            if (useVerbose) log(`\x1b[34m[DEBUG Player ${jsonPlayer!.id}]\x1b[0m`, `Sending state update ${JSON.stringify({...jsonStatePlayer, ...newJsonPlayer})}`);
+            if (ENV_VERBOSE) log(`\x1b[34m[DEBUG Player ${jsonPlayer!.id}]\x1b[0m`, `Sending state update ${JSON.stringify({...jsonStatePlayer, ...newJsonPlayer})}`);
         }
     }
 
@@ -485,7 +485,7 @@ class PlayerManager {
         if (this.playerList.has(playerWsId) && this.playerList.get(playerWsId)!.connected )
             jsonPlayer = this.playerList.get(playerWsId)!;
         else{
-            if (useExtraVerbose)
+            if (ENV_EXTRA_VERBOSE)
                 if (!this.playerList.has(playerWsId))
                      logError("Missing player - Can't send a message to player", playerWsId);
                 else

@@ -1,5 +1,5 @@
 import WebSocket from 'ws';
-import { useVerbose, useExtraVerbose } from '../index.ts';
+import { ENV_VERBOSE, ENV_EXTRA_VERBOSE } from '../index.ts';
 import {GamaState, GAMA_ERROR_MESSAGES, JsonPlayerAsk} from "../core/Constants.ts";
 import Model from "./Model.ts";
 import Controller from "../core/Controller.ts";
@@ -146,7 +146,7 @@ class GamaConnector {
             && ( this.gama_socket.readyState === WebSocket.CONNECTING
                 || this.gama_socket.readyState === WebSocket.OPEN )
         ) {
-            if (useVerbose) logWarn("Already connected or connecting. Skipping.");
+            if (ENV_VERBOSE) logWarn("Already connected or connecting. Skipping.");
             return; // Prevent multiple connection attempts
         }
 
@@ -167,13 +167,13 @@ class GamaConnector {
                     const message = JSON.parse(event.data as string);
                     const type = message.type;
 
-                    if (useExtraVerbose) {
+                    if (ENV_EXTRA_VERBOSE) {
                         log("[DEBUG] Message received from Gama Server:", message);
                     }
 
                     switch (type) {
                         case "SimulationStatus":
-                            if (useVerbose) log("[DEBUG] Message received from Gama Server: SimulationStatus = " + message.content);
+                            if (ENV_VERBOSE) log("[DEBUG] Message received from Gama Server: SimulationStatus = " + message.content);
 
                             this.setGamaExperimentId(message.exp_id);
                             if (['NONE', 'NOTREADY'].includes(message.content) && ['RUNNING', 'PAUSED', 'NOTREADY'].includes(this.jsonGamaState.experiment_state)) {
@@ -194,7 +194,7 @@ class GamaConnector {
                             break;
 
                         case "CommandExecutedSuccessfully":
-                            if (useExtraVerbose) {
+                            if (ENV_EXTRA_VERBOSE) {
                                 log("[DEBUG] Message received from Gama Server: CommandExecutedSuccessfully");
                                 log("[DEBUG]", message);
                             }
@@ -211,7 +211,7 @@ class GamaConnector {
                             break;
 
                         case "ConnectionSuccessful":
-                            if (useVerbose) log(`Connected to Gama Server on ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
+                            if (ENV_VERBOSE) log(`Connected to Gama Server on ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
                             break;
 
                         default:
@@ -251,13 +251,13 @@ class GamaConnector {
                 } else {
                     logError('Connection with Gama Server interrupted suddenly');
                     this.gama_socket = null;
-                    if (useVerbose) log(event);
+                    if (ENV_VERBOSE) log(event);
                 }
             };
 
             this.gama_socket.onerror = (error) => {
                 logError("An error happened within the Gama Server WebSocket");
-                if (useVerbose) console.error(error);
+                if (ENV_VERBOSE) console.error(error);
                 this.setGamaConnection(false);
 
                 logWarn("Reconnecting in 5s...");
@@ -293,7 +293,7 @@ class GamaConnector {
 
                         this.gama_socket.send( JSON.stringify( message() ) );
 
-                        if (useVerbose)
+                        if (ENV_VERBOSE)
                             if (message().expr !== undefined)
                                 log("Expression sent to Gama Server: " + '\'' + message().expr + '\'' + " Waiting for the answer (if any)...");
                             else
@@ -307,7 +307,7 @@ class GamaConnector {
                 logError(e);
             }
             finally {
-                if (useExtraVerbose) {
+                if (ENV_EXTRA_VERBOSE) {
                     logWarn("[DEBUG] Message sent to GAMA:", message );
                 }
                 this.listMessages.splice(this.listMessages.indexOf(message), 1);
@@ -364,7 +364,7 @@ class GamaConnector {
      */
     pauseExperiment(callback?: () => void) {
         if (this.jsonGamaState.experiment_state === 'RUNNING') {
-            if (useVerbose) log("Pausing simulation...")
+            if (ENV_VERBOSE) log("Pausing simulation...")
             this.listMessages = [this.jsonControlGamaExperiment("pause")];
             this.setGamaLoading(true);
 
@@ -414,16 +414,16 @@ class GamaConnector {
      * @param {string} idPlayer - The id of the player
      */
     removeInGamePlayer(idPlayer: string) {
-        if (useVerbose) log("Removing player from game: " + idPlayer);
+        if (ENV_VERBOSE) log("Removing player from game: " + idPlayer);
 
         if (['NONE', "NOTREADY"].includes(this.jsonGamaState.experiment_state)) {
-            if (useVerbose) log("Gama Simulation is not running, cannot remove player");
+            if (ENV_VERBOSE) log("Gama Simulation is not running, cannot remove player");
             return;
         }
 
         const playerState = this.controller.player_manager.getPlayerState(idPlayer);
         if (playerState && !playerState.in_game) {
-            if (useVerbose) log("Player " + idPlayer + " is already out of the game");
+            if (ENV_VERBOSE) log("Player " + idPlayer + " is already out of the game");
             return;
         }
 

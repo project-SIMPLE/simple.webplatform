@@ -1,5 +1,5 @@
 import ciao, {Responder, ServiceType} from '@homebridge/ciao';
-import {useExtraVerbose} from "../index.ts";
+import {ENV_EXTRA_VERBOSE} from "../index.ts";
 
 // Override the log function
 const log = (...args: any[]) => {
@@ -32,7 +32,7 @@ export class mDnsService {
             port: +process.env.WEB_APPLICATION_PORT! // `+` converts the `string` to `number`
         };
 
-        if (useExtraVerbose) log(mDnsOptions);
+        if (ENV_EXTRA_VERBOSE) log(mDnsOptions);
 
         this.responder.createService(mDnsOptions).advertise().then(() => {
             log(`Application is available on http://${mDnsOptions.hostname}.local:${mDnsOptions.port} =================`);

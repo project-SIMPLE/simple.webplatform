@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 
 import Controller from "../../core/Controller.ts";
-import {HEADSETS_IP, useExtraVerbose, useVerbose} from "../../index.ts";
+import {HEADSETS_IP, ENV_EXTRA_VERBOSE, ENV_VERBOSE} from "../../index.ts";
 
 class DeviceFinder {
     controller: Controller;
@@ -20,7 +20,7 @@ class DeviceFinder {
         this.ipToConnect = this.ipToConnect.filter(ip => {
             return !clientStreaming.some(item => item.startsWith(ip));
         });
-        if (useVerbose) console.log("[ADB FINDER] Loaded successfully, will start to scan for devices now...");
+        if (ENV_VERBOSE) console.log("[ADB FINDER] Loaded successfully, will start to scan for devices now...");
     }
 
     public async scanAndConnect() {
@@ -29,7 +29,7 @@ class DeviceFinder {
             {
                 console.log('[ADB FINDER] Every known IP already connected, stopping now...');
             } else
-                if (useExtraVerbose) console.log('[ADB FINDER] Already scanning for new IP, skipping this call...');
+                if (ENV_EXTRA_VERBOSE) console.log('[ADB FINDER] Already scanning for new IP, skipping this call...');
 
             return;
         }
@@ -42,7 +42,7 @@ class DeviceFinder {
 
             for (let i = 0; i < this.ipToConnect.length; i++) { // Directly use this.ipToConnect. No need to copy
                 const ip = this.ipToConnect[i];
-                if (useVerbose) console.log('[ADB FINDER] Trying ', ip);
+                if (ENV_VERBOSE) console.log('[ADB FINDER] Trying ', ip);
 
                 try {
                     const output = await this.scanAndConnectIP(ip);
@@ -54,7 +54,7 @@ class DeviceFinder {
                         i--;                     // Decrement i to account for removed element
                     } else if (output.includes('ERROR')) {
                         console.warn('[ADB FINDER] Failed to connect to ' + ip);
-                        if (useVerbose) console.warn(output);
+                        if (ENV_VERBOSE) console.warn(output);
                     } else {
                         console.error('[ADB FINDER] Unknown message:', output);
                     }
