@@ -3,7 +3,6 @@ import path from 'path';
 
 import Controller from "../../core/Controller.ts";
 import {HEADSETS_IP, useExtraVerbose, useVerbose} from "../../index.ts";
-import * as os from "node:os"
 
 class DeviceFinder {
     controller: Controller;
@@ -86,7 +85,7 @@ class DeviceFinder {
 
 
     public async scanAndConnectIP(ipAddress: string): Promise<string[]> {
-        if(os.platform() === 'win32'){
+        if(process.platform === 'win32'){
             return new Promise((resolve, reject) => {
                 const parameters = ['-ip_adresses', ipAddress, // Replace with your IP addresses (comma-separated if multiple)
                                     ]

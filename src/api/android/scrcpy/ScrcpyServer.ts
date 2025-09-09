@@ -144,7 +144,7 @@ export class ScrcpyServer {
                 level: H264Capabilities.maxLevel,
             }),
             // Enable h265 only for MacOS which is the only to truly supports it in browser
-            videoCodec: ((os.platform() == 'darwin' || ENV_SCRCPY_FORCE_H265) ? "h265" : "h264"),
+            videoCodec: ((process.platform == 'darwin' || ENV_SCRCPY_FORCE_H265) ? "h265" : "h264"),
             // Video settings
             video: true,
             maxSize: 1570,
@@ -220,6 +220,7 @@ export class ScrcpyServer {
 
             if (client.videoStream) {
                 const { metadata, stream: videoPacketStream } = await client.videoStream;
+                const useH265: boolean = (process.platform == 'darwin' || ENV_SCRCPY_FORCE_H265);
                 log(metadata);
 
                 const myself = this;
@@ -237,6 +238,7 @@ export class ScrcpyServer {
                                         // Handle configuration packet
                                         const newStreamConfig = JSON.stringify({
                                             streamId: adbConnection.serial,
+                                            h265: useH265,
                                             type: "configuration",
                                             data: Buffer.from(packet.data).toString('base64'), // Convert Uint8Array to Base64 string
                                         });
@@ -252,6 +254,7 @@ export class ScrcpyServer {
                                         myself.broadcastToClients(
                                             JSON.stringify({
                                                 streamId: adbConnection.serial,
+                                                h265: useH265,
                                                 type: "data",
                                                 keyframe: packet.keyframe,
                                                 // @ts-ignore

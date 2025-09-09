@@ -1,5 +1,4 @@
 // Import des modules nécessaires
-import * as os from "node:os";
 import {spawn} from "child_process";
 import dotenv from 'dotenv';
 
@@ -70,7 +69,7 @@ const c = new Controller(useAdb);
 // =========================================================
 
 async function isCommandAvailable(commandName: string): Promise<boolean> {
-  if (os.platform() === "win32") {
+  if (process.platform === "win32") {
     const checkAdbProcess = spawn("where", [commandName]);
     return new Promise((resolve) => {
         checkAdbProcess.on("close", (code) => {
@@ -101,7 +100,7 @@ async function isCommandAvailable(commandName: string): Promise<boolean> {
  */
 // Disabled while not properly documented
 
-  if (os.platform() !== "win32") {
+  if (process.platform !== "win32") {
   if (
     useAdb &&
     (await isCommandAvailable("nmap")) &&
@@ -149,4 +148,5 @@ export {
   useAdb,
   useAggressiveDisconnect,
   HEADSETS_IP,
+    ENV_SCRCPY_FORCE_H265
 };

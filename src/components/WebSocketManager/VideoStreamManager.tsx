@@ -7,8 +7,6 @@ import {
   WebCodecsVideoDecoder,
 } from "@yume-chan/scrcpy-decoder-webcodecs";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
-import os from "node:os";
-import {ENV_SCRCPY_FORCE_H265} from "../../api/index.ts";
 
 const host: string = window.location.hostname;
 const port: string = '8082';
@@ -21,6 +19,7 @@ const deserializeData = (serializedData: string) => {
     case "configuration":
       return {
         streamId: parsed.streamId,
+        h265: parsed.h265,
         packet: {
           type: parsed.type,
           data: Uint8Array.from(atob(parsed.data), (c) => c.charCodeAt(0)),
@@ -29,6 +28,7 @@ const deserializeData = (serializedData: string) => {
     case "data":
       return {
         streamId: parsed.streamId,
+        h265: parsed.h265,
         packet: {
           type: parsed.type,
           keyframe: parsed.keyframe,
@@ -84,7 +84,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
    *
    * @returns A ReadableStream that can be enqueued with data stream
    */
-  async function newVideoStream(deviceId: string) {
+  async function newVideoStream(deviceId: string, useH265: boolean = false) {
 
     // Avoid having controller creation hell if connection is too fast
     readableControllers.set(deviceId, undefined);
@@ -125,7 +125,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       if (supported.supported) {
         const decoder = new WebCodecsVideoDecoder({
             // Enable h265 only for MacOS which is the only to truly supports it in browser
-          codec: ((os.platform() == 'darwin' || ENV_SCRCPY_FORCE_H265) ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264),
+          codec: ((process.platform == 'darwin' || useH265) ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264),
           renderer: renderer,
         });
         // Create new ReadableStream used for scrcpy decoding
