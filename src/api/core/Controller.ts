@@ -87,6 +87,15 @@ export class Controller {
 
     /*
     =============================
+        ADB CONNECTOR
+    =============================
+     */
+    async adbConnectNewDevice(ip: string, port: string){
+        return await this.adb_manager.connectNewDevice(ip, port);
+    }
+
+    /*
+    =============================
         GAMA CONNECTOR
     =============================
      */
