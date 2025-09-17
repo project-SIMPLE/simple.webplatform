@@ -53,16 +53,16 @@ if (ENV_EXTRA_VERBOSE) {
 
 console.log("\n\x1b[95mWelcome to Gama Server Middleware !\x1b[0m\n");
 
-const useAdb: boolean = (await isCommandAvailable("adb"))
-
-  ? await new Promise((resolve) => {
-      console.log("Waking up ADB...");
-      const checkAdb = spawn("adb", ["devices"]);
-
+const useAdb: boolean =
+    (await isCommandAvailable("adb"))
+        ? await new Promise((resolve) => {
+            console.log("Waking up ADB...");
+            const checkAdb = spawn("adb", ["devices"]);
             checkAdb.on('close', (code) => {
                 resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
             });
-        }) : false;
+        })
+        : false;
 
 const c = new Controller(useAdb);
 
@@ -90,57 +90,20 @@ async function isCommandAvailable(commandName: string): Promise<boolean> {
 /*
     Pro-actively looking for Meta Quest devices to connect with ADB using an external script
     Requires:
-        - ZSH
-        - nmap
-        - ADB
-    OR on windows:
-        - Powershell
-        - nmap
-        - ADB
+        - ADB commands
  */
 // Disabled while not properly documented
 
-  if (process.platform !== "win32") {
-  if (
-    useAdb &&
-    (await isCommandAvailable("nmap")) &&
-    (await isCommandAvailable("zsh")) 
-  )   
-  {
+if (useAdb) {
     try {
-      await new DeviceFinder(c).scanAndConnect();
+        await new DeviceFinder(c).scanAndConnect();
     } catch (error) {
-      console.error("\x1b[36m[ADB FINDER]\x1b[0m Error:", error);
+        console.error("\x1b[36m[ADB FINDER]\x1b[0m Error:", error);
     }
-  } else {
-    console.error(
-      "\x1b[36m[ADB FINDER]\x1b[0m One or several of those tools are not available on your computer:",
-      "zsh, nmap, adb"
-    );
-    console.error("\x1b[36m[ADB FINDER]\x1b[0m Skipping finder now...");
-  }
 } else {
-   if(
-    useAdb &&
-    (await isCommandAvailable("nmap")) &&
-    (await isCommandAvailable("powershell"))
-   )  {
-    try {
-      await new DeviceFinder(c).scanAndConnect();
-    } catch (error) {
-      console.error("[ADB FINDER] Error:", error);
-    }
-  } else {
-    console.error(
-      "\x1b[36m[ADB FINDER]\x1b[0m One or several of those tools are not available on your computer:",
-      "nmap, adb"
-    );
-    console.error("\x1b[36m[ADB FINDER]\x1b[0m Skipping finder now...");
-  }
-
-//    console.warn("[ADB FINDER] Sorry, this feature is not available on Windows.");
-//    console.warn("[ADB FINDER] Skipping finder now...");
- }
+    console.error("\x1b[36m[ADB FINDER]\x1b[0m ADB is not available on your computer");
+    console.error("\x1b[36m[ADB FINDER]\x1b[0m Skipping device finder now...");
+}
 
 export {
   ENV_VERBOSE,
