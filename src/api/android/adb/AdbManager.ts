@@ -11,8 +11,9 @@ import {AdbServerNodeTcpConnector} from "@yume-chan/adb-server-node-tcp";
 import Device = AdbServerClient.Device;
 
 import Controller from "../../core/Controller.ts";
-import {ENV_VERBOSE} from "../../index.ts";
+import {ENV_EXTRA_VERBOSE, ENV_VERBOSE} from "../../index.ts";
 import {ScrcpyServer} from "../scrcpy/ScrcpyServer.ts";
+import {success} from "concurrently/dist/src/defaults";
 
 // Override the log function
 const log = (...args: any[]) => {
@@ -118,6 +119,19 @@ export class AdbManager {
             await this.videoStreamServer.startStreaming(adb, device.model!);
         }
 
+    }
+
+    async connectNewDevice(ip: string, port: string): Promise<boolean> {
+        let success: boolean = false;
+
+        try{
+            await this.adbServer.wireless.connect(ip + ':' + port);
+            success = true;
+        }catch (e) {
+            if (ENV_EXTRA_VERBOSE) logError("Couldn't connect with this error message", e)
+        }
+
+        return success
     }
 
 }
