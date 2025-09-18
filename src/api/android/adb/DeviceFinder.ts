@@ -1,4 +1,3 @@
-import { spawn } from 'child_process';
 import Evilscan from "evilscan";
 
 import Controller from "../../core/Controller.ts";
@@ -46,9 +45,8 @@ class DeviceFinder {
                     if (output) { //.includes('OK')
                         if (ENV_VERBOSE) console.log('[ADB FINDER] Successfully connected to ', ip);
                         this.ipToConnect.splice(i--, 1); // Remove the connected IP; adjust index
-                    } else {
+                    } else
                         if (ENV_VERBOSE) console.warn('[ADB FINDER] Failed to connect to ' + ip);
-                    }
 
                 } catch (innerError) {
                     console.error(`[ADB FINDER] Error connecting to ${ip}:`, innerError);
@@ -100,9 +98,8 @@ class DeviceFinder {
                     } catch (e) {
                         if (ENV_EXTRA_VERBOSE) console.error("[ADB FINDER - EvilScan] === Couldn't connect with this error message", e)
                     }
-                } else {
+                } else
                     if (ENV_EXTRA_VERBOSE) console.log('[ADB FINDER - EvilScan] === Already connected, skipping', data.ip, ':', data.port);
-                }
             })
             .on('done', () => {
                 if (ENV_EXTRA_VERBOSE) console.log('[ADB FINDER - EvilScan] === Scan of ', ipAddress,' completed.');

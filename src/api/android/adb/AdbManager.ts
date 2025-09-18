@@ -13,7 +13,6 @@ import Device = AdbServerClient.Device;
 import Controller from "../../core/Controller.ts";
 import {ENV_EXTRA_VERBOSE, ENV_VERBOSE} from "../../index.ts";
 import {ScrcpyServer} from "../scrcpy/ScrcpyServer.ts";
-import {success} from "concurrently/dist/src/defaults";
 
 // Override the log function
 const log = (...args: any[]) => {
