@@ -71,7 +71,7 @@ export class AdbManager {
 
             this.observer.onDeviceAdd((devices) => {
                 for (const device of devices) {
-                    if (ENV_VERBOSE) log("New device added", device, "Starting streaming for this new device...");
+                    if (ENV_VERBOSE) log("New device added", device);
                     this.startStreaming(device);
                 }
             });
@@ -113,9 +113,10 @@ export class AdbManager {
             const transport = await this.adbServer.createTransport(device);
             const adb = new Adb(transport);
 
-            if (ENV_VERBOSE) log('Starting streaming for :', device.serial);
-
-            await this.videoStreamServer.startStreaming(adb, device.model!);
+            if (device.serial.includes(".")) {// Only consider wireless devices - Check if serial is an IP address
+                if (ENV_VERBOSE) log('Starting streaming for :', device.serial);
+                await this.videoStreamServer.startStreaming(adb, device.model!);
+            }
         }
 
     }
