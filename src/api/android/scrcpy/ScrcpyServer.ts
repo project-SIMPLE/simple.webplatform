@@ -7,7 +7,7 @@ import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyCodecOptions } from "
 import {ENV_EXTRA_VERBOSE, ENV_VERBOSE, ENV_SCRCPY_FORCE_H265} from "../../index.ts";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
-import os from "node:os";
+import path from "path";
 
 // Override the log function
 const log = (...args: any[]) => {
@@ -130,10 +130,7 @@ export class ScrcpyServer {
         // Use custom hotfix from joranmarcy
         // This fix 'simply' drop all the black frames to avoid seeing glitches on fw > 72
         // https://github.com/Genymobile/scrcpy/compare/master...joranmarcy:scrcpy:fix/opengl-discard-blackframes
-        //this.server = await fs.readFile( path.join(process.cwd(), 'toolkit', 'scrcpyServer-fixBlackClip') );
-        //const url = new URL(path.join(process.cwd(), 'toolkit', 'scrcpyServer-fixBlackClip'), import.meta.url);
-        const url = new URL(process.cwd() + '/toolkit/scrcpyServer-fixBlackClip', import.meta.url);
-        this.server = await fs.readFile(url);
+        this.server = await fs.readFile( path.join(process.cwd(), 'toolkit', 'scrcpyServer-fixBlackClip') );
     }
 
     async startStreaming(adbConnection: Adb, deviceModel: string) {
