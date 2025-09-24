@@ -24,7 +24,7 @@ export class mDnsService {
         this.responder = ciao.getResponder();
 
         const mDnsOptions = {
-            // @ts-ignore
+            // @ts-expect-error
             type: ServiceType.HTTP,
             // Ad-hoc
             name: 'SIMPLE WebPlatform',

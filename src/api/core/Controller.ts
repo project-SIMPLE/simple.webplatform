@@ -23,7 +23,7 @@ export class Controller {
     monitor_server: MonitorServer;
     player_manager: PlayerManager;
     gama_connector: GamaConnector;
-    // @ts-ignore
+    // @ts-expect-error
     adb_manager: AdbManager;
     mDnsService: mDnsService;
 
