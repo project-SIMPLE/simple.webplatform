@@ -96,7 +96,7 @@ async function isCommandAvailable(commandName: string): Promise<boolean> {
 
 if (useAdb) {
     try {
-        await new DeviceFinder(c).scanAndConnect();
+        await new DeviceFinder(c).scanAndConnect(true);
     } catch (error) {
         console.error("\x1b[36m[ADB FINDER]\x1b[0m Error:", error);
     }

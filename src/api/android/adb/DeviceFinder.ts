@@ -1,4 +1,5 @@
 import Evilscan from "evilscan";
+import {networkInterfaces} from "os";
 
 import Controller from "../../core/Controller.ts";
 import {HEADSETS_IP, ENV_EXTRA_VERBOSE, ENV_VERBOSE} from "../../index.ts";
@@ -13,14 +14,25 @@ class DeviceFinder {
         this.ipToConnect = HEADSETS_IP;
 
         // Filter out already connected IPs
+        this.removeConnectedIp();
+
+        if (ENV_VERBOSE) console.log("[ADB FINDER] Loaded successfully, will start to scan for devices now...");
+    }
+
+    private removeConnectedIp(){
         const clientStreaming = this.controller.adb_manager.clientCurrentlyStreaming;
         this.ipToConnect = this.ipToConnect.filter(ip => {
             return !clientStreaming.some(item => item.serial.startsWith(ip));
         });
-        if (ENV_VERBOSE) console.log("[ADB FINDER] Loaded successfully, will start to scan for devices now...");
     }
 
-    public async scanAndConnect() {
+    public async scanAndConnect(firstRun: boolean = false) {
+        if(firstRun && HEADSETS_IP.length == 0) {
+            // Auto-detect headsets if none listed
+            await this.autoDetectDevices();
+            this.removeConnectedIp();
+        }
+
         if (this.ipToConnect.length === 0 || this.isScanning) {
             if(this.ipToConnect.length === 0)
                 if (ENV_VERBOSE) console.log('[ADB FINDER] Every known IP already connected, stopping now...');
@@ -72,22 +84,18 @@ class DeviceFinder {
         }
     }
 
-
     public async scanAndConnectIP(ipAddress: string): Promise<boolean> {
         let alreadyConnected: boolean = false;
         let finishedScanning: boolean = false;
 
-        const options = {
-            target: ipAddress,
-            port: '5555,30000-49999',   // your custom range
-            // port: '1-65535',
-            status: 'O',                // 'TROU' : Timeout, Refused, Open, Unreachable
-            concurrency: 500,           // how many ports to test in parallel
-            timeout: 250,               // maximum number of milliseconds before closing the connection
-            banner:false
-        };
-
-        new Evilscan(options)
+        new Evilscan({
+                target: ipAddress,
+                port: '5555,30000-49999',   // your custom range
+                status: 'O',                // 'TROU' : Timeout, Refused, Open, Unreachable
+                concurrency: 500,           // how many ports to test in parallel
+                timeout: 250,               // maximum number of milliseconds before closing the connection
+                banner:false
+            })
             .on('result', async (data:any) => {
                 if (ENV_EXTRA_VERBOSE) console.log('[ADB FINDER - EvilScan] === Scan of ', ipAddress,' find this:', data);
                 if (!alreadyConnected){
@@ -113,6 +121,54 @@ class DeviceFinder {
         }
 
         return alreadyConnected;
+    }
+
+    public async autoDetectDevices() {
+        let serverLocalIp:string = "";
+        let finishedScanning: boolean = false;
+
+        try {
+            for (let [interfaceName, interfaceInfo] of Object.entries(networkInterfaces())) {
+                // Skip localhost/vpn interfaces
+                if (interfaceName.startsWith('lo') || interfaceName.startsWith('tail'))
+                    continue;
+
+                for (const i of interfaceInfo!){
+                    if (i.family === "IPv6")
+                        continue;
+                    else
+                        serverLocalIp = i.address;
+                }
+            }
+        } catch (e) {
+            console.error("[ADB FINDER - Detect - EvilScan] === Can't find the ip address for your device...", e);
+        } finally {
+            if (ENV_VERBOSE) console.log("[ADB FINDER - Detect - EvilScan] === Scanning over IP:", serverLocalIp);
+        }
+        serverLocalIp = "10.2.110.132";
+        new Evilscan({
+                target: serverLocalIp + "/24",  //ip address subnet,
+                port: '5555',                     // your custom range
+                status: 'RO',                   // 'TROU' : Timeout, Refused, Open, Unreachable
+                concurrency: 255,               // how many ports to test in parallel
+                timeout: 1000                    // maximum number of milliseconds before closing the connection
+            })
+            .on('result', async (data:any) => {
+                if (data.ip != serverLocalIp) {
+                    if (ENV_VERBOSE) console.log('[ADB FINDER - Detect - EvilScan] === Scan find this:', data.ip);
+                    this.ipToConnect.push(data.ip);
+                }
+            })
+            .on('done', () => {
+                if (ENV_EXTRA_VERBOSE) console.log('[ADB FINDER - Detect - EvilScan] === Scan completed.');
+                finishedScanning = true;
+            })
+            .run();
+
+        // Dirty waiting for scan to finish
+        while(!finishedScanning) {
+            await new Promise(f => setTimeout(f, 1000));
+        }
     }
 }
 
