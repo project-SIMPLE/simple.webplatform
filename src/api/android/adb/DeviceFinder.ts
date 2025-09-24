@@ -145,7 +145,7 @@ class DeviceFinder {
         } finally {
             if (ENV_VERBOSE) console.log("[ADB FINDER - Detect - EvilScan] === Scanning over IP:", serverLocalIp);
         }
-        serverLocalIp = "10.2.110.132";
+
         new Evilscan({
                 target: serverLocalIp + "/24",  //ip address subnet,
                 port: '5555',                     // your custom range
