@@ -43,12 +43,12 @@ const SelectorSimulations = () => {
       let list = simulationList
       for (const index of path) {
         console.log("index in the use effect:", index)
-        //@ts-ignore
+        // @ts-expect-error
         if (list[index].entries.length > 0) {
-          //@ts-ignore
+          // @ts-expect-error
           list = list[index].entries
         } else {
-          //@ts-ignore
+          // @ts-expect-error
           list = list[index]
         }
         setSubProjectsList(list)
@@ -83,10 +83,10 @@ const SelectorSimulations = () => {
 
     if (subProjectsList.length <= 0) { //no subproject is selected, we either enter a folder or launch a simulation
       if (simulationList[index].type == "catalog") { //?  we additionaly check if the simulation is a catalog, not necessary but allows for adding extra types
-        //@ts-ignore                                                                                ↓ this is a catalog, which means it must have an "entries" attribute
+        // @ts-expect-error                                                                             ↓ this is a catalog, which means it must have an "entries" attribute
         console.log(`[HANDLE SIMULATION]: catalog detected, subprojectList: ${JSON.stringify(simulationList[index].entries)}`);
         try {
-          //@ts-ignore        ↓ this is a list, so assigning it to another list should be fine
+          // @ts-expect-error       ↓ this is a list, so assigning it to another list should be fine
           setSubProjectsList(simulationList[index].entries);
           addToPath(index)
           if ('splashscreen' in simulationList[index]) { setSelectedSplashscreen(simulationList[index].splashscreen); }
@@ -116,7 +116,7 @@ const SelectorSimulations = () => {
       } else {
         if (subProjectsList[index].type == "catalog") {
           try {
-            //@ts-ignore        ↓ this is a list, so assigning it to another list should be fine
+            // @ts-expect-error        ↓ this is a list, so assigning it to another list should be fine
             // setSubProjectsList(subProjectsList[index].entries);
             addToPath(index)
             console.log("[SELECTOR SIMULATION] handlesimulation, simulationList[index].type == catalog", subProjectsList[0].name);

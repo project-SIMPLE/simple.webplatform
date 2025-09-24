@@ -207,7 +207,7 @@ export class ScrcpyServer {
 
             // Print output of Scrcpy server
             if (ENV_VERBOSE) void client.output.pipeTo(
-                // @ts-ignore
+                // @ts-expect-error
                 new WritableStream<string>({
                     write(chunk: string): void {
                         if(ENV_EXTRA_VERBOSE) console.debug("\x1b[41m[DEBUG]\x1b[0m", chunk);
@@ -227,7 +227,7 @@ export class ScrcpyServer {
 
                 videoPacketStream
                     .pipeTo(
-                        //@ts-ignore
+                        // @ts-expect-error
                         new WritableStream({
                             write(packet: ScrcpyMediaStreamPacket) {
                                 switch (packet.type) {
@@ -254,7 +254,7 @@ export class ScrcpyServer {
                                                 h265: useH265,
                                                 type: "data",
                                                 keyframe: packet.keyframe,
-                                                // @ts-ignore
+                                                // @ts-expect-error
                                                 pts: packet.pts.toString(), // Convert bigint to string
                                                 data: Buffer.from(packet.data).toString('base64'), // Convert Uint8Array to Base64 string
                                             })
