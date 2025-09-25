@@ -36,15 +36,26 @@ export class Controller {
         }
     }
 
-    restart() {
+    // Allow running init functions for some components needing it
+    async initialize() {
+        if (this.adb_manager)
+            await this.adb_manager.init();
+    }
+
+    async restart() {
+        // Close
         this.player_manager.close();
         this.gama_connector.close();
         this.monitor_server.close();
+
+        // Restart
         this.player_manager = new PlayerManager(this);
         this.gama_connector = new GamaConnector(this);
         this.monitor_server = new MonitorServer(this);
 
         if(useAdb) this.adb_manager = new AdbManager(this);
+
+        await this.initialize();
     }
 
     /*
@@ -75,15 +86,6 @@ export class Controller {
 
     broadcastSimulationOutput(json_output: JsonOutput) {
         this.player_manager.broadcastSimulationOutput(json_output);
-    }
-
-    /*
-    =============================
-        ADB CONNECTOR
-    =============================
-     */
-    async adbConnectNewDevice(ip: string, port: string){
-        return await this.adb_manager.connectNewDevice(ip, port);
     }
 
     /*

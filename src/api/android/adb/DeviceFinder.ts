@@ -5,18 +5,19 @@ import {networkInterfaces} from "os";
 import Controller from "../../core/Controller.ts";
 import {HEADSETS_IP, ENV_EXTRA_VERBOSE, ENV_VERBOSE} from "../../index.ts";
 import {getLogger} from "@logtape/logtape";
+import {AdbManager} from "./AdbManager.ts";
 
 // Override the log function
 const logger= getLogger(["android", "DeviceFinder"]);
 const loggerES= getLogger(["android", "DeviceFinder", "EvilScan"]);
 
 class DeviceFinder {
-    controller: Controller;
+    adbManager: AdbManager;
     ipToConnect: string[];
     isScanning: boolean = false;
 
-    constructor(controller: Controller) {
-        this.controller = controller;
+    constructor(adbm: AdbManager) {
+        this.adbManager = adbm;
         this.ipToConnect = HEADSETS_IP;
 
         // Filter out already connected IPs
@@ -26,7 +27,7 @@ class DeviceFinder {
     }
 
     private removeConnectedIp(){
-        const clientStreaming = this.controller.adb_manager.clientCurrentlyStreaming;
+        const clientStreaming = this.adbManager.clientCurrentlyStreaming;
         this.ipToConnect = this.ipToConnect.filter(ip => {
             return !clientStreaming.some(item => item.serial.startsWith(ip));
         });
@@ -106,7 +107,7 @@ class DeviceFinder {
                     loggerES.trace(`Trying to ADB connect to ${data.ip}:${data.port}`);
 
                     try {
-                        alreadyConnected = await this.controller.adbConnectNewDevice(data.ip, data.port);
+                        alreadyConnected = await this.adbManager.connectNewDevice(data.ip, data.port);
                     } catch (e) {
                         if (ENV_EXTRA_VERBOSE) loggerES.error("Couldn't connect with this error message: {e}", {e})
                     }

@@ -12,8 +12,6 @@ import { getStreamFileSink } from "@logtape/file";
 import { getPrettyFormatter } from "@logtape/pretty";
 
 import Controller from './core/Controller.ts';
-import DeviceFinder from './android/adb/DeviceFinder';
-
 
 /*
     TOOLBOX ================================
@@ -142,24 +140,7 @@ const useAdb: boolean =
         : false;
 
 const c = new Controller(useAdb);
-
-/*
-    Pro-actively looking for Meta Quest devices to connect with ADB using an external script
-    Requires:
-        - ADB commands
- */
-// Disabled while not properly documented
-
-if (useAdb) {
-    try {
-        await new DeviceFinder(c).scanAndConnect(true);
-    } catch (error) {
-        console.error("\x1b[36m[ADB FINDER]\x1b[0m Error:", error);
-    }
-} else {
-    console.error("\x1b[36m[ADB FINDER]\x1b[0m ADB is not available on your computer");
-    console.error("\x1b[36m[ADB FINDER]\x1b[0m Skipping device finder now...");
-}
+await c.initialize();
 
 export {
   ENV_VERBOSE,

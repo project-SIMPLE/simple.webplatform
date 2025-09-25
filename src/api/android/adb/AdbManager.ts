@@ -39,60 +39,70 @@ export class AdbManager {
         logger.info("Connect to device's ADB server");
 
         this.videoStreamServer = new ScrcpyServer();
+    }
 
-        (async () => {
-            // Init watching ADB clients
-            this.observer = await this.adbServer.trackDevices();
+    async init(){
+        // Init watching ADB clients
+        this.observer = await this.adbServer.trackDevices();
 
-            if ( this.observer.current.length > 0){
-                if (ENV_VERBOSE) for (const device of this.observer.current) {
-                    log('Devices found on ADB server:', device);
-                }
-
-                // startStreamingForAll
-                for (const device of this.observer.current) {
-                    await this.startStreaming(device);
-
-                    // Cooldown to let client properly create streams' canvas
-                    if (ENV_VERBOSE) log("Waiting 2s before starting a new stream...");
-                    await new Promise( resolve => setTimeout(resolve, 2000) );
-                }
-                // !startStreamingForAll
-
-            } else {
-                if (ENV_VERBOSE) log('No devices found on ADB server...');
+        if ( this.observer.current.length > 0){
+            for (const device of this.observer.current) {
+                logger.debug(`Devices found on ADB server: ${device}`);
             }
 
-            this.observer.onDeviceAdd((devices) => {
-                for (const device of devices) {
-                    if (ENV_VERBOSE) log("New device added", device);
-                    this.startStreaming(device);
-                }
-            });
+            // startStreamingForAll
+            for (const device of this.observer.current) {
+                await this.startStreaming(device);
 
-            this.observer.onDeviceRemove((devices) => {
-                logWarn("A device has been removed");
-                for (const device of devices) {
-                    logWarn(device);
-                    this.clientCurrentlyStreaming.filter((ele,) => ele !== device)
-                }
-            });
+                // Cooldown to let client properly create streams' canvas
+                logger.debug("Waiting 2s before starting a new stream...");
+                await new Promise( resolve => setTimeout(resolve, 2000) );
+            }
+            // !startStreamingForAll
 
-            this.observer.onListChange((devices) => {
-                // Fallback mechanism as the onRemove isn't catching everything...
-                if (devices.length < this.clientCurrentlyStreaming.length){
-                    if (ENV_VERBOSE) logWarn("A headset has been disconnected and is not well represented");
-                    for (const device of this.clientCurrentlyStreaming) {
-                        if (!devices.includes(device)){
-                            logWarn("A device has been removed", device);
-                            this.clientCurrentlyStreaming.filter((ele,) => ele !== device)
-                        }
+        } else {
+            logger.debug('No devices found on ADB server...');
+        }
+
+
+        // Set trigger listener for when moving devices
+        this.observer.onDeviceAdd((devices) => {
+            for (const device of devices) {
+                logger.debug("New device added {device}\nStarting streaming for this new device...", {device});
+                this.startStreaming(device);
+            }
+        });
+
+        this.observer.onDeviceRemove((devices) => {
+            logger.warn("A device has been removed");
+            for (const device of devices) {
+                logger.warn(`${device}`);
+                this.clientCurrentlyStreaming.filter((ele,) => ele !== device)
+            }
+        });
+
+        this.observer.onListChange((devices) => {
+            // Fallback mechanism as the onRemove isn't catching everything...
+            if (devices.length < this.clientCurrentlyStreaming.length){
+                logger.debug("A headset has been disconnected and is not well represented");
+                for (const device of this.clientCurrentlyStreaming) {
+                    if (!devices.includes(device)){
+                        logger.warn(`A device has been removed ${device}`);
+                        this.clientCurrentlyStreaming.filter((ele,) => ele !== device)
                     }
-                    logWarn(this.clientCurrentlyStreaming.length);
                 }
-            });
+                logger.warn(`${this.clientCurrentlyStreaming.length}`);
+            }
+        });
 
-        })();
+        /*
+            Pro-actively looking for Meta Quest devices to connect with ADB using an external script
+         */
+        try {
+            await new DeviceFinder(this).scanAndConnect(true);
+        } catch (error) {
+            logger.error("Error: {error}", {error});
+        }
     }
 
     async startStreaming(device: Device) {
