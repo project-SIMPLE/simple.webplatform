@@ -3,8 +3,8 @@ import path from 'path';
 import { isAbsolute } from 'path';
 import { ANSI_COLORS as color } from '../core/Constants.ts';
 import Model from './Model.ts';
-import { ENV_VERBOSE } from '../index.ts';
 import Controller from "../core/Controller.ts";
+import {getLogger} from "@logtape/logtape";
 
 /**
  * Inteface to make manipulation of the json file easier 
@@ -21,6 +21,9 @@ interface Catalog {
     name: string;
     entries: Settings[] | Catalog[];
 }
+
+// Override the log function
+const logger= getLogger(["simulation", "ModelManager"]);
 
 class ModelManager {
     controller: Controller;
@@ -68,43 +71,35 @@ class ModelManager {
                     const settingsPath = path.join(folderPath, "settings.json");
                     // Verify if there is a settings file
                     if (fs.existsSync(settingsPath)) {
-                        if (ENV_VERBOSE) {
-                            console.log(`${color.magenta}[MODEL MANAGER] ${color.reset} Append new package to ModelManager: ${folderPath}`);
-                        }
+                        logger.debug(`Append new package to ModelManager: ${folderPath}`);
+
                         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
                         this.jsonList.push(settings); // add the settings file to the list of json files
-                        console.log(this.jsonList)
-                        if (ENV_VERBOSE) {
-                            console.log(`${color.magenta}[MODEL MANAGER] ${color.reset} Found settings file in " + ${folderPath}`);
-                        }
+
+                        logger.trace(`{jsonList}`, {jsonList: this.jsonList});
+                        logger.debug(`Found settings file in ${folderPath}`);
+
                         if (settings.type === "catalog") { //it's a catalog, i.e it contains a subset of catalogs and models
-                            if (ENV_VERBOSE) {
-                                console.log(`${color.magenta}[MODEL MANAGER] ${color.reset} Found catalog in " + ${folderPath}`);
-                            }
+                            logger.debug(`Found catalog in ${folderPath}`);
                             this.parseCatalog(settings, modelList, settingsPath)
                         } else if (Array.isArray(settings)) {
-                            if (ENV_VERBOSE) {
-                                console.log(`${color.magenta}[MODEL MANAGER] ${color.reset}  Found array in ${color.cyan}${folderPath}${color.reset},iterating through`);
-                            }
+                            logger.debug(`Found array in ${color.cyan}${folderPath}${color.reset},iterating through`);
+
                             for (const item of settings) {
-                                if (ENV_VERBOSE) {
-                                    console.log(`${color.magenta}[MODEL MANAGER] ${color.reset} item: ${item.type}`)
-                                }
+                                logger.debug(`\titem: ${item.type}`)
                                 this.parseCatalog(item, modelList, settingsPath)
                             }
 
                         } else if (settings.type === "json_settings") {
-                            console.log("settings.model_file_path", settings.model_file_path)
+                            logger.debug("{settings}", {settings: settings.model_file_path})
 
                             modelList = modelList.concat(
                                 new Model(settingsPath, JSON.stringify(settings), settings.model_file_path)
                             );
                         }
-                        console.log(modelList.toString())
+                        logger.trace(modelList.toString());
                     } else {
-                        if (ENV_VERBOSE) {
-                            console.warn(`${color.orange} Couldn't find settings file for folder ${color.green} ${folderPath}`);
-                        }
+                        logger.warn(`Couldn't find settings file in folder ${folderPath}`);
                     }
                 }
             });
@@ -171,12 +166,12 @@ class ModelManager {
     parseCatalog(catalog: Catalog, list: Model[], settingsPath: string) {
         for (const entry of catalog.entries) {
             if ('type' in entry) {
-                console.log("entry found:", entry)
+                logger.info(`entry found: ${entry}`)
                 if (entry.type === "json_settings") {
-                    console.log(`${color.magenta}[MODEL MANAGER] ${color.reset} ${entry.name}`)
+                    logger.info(`${entry.name}`)
 
                     const model = new Model(settingsPath, JSON.stringify(entry));
-                    console.log(model.toString())
+                    logger.debug(model.toString());
                     list.push(model);
                 } else if (entry.type === "catalog") {
                     this.parseCatalog(entry, list, settingsPath);

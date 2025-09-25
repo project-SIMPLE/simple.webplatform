@@ -8,17 +8,10 @@ import {ENV_EXTRA_VERBOSE, ENV_VERBOSE, ENV_SCRCPY_FORCE_H265} from "../../index
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
 import path from "path";
+import {getLogger} from "@logtape/logtape";
 
 // Override the log function
-const log = (...args: any[]) => {
-    console.log("\x1b[34m[ScrcpyServer]\x1b[0m", ...args);
-};
-const logWarn = (...args: any[]) => {
-    console.warn("\x1b[34m[ScrcpyServer]\x1b[0m", "\x1b[43m", ...args, "\x1b[0m");
-};
-const logError = (...args: any[]) => {
-    console.error("\x1b[34m[ScrcpyServer]\x1b[0m", "\x1b[41m", ...args, "\x1b[0m");
-};
+const logger= getLogger(["android", "ScrcpyServer"]);
 
 const H264Capabilities = TinyH264Decoder.capabilities.h264;
 export class ScrcpyServer {
@@ -46,16 +39,16 @@ export class ScrcpyServer {
 
         try {
             this.wsServer = uWS.App(); //new WebSocketServer({ host, port });
-            log(`Creating video stream server on: ws://${host}:${port}`);
+            logger.info(`Creating video stream server on: ws://${host}:${port}`);
         } catch (e) {
-            logError('Failed to create a new websocket', e);
+            logger.error('Failed to create a new websocket {e}', {e});
         }
 
         this.wsServer.listen(host, port, (token) => {
             if (token) {
-                log(`Creating monitor server on: ws://${host}:${port}`);
+                logger.info(`Creating monitor server on: ws://${host}:${port}`);
             } else {
-                logError('Failed to listen on the specified port and host');
+                logger.error('Failed to listen on the specified port and host');
             }
         });
 
@@ -68,7 +61,7 @@ export class ScrcpyServer {
 
             open: (ws) => {
                 this.wsClients.add(ws);
-                log("Web view connected");
+                logger.debug("Web view connected");
 
                 // Send configuration message if scrcpy is already started
                 if (this.scrcpyStreamConfig) {
@@ -84,7 +77,7 @@ export class ScrcpyServer {
             drain: (ws) => {
                 // Reset stream to prevent having too much artefacts on stream
                 if (ws.getBufferedAmount() < this.maxBackpressure) {
-                    if (ENV_VERBOSE) log("Backpressure drained, restart stream to prevent visual glitch")
+                    logger.debug("Backpressure drained, restart stream to prevent visual glitch")
                     for (const client of this.scrcpyClients) {
                         client.controller!.resetVideo();
                     }
@@ -94,29 +87,27 @@ export class ScrcpyServer {
             close: (ws, code: number, message) => {
                 try {
                     this.wsClients.delete(ws)
-                    log(`Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
+                    logger.info(`Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
 
                     // Handle specific close codes
                     switch (code) {
                         case 1003:
-                            logError('Unsupported data sent by the client.');
+                            logger.error(`[Err ${code}] Unsupported data sent by the client.`);
                             break;
 
                         case 1006:
                         case 1009:
-                            logError('Message too big!');
-                            logError('Message size:', message.byteLength, 'bytes');
-                            logError('Message :', message);
+                            logger.error(`[Err ${code}] Message too big!\nMessage size: ${message.byteLength}bytes\nMessage:${message}`);
                             break;
 
                         default:
                             if (code !== 1000) // 1000 = Normal Closure
-                                logError('Unexpected closure');
+                                logger.error(`[Err ${code}] Unexpected closure`);
                             else
-                                if (ENV_VERBOSE) log(`Connection normally`);
+                                logger.debug(`Closing connection normally`);
                     }
                 } catch (err) {
-                    logError('Error during close handling:', err);
+                    logger.fatal('Error during close handling: {err}', {err});
                 }
             }
         });
@@ -159,11 +150,11 @@ export class ScrcpyServer {
                 await this.loadScrcpyServer();
             }
 
-            log(`Starting scrcpy for ${adbConnection.serial} ===`)
+            logger.info(`Starting scrcpy for ${adbConnection.serial}`)
 
             const myself = this;
 
-            if (ENV_VERBOSE) log(`Sync adb with ${adbConnection.serial} ===`);
+            logger.debug(`Sync adb with ${adbConnection.serial}`);
             const sync = await adbConnection.sync();
             try {
                 await sync.write({
@@ -176,7 +167,7 @@ export class ScrcpyServer {
                     }),
                 });
             } catch (error) {
-                logError(`Error writing scrcpy server to  ${adbConnection.serial}: ${error}`);
+                logger.fatal(`Error writing scrcpy server to  ${adbConnection.serial}: {error}`, {error});
             }
             finally {
                 await sync.dispose();
@@ -189,10 +180,10 @@ export class ScrcpyServer {
                 scrcpyOptions.value.angle = 23;
                 scrcpyOptions.value.crop = "1482:1570:300:250";
             } else {
-                logWarn("Device", deviceModel, "is unknown, so no cropping is applied");
+                logger.warn(`Device ${deviceModel} is unknown, so no cropping is applied`);
             }
 
-            if (ENV_VERBOSE) log(`Prepare scrcpy server from ${adbConnection.serial} ===`);
+            logger.debug(`Prepare scrcpy server from ${adbConnection.serial}`);
             const client : AdbScrcpyClient<AdbScrcpyOptions3_3_1<true>> = await AdbScrcpyClient.start(
                 adbConnection,
                 DefaultServerPath,
@@ -200,7 +191,7 @@ export class ScrcpyServer {
             );
 
             // Store the controller of new client
-            if (ENV_VERBOSE) log(`Pushing scrcpy server to ${adbConnection.serial} ===`);
+            logger.debug(`Pushing scrcpy server to ${adbConnection.serial}`);
             this.scrcpyClients.push(client);
 
             // log("coco");
@@ -218,7 +209,7 @@ export class ScrcpyServer {
             if (client.videoStream) {
                 const { metadata, stream: videoPacketStream } = await client.videoStream;
                 const useH265: boolean = (process.platform == 'darwin' || ENV_SCRCPY_FORCE_H265);
-                log(metadata);
+                logger.debug({metadata});
 
                 const myself = this;
 
@@ -261,22 +252,20 @@ export class ScrcpyServer {
                                         );
                                         break;
                                     default:
-                                        logWarn("Unkown packet from video pipe: ", packet);
+                                        logger.warn("Unkown packet from video pipe: {packet}", {packet});
                                 }
                             },
                         }),
                     )
                     .catch((e) => {
-                        logError(`Error while piping video stream of ${adbConnection.serial} ===`)
-                        logError(e);
+                        logger.error(`Error while piping video stream of ${adbConnection.serial}\n{e}`, {e});
                     });
             } else {
-                logError(`Couldn't find a video stream from ${adbConnection.serial}'s scrcpy server ===`)
+                logger.error(`Couldn't find a video stream from ${adbConnection.serial}'s scrcpy server`)
             }
 
         } catch (error) {
-            logError("Error in startStreaming:", error);
-            logError("=== This error probably comes from the cropping value out-of-bound on a classical Android device; but by default set for Meta Quest 3 value ===");
+            logger.fatal("Error in startStreaming: {error}", {error});
         }
     }
 

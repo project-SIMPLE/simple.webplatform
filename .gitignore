@@ -26,3 +26,4 @@ dist-ssr
 # Escape files relative to the project
 .env
 package-lock.json
+errorLog.log

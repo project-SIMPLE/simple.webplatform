@@ -1,8 +1,14 @@
+// @ts-expect-error
 import Evilscan from "evilscan";
 import {networkInterfaces} from "os";
 
 import Controller from "../../core/Controller.ts";
 import {HEADSETS_IP, ENV_EXTRA_VERBOSE, ENV_VERBOSE} from "../../index.ts";
+import {getLogger} from "@logtape/logtape";
+
+// Override the log function
+const logger= getLogger(["android", "DeviceFinder"]);
+const loggerES= getLogger(["android", "DeviceFinder", "EvilScan"]);
 
 class DeviceFinder {
     controller: Controller;
@@ -16,7 +22,7 @@ class DeviceFinder {
         // Filter out already connected IPs
         this.removeConnectedIp();
 
-        if (ENV_VERBOSE) console.log("[ADB FINDER] Loaded successfully, will start to scan for devices now...");
+        logger.debug("Loaded successfully, will start to scan for devices now...");
     }
 
     private removeConnectedIp(){
@@ -35,9 +41,9 @@ class DeviceFinder {
 
         if (this.ipToConnect.length === 0 || this.isScanning) {
             if(this.ipToConnect.length === 0)
-                if (ENV_VERBOSE) console.log('[ADB FINDER] Every known IP already connected, stopping now...');
+                logger.debug('Every known IP already connected, stopping now...');
             else
-                if (ENV_EXTRA_VERBOSE) console.log('[ADB FINDER] Already scanning for new IP, skipping this call...');
+                logger.trace('Already scanning for new IP, skipping this call...');
 
             return;
         }
@@ -45,23 +51,23 @@ class DeviceFinder {
         this.isScanning = true; // Set the flag before starting to connect, otherwise, multiple attempts will start concurrently before the flag will be set.
 
         try {
-            if (ENV_VERBOSE) console.log('[ADB FINDER] Start looking to connect for those IP : ', this.ipToConnect);
+            logger.debug('Start looking to connect for those IP: {list}', {list: this.ipToConnect});
 
             for (let i = 0; i < this.ipToConnect.length; i++) { // Directly use this.ipToConnect. No need to copy
                 const ip = this.ipToConnect[i];
-                if (ENV_VERBOSE) console.log('[ADB FINDER] Trying ', ip);
+                logger.debug(`Trying ${ip}`);
 
                 try {
                     const output: boolean = await this.scanAndConnectIP(ip);
 
                     if (output) { //.includes('OK')
-                        if (ENV_VERBOSE) console.log('[ADB FINDER] Successfully connected to ', ip);
+                        logger.debug(`Successfully connected to ${ip}`);
                         this.ipToConnect.splice(i--, 1); // Remove the connected IP; adjust index
                     } else
-                        if (ENV_VERBOSE) console.warn('[ADB FINDER] Failed to connect to ' + ip);
+                        if (ENV_VERBOSE) logger.warn(`Failed to connect to ${ip}`);
 
                 } catch (innerError) {
-                    console.error(`[ADB FINDER] Error connecting to ${ip}:`, innerError);
+                    logger.error(`Error connecting to ${ip}: {e}`, {e: innerError});
                 }
             }
         } finally {
@@ -69,8 +75,7 @@ class DeviceFinder {
 
                 this.isScanning = false;  // Allow new thread to search for devices
 
-                if (ENV_VERBOSE) console.log('[ADB FINDER] Those IP are left to be connected : ', this.ipToConnect);
-                if (ENV_VERBOSE) console.log('[ADB FINDER] Retry in 5 seconds...');
+                logger.debug('Those IP are left to be connected: {list}\nRetry in 5 seconds...', {list: this.ipToConnect});
 
                 // Trigger new call
                 setTimeout(async () => {
@@ -78,8 +83,7 @@ class DeviceFinder {
                 }, 5000);
 
             } else {
-                if (ENV_VERBOSE) console.log('[ADB FINDER] All devices connected.');
-                if (ENV_VERBOSE) console.log('[ADB FINDER] Stopping now...');
+                logger.debug('All devices connected.\nStopping now...');
             }
         }
     }
@@ -97,20 +101,20 @@ class DeviceFinder {
                 banner:false
             })
             .on('result', async (data:any) => {
-                if (ENV_EXTRA_VERBOSE) console.log('[ADB FINDER - EvilScan] === Scan of ', ipAddress,' find this:', data);
+                loggerES.trace(`Scan of ${ipAddress} find this: {data}`, {data});
                 if (!alreadyConnected){
-                    if (ENV_EXTRA_VERBOSE) console.log('[ADB FINDER - EvilScan] === Trying to ADB connect to', data.ip, ':', data.port);
+                    loggerES.trace(`Trying to ADB connect to ${data.ip}:${data.port}`);
 
                     try {
                         alreadyConnected = await this.controller.adbConnectNewDevice(data.ip, data.port);
                     } catch (e) {
-                        if (ENV_EXTRA_VERBOSE) console.error("[ADB FINDER - EvilScan] === Couldn't connect with this error message", e)
+                        if (ENV_EXTRA_VERBOSE) loggerES.error("Couldn't connect with this error message: {e}", {e})
                     }
                 } else
-                    if (ENV_EXTRA_VERBOSE) console.log('[ADB FINDER - EvilScan] === Already connected, skipping', data.ip, ':', data.port);
+                    loggerES.trace(`Already connected, skipping ${data.ip}:${data.port}`);
             })
             .on('done', () => {
-                if (ENV_EXTRA_VERBOSE) console.log('[ADB FINDER - EvilScan] === Scan of ', ipAddress,' completed.');
+                loggerES.trace(`Scan of ${ipAddress} completed.`);
                 finishedScanning = true;
             })
             .run();
@@ -141,9 +145,9 @@ class DeviceFinder {
                 }
             }
         } catch (e) {
-            console.error("[ADB FINDER - Detect - EvilScan] === Can't find the ip address for your device...", e);
+            loggerES.error("Can't find the ip address for your device...\n{e}", {e});
         } finally {
-            if (ENV_VERBOSE) console.log("[ADB FINDER - Detect - EvilScan] === Scanning over IP:", serverLocalIp);
+            loggerES.debug(`Scanning over IP subnet: ${serverLocalIp}/24`);
         }
 
         new Evilscan({
@@ -155,12 +159,12 @@ class DeviceFinder {
             })
             .on('result', async (data:any) => {
                 if (data.ip != serverLocalIp) {
-                    if (ENV_VERBOSE) console.log('[ADB FINDER - Detect - EvilScan] === Scan find this:', data.ip);
+                    loggerES.trace(`Scan find this: ${data.ip}`);
                     this.ipToConnect.push(data.ip);
                 }
             })
             .on('done', () => {
-                if (ENV_EXTRA_VERBOSE) console.log('[ADB FINDER - Detect - EvilScan] === Scan completed.');
+                loggerES.trace('=== Scan completed.');
                 finishedScanning = true;
             })
             .run();

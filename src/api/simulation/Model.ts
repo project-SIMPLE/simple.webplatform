@@ -1,11 +1,6 @@
-import fs from 'fs';
 import path from 'path';
-import { JsonSettings, ANSI_COLORS as color } from "../core/Constants.ts";
-interface Settings {
-    type: "json_settings";
-    model_file_path: string;
-    name: string;
-}
+import { JsonSettings } from "../core/Constants.ts";
+
 class Model {
     readonly #jsonSettings: JsonSettings;
     readonly #modelFilePath: string;

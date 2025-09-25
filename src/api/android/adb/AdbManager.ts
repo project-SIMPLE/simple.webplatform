@@ -11,19 +11,13 @@ import {AdbServerNodeTcpConnector} from "@yume-chan/adb-server-node-tcp";
 import Device = AdbServerClient.Device;
 
 import Controller from "../../core/Controller.ts";
-import {ENV_EXTRA_VERBOSE, ENV_VERBOSE} from "../../index.ts";
+import {ENV_EXTRA_VERBOSE} from "../../index.ts";
 import {ScrcpyServer} from "../scrcpy/ScrcpyServer.ts";
+import {getLogger} from "@logtape/logtape";
+import DeviceFinder from "./DeviceFinder.ts";
 
 // Override the log function
-const log = (...args: any[]) => {
-    console.log("\x1b[36m[ADB MANAGER]\x1b[0m", ...args);
-};
-const logWarn = (...args: any[]) => {
-    console.warn("\x1b[36m[ADB MANAGER]\x1b[0m", "\x1b[43m", ...args, "\x1b[0m");
-};
-const logError = (...args: any[]) => {
-    console.error("\x1b[36m[ADB MANAGER]\x1b[0m", "\x1b[41m", ...args, "\x1b[0m");
-};
+const logger= getLogger(["android", "AdbManager"]);
 
 export class AdbManager {
     controller: Controller;
@@ -40,9 +34,9 @@ export class AdbManager {
                 new AdbServerNodeTcpConnector({ host: '127.0.0.1', port: 5037 })
             );
         }catch (e) {
-            logError("Can't connect to device's ADB server", e);
+            logger.error(`Can't connect to device's ADB server ${e}`);
         }
-        log("Connect to device's ADB server");
+        logger.info("Connect to device's ADB server");
 
         this.videoStreamServer = new ScrcpyServer();
 
@@ -104,7 +98,7 @@ export class AdbManager {
     async startStreaming(device: Device) {
         // Ensure having only one streaming per device
         if(this.clientCurrentlyStreaming.includes(device)) {
-            if (ENV_VERBOSE) logWarn('Device', device.serial, 'already streaming. Skipping new stream...');
+            logger.debug(`Device ${device.serial} already streaming. Skipping new stream...`);
             return;
         }else{
             // Add new device streaming
@@ -114,9 +108,11 @@ export class AdbManager {
             const adb = new Adb(transport);
 
             if (device.serial.includes(".")) {// Only consider wireless devices - Check if serial is an IP address
-                if (ENV_VERBOSE) log('Starting streaming for :', device.serial);
+                logger.debug(`Starting streaming for: ${device.serial}`);
                 await this.videoStreamServer.startStreaming(adb, device.model!);
             }
+
+            await this.videoStreamServer.startStreaming(adb, device.model!);
         }
 
     }
@@ -128,7 +124,7 @@ export class AdbManager {
             await this.adbServer.wireless.connect(ip + ':' + port);
             success = true;
         }catch (e) {
-            if (ENV_EXTRA_VERBOSE) logError("Couldn't connect with this error message", e)
+            if (ENV_EXTRA_VERBOSE) logger.error(`Couldn't connect with this error message ${e}`);
         }
 
         return success
