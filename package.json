@@ -11,6 +11,9 @@
   },
   "dependencies": {
     "@homebridge/ciao": "^1.1.8",
+    "@logtape/file": "^1.1.1",
+    "@logtape/logtape": "^1.1.1",
+    "@logtape/pretty": "^1.1.1",
     "@reduxjs/toolkit": "^2.2.7",
     "@types/node": "^22.10.1",
     "@types/react": "^18.3.3",

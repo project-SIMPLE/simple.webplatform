@@ -1,9 +1,46 @@
 // Import des modules nécessaires
 import {spawn} from "child_process";
 import dotenv from 'dotenv';
+import {
+    configure,
+    getConsoleSink,
+    getLogger,
+    getLevelFilter,
+    withFilter, fingersCrossed
+} from "@logtape/logtape";
+import { getStreamFileSink } from "@logtape/file";
+import { getPrettyFormatter } from "@logtape/pretty";
 
 import Controller from './core/Controller.ts';
 import DeviceFinder from './android/adb/DeviceFinder';
+
+
+/*
+    TOOLBOX ================================
+ */
+
+async function isCommandAvailable(commandName: string): Promise<boolean> {
+    if (process.platform === "win32") {
+        const checkAdbProcess = spawn("where", [commandName]);
+        return new Promise((resolve) => {
+            checkAdbProcess.on("close", (code) => {
+                resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
+            });
+        });
+    } else {
+        return new Promise((resolve) => {
+            const checkAdbProcess = spawn("which", [commandName]);
+
+            checkAdbProcess.on("close", (code) => {
+                resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
+            });
+        });
+    }
+}
+
+/*
+    PROCESS .env FILE ================================
+ */
 
 // Load options
 dotenv.config();
@@ -43,20 +80,60 @@ const ENV_VERBOSE: boolean = ENV_EXTRA_VERBOSE ?
         ['true', '1', 'yes'].includes(process.env.VERBOSE.toLowerCase())
         : false;
 
-if (ENV_EXTRA_VERBOSE) {
-  console.log(process.env);
-}
+/*
+    SETUP LOGGING SYSTEM ================================
+ */
+
+await configure({
+    sinks: {
+        // Simple non-blocking mode with default settings
+        console: withFilter(
+                getConsoleSink({
+                    nonBlocking: true,
+                    formatter: getPrettyFormatter({
+                        wordWrap: false,
+                        inspectOptions: {
+                            depth: 3,
+                            compact: false
+                        },
+                        categoryTruncate: "middle",
+                        icons: false
+                    })
+                }),
+                getLevelFilter(ENV_EXTRA_VERBOSE ? "trace" : ENV_VERBOSE ? "debug" : "info")
+            ),
+        file: fingersCrossed(
+                getStreamFileSink("errorLog.log", {
+                    highWaterMark: 32768  // 32KB buffer for high-volume logging
+                }),
+                {triggerLevel: "error"}
+            )
+    },
+    loggers: [
+        { category: ["logtape", "meta"], sinks: ["console"], lowestLevel: "warning" },
+        {
+            category: [], // wildcard
+            sinks: [
+                "file",
+                "console"
+            ]
+        }
+    ]
+});
+const logger= getLogger(["core", "index"]);
 
 /*
     APPLICATION ENTRY POINT ================================
  */
 
-console.log("\n\x1b[95mWelcome to Gama Server Middleware !\x1b[0m\n");
+logger.info(`Starting the SIMPLE Webplatform !`);
+
+logger.trace(process.env);
 
 const useAdb: boolean =
     (await isCommandAvailable("adb"))
         ? await new Promise((resolve) => {
-            console.log("Waking up ADB...");
+            logger.debug("Waking up ADB...");
             const checkAdb = spawn("adb", ["devices"]);
             checkAdb.on('close', (code) => {
                 resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
@@ -65,27 +142,6 @@ const useAdb: boolean =
         : false;
 
 const c = new Controller(useAdb);
-
-// =========================================================
-
-async function isCommandAvailable(commandName: string): Promise<boolean> {
-  if (process.platform === "win32") {
-    const checkAdbProcess = spawn("where", [commandName]);
-    return new Promise((resolve) => {
-        checkAdbProcess.on("close", (code) => {
-            resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
-        });
-        });
-  } else {
-    return new Promise((resolve) => {
-      const checkAdbProcess = spawn("which", [commandName]);
-
-      checkAdbProcess.on("close", (code) => {
-        resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
-      });
-    });
-  }
-}
 
 /*
     Pro-actively looking for Meta Quest devices to connect with ADB using an external script

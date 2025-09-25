@@ -1,19 +1,10 @@
 import uWS, { TemplatedApp } from 'uWebSockets.js';
 
 import { Controller } from '../core/Controller.ts';
-import { JsonMonitor, ANSI_COLORS as color } from "../core/Constants.ts"
-import { ENV_EXTRA_VERBOSE, ENV_VERBOSE } from "../index.ts";
+import { JsonMonitor } from "../core/Constants.ts"
+import {getLogger} from "@logtape/logtape";
 
-// Override the log function
-const log = (...args: any[]) => {
-    console.log("\x1b[33m[MONITOR SERVER]\x1b[0m", ...args);
-};
-const logWarn = (...args: any[]) => {
-    console.warn("\x1b[33m[MONITOR SERVER]\x1b[0m", "\x1b[43m", ...args, "\x1b[0m");
-};
-const logError = (...args: any[]) => {
-    console.error("\x1b[33m[MONITOR SERVER]\x1b[0m", "\x1b[41m", ...args, "\x1b[0m");
-};
+const logger= getLogger(["monitor", "MonitorServer"]);
 
 /**
  * Creates a Websocket Server for handling monitor connections
@@ -38,9 +29,9 @@ export class MonitorServer {
 
         this.wsServer.listen(host, port, (token) => {
             if (token) {
-                log(`Creating monitor server on: ws://${host}:${port}`);
+                logger.info(`Creating monitor server on: ws://${host}:${port}`);
             } else {
-                logError('Failed to listen on the specified port and host');
+                logger.error('Failed to listen on the specified port and host');
             }
         });
 
@@ -49,7 +40,7 @@ export class MonitorServer {
             idleTimeout: 30, // 30 seconds timeout
 
             open: (ws) => {
-                log("Connected to monitor server");
+                logger.debug("Connected to monitor server");
                 this.wsClients.add(ws);
                 this.sendMonitorGamaState();
                 this.sendMonitorJsonSettings();
@@ -87,7 +78,7 @@ export class MonitorServer {
 
                     case "screen_control": //TODO
                         const messageString = JSON.parse(Buffer.from(message).toString()); //? can't parse the payload of the jsonMonitor for some reason
-                        logWarn(`[MONITOR SERVER] data recieved:${messageString.display_type}`);
+                        logger.warn(`data recieved:${messageString.display_type}`);
                         this.sendMessageByWs({type: "screen_control", display_type: messageString.display_type});
                         break;
                         
@@ -96,7 +87,7 @@ export class MonitorServer {
                         if (jsonMonitor.id) {
                             this.controller.purgePlayer(jsonMonitor.id);
                         } else {
-                            logError("Failed to remove player headset, missing PlayerID");
+                            logger.error("Failed to remove player headset, missing PlayerID\n{jsonMonitor}", {jsonMonitor});
                         }
                         break;
 
@@ -118,9 +109,9 @@ export class MonitorServer {
                                 simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
                             }, ws);
 
-                            if (ENV_VERBOSE) log("Opening virtual universe", selectedSimulation.getJsonSettings());
+                            logger.debug("Opening virtual universe {selectedSimulation}", { selectedSimulation: selectedSimulation.getJsonSettings() });
                         } else {
-                            logError("Invalid index received or out of bounds");
+                            logger.error(`Invalid index received or out of bounds. [Index: ${index}]`);
                         }
                         break;
 
@@ -138,45 +129,44 @@ export class MonitorServer {
                             break;
 
                     default:
-                        logWarn("The last message received from the monitor had an unknown type.");
-                        logWarn(jsonMonitor);
+                        logger.warn("The last message received from the monitor had an unknown type.\n{jsonMonitor}", {jsonMonitor});
                 }
             },
 
             close: (ws, code: number, message) => {
                 try {
                     this.wsClients.delete(ws);
-                    log(`Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
+                    logger.debug(`Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
 
                     // Handle specific close codes
                     switch (code) {
                         case 1001:
-                            logWarn('Connection timed out...');
+                            logger.warn(`[ERR ${code}] Connection timed out...`);
                             break;
 
                         case 1003:
-                            logError('Unsupported data sent by the client.');
+                            logger.error(`[ERR ${code}] Unsupported data sent by the client.`);
                             break;
 
                         case 1006:
                         case 1009:
-                            logError('Message too big!');
+                            logger.error(`[ERR ${code}] Message too big!`);
                             if (message) {
-                                logError('Message :', message);
+                                logger.error('Message : {message}', {message});
                                 if (typeof message.byteLength !== 'undefined') {
-                                    logError('Message size:', message.byteLength, 'bytes');
+                                    logger.error(`Message size: ${message.byteLength} bytes`);
                                 }
                             }
                             break;
 
                         default:
                             if (code !== 1000) // 1000 = Normal Closure
-                                logError('Unexpected closure');
+                                logger.error(`[ERR ${code}] Unexpected closure`);
                             else
-                                if (ENV_VERBOSE) log(`Closing normally`);
+                                logger.debug(`Closing normally`);
                     }
                 } catch (err) {
-                    logError('Error during close handling:', err);
+                    logger.fatal('Error during close handling: {err}', {err});
                 }
             },
         });
@@ -188,11 +178,14 @@ export class MonitorServer {
     sendMonitorGamaState(): void {
         if (this.controller.model_manager.getActiveModel() !== undefined
             && this.controller.gama_connector !== undefined) {
-            this.sendMessageByWs({
+            const messageToSend = {
                 type: "json_state",
                 gama: this.controller.gama_connector.getJsonGama(),
                 player: this.controller.player_manager.getArrayPlayerList(),
-            });
+            };
+
+            logger.trace("Sending monitor gama state:\n{messageToSend}", {messageToSend});
+            this.sendMessageByWs(messageToSend);
         }
     }
 
@@ -201,6 +194,7 @@ export class MonitorServer {
      */
     sendMonitorJsonSettings(): void {
         if (this.controller.model_manager.getActiveModel() !== undefined) {
+            logger.trace("Sending monitor json settings:\n{json}", {json: this.controller.model_manager.getActiveModel().getJsonSettings()});
             this.sendMessageByWs(this.controller.model_manager.getActiveModel().getJsonSettings());
         }
     }
@@ -221,14 +215,14 @@ export class MonitorServer {
 
                     switch (r) {
                         case 0:
-                            logWarn('Backpressure is building up. Data will be drain overtime to client', client.getRemoteAddressAsText());
+                            logger.warn(`Backpressure is building up. Data will be drain overtime to client ${client.getRemoteAddressAsText()}`);
                             break;
                         case 2:
-                            logError('Backpressure detected. Data not sent to client', client.getRemoteAddressAsText());
+                            logger.error(`Backpressure detected. Data not sent to client ${client.getRemoteAddressAsText()}`);
                             break;
                         default:
                         case 1:
-                            if (ENV_EXTRA_VERBOSE) log(`${color.yellow}[DEBUG]${color.green} Properly sent message: ${color.reset}${message} ${color.green}to client${color.reset}`, client.getRemoteAddressAsText());
+                            logger.trace(`Properly sent message to client (${client.getRemoteAddressAsText()}):\n${message}`);
                     }
                 }
             });
@@ -239,6 +233,7 @@ export class MonitorServer {
      * Closes the websocket server
      */
     close(): void {
+        logger.trace("Closing monitor server...");
         this.wsServer.close();
     }
 }

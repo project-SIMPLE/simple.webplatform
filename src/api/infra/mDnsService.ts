@@ -1,24 +1,15 @@
 import ciao, {Responder, ServiceType} from '@homebridge/ciao';
-import {ENV_EXTRA_VERBOSE} from "../index.ts";
+import {getLogger} from "@logtape/logtape";
 
-// Override the log function
-const log = (...args: any[]) => {
-    console.log("\x1b[37m[mDNS]\x1b[0m", ...args);
-};
-const logWarn = (...args: any[]) => {
-    console.warn("\x1b[37m[mDNS]\x1b[0m", "\x1b[43m", ...args, "\x1b[0m");
-};
-const logError = (...args: any[]) => {
-    console.error("\x1b[37m[mDNS]\x1b[0m", "\x1b[41m", ...args, "\x1b[0m");
-};
+const logger= getLogger(["infra", "mDNS"]);
 
 export class mDnsService {
     readonly responder: Responder;
 
     constructor(hostname?: string) {
         if (hostname) {
-            logWarn("You're modifying the multicast DNS hostname, this should be done only for development.");
-            logWarn("If this domain doesn't work, make sure to properly configure Vite.js to supports this domain name too.");
+            logger.warn("You're modifying the multicast DNS hostname, this should be done only for development.");
+            logger.warn("If this domain doesn't work, make sure to properly configure Vite.js to supports this domain name too.");
         }
 
         this.responder = ciao.getResponder();
@@ -32,10 +23,10 @@ export class mDnsService {
             port: +process.env.WEB_APPLICATION_PORT! // `+` converts the `string` to `number`
         };
 
-        if (ENV_EXTRA_VERBOSE) log(mDnsOptions);
+        logger.trace(mDnsOptions);
 
         this.responder.createService(mDnsOptions).advertise().then(() => {
-            log(`Application is available on http://${mDnsOptions.hostname}.local:${mDnsOptions.port} =================`);
+            logger.info(`Application is available on http://${mDnsOptions.hostname}.local:${mDnsOptions.port}`);
         });
     }
 
