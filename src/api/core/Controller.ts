@@ -5,7 +5,7 @@ import {MonitorServer} from '../monitoring/MonitorServer.ts';
 import {AdbManager} from "../android/adb/AdbManager.ts";
 import {useAdb} from "../index.ts";
 import {JsonPlayerAsk, JsonOutput} from "./Constants.ts";
-import {mDnsService} from "../infra/mDnsService.ts";
+// import {mDnsService} from "../infra/mDnsService.ts";
 import {getLogger} from "@logtape/logtape";
 
 const logger= getLogger(["core", "Controller"]);
@@ -17,12 +17,12 @@ export class Controller {
     gama_connector: GamaConnector;
     // @ts-expect-error
     adb_manager: AdbManager;
-    mDnsService: mDnsService;
+    // mDnsService: mDnsService;
 
 
     constructor(useAdb:boolean) {
 
-        this.mDnsService = new mDnsService(process.env.WEB_HOSTNAME);
+        // this.mDnsService = new mDnsService(process.env.WEB_HOSTNAME);
 
         this.model_manager = new ModelManager(this);
         this.monitor_server = new MonitorServer(this);
