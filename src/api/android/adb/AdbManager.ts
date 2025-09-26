@@ -121,10 +121,7 @@ export class AdbManager {
                 logger.debug(`Starting streaming for: ${device.serial}`);
                 await this.videoStreamServer.startStreaming(adb, device.model!);
             }
-
-            await this.videoStreamServer.startStreaming(adb, device.model!);
         }
-
     }
 
     async connectNewDevice(ip: string, port: string): Promise<boolean> {
