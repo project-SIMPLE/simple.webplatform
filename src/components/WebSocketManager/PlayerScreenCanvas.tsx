@@ -45,7 +45,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 }
             } else {
                 if (canvasref.current) {
-                    canvas.classList.add(...[canvasSize ? canvasSize : "w-[200%]", "rounded-lg"])
+                    canvas.classList.add(...["rounded-lg"])
                     canvasref.current.appendChild(canvas);
                 }
             }
@@ -73,31 +73,33 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 </div>
                 : null}
 
-            {/* actually meaningfull content */}
+            {/* actually meaningful content */}
             {!isPlaceholder ?
-                <div id={id} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500"} ${CanvasStyle} `} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
+                <div id={id} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500"} ${CanvasStyle} h-[900px] max-h-[80dvh]`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
+                        {hideInfos ? null :
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
-                        {hideInfos ? null :
                             <>
                                 <p>player:{id}</p>
                                 {isColoredHeadset ? <p className="w-full text-center">identifier:{ipIdentifier} {false ? `couleur: (${HEADSET_COLOR[ipIdentifier]})` : null}</p> : null}
                             </>
-                        }
                     </div>
+                        }
 
-                    <div ref={canvasref} className="size-[55dvh] overflow-hidden rounded-md">
+                    <div ref={canvasref} className="size-full overflow-hidden rounded-md">
 
                     </div>
                 </div>
 
 
                 :
+                null
                 // placeholder, with an eye icon
-                <div className={`${CanvasStyle} bg-stone-100`}>
-                    {/* <p>Placeholder ici</p> */}
-                    <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
-                </div>}
+                // <div className={`${CanvasStyle} bg-stone-100`}>
+                //     {/* <p>Placeholder ici</p> */}
+                //     <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
+                // </div>
+                }
         </>
     )
 }
