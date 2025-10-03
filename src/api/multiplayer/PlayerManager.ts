@@ -50,7 +50,7 @@ class PlayerManager {
                 if ( this.playerList.has(playerWsId) ) {
                     const player: Player = this.playerList.get( playerWsId )!;
 
-                    logger.info(`Reconnection of the player of id ${player.id}`);
+                    logger.info(`Reconnecting player of id ${player.id}`);
                     player.ws = ws;
                     player.connected = true;
                     player.is_alive = true;

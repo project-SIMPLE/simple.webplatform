@@ -107,8 +107,8 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
     // Catch cases with non IP devices (USB
     const canvasId: string =
-        deviceId.split(":").length > 0 ?
-            deviceId.split(":")[0].split(".")[deviceId.split(".").length - 1]
+      deviceId.split(":").length > 0 ?
+        deviceId.split(":")[0].split(".")[deviceId.split(".").length - 1]
         : deviceId;
 
     if (selectedCanvas && selectedCanvas === canvasId) {
@@ -124,7 +124,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       console.log("supported", supported)
       if (supported.supported) {
         const decoder = new WebCodecsVideoDecoder({
-            // Enable h265 only for MacOS which is the only to truly supports it in browser
+          // Enable h265 only for MacOS which is the only to truly supports it in browser
           codec: ((process.platform == 'darwin' || useH265) ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264),
           renderer: renderer,
         });
@@ -142,7 +142,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
             isDecoderHasConfig.delete(deviceId);
             try {
               canvasList[deviceId].remove();
-            }catch (e) {
+            } catch (e) {
               console.error("Can't delete canvas", canvasList, e);
             }
           },
@@ -188,14 +188,14 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         // Enqueue data package to decoder stream
         if (deserializedData!.packet) {
           if (
-              isDecoderHasConfig.get(deserializedData!.streamId) &&
-              deserializedData!.packet.type == "data"
+            isDecoderHasConfig.get(deserializedData!.streamId) &&
+            deserializedData!.packet.type == "data"
           ) {
             controller!.enqueue(deserializedData!.packet);
             // Ensure starting stream with a configuration package holding keyframe
           } else if (
-              //!isDecoderHasConfig.get(deserializedData!.streamId) &&
-              deserializedData!.packet.type == "configuration"
+            //!isDecoderHasConfig.get(deserializedData!.streamId) &&
+            deserializedData!.packet.type == "configuration"
           ) {
             controller!.enqueue(deserializedData!.packet);
             isDecoderHasConfig.set(deserializedData!.streamId, true);
@@ -217,7 +217,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     selectedCanvas ?
       <div className="w-fit">
         {Object.entries(canvasList).map(([key, canvas]) =>
-          <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity}  hideInfos />
+          <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos />
 
         )}
       </div>
