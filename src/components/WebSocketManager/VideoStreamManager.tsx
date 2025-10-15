@@ -19,7 +19,7 @@ const deserializeData = (serializedData: string) => {
     case "configuration":
       return {
         streamId: parsed.streamId,
-        h265: parsed.h265,
+        useH265: parsed.h265,
         packet: {
           type: parsed.type,
           data: Uint8Array.from(atob(parsed.data), (c) => c.charCodeAt(0)),
@@ -28,7 +28,7 @@ const deserializeData = (serializedData: string) => {
     case "data":
       return {
         streamId: parsed.streamId,
-        h265: parsed.h265,
+        useH265: parsed.h265,
         packet: {
           type: parsed.type,
           keyframe: parsed.keyframe,
@@ -121,7 +121,6 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       // Check if h264 is supported
       codec: "avc1.4D401E",
     }).then((supported) => {
-      console.log("supported", supported)
       if (supported.supported) {
         const decoder = new WebCodecsVideoDecoder({
             // Enable h265 only for MacOS which is the only to truly supports it in browser
@@ -177,7 +176,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
       // Create stream if new stream
       if (!readableControllers.has(deserializedData!.streamId)) {
-        newVideoStream(deserializedData!.streamId);
+        newVideoStream(deserializedData!.streamId, deserializedData!.useH265);
       }
 
       const controller = readableControllers.get(deserializedData!.streamId);
