@@ -111,8 +111,6 @@ export class ScrcpyServer {
                 }
             }
         });
-
-        //if (ENV_VERBOSE) log("Using scrcpy version", VERSION);
     }
 
     async loadScrcpyServer() {
@@ -183,7 +181,7 @@ export class ScrcpyServer {
                 logger.warn(`Device ${deviceModel} is unknown, so no cropping is applied`);
             }
 
-            logger.debug(`Prepare scrcpy server from ${adbConnection.serial}`);
+            logger.debug(`Pushing & start scrcpy server from ${adbConnection.serial}`);
             const client : AdbScrcpyClient<AdbScrcpyOptions3_3_1<true>> = await AdbScrcpyClient.start(
                 adbConnection,
                 DefaultServerPath,
@@ -191,17 +189,15 @@ export class ScrcpyServer {
             );
 
             // Store the controller of new client
-            logger.debug(`Pushing scrcpy server to ${adbConnection.serial}`);
+            logger.debug(`Saving new scrcpy client ${adbConnection.serial}`);
             this.scrcpyClients.push(client);
-
-            // log("coco");
 
             // Print output of Scrcpy server
             if (ENV_VERBOSE) void client.output.pipeTo(
                 // @ts-expect-error
                 new WritableStream<string>({
                     write(chunk: string): void {
-                        if(ENV_EXTRA_VERBOSE) console.debug("\x1b[41m[DEBUG]\x1b[0m", chunk);
+                        logger.trace({chunk});
                     },
                 }),
             );
@@ -256,8 +252,7 @@ export class ScrcpyServer {
                                 }
                             },
                         }),
-                    )
-                    .catch((e) => {
+                    ).catch((e) => {
                         logger.error(`Error while piping video stream of ${adbConnection.serial}\n{e}`, {e});
                     });
             } else {
