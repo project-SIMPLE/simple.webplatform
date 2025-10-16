@@ -19,7 +19,7 @@ const deserializeData = (serializedData: string) => {
     case "configuration":
       return {
         streamId: parsed.streamId,
-        h265: parsed.h265,
+        useH265: parsed.h265,
         packet: {
           type: parsed.type,
           data: Uint8Array.from(atob(parsed.data), (c) => c.charCodeAt(0)),
@@ -28,7 +28,7 @@ const deserializeData = (serializedData: string) => {
     case "data":
       return {
         streamId: parsed.streamId,
-        h265: parsed.h265,
+        useH265: parsed.h265,
         packet: {
           type: parsed.type,
           keyframe: parsed.keyframe,
@@ -93,7 +93,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
     if (document.getElementById(deviceId)) {
       console.log("[Scrcpy-VideoStreamManager] Restarting new ReadableStream for", deviceId);
-      document.getElementById(deviceId)!.remove();
+      document.getElementById(deviceId)?.querySelector('canvas')?.remove();
     } else {
       // Create new stream
       console.log("[Scrcpy-VideoStreamManager] Create new ReadableStream for", deviceId);
@@ -118,16 +118,21 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     }
 
     await VideoDecoder.isConfigSupported({
-      // Check if h264 is supported
-      codec: "avc1.4D401E",
+      // Check if h265 is supported
+      codec: "hev1.1.60.L153.B0.0.0.0.0.0",
     }).then((supported) => {
-      console.log("supported", supported)
-      if (supported.supported) {
+        if (useH265 && !supported.supported) {
+            console.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
+            readableControllers.delete(deviceId);
+            return;
+        }
+
+      if (supported.supported || !useH265) {
         const decoder = new WebCodecsVideoDecoder({
-            // Enable h265 only for MacOS which is the only to truly supports it in browser
-          codec: ((process.platform == 'darwin' || useH265) ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264),
-          renderer: renderer,
+            codec: useH265 ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264,
+            renderer: renderer,
         });
+        console.log("[Scrcpy-VideoStreamManager] Decoder for", useH265 ? "h265" : "h264", "loaded");
         // Create new ReadableStream used for scrcpy decoding
         const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
           start(controller) {
@@ -142,7 +147,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
             isDecoderHasConfig.delete(deviceId);
             try {
               canvasList[deviceId].remove();
-            }catch (e) {
+            } catch (e) {
               console.error("Can't delete canvas", canvasList, e);
             }
           },
@@ -170,6 +175,39 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     // Open the WebSocket connection
     const socket = new WebSocket("ws://" + host + ":" + port);
 
+    // Send browser's codecs compatibility
+    socket.onopen = async () => {
+        let supportH264: boolean, supportH265: boolean, supportAv1: boolean;
+
+        // Check if h264 is supported
+        await VideoDecoder.isConfigSupported({ codec: "avc1.4D401E" }).then((r) => {
+            supportH264 = r.supported!;
+            console.log("[SCRCPY] Supports h264", supportH264);
+        })
+
+        // Check if h265 is supported
+        await VideoDecoder.isConfigSupported({ codec: "hev1.1.60.L153.B0.0.0.0.0.0" }).then((r) => {
+            supportH265 = r.supported!;
+            console.log("[SCRCPY] Supports h265", supportH265);
+        })
+
+        // Check if AV1 is supported
+        await VideoDecoder.isConfigSupported({ codec: "av01.0.05M.08" }).then((r) => {
+            supportAv1 = r.supported!;
+            console.log("[SCRCPY] Supports AV1", supportAv1);
+        })
+
+        socket.send(JSON.stringify({
+            "type": "codecVideo",
+            // @ts-expect-error
+            "h264": supportH264,
+            // @ts-expect-error
+            "h265": supportH265,
+            // @ts-expect-error
+            "av1": supportAv1,
+        }));
+    }
+
     // Handle incoming WebSocket messages
     socket.onmessage = (event) => {
       // Deserialize the message and enqueue the data into the readable stream
@@ -177,7 +215,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
       // Create stream if new stream
       if (!readableControllers.has(deserializedData!.streamId)) {
-        newVideoStream(deserializedData!.streamId);
+        newVideoStream(deserializedData!.streamId, deserializedData!.useH265);
       }
 
       const controller = readableControllers.get(deserializedData!.streamId);

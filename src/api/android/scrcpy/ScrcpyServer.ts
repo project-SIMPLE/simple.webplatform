@@ -1,19 +1,26 @@
 import fs from "fs/promises";
+import path from "path";
 
-import { ReadableStream } from "@yume-chan/stream-extra";
+import {ReadableStream} from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
-import { AdbScrcpyClient, AdbScrcpyOptions3_3_1 } from "@yume-chan/adb-scrcpy";
 import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
-import {ENV_EXTRA_VERBOSE, ENV_VERBOSE, ENV_SCRCPY_FORCE_H265} from "../../index.ts";
+import {AdbScrcpyClient, AdbScrcpyOptions3_3_1} from "@yume-chan/adb-scrcpy";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
-import path from "path";
 import {getLogger} from "@logtape/logtape";
+
+import { ENV_VERBOSE, ENV_SCRCPY_FORCE_H265 } from "../../index.ts";
+import {AdbManager} from "../adb/AdbManager.ts";
 
 // Override the log function
 const logger= getLogger(["android", "ScrcpyServer"]);
 
 const H264Capabilities = TinyH264Decoder.capabilities.h264;
+
+let useH265: boolean = false;
+// Switch to true if at least 1 client doesn't h265
+let scrcpyCodecLock: boolean = false;
+
 export class ScrcpyServer {
     // =======================
     // WebSocket
@@ -31,7 +38,16 @@ export class ScrcpyServer {
     // Scrcpy stream
     private scrcpyStreamConfig!: string;
 
-    constructor() {
+    private adbManager!: AdbManager;
+
+    constructor(adbManager: AdbManager) {
+        // Set global variables
+        useH265 = (process.platform == 'darwin' || ENV_SCRCPY_FORCE_H265);
+        logger.info(`Using codec ${useH265 ? "h265" : "h264"}`)
+
+        // Set local variables
+        this.adbManager = adbManager;
+
         this.wsClients = new Set<uWS.WebSocket<any>>();
 
         const host = process.env.WEB_APPLICATION_HOST || 'localhost';
@@ -68,19 +84,49 @@ export class ScrcpyServer {
                     ws.send(this.scrcpyStreamConfig, false, true);
                 }
 
-                for (const client of this.scrcpyClients) {
-                    // Add small delay to let the client finish to load webpage
-                    setTimeout(() => { client.controller!.resetVideo() }, 500);
-                }
+                this.resentAllConfigPackage(true);
             },
 
             drain: (ws) => {
                 // Reset stream to prevent having too much artefacts on stream
                 if (ws.getBufferedAmount() < this.maxBackpressure) {
                     logger.debug("Backpressure drained, restart stream to prevent visual glitch")
-                    for (const client of this.scrcpyClients) {
-                        client.controller!.resetVideo();
+
+                    this.resentAllConfigPackage();
+                }
+            },
+            message: async (_ws, message) => {
+                try {
+                    const jsonMessage: {type: string, h264: boolean, h265: boolean, av1: boolean}
+                        = JSON.parse(Buffer.from(message).toString());
+
+                    logger.debug("Received message from streaming client:\n{jsonMessage}", {jsonMessage});
+
+                    const previousCodec = useH265;
+                    if (!scrcpyCodecLock && jsonMessage.h265) {
+                        useH265 = true;
+                    } else if (jsonMessage.h264 && !jsonMessage.h265) {
+                        useH265 = false;
+                        scrcpyCodecLock = true;
+                    } else if (!jsonMessage.h265 && !jsonMessage.h264) {
+                        logger.fatal("Client doesn't supports any compatible codec!");
                     }
+
+                    // Reset video streams if codec changed !
+                    if (previousCodec != useH265){
+                        logger.warn(`Restarting streams with new codec (${useH265 ? "h265" : "h264"})`);
+                        for (const client of this.scrcpyClients) {
+                            await client.controller!.close();
+                            await client.close();
+                        }
+                        this.scrcpyClients = [];
+                        await this.adbManager.restartStreamingAll();
+
+                        // Ensure video stream are well init after long restart
+                        this.resentAllConfigPackage(true, 500);
+                    }
+                }catch (e) {
+                    logger.error("Something went wrong on message received...\n{e}", {e});
                 }
             },
 
@@ -111,8 +157,6 @@ export class ScrcpyServer {
                 }
             }
         });
-
-        //if (ENV_VERBOSE) log("Using scrcpy version", VERSION);
     }
 
     async loadScrcpyServer() {
@@ -131,8 +175,7 @@ export class ScrcpyServer {
                 profile: H264Capabilities.maxProfile,
                 level: H264Capabilities.maxLevel,
             }),
-            // Enable h265 only for MacOS which is the only to truly supports it in browser
-            videoCodec: ((process.platform == 'darwin' || ENV_SCRCPY_FORCE_H265) ? "h265" : "h264"),
+            videoCodec: (useH265 ? "h265" : "h264"),
             // Video settings
             video: true,
             maxSize: 1570,
@@ -144,6 +187,7 @@ export class ScrcpyServer {
             audio: false,
             control: true,
         }, {version: "3.3.1"})
+        logger.debug(`Starting scrcpy stream with ${useH265 ? "h265" : "h264"} codec`)
 
         try {
             if (this.server == null) {
@@ -152,11 +196,11 @@ export class ScrcpyServer {
 
             logger.info(`Starting scrcpy for ${adbConnection.serial}`)
 
-            const myself = this;
-
             logger.debug(`Sync adb with ${adbConnection.serial}`);
             const sync = await adbConnection.sync();
             try {
+                const myself = this;
+
                 await sync.write({
                     filename: DefaultServerPath,
                     file: new ReadableStream({
@@ -183,7 +227,7 @@ export class ScrcpyServer {
                 logger.warn(`Device ${deviceModel} is unknown, so no cropping is applied`);
             }
 
-            logger.debug(`Prepare scrcpy server from ${adbConnection.serial}`);
+            logger.debug(`Pushing & start scrcpy server from ${adbConnection.serial}`);
             const client : AdbScrcpyClient<AdbScrcpyOptions3_3_1<true>> = await AdbScrcpyClient.start(
                 adbConnection,
                 DefaultServerPath,
@@ -191,30 +235,27 @@ export class ScrcpyServer {
             );
 
             // Store the controller of new client
-            logger.debug(`Pushing scrcpy server to ${adbConnection.serial}`);
+            logger.debug(`Saving new scrcpy client ${adbConnection.serial}`);
             this.scrcpyClients.push(client);
-
-            // log("coco");
 
             // Print output of Scrcpy server
             if (ENV_VERBOSE) void client.output.pipeTo(
                 // @ts-expect-error
                 new WritableStream<string>({
                     write(chunk: string): void {
-                        if(ENV_EXTRA_VERBOSE) console.debug("\x1b[41m[DEBUG]\x1b[0m", chunk);
+                        logger.trace({chunk});
                     },
                 }),
             );
 
             if (client.videoStream) {
                 const { metadata, stream: videoPacketStream } = await client.videoStream;
-                const useH265: boolean = (process.platform == 'darwin' || ENV_SCRCPY_FORCE_H265);
                 logger.debug({metadata});
 
                 const myself = this;
 
                 // Enforce sending config package
-                setTimeout(() => { client.controller!.resetVideo() }, 500);
+                this.resentConfigPackage(client);
 
                 videoPacketStream
                     .pipeTo(
@@ -230,9 +271,10 @@ export class ScrcpyServer {
                                             type: "configuration",
                                             data: Buffer.from(packet.data).toString('base64'), // Convert Uint8Array to Base64 string
                                         });
-                                        myself.broadcastToClients(newStreamConfig);
-
                                         // Save packet for clients after this first packet emission
+                                        myself.broadcastToClients(newStreamConfig);
+                                        logger.trace("Sending configuration frame {newStreamConfig}", {newStreamConfig})
+
                                         // It is sent only once while opening the video stream and set the renderer
                                         myself.scrcpyStreamConfig = newStreamConfig;
                                         break;
@@ -256,8 +298,7 @@ export class ScrcpyServer {
                                 }
                             },
                         }),
-                    )
-                    .catch((e) => {
+                    ).catch((e) => {
                         logger.error(`Error while piping video stream of ${adbConnection.serial}\n{e}`, {e});
                     });
             } else {
@@ -265,8 +306,54 @@ export class ScrcpyServer {
             }
 
         } catch (error) {
-            logger.fatal("Error in startStreaming: {error}", {error});
+            try {
+                // Do not raise an error if the stream been properly closed while switching codec
+                // @ts-expect-error
+                if (error.output[0] != "Aborted ")
+                    logger.fatal("Error in startStreaming: {error}", {error});
+            }   catch (e) {
+                // Try catch since `error` is of type unknown and might not have an `output` array :)
+                logger.fatal("Error in startStreaming: {error}", {error});
+            }
         }
+    }
+
+    resentAllConfigPackage(retry: boolean = false, timeoutDelay: number = 500) {
+        logger.debug("Force reset video")
+        let anyFailed = false;
+        for (const c of this.scrcpyClients) {
+            setTimeout(() => {
+                anyFailed = anyFailed || this.resentConfigPackage(c);
+            }, timeoutDelay);
+        }
+
+        if (anyFailed && retry) {
+            logger.debug("Some failed, restarting now...");
+            this.resentAllConfigPackage();
+        }
+    }
+
+
+    resentConfigPackage(client: AdbScrcpyClient<any>): boolean {
+        let gotError: boolean = false;
+        const promiseResult = client.controller?.resetVideo();
+        if (promiseResult)
+            promiseResult
+                .then((res) => {
+                    logger.trace("Properly reset video stream {res}", {res});
+                })
+                .catch(err => {
+                    const textError = err && (typeof err === 'string' ? err : err.message || String(err));
+
+                    // Hide from non verbose since it's an _expected_ error
+                    if (textError.includes("WritableStream is closed") && !ENV_VERBOSE)
+                        logger.error("ResetVideo failed, probably leftover timeout from previous video stream { err }", {err});
+                    else if (!textError.includes("WritableStream is closed"))
+                        logger.error("Error while reseting video stream { err }", {err});
+
+                    gotError = true;
+                });
+        return gotError;
     }
 
     broadcastToClients(packetJson: string): void {
