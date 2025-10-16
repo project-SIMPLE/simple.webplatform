@@ -141,7 +141,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
             isDecoderHasConfig.delete(deviceId);
             try {
               canvasList[deviceId].remove();
-            }catch (e) {
+            } catch (e) {
               console.error("Can't delete canvas", canvasList, e);
             }
           },
@@ -168,6 +168,39 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   useEffect(() => {
     // Open the WebSocket connection
     const socket = new WebSocket("ws://" + host + ":" + port);
+
+    // Send browser's codecs compatibility
+    socket.onopen = async () => {
+        let supportH264: boolean, supportH265: boolean, supportAv1: boolean;
+
+        // Check if h264 is supported
+        await VideoDecoder.isConfigSupported({ codec: "avc1.4D401E" }).then((r) => {
+            supportH264 = r.supported!;
+            console.log("[SCRCPY] Supports h264", supportH264);
+        })
+
+        // Check if h265 is supported
+        await VideoDecoder.isConfigSupported({ codec: "hev1.1.60.L153.B0.0.0.0.0.0" }).then((r) => {
+            supportH265 = r.supported!;
+            console.log("[SCRCPY] Supports h265", supportH265);
+        })
+
+        // Check if AV1 is supported
+        await VideoDecoder.isConfigSupported({ codec: "av01.0.05M.08" }).then((r) => {
+            supportAv1 = r.supported!;
+            console.log("[SCRCPY] Supports AV1", supportAv1);
+        })
+
+        socket.send(JSON.stringify({
+            "type": "codecVideo",
+            // @ts-expect-error
+            "h264": supportH264,
+            // @ts-expect-error
+            "h265": supportH265,
+            // @ts-expect-error
+            "av1": supportAv1,
+        }));
+    }
 
     // Handle incoming WebSocket messages
     socket.onmessage = (event) => {
