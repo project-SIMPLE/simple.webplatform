@@ -50,15 +50,7 @@ export class AdbManager {
                 logger.debug(`Devices found on ADB server: ${device}`);
             }
 
-            // startStreamingForAll
-            for (const device of this.observer.current) {
-                await this.startStreaming(device);
-
-                // Cooldown to let client properly create streams' canvas
-                logger.debug("Waiting 2s before starting a new stream...");
-                await new Promise( resolve => setTimeout(resolve, 2000) );
-            }
-            // !startStreamingForAll
+            await this.restartStreamingAll();
 
         } else {
             logger.debug('No devices found on ADB server...');
@@ -121,6 +113,17 @@ export class AdbManager {
                 logger.debug(`Starting streaming for: ${device.serial}`);
                 await this.videoStreamServer.startStreaming(adb, device.model!);
             }
+        }
+    }
+
+    async restartStreamingAll() {
+        // Reset list
+        this.clientCurrentlyStreaming = [];
+
+        // Start everyone
+        for (const device of this.observer.current) {
+            await this.startStreaming(device);
+            await new Promise( resolve => setTimeout(resolve, 2000) );
         }
     }
 
