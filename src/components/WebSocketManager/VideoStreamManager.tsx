@@ -93,7 +93,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
     if (document.getElementById(deviceId)) {
       console.log("[Scrcpy-VideoStreamManager] Restarting new ReadableStream for", deviceId);
-      document.getElementById(deviceId)!.remove();
+      document.getElementById(deviceId)?.querySelector('canvas')?.remove();
     } else {
       // Create new stream
       console.log("[Scrcpy-VideoStreamManager] Create new ReadableStream for", deviceId);
@@ -118,15 +118,21 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     }
 
     await VideoDecoder.isConfigSupported({
-      // Check if h264 is supported
-      codec: "avc1.4D401E",
+      // Check if h265 is supported
+      codec: "hev1.1.60.L153.B0.0.0.0.0.0",
     }).then((supported) => {
-      if (supported.supported) {
+        if (useH265 && !supported.supported) {
+            console.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
+            readableControllers.delete(deviceId);
+            return;
+        }
+
+      if (supported.supported || !useH265) {
         const decoder = new WebCodecsVideoDecoder({
-            // Enable h265 only for MacOS which is the only to truly supports it in browser
-          codec: ((process.platform == 'darwin' || useH265) ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264),
-          renderer: renderer,
+            codec: useH265 ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264,
+            renderer: renderer,
         });
+        console.log("[Scrcpy-VideoStreamManager] Decoder for", useH265 ? "h265" : "h264", "loaded");
         // Create new ReadableStream used for scrcpy decoding
         const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
           start(controller) {
