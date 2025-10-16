@@ -38,7 +38,7 @@ export class AdbManager {
         }
         logger.info("Connect to device's ADB server");
 
-        this.videoStreamServer = new ScrcpyServer();
+        this.videoStreamServer = new ScrcpyServer(this);
     }
 
     async init(){
@@ -109,10 +109,10 @@ export class AdbManager {
             const transport = await this.adbServer.createTransport(device);
             const adb = new Adb(transport);
 
-            if (device.serial.includes(".")) {// Only consider wireless devices - Check if serial is an IP address
+            ///if (device.serial.includes(".")) {// Only consider wireless devices - Check if serial is an IP address
                 logger.debug(`Starting streaming for: ${device.serial}`);
                 await this.videoStreamServer.startStreaming(adb, device.model!);
-            }
+            // }
         }
     }
 
