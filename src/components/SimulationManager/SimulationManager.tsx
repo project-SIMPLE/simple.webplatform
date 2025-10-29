@@ -229,11 +229,11 @@ const SimulationManager = () => {
                           style={{ width: "50px", height: "50px" }} />}
                         showText={true}
                       />
-                      <Link to={"../streamPlayerScreenControl"} className='bg-white rounded-lg'>
+                      <Link to={"../streamPlayerScreenControl"} className=' rounded-lg'>
                         <Button bgColor='bg-purple-500'
                           text="Displays"
                           icon={<img src={visibility} />}
-                          className='flex w-15'
+                          className='flex w-15 h-full'
                         ></Button>
                       </Link>
                     </div>
