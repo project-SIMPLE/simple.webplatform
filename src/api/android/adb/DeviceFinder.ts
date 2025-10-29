@@ -2,7 +2,6 @@
 import Evilscan from "evilscan";
 import {networkInterfaces} from "os";
 
-import Controller from "../../core/Controller.ts";
 import {HEADSETS_IP, ENV_EXTRA_VERBOSE, ENV_VERBOSE} from "../../index.ts";
 import {getLogger} from "@logtape/logtape";
 import {AdbManager} from "./AdbManager.ts";
@@ -139,7 +138,10 @@ class DeviceFinder {
                     continue;
 
                 for (const i of interfaceInfo!){
-                    if (i.family === "IPv6")
+                    if (
+                        i.family === "IPv6"
+                        || i.address.startsWith("127.0.0")
+                    )
                         continue;
                     else
                         serverLocalIp = i.address;

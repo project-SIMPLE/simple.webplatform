@@ -17,7 +17,8 @@ const logger= getLogger(["android", "ScrcpyServer"]);
 
 const H264Capabilities = TinyH264Decoder.capabilities.h264;
 
-let useH265: boolean = false;
+// Starts with optimistic settings
+let useH265: boolean = true;
 // Switch to true if at least 1 client doesn't h265
 let scrcpyCodecLock: boolean = false;
 
@@ -42,7 +43,6 @@ export class ScrcpyServer {
 
     constructor(adbManager: AdbManager) {
         // Set global variables
-        useH265 = (process.platform == 'darwin' || ENV_SCRCPY_FORCE_H265);
         logger.info(`Using codec ${useH265 ? "h265" : "h264"}`)
 
         // Set local variables
