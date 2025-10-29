@@ -230,7 +230,7 @@ const SimulationManager = () => {
                         showText={true}
                       />
                       <Link to={"../streamPlayerScreenControl"} className=' rounded-lg'>
-                        <Button bgColor='bg-purple-500'
+                        <Button bgColor='bg-purple-500 h-full'
                           text="Displays"
                           icon={<img src={visibility} />}
                           className='flex w-15 h-full'
