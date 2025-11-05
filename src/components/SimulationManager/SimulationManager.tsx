@@ -188,10 +188,10 @@ const SimulationManager = () => {
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                           </svg> : null
-                          }/>
-                          
-                        
-                        <Link to={"../streamPlayerScreenControl"} className='bg-white rounded-lg'>
+                          } />
+
+
+                        <Link to={"../streamPlayerScreenControl"} className='bg-white rounded-lg' target='_blank'>
                           <Button bgColor='bg-purple-500'
                             text="Displays"
                             icon={<img src={visibility} />}
@@ -226,11 +226,18 @@ const SimulationManager = () => {
                         customStyle={{ width: '100px', height: '50px' }}
                         bgColor="bg-red-500"
                         icon={<img src={x_cross}
-                        style={{ width: "50px", height: "50px" }} />}
+                          style={{ width: "50px", height: "50px" }} />}
                         showText={true}
                       />
+                      <Link to={"../streamPlayerScreenControl"} className=' rounded-lg'>
+                        <Button bgColor='bg-purple-500 h-full'
+                          text="Displays"
+                          icon={<img src={visibility} />}
+                          className='flex w-15 h-full'
+                        ></Button>
+                      </Link>
                     </div>
-                    <div className="flex justify-center mt-3 gap-4">
+                    {/* <div className="flex justify-center mt-3 gap-4"> feature not implemented yet, removed for clarity
                       <Button
                         onClick={() => updateDisplay("gama_screen")}
                         bgColor={"bg-white"}
@@ -245,9 +252,7 @@ const SimulationManager = () => {
                         className={`border-0 hover:border-none hover:bg-white focus:outline-none ${screenModeDisplay === "shared_screen" ? "" : "opacity-50"}`}
                         icon={<img src="/images/shared_screen.png" alt="shared_screen" className='size-32' />}
                       />
-
-
-                    </div>
+                    </div> */}
                   </>
                 ) : null}
 

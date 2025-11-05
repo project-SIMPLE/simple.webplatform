@@ -38,7 +38,7 @@ export class AdbManager {
         }
         logger.info("Connect to device's ADB server");
 
-        this.videoStreamServer = new ScrcpyServer();
+        this.videoStreamServer = new ScrcpyServer(this);
     }
 
     async init(){
@@ -50,15 +50,7 @@ export class AdbManager {
                 logger.debug(`Devices found on ADB server: ${device}`);
             }
 
-            // startStreamingForAll
-            for (const device of this.observer.current) {
-                await this.startStreaming(device);
-
-                // Cooldown to let client properly create streams' canvas
-                logger.debug("Waiting 2s before starting a new stream...");
-                await new Promise( resolve => setTimeout(resolve, 2000) );
-            }
-            // !startStreamingForAll
+            await this.restartStreamingAll();
 
         } else {
             logger.debug('No devices found on ADB server...');
@@ -117,10 +109,21 @@ export class AdbManager {
             const transport = await this.adbServer.createTransport(device);
             const adb = new Adb(transport);
 
-            if (device.serial.includes(".")) {// Only consider wireless devices - Check if serial is an IP address
+            ///if (device.serial.includes(".")) {// Only consider wireless devices - Check if serial is an IP address
                 logger.debug(`Starting streaming for: ${device.serial}`);
                 await this.videoStreamServer.startStreaming(adb, device.model!);
-            }
+            // }
+        }
+    }
+
+    async restartStreamingAll() {
+        // Reset list
+        this.clientCurrentlyStreaming = [];
+
+        // Start everyone
+        for (const device of this.observer.current) {
+            await this.startStreaming(device);
+            await new Promise( resolve => setTimeout(resolve, 2000) );
         }
     }
 
