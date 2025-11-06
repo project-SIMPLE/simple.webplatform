@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
 
   // reusable config for both server and preview
   const serverConfig = {
-    host: env.WEB_APPLICATION_HOST,
+    host: env.WEB_APPLICATION_HOST || '0.0.0.0',
     port: Number(env.WEB_APPLICATION_PORT),
     strictPort: true,
     allowedHosts: ["simple.local", env.WEB_HOSTNAME+".local"],
