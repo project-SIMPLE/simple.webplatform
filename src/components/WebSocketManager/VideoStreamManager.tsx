@@ -65,7 +65,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   const [maxElements, setMaxElements] = useState<number>(4); //dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
-  const minElementsForGrid = 4 // if there are more elements than this amount the display will be switched to a grid display instead of a row
+  const minElementsForGrid = 3 // if there are more elements than this amount the display will be switched to a grid display instead of a row
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
     string,
@@ -253,7 +253,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   return (
 
     selectedCanvas ?
-      <div className="w-fit">
+      <div className="h">
         {Object.entries(canvasList).map(([key, canvas]) =>
           <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity}  hideInfos />
 
@@ -278,7 +278,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
 
         {/*                          this is the main container containing the canvases: if there are at least 4 elements, they are displayed in a 2 row grid, else they are displayed side by side. grow is used to ensure that the div takes as much space as possible without overflowing   */}
-        <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-rows-2 grid-flow-col" : "flex flex-row"} items-center justify-evenly gap-4 grow p-4`}>
+      <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-rows-[1fr_1fr] grid-cols-[1fr_1fr] grid-flow-col h-full w-full" : "flex flex-row"} place-items-center gap-4 p-4`}>
           {Object.entries(canvasList).map(([key, canvas]) =>
             <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos />
 
@@ -289,7 +289,6 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
         </div>
       </div>
-
   );
 };
 
