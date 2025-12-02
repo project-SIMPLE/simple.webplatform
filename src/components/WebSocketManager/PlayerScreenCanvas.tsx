@@ -25,7 +25,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
     const bgColor = HEADSET_COLOR[ipIdentifier] //careful, the constant file has been modified, these are now tailwind values
     const [showPopup, setShowPopup] = useState<boolean>(false);
     const isColoredHeadset = HEADSET_COLOR[ipIdentifier] !== undefined;
-    const CanvasStyle = "flex flex-col border-4 m-0 p-0 border-none p-2 rounded-lg items-center justify-center w-fit h-fit" //style of the colored border
+    const CanvasStyle = "flex flex-col border-4 m-0 p-0 border-none p-2 rounded-lg items-center justify-center w-[400px] h-fit" //style of the colored border
     /**
     // this hook is used to add the canvases to the proper divs.
     // by default, it will use the base display (canvasref) that is the element of the list.
