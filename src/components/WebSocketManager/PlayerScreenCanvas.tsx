@@ -25,7 +25,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
     const bgColor = HEADSET_COLOR[ipIdentifier] //careful, the constant file has been modified, these are now tailwind values
     const [showPopup, setShowPopup] = useState<boolean>(false);
     const isColoredHeadset = HEADSET_COLOR[ipIdentifier] !== undefined;
-    const CanvasStyle = "flex flex-col border-4 m-0 p-0 border-none p-2 rounded-lg items-center justify-center w-[400px] h-fit" //style of the colored border
+    const CanvasStyle = "flex flex-col border-4 border-none p-2 rounded-lg items-center justify-center min-h-0" //style of the colored border
     /**
     // this hook is used to add the canvases to the proper divs.
     // by default, it will use the base display (canvasref) that is the element of the list.
@@ -45,7 +45,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 }
             } else {
                 if (canvasref.current) {
-                    canvas.classList.add(...[canvasSize ? canvasSize : "w-[60%]" , "rounded-lg"]) //styling of the <canvas> element in the grid
+                    canvas.classList.add(...[canvasSize ? canvasSize : "w-auto", "h-full", "rounded-lg"]) //styling of the <canvas> element in the grid
                     canvasref.current.appendChild(canvas);
                 }
             }
@@ -58,7 +58,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
             {showPopup === true ?
                 <div className={`backdrop-blur-md w-full h-full fixed inset-0 flex flex-col items-center justify-center z-10`} onClick={() => setShowPopup(false)}>
                     {/* <div ref={popupref} className={` ${isColoredHeadset ? bgColor : "bg-slate-500"} size-2/3 flex flex-col items-center justify-center`}> */}
-                    <div className={`rounded-md p-4 m-4 h-1/2 w-1/2 ${isColoredHeadset ? bgColor : "bg-slate-300"} border-4  flex flex-col items-center relative`} onClick={(e) => e.stopPropagation()}>
+                    <div className={`rounded-md size-full border-4  flex flex-col items-center relative`} onClick={(e) => e.stopPropagation()}>
                         {hideInfos ? null : <div ref={popupref} className="h-full flex flex-col "><p className="bg-slate-200  rounded-t-md p-1 text-center "> {`Player: ${id}`}</p></div>}
 
                         <button
@@ -75,21 +75,20 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
 
             {/* actually meaningful content */}
             {!isPlaceholder ?
-                <div id={id} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500"} ${CanvasStyle} `} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
-                    <div>
+      
+                    <div id={id} className={`border-4 bg-red-500 min-h-0 h-full w-full ${CanvasStyle}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
                         {hideInfos ? null :
-                            <>
+                            <div>
                                 <p>player:{id}</p>
                                 {isColoredHeadset ? <p className="text-center">identifier:{ipIdentifier} {false ? `couleur: (${HEADSET_COLOR[ipIdentifier]})` : null}</p> : null}
-                            </>
+                            </div>
                         }
-                    </div>
 
-                    <div ref={canvasref} className="size-full rounded-md flex flex-col place-items-center">{/*  size of the invisible container of the colored background */}
+                        <div ref={canvasref} className={`flex flex-col items-center justify-center w-full h-full p-2 rounded-lg  ${isColoredHeadset ? bgColor : "bg-slate-300"} min-h-0`}>{/*  size of the invisible container of the colored background */}
 
+                        </div>
                     </div>
-                </div>
 
 
                 :
