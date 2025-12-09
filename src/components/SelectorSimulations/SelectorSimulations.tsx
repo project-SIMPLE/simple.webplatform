@@ -129,7 +129,7 @@ const SelectorSimulations = () => {
     }
   };
 
-  // Loop which try to connect to Gama
+  // Loop which tries to connect to Gama
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
