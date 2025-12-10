@@ -7,9 +7,11 @@ import {
   WebCodecsVideoDecoder,
 } from "@yume-chan/scrcpy-decoder-webcodecs";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
-
+import { env } from "process";
 const host: string = window.location.hostname;
 const port: string = '8082';
+
+const streamDimensions: [string] = ["max-h-[85dvh] max-w-[90dvw]","max-h-[90dvh] max-w-[45dvw]","max-h-[80dvh]","max-h[40dvh]","max-h[40dvh]","max-h[40dvh]"]
 
 // Deserialize the data into ScrcpyMediaStreamPacket
 const deserializeData = (serializedData: string) => {
@@ -65,7 +67,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   const [maxElements, setMaxElements] = useState<number>(4); //dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
-  const minElementsForGrid = 4 // if there are more elements than this amount the display will be switched to a grid display instead of a row
+  const minElementsForGrid: int = process.env.ENV_MAX_ELEMENTS;// if there are more elements than this amount the display will be switched to a grid display instead of a row
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
     string,
@@ -255,6 +257,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
     selectedCanvas ?
       <div className="w-fit">
+        <p>amount of streams: {Object.keys(canvasList).length}</p>
         {Object.entries(canvasList).map(([key, canvas]) =>
           <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos />
 
@@ -280,8 +283,9 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
         {/*                          this is the main container containing the canvases: if there are at least 4 elements, they are displayed in a 2 row grid, else they are displayed side by side. grow is used to ensure that the div takes as much space as possible without overflowing   */}
         <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-rows-2 grid-flow-col" : "flex flex-row"} items-center justify-evenly gap-4 grow p-4`}>
+          {minElementsForGrid}
           {Object.entries(canvasList).map(([key, canvas]) =>
-            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos />
+            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos canvasSize={streamDimensions[Object.keys(canvasList).length-1]} />
 
           )}
           {placeholders.map((_, index) => (
