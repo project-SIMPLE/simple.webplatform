@@ -45,7 +45,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 }
             } else {
                 if (canvasref.current) {
-                    canvas.classList.add(...["rounded-lg"])
+                    canvas.classList.add(...["rounded-lg","w-auto","h-auto"])
                     canvasref.current.appendChild(canvas);
                 }
             }
@@ -75,7 +75,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
 
             {/* actually meaningful content */}
             {!isPlaceholder ?
-                <div id={id} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-500"} ${CanvasStyle} h-[900px] max-h-[80dvh]`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
+                <div id={id} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-400"} ${CanvasStyle}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
                         {hideInfos ? null :
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
@@ -86,8 +86,9 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                     </div>
                         }
 
-                    <div ref={canvasref} className="size-full overflow-hidden rounded-md">
-
+                    <div ref={canvasref} className={`overflow-hidden rounded-md ${canvasSize}`}>
+                       <p> {canvasSize}</p> 
+                       {/* // TODO STREAMING SIZES remove display of the canvas size */}
                     </div>
                 </div>
 
