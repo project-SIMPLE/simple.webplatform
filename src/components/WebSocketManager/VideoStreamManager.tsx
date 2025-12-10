@@ -123,16 +123,15 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       // Check if h265 is supported
       codec: "hev1.1.60.L153.B0.0.0.0.0.0",
     }).then((supported) => {
-        if (useH265 && !supported.supported) {
-            console.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
-            readableControllers.delete(deviceId);
-            return;
-        }
+      if (useH265 && !supported.supported) {
+        console.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
+        readableControllers.delete(deviceId);
+        return;
+      }
 
       if (supported.supported || !useH265) {
         const decoder = new WebCodecsVideoDecoder({
-          // Enable h265 only for MacOS which is the only to truly supports it in browser
-          codec: ((process.platform == 'darwin' || useH265) ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264),
+          codec: useH265 ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264,
           renderer: renderer,
         });
         console.log("[Scrcpy-VideoStreamManager] Decoder for", useH265 ? "h265" : "h264", "loaded");
@@ -180,35 +179,35 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
     // Send browser's codecs compatibility
     socket.onopen = async () => {
-        let supportH264: boolean, supportH265: boolean, supportAv1: boolean;
+      let supportH264: boolean, supportH265: boolean, supportAv1: boolean;
 
-        // Check if h264 is supported
-        await VideoDecoder.isConfigSupported({ codec: "avc1.4D401E" }).then((r) => {
-            supportH264 = r.supported!;
-            console.log("[SCRCPY] Supports h264", supportH264);
-        })
+      // Check if h264 is supported
+      await VideoDecoder.isConfigSupported({ codec: "avc1.4D401E" }).then((r) => {
+        supportH264 = r.supported!;
+        console.log("[SCRCPY] Supports h264", supportH264);
+      })
 
-        // Check if h265 is supported
-        await VideoDecoder.isConfigSupported({ codec: "hev1.1.60.L153.B0.0.0.0.0.0" }).then((r) => {
-            supportH265 = r.supported!;
-            console.log("[SCRCPY] Supports h265", supportH265);
-        })
+      // Check if h265 is supported
+      await VideoDecoder.isConfigSupported({ codec: "hev1.1.60.L153.B0.0.0.0.0.0" }).then((r) => {
+        supportH265 = r.supported!;
+        console.log("[SCRCPY] Supports h265", supportH265);
+      })
 
-        // Check if AV1 is supported
-        await VideoDecoder.isConfigSupported({ codec: "av01.0.05M.08" }).then((r) => {
-            supportAv1 = r.supported!;
-            console.log("[SCRCPY] Supports AV1", supportAv1);
-        })
+      // Check if AV1 is supported
+      await VideoDecoder.isConfigSupported({ codec: "av01.0.05M.08" }).then((r) => {
+        supportAv1 = r.supported!;
+        console.log("[SCRCPY] Supports AV1", supportAv1);
+      })
 
-        socket.send(JSON.stringify({
-            "type": "codecVideo",
-            // @ts-expect-error
-            "h264": supportH264,
-            // @ts-expect-error
-            "h265": supportH265,
-            // @ts-expect-error
-            "av1": supportAv1,
-        }));
+      socket.send(JSON.stringify({
+        "type": "codecVideo",
+        // @ts-expect-error
+        "h264": supportH264,
+        // @ts-expect-error
+        "h265": supportH265,
+        // @ts-expect-error
+        "av1": supportAv1,
+      }));
     }
 
     // Handle incoming WebSocket messages
@@ -268,33 +267,19 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       :
 
       <div className="w-full h-full flex flex-col items-center">
-        {/*↓ if there is at least one canvas, and it has been selected, show the popup */}
-        {/* {activeCanvas !== null && showPopup == true ?
-        <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 z-10" onClick={() => setShowPopup(false)}>
-          <p className="bg-red-500"> {`canvas actif:${activeCanvas.canvas}`}</p>
-          <PlayerScreenCanvas id="0" canvas={activeCanvas.canvas}></PlayerScreenCanvas>
-
-
-        </div>
-        : null} */}
-
-
-
-
         {/*                          this is the main container containing the canvases: if there are at least 4 elements, they are displayed in a 2 row grid, else they are displayed side by side. grow is used to ensure that the div takes as much space as possible without overflowing   */}
-        <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-rows-2 grid-flow-col" : "flex flex-row"} items-center justify-evenly gap-4 grow p-4`}>
+        <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-col grid-rows-2" : "flex flex-row"} bg-amber-600 h-full w-full place-items-center gap-4 m-4 min-h-0`}>
           {minElementsForGrid}
           {Object.entries(canvasList).map(([key, canvas]) =>
             <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos canvasSize={streamDimensions[Object.keys(canvasList).length-1]} />
 
           )}
-          {placeholders.map((_, index) => (
+          {/* {placeholders.map((_, index) => (
             <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
-          ))}
+          ))} */}
 
         </div>
       </div>
-
   );
 };
 

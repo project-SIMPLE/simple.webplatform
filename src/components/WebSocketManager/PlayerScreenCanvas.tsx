@@ -25,7 +25,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
     const bgColor = HEADSET_COLOR[ipIdentifier] //careful, the constant file has been modified, these are now tailwind values
     const [showPopup, setShowPopup] = useState<boolean>(false);
     const isColoredHeadset = HEADSET_COLOR[ipIdentifier] !== undefined;
-    const CanvasStyle = "flex flex-col border-4 m-0 p-0 border-none p-2 rounded-lg items-center"
+    const CanvasStyle = "flex flex-col border-4 border-none p-2 rounded-lg items-center justify-center min-h-0" //style of the colored border
     /**
     // this hook is used to add the canvases to the proper divs.
     // by default, it will use the base display (canvasref) that is the element of the list.
@@ -58,7 +58,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
             {showPopup === true ?
                 <div className={`backdrop-blur-md w-full h-full fixed inset-0 flex flex-col items-center justify-center z-10`} onClick={() => setShowPopup(false)}>
                     {/* <div ref={popupref} className={` ${isColoredHeadset ? bgColor : "bg-slate-500"} size-2/3 flex flex-col items-center justify-center`}> */}
-                    <div className={`bg-blue rounded-md p-4 m-4 h-3/4 w-1/2 ${isColoredHeadset ? bgColor : "bg-slate-300"} border-4  flex flex-col items-center relative`} onClick={(e) => e.stopPropagation()}>
+                    <div className={`rounded-md size-full border-4  flex flex-col items-center relative`} onClick={(e) => e.stopPropagation()}>
                         {hideInfos ? null : <div ref={popupref} className="h-full flex flex-col "><p className="bg-slate-200  rounded-t-md p-1 text-center "> {`Player: ${id}`}</p></div>}
 
                         <button
@@ -79,18 +79,16 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                         {hideInfos ? null :
                     <div>
                         {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
-                            <>
+                            <div>
                                 <p>player:{id}</p>
-                                {isColoredHeadset ? <p className="w-full text-center">identifier:{ipIdentifier} {false ? `couleur: (${HEADSET_COLOR[ipIdentifier]})` : null}</p> : null}
-                            </>
-                    </div>
+                                {isColoredHeadset ? <p className="text-center">identifier:{ipIdentifier} {false ? `couleur: (${HEADSET_COLOR[ipIdentifier]})` : null}</p> : null}
+                            </div>
                         }
 
-                    <div ref={canvasref} className={`overflow-hidden rounded-md ${canvasSize}`}>
-                       <p> {canvasSize}</p> 
-                       {/* // TODO STREAMING SIZES remove display of the canvas size */}
+                        <div ref={canvasref} className={`flex flex-col items-center justify-center w-full h-full p-2 rounded-lg  ${isColoredHeadset ? bgColor : "bg-slate-300"} min-h-0`}>{/*  size of the invisible container of the colored background */}
+
+                        </div>
                     </div>
-                </div>
 
 
                 :

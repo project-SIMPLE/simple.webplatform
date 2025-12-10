@@ -57,7 +57,6 @@ const StreamPlayerScreen = () => {
   // Rendu basé sur la valeur de screenModeDisplay
   return (
     <div className="w-full h-full flex flex-col items-center justify-around">
-      <Header hideTranslation />
 
       <div className="w-full h-full flex flex-col items-center">
         {screenModeDisplay === "shared_screen" && (
