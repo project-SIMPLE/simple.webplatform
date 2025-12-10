@@ -27,7 +27,7 @@ export class Controller {
         this.model_manager = new ModelManager(this);
         this.monitor_server = new MonitorServer(this);
         this.player_manager = new PlayerManager(this);
-        this.gama_connector = new GamaConnector(this);
+        // this.gama_connector = new GamaConnector(this);
 
         if(useAdb){
             this.adb_manager = new AdbManager(this);
@@ -152,7 +152,7 @@ export class Controller {
     }
 
     connectGama() {
-        this.gama_connector.connectGama();
+        // this.gama_connector.connectGama();
     }
 }
 
