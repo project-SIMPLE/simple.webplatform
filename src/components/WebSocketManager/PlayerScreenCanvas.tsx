@@ -8,13 +8,14 @@ interface PlayerScreenCanvasProps {
     needsInteractivity?: boolean; //boolean used when a player screen canvas is displayed in the StreamPlayersScreenControl page, in order to be able to click each mirror to have a pop up window
     canvas?: HTMLCanvasElement;
     id?: string;
-    canvasSize?: string;
+    canvasWidth?: string;
+    canvasHeight?: string; //  height of the literal canvas HTML element, takes a literal objective css unit such as pix or vh. Defaults to value h-auto tailwind value
     setActiveCanvas?: Function; //function that is passed as a prop by the videostreammanager, this function here returns the canvas and the ip of the headset that need to be displayed in a popup window
     hideInfos?: boolean; // boolean used in case you want to hide player id and identifier, used in case of fullscreen for example
 }
 
 
-const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, canvasSize, hideInfos }: PlayerScreenCanvasProps) => {
+const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, canvasWidth, canvasHeight, hideInfos }: PlayerScreenCanvasProps) => {
     if (!id) {
         return null;
     }
@@ -45,7 +46,9 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 }
             } else {
                 if (canvasref.current) {
-                    canvas.classList.add(...["rounded-lg","w-auto","h-auto"])
+                    canvas.classList.add([canvasWidth ? canvasWidth : "w-auto"])
+                    canvas.classList.add([ canvasHeight ? canvasHeight : "h-auto"])
+                    canvas.classList.add("rounded-lg")
                     canvasref.current.appendChild(canvas);
                 }
             }
@@ -76,29 +79,31 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
             {/* actually meaningful content */}
             {!isPlaceholder ?
                 <div id={id} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-400"} ${CanvasStyle}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
-                        {hideInfos ? null :
-                    <div>
-                        {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
+                    {hideInfos ? null :
+                        <div>
+                            {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
                             <div>
                                 <p>player:{id}</p>
                                 {isColoredHeadset ? <p className="text-center">identifier:{ipIdentifier} {false ? `couleur: (${HEADSET_COLOR[ipIdentifier]})` : null}</p> : null}
                             </div>
-                        }
-
-                        <div ref={canvasref} className={`flex flex-col items-center justify-center w-full h-full p-2 rounded-lg  ${isColoredHeadset ? bgColor : "bg-slate-300"} min-h-0`}>{/*  size of the invisible container of the colored background */}
-
                         </div>
+                    }
+
+                    <div ref={canvasref} className={`flex flex-col items-center justify-center w-full h-full p-2 rounded-lg  ${isColoredHeadset ? bgColor : "bg-slate-300"} min-h-0`}>{/*  size of the invisible container of the colored background */}
+
                     </div>
-
-
+                </div>
                 :
                 null
+
                 // placeholder, with an eye icon
                 // <div className={`${CanvasStyle} bg-stone-100`}>
                 //     {/* <p>Placeholder ici</p> */}
                 //     <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
                 // </div>
-                }
+
+            }
+
         </>
     )
 }
