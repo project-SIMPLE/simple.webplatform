@@ -11,8 +11,6 @@ import { env } from "process";
 const host: string = window.location.hostname;
 const port: string = '8082';
 
-const streamDimensions: [string] = [["h-[85dvh]", "w-auto"], ["h-[90dvh]", "w-auto"], ["h-[45dvh]", "w-auto"], ["h-[45dvh]", "w-[40dvw]"], ["h-[40dvh]", "w-[30dvw]"], ["h-[45dvh]", "w-[30dvw]"]]
-// constant that contains width and height value to be applied to the canvas element for 6 different cases.  
 // Deserialize the data into ScrcpyMediaStreamPacket
 const deserializeData = (serializedData: string) => {
   const parsed = JSON.parse(serializedData);
@@ -268,10 +266,12 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
       <div className="w-full h-full flex flex-col items-center">
         {/*                          this is the main container containing the canvases: if there are at least 4 elements, they are displayed in a 2 row grid, else they are displayed side by side. grow is used to ensure that the div takes as much space as possible without overflowing   */}
-        <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-col grid-rows-2" : "flex flex-row"} bg-amber-600 h-fullw-full items-center justify-center gap-4 m-4 min-h-0`}>
+        <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-col grid-rows-2" : "flex flex-row"} h-full w-full items-center justify-center gap-2 m-4`}>
           {Object.entries(canvasList).map(([key, canvas]) =>
-            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos canvasWidth={streamDimensions[Object.keys(canvasList).length - 1][1]} canvasHeight={streamDimensions[Object.keys(canvasList).length - 1][0]} />
-
+            <div className="h-full w-full bg-teal-600  flex flex-col justify-center items-center">
+              {/* <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos canvasWidth={streamDimensions[Object.keys(canvasList).length - 1][1]} canvasHeight={streamDimensions[Object.keys(canvasList).length - 1][0]} /> */}
+              <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos canvasWidth="w-auto" canvasHeight="h-auto" />
+            </div>
           )}
           {/* {placeholders.map((_, index) => (
             <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
