@@ -69,7 +69,7 @@ this command should return the version of both tools.
 
 ## Usage 🕹️  
 Once the server is running:  
-1. Access the interface at [http://localhost:3000](http://localhost:3000) 
+1. Access the interface at [http://localhost:8000](http://localhost:8000) 
 2. Connect it to your Gama simulations and observe real-time updates.  
 3. Test multiplayer functionality with sample clients or your own game server.
 
