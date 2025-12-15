@@ -1,5 +1,5 @@
 // Import des modules nécessaires
-import {spawn} from "child_process";
+import { spawn } from "child_process";
 import dotenv from 'dotenv';
 import {
     configure,
@@ -45,16 +45,16 @@ dotenv.config();
 
 // Default value for every option value
 // GAMA =====
-process.env.GAMA_WS_PORT =                process.env.GAMA_WS_PORT                || '1000';
-process.env.GAMA_IP_ADDRESS =             process.env.GAMA_IP_ADDRESS             || 'localhost';
-process.env.LEARNING_PACKAGE_PATH =       process.env.LEARNING_PACKAGE_PATH       || "./learning-packages";
-process.env.EXTRA_LEARNING_PACKAGE_PATH = process.env.EXTRA_LEARNING_PACKAGE_PATH || "";
+process.env.GAMA_WS_PORT =                  process.env.GAMA_WS_PORT                || '1000';
+process.env.GAMA_IP_ADDRESS =               process.env.GAMA_IP_ADDRESS             || 'localhost';
+process.env.LEARNING_PACKAGE_PATH =         process.env.LEARNING_PACKAGE_PATH       || "./learning-packages";
+process.env.EXTRA_LEARNING_PACKAGE_PATH =   process.env.EXTRA_LEARNING_PACKAGE_PATH || "";
 
 const ENV_AGGRESSIVE_DISCONNECT: boolean = process.env.AGGRESSIVE_DISCONNECT !== undefined ? ['true', '1', 'yes'].includes(process.env.AGGRESSIVE_DISCONNECT.toLowerCase()) : false;
 // ! GAMA =====
 
 // Headsets  =====
-process.env.HEADSET_WS_PORT =             process.env.HEADSET_WS_PORT             || '8080';
+process.env.HEADSET_WS_PORT =               process.env.HEADSET_WS_PORT             || '8080';
 // ! Headsets  =====
 
 // Scrcpy =====
@@ -62,10 +62,10 @@ const ENV_SCRCPY_FORCE_H265: boolean = process.env.SCRCPY_FORCE_H265 !== undefin
 // ! Scrcpy =====
 
 // Website =====
-process.env.WEB_APPLICATION_PORT =        process.env.WEB_APPLICATION_PORT        || '5173';
-process.env.MONITOR_WS_PORT =             process.env.MONITOR_WS_PORT             || '8001';
+process.env.WEB_APPLICATION_PORT =          process.env.WEB_APPLICATION_PORT        || '5173';
+process.env.MONITOR_WS_PORT =               process.env.MONITOR_WS_PORT             || '8001';
 
-const HEADSETS_IP: string[] =             process.env.HEADSETS_IP ? process.env.HEADSETS_IP.split(';').filter((value) => value.trim() !== '') : [];
+const HEADSETS_IP: string[] =               process.env.HEADSETS_IP ? process.env.HEADSETS_IP.split(';').filter((value) => value.trim() !== '') : [];
 // ! Website  =====
 
 // Debug  =====
@@ -78,6 +78,9 @@ const ENV_VERBOSE: boolean = ENV_EXTRA_VERBOSE ?
         ['true', '1', 'yes'].includes(process.env.VERBOSE.toLowerCase())
         : false;
 
+
+
+const ENV_GAMALESS: boolean = process.env.VERBOSE !== undefined ? ['true', '1', 'yes'].includes(process.env.ENV_GAMALESS.toLowerCase()) : false;
 /*
     SETUP LOGGING SYSTEM ================================
  */
@@ -86,26 +89,26 @@ await configure({
     sinks: {
         // Simple non-blocking mode with default settings
         console: withFilter(
-                getConsoleSink({
-                    nonBlocking: true,
-                    formatter: getPrettyFormatter({
-                        wordWrap: false,
-                        inspectOptions: {
-                            depth: 3,
-                            compact: false
-                        },
-                        categoryTruncate: "middle",
-                        icons: false
-                    })
-                }),
-                getLevelFilter(ENV_EXTRA_VERBOSE ? "trace" : ENV_VERBOSE ? "debug" : "info")
-            ),
+            getConsoleSink({
+                nonBlocking: true,
+                formatter: getPrettyFormatter({
+                    wordWrap: false,
+                    inspectOptions: {
+                        depth: 3,
+                        compact: false
+                    },
+                    categoryTruncate: "middle",
+                    icons: false
+                })
+            }),
+            getLevelFilter(ENV_EXTRA_VERBOSE ? "trace" : ENV_VERBOSE ? "debug" : "info")
+        ),
         file: fingersCrossed(
-                getStreamFileSink("errorLog.log", {
-                    highWaterMark: 32768  // 32KB buffer for high-volume logging
-                }),
-                {triggerLevel: "error"}
-            )
+            getStreamFileSink("errorLog.log", {
+                highWaterMark: 32768  // 32KB buffer for high-volume logging
+            }),
+            { triggerLevel: "error" }
+        )
     },
     loggers: [
         { category: ["logtape", "meta"], sinks: ["console"], lowestLevel: "warning" },
@@ -118,7 +121,7 @@ await configure({
         }
     ]
 });
-const logger= getLogger(["core", "index"]);
+const logger = getLogger(["core", "index"]);
 
 /*
     APPLICATION ENTRY POINT ================================
@@ -143,10 +146,11 @@ const c = new Controller(useAdb);
 await c.initialize();
 
 export {
-  ENV_VERBOSE,
-  ENV_EXTRA_VERBOSE,
-  useAdb,
-  ENV_AGGRESSIVE_DISCONNECT,
-  HEADSETS_IP,
+    ENV_GAMALESS,
+    ENV_VERBOSE,
+    ENV_EXTRA_VERBOSE,
+    useAdb,
+    ENV_AGGRESSIVE_DISCONNECT,
+    HEADSETS_IP,
     ENV_SCRCPY_FORCE_H265
 };
