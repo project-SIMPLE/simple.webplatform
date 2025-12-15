@@ -266,7 +266,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
       <div className="w-full h-full flex flex-col items-center">
         {/*                          this is the main container containing the canvases: if there are at least 4 elements, they are displayed in a 2 row grid, else they are displayed side by side. grow is used to ensure that the div takes as much space as possible without overflowing   */}
-        <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-col grid-rows-2" : "flex flex-row"} h-full w-full items-center justify-center gap-2 m-4`}>
+        <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-row grid-rows-2" : "grid"} h-full w-full items-center justify-center gap-2 m-4`}>
           {Object.entries(canvasList).map(([key, canvas]) =>
             <div className="h-full w-full flex flex-col justify-center items-center">
               <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos canvasWidth="w-auto" canvasHeight="h-auto" />
