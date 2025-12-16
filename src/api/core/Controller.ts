@@ -1,14 +1,14 @@
 import GamaConnector from '../simulation/GamaConnector.ts';
 import PlayerManager from '../multiplayer/PlayerManager.ts';
 import ModelManager from '../simulation/ModelManager.ts';
-import {MonitorServer} from '../monitoring/MonitorServer.ts';
-import {AdbManager} from "../android/adb/AdbManager.ts";
-import {useAdb} from "../index.ts";
-import {JsonPlayerAsk, JsonOutput} from "./Constants.ts";
+import { MonitorServer } from '../monitoring/MonitorServer.ts';
+import { AdbManager } from "../android/adb/AdbManager.ts";
+import { useAdb, ENV_GAMALESS } from "../index.ts";
+import { JsonPlayerAsk, JsonOutput } from "./Constants.ts";
 // import {mDnsService} from "../infra/mDnsService.ts";
-import {getLogger} from "@logtape/logtape";
+import { getLogger } from "@logtape/logtape";
 
-const logger= getLogger(["core", "Controller"]);
+const logger = getLogger(["core", "Controller"]);
 
 export class Controller {
     model_manager: ModelManager;
@@ -20,16 +20,19 @@ export class Controller {
     // mDnsService: mDnsService;
 
 
-    constructor(useAdb:boolean) {
+    constructor(useAdb: boolean) {
 
         // this.mDnsService = new mDnsService(process.env.WEB_HOSTNAME);
-
         this.model_manager = new ModelManager(this);
         this.monitor_server = new MonitorServer(this);
         this.player_manager = new PlayerManager(this);
-        this.gama_connector = new GamaConnector(this);
+        if (ENV_GAMALESS) {
+            logger.info("Web platform launched in 'Gamaless' mode")
+        } else {
+            this.gama_connector = new GamaConnector(this);
+        }
 
-        if(useAdb){
+        if (useAdb) {
             this.adb_manager = new AdbManager(this);
         } else {
             logger.warn("Couldn't find ADB working or started, cancelling ADB management")
@@ -45,15 +48,25 @@ export class Controller {
     async restart() {
         // Close
         this.player_manager.close();
-        this.gama_connector.close();
+        if (ENV_GAMALESS) {
+            logger.trace("skipped restarting the gama connector, application in gamaless mode...")
+        } else {
+            this.gama_connector.close();
+        }
         this.monitor_server.close();
 
         // Restart
         this.player_manager = new PlayerManager(this);
-        this.gama_connector = new GamaConnector(this);
         this.monitor_server = new MonitorServer(this);
 
-        if(useAdb) this.adb_manager = new AdbManager(this);
+        
+        if (ENV_GAMALESS) {
+            logger.trace("skipped restarting the gama connector, application in gamaless mode...")
+        } else {
+            this.gama_connector = new GamaConnector(this);
+        }
+
+        if (useAdb) this.adb_manager = new AdbManager(this);
 
         await this.initialize();
     }
@@ -107,7 +120,7 @@ export class Controller {
         this.player_manager.removePlayer(id_player);
 
         // Close application for headset
-        if(useAdb){
+        if (useAdb) {
             // TODO
         }
 
@@ -126,7 +139,7 @@ export class Controller {
     launchExperiment() {
         this.gama_connector.launchExperiment();
         // Try until simulation is ready
-        const interval= setInterval(() => {
+        const interval = setInterval(() => {
             if (!['NONE', "NOTREADY"].includes(this.gama_connector.jsonGamaState.experiment_state)) {
                 // Stop calling
                 clearInterval(interval);
@@ -152,7 +165,7 @@ export class Controller {
     }
 
     connectGama() {
-        this.gama_connector.connectGama();
+        // this.gama_connector.connectGama();
     }
 }
 

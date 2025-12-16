@@ -7,7 +7,7 @@ import {
   WebCodecsVideoDecoder,
 } from "@yume-chan/scrcpy-decoder-webcodecs";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
-
+import { env } from "process";
 const host: string = window.location.hostname;
 const port: string = '8082';
 
@@ -65,7 +65,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   const [maxElements, setMaxElements] = useState<number>(4); //dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
-  const minElementsForGrid = 3 // if there are more elements than this amount the display will be switched to a grid display instead of a row
+  const minElementsForGrid: int = process.env.ENV_MAX_ELEMENTS;// if there are more elements than this amount the display will be switched to a grid display instead of a row
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
     string,
@@ -253,7 +253,8 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   return (
 
     selectedCanvas ?
-      <div className="h">
+      <div className="w-fit">
+        <p>amount of streams: {Object.keys(canvasList).length}</p>
         {Object.entries(canvasList).map(([key, canvas]) =>
           <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos />
 
@@ -265,12 +266,11 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
       <div className="w-full h-full flex flex-col items-center">
         {/*                          this is the main container containing the canvases: if there are at least 4 elements, they are displayed in a 2 row grid, else they are displayed side by side. grow is used to ensure that the div takes as much space as possible without overflowing   */}
-        <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-col grid-rows-2" : "flex flex-row"} bg-amber-600 h-full w-full place-items-center gap-4 m-4 min-h-0`}>
+        <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-row grid-rows-2" : "grid"} h-full w-full items-center justify-center gap-2 m-4`}>
           {Object.entries(canvasList).map(([key, canvas]) =>
-            <>
-              <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos />
-            </>
-
+            <div className="h-full w-full flex flex-col justify-center items-center">
+              <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos canvasWidth="w-auto" canvasHeight="h-auto" />
+            </div>
           )}
           {/* {placeholders.map((_, index) => (
             <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas

@@ -1,3 +1,4 @@
+
 /**
  * AdbManager.ts
  * ===========
@@ -6,18 +7,18 @@
  * It manages Adb sockets :)
  */
 
-import {Adb, AdbServerClient} from "@yume-chan/adb";
-import {AdbServerNodeTcpConnector} from "@yume-chan/adb-server-node-tcp";
+import { Adb, AdbServerClient, AdbSubprocessService } from "@yume-chan/adb";
+import { AdbServerNodeTcpConnector } from "@yume-chan/adb-server-node-tcp";
 import Device = AdbServerClient.Device;
 
 import Controller from "../../core/Controller.ts";
-import {ENV_EXTRA_VERBOSE} from "../../index.ts";
-import {ScrcpyServer} from "../scrcpy/ScrcpyServer.ts";
-import {getLogger} from "@logtape/logtape";
+import { ENV_EXTRA_VERBOSE } from "../../index.ts";
+import { ScrcpyServer } from "../scrcpy/ScrcpyServer.ts";
+import { getLogger } from "@logtape/logtape";
 import DeviceFinder from "./DeviceFinder.ts";
 
 // Override the log function
-const logger= getLogger(["android", "AdbManager"]);
+const logger = getLogger(["android", "AdbManager"]);
 
 export class AdbManager {
     controller: Controller;
@@ -33,7 +34,7 @@ export class AdbManager {
             this.adbServer = new AdbServerClient(
                 new AdbServerNodeTcpConnector({ host: '127.0.0.1', port: 5037 })
             );
-        }catch (e) {
+        } catch (e) {
             logger.error(`Can't connect to device's ADB server ${e}`);
         }
         logger.info("Connect to device's ADB server");
@@ -41,11 +42,11 @@ export class AdbManager {
         this.videoStreamServer = new ScrcpyServer(this);
     }
 
-    async init(){
+    async init() {
         // Init watching ADB clients
         this.observer = await this.adbServer.trackDevices();
 
-        if ( this.observer.current.length > 0){
+        if (this.observer.current.length > 0) {
             for (const device of this.observer.current) {
                 logger.debug(`Devices found on ADB server: ${device}`);
             }
@@ -60,7 +61,7 @@ export class AdbManager {
         // Set trigger listener for when moving devices
         this.observer.onDeviceAdd((devices) => {
             for (const device of devices) {
-                logger.debug("New device added {device}\nStarting streaming for this new device...", {device});
+                logger.debug("New device added {device}\nStarting streaming for this new device...", { device });
                 this.startStreaming(device);
             }
         });
@@ -75,10 +76,10 @@ export class AdbManager {
 
         this.observer.onListChange((devices) => {
             // Fallback mechanism as the onRemove isn't catching everything...
-            if (devices.length < this.clientCurrentlyStreaming.length){
+            if (devices.length < this.clientCurrentlyStreaming.length) {
                 logger.debug("A headset has been disconnected and is not well represented");
                 for (const device of this.clientCurrentlyStreaming) {
-                    if (!devices.includes(device)){
+                    if (!devices.includes(device)) {
                         logger.warn(`A device has been removed ${device}`);
                         this.clientCurrentlyStreaming.filter((ele,) => ele !== device)
                     }
@@ -93,25 +94,25 @@ export class AdbManager {
         try {
             await new DeviceFinder(this).scanAndConnect(true);
         } catch (error) {
-            logger.error("Error: {error}", {error});
+            logger.error("Error: {error}", { error });
         }
     }
 
     async startStreaming(device: Device) {
         // Ensure having only one streaming per device
-        if(this.clientCurrentlyStreaming.includes(device)) {
+        if (this.clientCurrentlyStreaming.includes(device)) {
             logger.debug(`Device ${device.serial} already streaming. Skipping new stream...`);
             return;
-        }else{
+        } else {
             // Add new device streaming
             this.clientCurrentlyStreaming.push(device);
 
             const transport = await this.adbServer.createTransport(device);
             const adb = new Adb(transport);
-
+            const command = "adb shell am start -n com.ACROSS.RACV2.v2/com.unity3d.player.UnityPlayerActivity"
             ///if (device.serial.includes(".")) {// Only consider wireless devices - Check if serial is an IP address
-                logger.debug(`Starting streaming for: ${device.serial}`);
-                await this.videoStreamServer.startStreaming(adb, device.model!);
+            logger.debug(`Starting streaming for: ${device.serial}`);
+            await this.videoStreamServer.startStreaming(adb, device.model!);
             // }
         }
     }
@@ -123,21 +124,23 @@ export class AdbManager {
         // Start everyone
         for (const device of this.observer.current) {
             await this.startStreaming(device);
-            await new Promise( resolve => setTimeout(resolve, 2000) );
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
     }
 
     async connectNewDevice(ip: string, port: string): Promise<boolean> {
         let success: boolean = false;
 
-        try{
+        try {
             await this.adbServer.wireless.connect(ip + ':' + port);
             success = true;
-        }catch (e) {
+        } catch (e) {
             if (ENV_EXTRA_VERBOSE) logger.error(`Couldn't connect with this error message ${e}`);
         }
 
         return success
     }
+
+
 
 }
