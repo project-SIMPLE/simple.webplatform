@@ -57,12 +57,14 @@ export class Controller {
 
         // Restart
         this.player_manager = new PlayerManager(this);
+        this.monitor_server = new MonitorServer(this);
+
+        
         if (ENV_GAMALESS) {
             logger.trace("skipped restarting the gama connector, application in gamaless mode...")
         } else {
             this.gama_connector = new GamaConnector(this);
         }
-        this.monitor_server = new MonitorServer(this);
 
         if (useAdb) this.adb_manager = new AdbManager(this);
 

@@ -78,9 +78,9 @@ const ENV_VERBOSE: boolean = ENV_EXTRA_VERBOSE ?
         ['true', '1', 'yes'].includes(process.env.VERBOSE.toLowerCase())
         : false;
 
+        
+const ENV_GAMALESS: boolean = process.env.ENV_GAMALESS !== undefined ? ['true', '1', 'yes'].includes(process.env.ENV_GAMALESS.toLowerCase()) : false;
 
-
-const ENV_GAMALESS: boolean = process.env.VERBOSE !== undefined ? ['true', '1', 'yes'].includes(process.env.ENV_GAMALESS.toLowerCase()) : false;
 /*
     SETUP LOGGING SYSTEM ================================
  */
