@@ -236,8 +236,10 @@ const SimulationManager = () => {
                           className='flex w-15 h-full'
                         ></Button>
                       </Link>
+                     //! unused code that uses websockets to change the type of display to one with space to accomodate for the gama map of the game, but is not implemented for now
+                     //! having these buttons that do nothing may confuse the user
                     </div>
-                    {/* <div className="flex justify-center mt-3 gap-4"> feature not implemented yet, removed for clarity
+                    {/* <div className="flex justify-center mt-3 gap-4">
                       <Button
                         onClick={() => updateDisplay("gama_screen")}
                         bgColor={"bg-white"}

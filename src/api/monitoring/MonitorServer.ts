@@ -1,4 +1,4 @@
-import uWS, { TemplatedApp } from 'uWebSockets.js';
+import uWS, { TemplatedApp } from 'uWebSockets.js'; 
 
 import { Controller } from '../core/Controller.ts';
 import { JsonMonitor } from "../core/Constants.ts"

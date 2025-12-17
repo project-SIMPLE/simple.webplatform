@@ -115,10 +115,12 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
                         setSelectedSimulation(data.simulation);
                         break;
                     case 'screen_control':
+                        //TODO voir si on a toujours besoin de ça ?
                         break;
                     default:
                         console.warn('[WebSocketManager] Message not processed', data);
                         setSimulationList(data) 
+                        //TODO changer cette mocheté, le message est traité dans certain cas si on appelle une méthode sur le contenu du message, ça limitera le logspam potentiellement
                 }
             }
         };
