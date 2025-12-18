@@ -62,7 +62,7 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const [maxElements, setMaxElements] = useState<number>(4); //dictates the amount of placeholders and streams displayed on screen
+  const [maxElements, setMaxElements] = useState<number>(0); //dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
   const minElementsForGrid: int = process.env.ENV_MAX_ELEMENTS;// if there are more elements than this amount the display will be switched to a grid display instead of a row
@@ -265,16 +265,15 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       :
 
       <div className="w-full h-full flex flex-col items-center">
-        {/*                          this is the main container containing the canvases: if there are at least 4 elements, they are displayed in a 2 row grid, else they are displayed side by side. grow is used to ensure that the div takes as much space as possible without overflowing   */}
-        <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-row grid-rows-2" : "grid"} h-full w-full items-center justify-center gap-2 m-4`}>
+        <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-col grid-rows-2 gap-2" : "flex"} h-full w-full items-center justify-center`}>
           {Object.entries(canvasList).map(([key, canvas]) =>
             <div className="h-full w-full flex flex-col justify-center items-center">
-              <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos canvasWidth="w-auto" canvasHeight="h-auto" />
+              <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos canvasWidth="w-auto" canvasHeight="h-auto" />
             </div>
           )}
-          {/* {placeholders.map((_, index) => (
+           {placeholders.map((_, index) => (
             <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
-          ))} */}
+          ))} 
 
         </div>
       </div>
