@@ -37,18 +37,23 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
     useEffect(() => {
         if (canvas) {
 
+            canvas.classList.add("rounded-lg")
 
             if (showPopup) {
                 if (popupref.current) {
-                    canvas.classList.add(...["rounded-b-lg"])
-                    canvas.classList.remove("rounded-lg")
+                    canvas.classList.add(["max-h-[90dvh]"])
                     popupref.current.appendChild(canvas);
+
                 }
             } else {
                 if (canvasref.current) {
                     canvas.classList.add([canvasWidth ? canvasWidth : "w-auto"])
-                    canvas.classList.add([ canvasHeight ? canvasHeight : "h-auto"])
-                    canvas.classList.add("rounded-lg")
+                    canvas.classList.add([canvasHeight ? canvasHeight : "h-auto"])
+
+                    if (canvas.classList.contains("max-h-[90dvh]")) {
+                        canvas.classList.remove("max-h-[90dvh]")
+                    }
+
                     canvasref.current.appendChild(canvas);
                 }
             }
@@ -61,12 +66,19 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
             {showPopup === true ?
                 <div className={`backdrop-blur-md w-full h-full fixed inset-0 flex flex-col items-center justify-center z-10`} onClick={() => setShowPopup(false)}>
                     {/* <div ref={popupref} className={` ${isColoredHeadset ? bgColor : "bg-slate-500"} size-2/3 flex flex-col items-center justify-center`}> */}
-                    <div className={`rounded-md size-full border-4  flex flex-col items-center relative`} onClick={(e) => e.stopPropagation()}>
-                        {hideInfos ? null : <div ref={popupref} className="h-full flex flex-col "><p className="bg-slate-200  rounded-t-md p-1 text-center "> {`Player: ${id}`}</p></div>}
+                    <div className={`rounded-md size-fit border-4  flex flex-col items-center relative`} onClick={(e) => e.stopPropagation()}>
+                        <div ref={popupref} className={`h-full flex flex-col ${isColoredHeadset ? bgColor : "bg-slate-500"}`}>
+                            {hideInfos ?
+                                null
+                                :
+                                <p className="bg-slate-200  rounded-t-md p-1 text-center "> {`Player: ${id}`}</p>
+                            }
+
+                        </div>
 
                         <button
                             onClick={() => setShowPopup(false)}
-                            className='bg-white hover:bg-gray-200 rounded-full p-1 size-fit mb-2'
+                            className='bg-white hover:bg-gray-200 rounded-full p-1 size-fit mb-2w'
                             style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}
                         >
                             <img src={x_cross} alt="" className='mix-blend-difference size-8' />
@@ -94,13 +106,11 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                     </div>
                 </div>
                 :
-                null
-
-                // placeholder, with an eye icon
-                // <div className={`${CanvasStyle} bg-stone-100`}>
-                //     {/* <p>Placeholder ici</p> */}
-                //     <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
-                // </div>
+                //  placeholder, with an eye icon
+                <div className={`${CanvasStyle} bg-stone-100`}>
+                    {/* <p>Placeholder ici</p> */}
+                    <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
+                </div>
 
             }
 
