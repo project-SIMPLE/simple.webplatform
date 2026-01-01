@@ -37,7 +37,7 @@
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.7",
     "evilscan": "^1.9.1",
-    "express": "^4.21.2",
+    "express": "^4.22.1",
     "i18next": "^23.15.1",
     "postcss": "^8.4.40",
     "react": "^18.3.1",
