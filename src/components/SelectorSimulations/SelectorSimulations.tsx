@@ -81,7 +81,7 @@ const SelectorSimulations = () => {
       return;
     }
 
-    if (subProjectsList.length <= 0) { //no subproject is selected, we either enter a folder or launch a simulation
+    if (subProjectsList.length <= 0) { //no subproject is selected, we either enter a folder or load a simulation
       if (simulationList[index].type == "catalog") { //?  we additionaly check if the simulation is a catalog, not necessary but allows for adding extra types
         // @ts-expect-error                                                                             ↓ this is a catalog, which means it must have an "entries" attribute
         console.log(`[HANDLE SIMULATION]: catalog detected, subprojectList: ${JSON.stringify(simulationList[index].entries)}`);
@@ -101,7 +101,6 @@ const SelectorSimulations = () => {
         }, 100);
       } else if (Array.isArray(simulationList[index])) {
         console.log(simulationList[index].model_file_path)
-        // setSubProjectsList(simulationList[index]); 
         addToPath(index)
       }
 
