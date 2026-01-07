@@ -8,7 +8,7 @@ import {
     getLevelFilter,
     withFilter, fingersCrossed
 } from "@logtape/logtape";
-import { getStreamFileSink } from "@logtape/file";
+import { getRotatingFileSink } from "@logtape/file";
 import { getPrettyFormatter } from "@logtape/pretty";
 
 import Controller from './core/Controller.ts';
@@ -104,8 +104,9 @@ await configure({
             getLevelFilter(ENV_EXTRA_VERBOSE ? "trace" : ENV_VERBOSE ? "debug" : "info")
         ),
         file: fingersCrossed(
-            getStreamFileSink("errorLog.log", {
-                highWaterMark: 32768  // 32KB buffer for high-volume logging
+            getRotatingFileSink("errorLog.log", {
+                maxSize: 0x400 * 0x400 * 100,  // 100 MiB
+                maxFiles: 5,
             }),
             { triggerLevel: "error" }
         )
