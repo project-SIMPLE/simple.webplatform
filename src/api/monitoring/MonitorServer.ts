@@ -1,10 +1,10 @@
-import uWS, { TemplatedApp } from 'uWebSockets.js'; 
+import uWS, { TemplatedApp } from 'uWebSockets.js';
 
 import { Controller } from '../core/Controller.ts';
-import { JsonMonitor } from "../core/Constants.ts"
-import {getLogger} from "@logtape/logtape";
+import { JsonMonitor, Simulation } from "../core/Constants.ts"
+import { getLogger } from "@logtape/logtape";
 
-const logger= getLogger(["monitor", "MonitorServer"]);
+const logger = getLogger(["monitor", "MonitorServer"]);
 
 /**
  * Creates a Websocket Server for handling monitor connections
@@ -76,18 +76,18 @@ export class MonitorServer {
                         }
                         break;
 
-                    case "screen_control": //TODO
-                        const messageString = JSON.parse(Buffer.from(message).toString()); //? can't parse the payload of the jsonMonitor for some reason
-                        logger.warn(`data recieved:${messageString.display_type}`);
-                        this.sendMessageByWs({type: "screen_control", display_type: messageString.display_type});
-                        break;
-                        
+                    // case "screen_control": //TODO
+                    //     const messageString = JSON.parse(Buffer.from(message).toString()); //? can't parse the payload of the jsonMonitor for some reason
+                    //     logger.warn(`data recieved:${messageString.display_type}`);
+                    //     this.sendMessageByWs({ type: "screen_control", display_type: messageString.display_type });
+                    //     break;
+
 
                     case "remove_player_headset":
                         if (jsonMonitor.id) {
                             this.controller.purgePlayer(jsonMonitor.id);
                         } else {
-                            logger.error("Failed to remove player headset, missing PlayerID\n{jsonMonitor}", {jsonMonitor});
+                            logger.error("Failed to remove player headset, missing PlayerID\n{jsonMonitor}", { jsonMonitor });
                         }
                         break;
 
@@ -95,13 +95,15 @@ export class MonitorServer {
                         this.sendMessageByWs(this.controller.getSimulationInformations(), ws);
                         break;
 
-                    case "get_simulation_by_index":
+                    case "get_simulation_by_index": {
+
                         const index = jsonMonitor.simulationIndex;
 
                         if (index !== undefined && index >= 0 && index < this.controller.model_manager.getModelList().length) {
                             // Retrieve the simulation based on the index
                             this.controller.model_manager.setActiveModelByIndex(index);
-
+                            logger.debug("set active model to", this.controller.model_manager.getActiveModel().toString())
+                            console.log(this.controller.model_manager.activeModel?.getExperimentName())
                             const selectedSimulation = this.controller.model_manager.getActiveModel();
 
                             this.sendMessageByWs({
@@ -114,22 +116,28 @@ export class MonitorServer {
                             logger.error(`Invalid index received or out of bounds. [Index: ${index}]`);
                         }
                         break;
+                    }
 
-                        
-                        case "send_simulation":
-                            const simulationFromStream = JSON.parse(Buffer.from(message).toString());
-                            
-                            this.controller.model_manager.setActiveModelByFilePath(simulationFromStream.simulation.model_file_path);
-                            const selectedSimulation = this.controller.model_manager.getActiveModel();
-                            logger.debug("Selected simulation sent to gama: {json}", {json: selectedSimulation.getJsonSettings()} );
-                            this.sendMessageByWs({
-                                type: "get_simulation_by_index",
-                                simulation: selectedSimulation.getJsonSettings()
-                            }, ws);
-                            break;
+
+                    case "send_simulation": 
+                    {
+                        const simulationFromStream: Simulation = JSON.parse(Buffer.from(message).toString());
+                        logger.debug("received `send simulation` message, trying to set activemodel by file path using path {filepath}", { filepath: simulationFromStream.simulation.model_file_path })
+                        this.controller.model_manager.setActiveModelByFilePath(simulationFromStream.simulation.model_file_path);
+                        logger.debug("active model after set: {activeModel}", { activeModel: this.controller.model_manager.getActiveModel().getExperimentName() });
+                        const selectedSimulation = this.controller.model_manager.getActiveModel();
+                        logger.debug("Selected simulation sent to gama: {json}", { json: selectedSimulation.getJsonSettings() });
+                        //update the websocket manager
+                        this.sendMessageByWs({
+                            type: "get_simulation_by_index",
+                            simulation: selectedSimulation.getJsonSettings()
+                        }, ws);
+                        this.controller.loadExperiment( "C:/Users/guill/Documents/Simple_Project/simple.webplatform/learning-packages/ACROSS-Lab QuangBinhProject MIAT-version Gama/models/version 2/Flooding UI.gaml" , "Experiment Run<"  )
+                        break;
+                    }
 
                     default:
-                        logger.warn("The last message received from the monitor had an unknown type.\n{jsonMonitor}", {jsonMonitor});
+                        logger.warn("The last message received from the monitor had an unknown type.\n{jsonMonitor}", { jsonMonitor });
                 }
             },
 
@@ -152,7 +160,7 @@ export class MonitorServer {
                         case 1009:
                             logger.error(`[ERR ${code}] Message too big!`);
                             if (message) {
-                                logger.error('Message : {message}', {message});
+                                logger.error('Message : {message}', { message });
                                 if (typeof message.byteLength !== 'undefined') {
                                     logger.error(`Message size: ${message.byteLength} bytes`);
                                 }
@@ -166,7 +174,7 @@ export class MonitorServer {
                                 logger.debug(`Closing normally`);
                     }
                 } catch (err) {
-                    logger.fatal('Error during close handling: {err}', {err});
+                    logger.fatal('Error during close handling: {err}', { err });
                 }
             },
         });
@@ -184,7 +192,7 @@ export class MonitorServer {
                 player: this.controller.player_manager.getArrayPlayerList(),
             };
 
-            logger.trace("Sending monitor gama state:\n{messageToSend}", {messageToSend});
+            logger.trace("Sending monitor gama state:\n{messageToSend}", { messageToSend });
             this.sendMessageByWs(messageToSend);
         }
     }
@@ -194,7 +202,7 @@ export class MonitorServer {
      */
     sendMonitorJsonSettings(): void {
         if (this.controller.model_manager.getActiveModel() !== undefined) {
-            logger.trace("Sending monitor json settings:\n{json}", {json: this.controller.model_manager.getActiveModel().getJsonSettings()});
+            logger.trace("Sending monitor json settings:\n{json}", { json: this.controller.model_manager.getActiveModel().getJsonSettings() });
             this.sendMessageByWs(this.controller.model_manager.getActiveModel().getJsonSettings());
         }
     }
