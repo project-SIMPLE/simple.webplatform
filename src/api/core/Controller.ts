@@ -136,6 +136,15 @@ export class Controller {
         this.gama_connector.sendAsk(json);
     }
 
+    /**
+     * Asks the GAMA server to load an experiment, ready to be started.
+     * @param filepath optionnal string of a path to the model to launch the experiment from. Will default to using the activemodel's value if omitted. 
+     * @param exp_name string of the name of the experiment to launch. Will default to using the activemodel's value if omitted.
+     */
+    loadExperiment(filepath? : string, exp_name? : string){
+        this.gama_connector.jsonLoadExperiment(filepath, exp_name)
+    }
+
     launchExperiment() {
         this.gama_connector.launchExperiment();
         // Try until simulation is ready
