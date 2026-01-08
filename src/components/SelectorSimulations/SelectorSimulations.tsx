@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import { useEffect, useState } from 'react';
-import Button from '../Button/Button';
 import { useTranslation } from 'react-i18next';
 import Footer from '../Footer/Footer';
 import Header from '../Header/Header';
@@ -9,11 +8,10 @@ import SimulationList from './SimulationList';
 import arrow_back from "/src/svg_logos/arrow_back.svg";
 const SelectorSimulations = () => {
   const { ws, isWsConnected, gama, simulationList } = useWebSocket();
-  const [directoryPath, setDirectoryPath] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [connectionStatus, setConnectionStatus] = useState<string>('Waiting for connection ...');
   const { t } = useTranslation();
-  const [subProjectsList, setSubProjectsList] = useState<any[]>([]); //? unused for now, but will be used to store the sub-projects list
+  const [subProjectsList, setSubProjectsList] = useState<[]>([]);
   const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
   const [path, setPath] = useState<number[]>([]);
 
