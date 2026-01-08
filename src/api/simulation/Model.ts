@@ -17,8 +17,11 @@ class Model {
         const modelFilePath = this.#jsonSettings.model_file_path
         if (path.isAbsolute(modelFilePath)) {
             this.#modelFilePath = modelFilePath;
+            console.log("GAMA CONNECTOR path is absolute")
         } else {
+            console.log("GAMA CONNECTOR path is relative")
             this.#modelFilePath = path.join(path.dirname(settingsPath), this.#jsonSettings.model_file_path);
+            console.log("GAMA CONNECTOR path is relative",this.#modelFilePath)
             
         }
     }

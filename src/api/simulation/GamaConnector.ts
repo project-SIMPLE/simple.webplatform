@@ -91,11 +91,11 @@ class GamaConnector {
     jsonLoadExperiment(filepath?: string, exp_name?: string) {
         const model = this.controller.model_manager.getActiveModel();
         console.log(model.getExperimentName())
-        logger.debug("[GAMA CONNECTOR]: active model to be loaded:", model.getExperimentName())
-        logger.debug("[GAMA CONNECTOR]: active model to be loaded:", model.toString())
+        logger.debug("[GAMA CONNECTOR]: active model experiment to be loaded:", model.getExperimentName())
         if (model.getExperimentName() === undefined) {
             logger.error("[GAMA CONNECTOR]: the name of the experiment is undefined")
         } else {
+            console.log("GAMA CONNECTOR:",model.getModelFilePath())
             const payload = {
                 type: "load",
                 model: filepath ? filepath : model.getModelFilePath(),

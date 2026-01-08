@@ -132,12 +132,13 @@ export class MonitorServer {
                             type: "get_simulation_by_index",
                             simulation: selectedSimulation.getJsonSettings()
                         }, ws);
-                        this.controller.loadExperiment( "C:/Users/guill/Documents/Simple_Project/simple.webplatform/learning-packages/ACROSS-Lab QuangBinhProject MIAT-version Gama/models/version 2/Flooding UI.gaml" , "Experiment Run<"  )
+                        console.log(selectedSimulation.getModelFilePath())
+                        this.controller.loadExperiment()
                         break;
                     }
 
                     default:
-                        logger.warn("The last message received from the monitor had an unknown type.\n{jsonMonitor}", { jsonMonitor });
+                        logger.warn("The last message received from the monitor had an unknown type./n{jsonMonitor}", { jsonMonitor });
                 }
             },
 
