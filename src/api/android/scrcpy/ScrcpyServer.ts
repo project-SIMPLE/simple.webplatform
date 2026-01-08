@@ -4,12 +4,12 @@ import path from "path";
 import {ReadableStream} from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
 import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
-import {AdbScrcpyClient, AdbScrcpyOptions3_3_1} from "@yume-chan/adb-scrcpy";
+import {AdbScrcpyClient, AdbScrcpyOptions3_3_3} from "@yume-chan/adb-scrcpy";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
 import {getLogger} from "@logtape/logtape";
 
-import { ENV_VERBOSE, ENV_SCRCPY_FORCE_H265 } from "../../index.ts";
+import { ENV_VERBOSE } from "../../index.ts";
 import {AdbManager} from "../adb/AdbManager.ts";
 
 // Override the log function
@@ -29,7 +29,7 @@ export class ScrcpyServer {
     private wsClients: Set<uWS.WebSocket<any>>;
     private maxBackpressure: number = 1 * 1024 * 1024; // 1MB
 
-    private scrcpyClients: AdbScrcpyClient<AdbScrcpyOptions3_3_1<true>>[] = [];
+    private scrcpyClients: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>[] = [];
 
     // =======================
     // Scrcpy server
@@ -160,16 +160,17 @@ export class ScrcpyServer {
     }
 
     async loadScrcpyServer() {
+        // To keep for when walking away from custom server
         //this.server = await fs.readFile(BIN)
 
-        // Use custom hotfix from joranmarcy
-        // This fix 'simply' drop all the black frames to avoid seeing glitches on fw > 72
-        // https://github.com/Genymobile/scrcpy/compare/master...joranmarcy:scrcpy:fix/opengl-discard-blackframes
-        this.server = await fs.readFile( path.join(process.cwd(), 'toolkit', 'scrcpyServer-fixBlackClip') );
+        // Use custom hotfix from rom1v (official scrcpy's dev)
+        // This fix 'simply' better manage fallback video API weirdly working on MQ headsets
+        // https://github.com/Genymobile/scrcpy/issues/5913#issuecomment-3677889916
+        this.server = await fs.readFile( path.join(process.cwd(), 'toolkit', 'scrcpyServer-v3.3.4-rom1v') );
     }
 
     async startStreaming(adbConnection: Adb, deviceModel: string) {
-        let scrcpyOptions = new AdbScrcpyOptions3_3_1({
+        let scrcpyOptions = new AdbScrcpyOptions3_3_3({
             // scrcpy options
             videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
                 profile: H264Capabilities.maxProfile,
@@ -186,7 +187,9 @@ export class ScrcpyServer {
             // Clean feed
             audio: false,
             control: true,
-        }, {version: "3.3.1"})
+        },
+            // Spoofing version, there's only bug-fixing between .3 and .4 so should be safe
+            {version: "3.3.4"})
         logger.debug(`Starting scrcpy stream with ${useH265 ? "h265" : "h264"} codec`)
 
         try {
@@ -228,7 +231,7 @@ export class ScrcpyServer {
             }
 
             logger.debug(`Pushing & start scrcpy server from ${adbConnection.serial}`);
-            const client : AdbScrcpyClient<AdbScrcpyOptions3_3_1<true>> = await AdbScrcpyClient.start(
+            const client : AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>> = await AdbScrcpyClient.start(
                 adbConnection,
                 DefaultServerPath,
                 scrcpyOptions
