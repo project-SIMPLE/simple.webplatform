@@ -12,7 +12,7 @@ import { AdbServerNodeTcpConnector } from "@yume-chan/adb-server-node-tcp";
 import Device = AdbServerClient.Device;
 
 import Controller from "../../core/Controller.ts";
-import { ENV_EXTRA_VERBOSE } from "../../index.ts";
+import { ENV_EXTRA_VERBOSE, ENV_VERBOSE } from "../../index.ts";
 import { ScrcpyServer } from "../scrcpy/ScrcpyServer.ts";
 import { getLogger } from "@logtape/logtape";
 import DeviceFinder from "./DeviceFinder.ts";
@@ -110,7 +110,7 @@ export class AdbManager {
             const transport = await this.adbServer.createTransport(device);
             const adb = new Adb(transport);
 
-            if (device.serial.includes(".")) {// Only consider wireless devices - Check if serial is an IP address
+            if (device.serial.includes(".") || ENV_VERBOSE) {// Only consider wireless devices - Check if serial is an IP address
                 if ( ! await this.videoStreamServer.startStreaming(adb, device.model!) ) {
                     await this.videoStreamServer.startStreaming(adb, device.model!, true);
                 }
