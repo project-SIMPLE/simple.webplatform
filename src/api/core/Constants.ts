@@ -125,8 +125,10 @@ export const ON_DEVICE_ADB_GLOBAL_SETTINGS = {
     "network_avoid_bad_wifi": 0,
     "wifi_passpoint_enabled": 0,
     "wifi_sleep_policy": 2,
-    "stay_on_while_plugged_in": 3,
+    "stay_on_while_plugged_in": 15, // Keep on AC + USB + wireless + docked
     "wifi_enhance_network_while_sleeping": 0,
     // Misc
-    "ota_disable_automatic_update": 1
+    "ota_disable_automatic_update": 1,
+    "wifi_networks_available_notification_on": 0,
+    "netstats_enabled": 0
 }
