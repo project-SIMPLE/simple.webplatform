@@ -16,6 +16,7 @@ import { ENV_EXTRA_VERBOSE, ENV_VERBOSE } from "../../index.ts";
 import { ScrcpyServer } from "../scrcpy/ScrcpyServer.ts";
 import { getLogger } from "@logtape/logtape";
 import DeviceFinder from "./DeviceFinder.ts";
+import {ON_DEVICE_ADB_GLOBAL_SETTINGS} from "../../core/Constants.ts";
 
 // Override the log function
 const logger = getLogger(["android", "AdbManager"]);
@@ -48,7 +49,8 @@ export class AdbManager {
 
         if (this.observer.current.length > 0) {
             for (const device of this.observer.current) {
-                logger.debug(`Devices found on ADB server: ${device}`);
+                logger.debug(`Devices found on ADB server: {device}`, {device});
+                this.checkAdbParameters(device);
             }
 
             await this.restartStreamingAll();
@@ -63,6 +65,7 @@ export class AdbManager {
             for (const device of devices) {
                 logger.debug("New device added {device}\nStarting streaming for this new device...", { device });
                 this.startNewStream(device);
+                this.checkAdbParameters(device);
             }
         });
 
@@ -142,6 +145,61 @@ export class AdbManager {
         return success
     }
 
+    async checkAdbParameters(device: Device) {
+        // Only modify headsets, don't jam phone's parameters
+        if (device.model?.startsWith("Quest_")) return;
 
+        logger.debug(`[${device.serial}] Checking on-device global ADB settings...`);
+        const transport = await this.adbServer.createTransport(device);
+        const adb = new Adb(transport);
+
+        for (const [globalSetting, globalSettingValue] of Object.entries(ON_DEVICE_ADB_GLOBAL_SETTINGS) as [
+                keyof typeof ON_DEVICE_ADB_GLOBAL_SETTINGS,
+                typeof ON_DEVICE_ADB_GLOBAL_SETTINGS[keyof typeof ON_DEVICE_ADB_GLOBAL_SETTINGS]
+            ][])
+        {
+            if ( ! await this.checkAdbParameter(adb, globalSetting, globalSettingValue)){
+                logger.debug(`[${device.serial}] ADB parameters for '${globalSetting}' isn't correct, fixing it...`);
+                await this.setAdbParameter(adb, globalSetting, globalSettingValue);
+                if (! await this.checkAdbParameter(adb, globalSetting, globalSettingValue)) {
+                    logger.warn(`[${device.serial}] Couldn't properly set setting ${globalSetting}, skipping it...`);
+                }
+            }
+        }
+        logger.debug(`[${device.serial}] All on-device global ADB settings are good`);
+    }
+
+    async checkAdbParameter(adb: Adb, globalParam: string, expectedValue: any): Promise<boolean> {
+        let result: any;
+
+        const process = await adb.subprocess.noneProtocol.spawn("settings get global " + globalParam);
+        // @ts-expect-error
+        for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
+            result = chunk;
+        }
+        // Cleaning trailing '\n' from chunk reading
+        result = result.trim();
+
+        logger.trace(`[${adb.serial}] Checking ADB parameters '${globalParam}' = ${result} and should be ${expectedValue} (${result == expectedValue})`);
+
+        return result == expectedValue;
+    }
+
+    async setAdbParameter(adb: Adb, globalParam: string, expectedValue: any) {
+        let result: any;
+
+        const process = await adb.subprocess.noneProtocol.spawn(["settings put global ", globalParam, expectedValue]);
+        // @ts-expect-error
+        for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
+            result = chunk;
+        }
+
+        logger.trace(`[${adb.serial}] Setting ADB parameters '${globalParam}' = ${expectedValue} and it ${result == undefined ? "worked" : "failed"}`);
+
+        if (result != undefined) {
+            logger.error(`[${adb.serial}] Something happened while setting the ADB setting '${globalParam}'`);
+            logger.error(result.toString());
+        }
+    }
 
 }

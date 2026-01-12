@@ -110,3 +110,23 @@ export const ANSI_COLORS: Record<string,string> ={
     "purple": "\x1b[38;5;129m",
     "reset": "\x1b[0m"
 }
+
+export const ON_DEVICE_ADB_GLOBAL_SETTINGS = {
+    // Probing
+    "captive_portal_detection_enabled": 0,
+    "captive_portal_mode": 0,
+    "captive_portal_server": "localhost",
+    "captive_portal_https_url": "https://localhost",
+    "captive_portal_http_url": "http://localhost",
+    // WiFi
+    "wifi_watchdog_on": 0,
+    "wifi_watchdog_poor_network_test_enabled": 0,
+    "network_recommendations_enabled": 0,
+    "network_avoid_bad_wifi": 0,
+    "wifi_passpoint_enabled": 0,
+    "wifi_sleep_policy": 2,
+    "stay_on_while_plugged_in": 3,
+    "wifi_enhance_network_while_sleeping": 0,
+    // Misc
+    "ota_disable_automatic_update": 1
+}
