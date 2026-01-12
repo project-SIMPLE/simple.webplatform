@@ -153,6 +153,11 @@ class DeviceFinder {
             loggerES.debug(`Scanning over IP subnet: ${serverLocalIp}/24`);
         }
 
+        if (!serverLocalIp.startsWith("192.168.68")) {
+            loggerES.warn("Disable device auto-scan because server is not in the default IP range");
+            return;
+        }
+
         new Evilscan({
                 target: serverLocalIp + "/24",  //ip address subnet,
                 port: '5555',                     // your custom range

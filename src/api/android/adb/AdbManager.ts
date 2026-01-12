@@ -7,12 +7,12 @@
  * It manages Adb sockets :)
  */
 
-import { Adb, AdbServerClient, AdbSubprocessService } from "@yume-chan/adb";
+import { Adb, AdbServerClient } from "@yume-chan/adb";
 import { AdbServerNodeTcpConnector } from "@yume-chan/adb-server-node-tcp";
 import Device = AdbServerClient.Device;
 
 import Controller from "../../core/Controller.ts";
-import { ENV_EXTRA_VERBOSE } from "../../index.ts";
+import { ENV_EXTRA_VERBOSE, ENV_VERBOSE } from "../../index.ts";
 import { ScrcpyServer } from "../scrcpy/ScrcpyServer.ts";
 import { getLogger } from "@logtape/logtape";
 import DeviceFinder from "./DeviceFinder.ts";
@@ -62,7 +62,7 @@ export class AdbManager {
         this.observer.onDeviceAdd((devices) => {
             for (const device of devices) {
                 logger.debug("New device added {device}\nStarting streaming for this new device...", { device });
-                this.startStreaming(device);
+                this.startNewStream(device);
             }
         });
 
@@ -98,7 +98,7 @@ export class AdbManager {
         }
     }
 
-    async startStreaming(device: Device) {
+    async startNewStream(device: Device) {
         // Ensure having only one streaming per device
         if (this.clientCurrentlyStreaming.includes(device)) {
             logger.debug(`Device ${device.serial} already streaming. Skipping new stream...`);
@@ -109,11 +109,12 @@ export class AdbManager {
 
             const transport = await this.adbServer.createTransport(device);
             const adb = new Adb(transport);
-            const command = "adb shell am start -n com.ACROSS.RACV2.v2/com.unity3d.player.UnityPlayerActivity"
-            ///if (device.serial.includes(".")) {// Only consider wireless devices - Check if serial is an IP address
-            logger.debug(`Starting streaming for: ${device.serial}`);
-            await this.videoStreamServer.startStreaming(adb, device.model!);
-            // }
+
+            if (device.serial.includes(".") || ENV_VERBOSE) {// Only consider wireless devices - Check if serial is an IP address
+                if ( ! await this.videoStreamServer.startStreaming(adb, device.model!) ) {
+                    await this.videoStreamServer.startStreaming(adb, device.model!, true);
+                }
+            }
         }
     }
 
@@ -123,7 +124,7 @@ export class AdbManager {
 
         // Start everyone
         for (const device of this.observer.current) {
-            await this.startStreaming(device);
+            await this.startNewStream(device);
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
     }

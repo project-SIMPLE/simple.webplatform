@@ -26,5 +26,5 @@ dist-ssr
 # Escape files relative to the project
 .env
 package-lock.json
-errorLog.log
+errorLog.log*
 learning-packages/ACROSS-Lab QuangBinhProject MIAT-version Gama/
