@@ -225,7 +225,7 @@ export class ScrcpyServer {
                 scrcpyOptions.value.crop = flipWidth ? "1570:1482:170:150" : "1482:1570:170:150";
             } else if (deviceModel == "Quest_3"){
                 scrcpyOptions.value.angle = 23;
-                scrcpyOptions.value.crop = flipWidth ? "1000:1482:300:250" : "1482:1000:300:250";
+                scrcpyOptions.value.crop = flipWidth ? "1570:1482:300:250" : "1482:1570:300:250";
             } else {
                 logger.warn(`Device ${deviceModel} is unknown, so no cropping is applied`);
             }
