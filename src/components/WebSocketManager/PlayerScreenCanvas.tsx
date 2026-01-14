@@ -3,6 +3,9 @@ import { HEADSET_COLOR } from "../../api/core/Constants.ts";
 import visibility_off from "../../svg_logos/visibility_off.svg"
 import x_cross from "../../svg_logos/x_cross.svg";
 
+//TODO pour fix le problème du canvas qui est en petit, puis qui devient grand quand tu clique dessus, regarder les hook qui sont trigger quand on clique sur le canvas (surtout le truc qui applique les classes tailwind)
+//TODO et juste nettoyer complètement le css à chaque fois, et le réappliquer pour éviter le problème, quitte à ce que le code soit redondant
+/* eslint react-hooks/rules-of-hooks: 0, curly: 2 */ //? desactive les avertissements sur les hooks qui sont appelés conditionnellement, ce qui n'arrive jamais dans ce cas
 interface PlayerScreenCanvasProps {
     isPlaceholder?: boolean; //if true, will display an empty div. PlayerScreenCanvases are rendered using a list of canvases in the video stream manager. if the element is empty, it renders a canvas
     needsInteractivity?: boolean; //boolean used when a player screen canvas is displayed in the StreamPlayersScreenControl page, in order to be able to click each mirror to have a pop up window
@@ -10,7 +13,7 @@ interface PlayerScreenCanvasProps {
     id?: string;
     canvasWidth?: string;
     canvasHeight?: string; //  height of the literal canvas HTML element, takes a literal objective css unit such as pix or vh. Defaults to value h-auto tailwind value
-    setActiveCanvas?: Function; //function that is passed as a prop by the videostreammanager, this function here returns the canvas and the ip of the headset that need to be displayed in a popup window
+    setActiveCanvas?: (a: string) => void //function that is passed as a prop by the videostreammanager, this function here returns the canvas and the ip of the headset that need to be displayed in a popup window
     hideInfos?: boolean; // boolean used in case you want to hide player id and identifier, used in case of fullscreen for example
 }
 
@@ -34,6 +37,10 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
     // other ref, which is popupref, that represents the popup window. additionnal parameters are 
     // passed to determine the size of the canvas on the screen 
     */
+
+    /**
+     * hook qui permet de changer les classes tailwind appliquées au canvas selon s'il s'agit du mode plein écran, ou d'un canvas plein
+     */
     useEffect(() => {
         if (canvas) {
 
@@ -90,14 +97,11 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
 
             {/* actually meaningful content */}
             {!isPlaceholder ?
-                <div id={id} className={`border-4 ${isColoredHeadset ? bgColor : "bg-slate-400"} ${CanvasStyle}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
+                <div id={id} className={`${CanvasStyle}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
                     {hideInfos ? null :
                         <div>
-                            {/*↑ this div exists to make a unified block out of the player id and extra text added here and separate it from the canvas: [[id,ipIdentifier],canvas]  */}
-                            <div>
-                                <p>player:{id}</p>
-                                {isColoredHeadset ? <p className="text-center">identifier:{ipIdentifier} {false ? `couleur: (${HEADSET_COLOR[ipIdentifier]})` : null}</p> : null}
-                            </div>
+                            <p>player:{id}</p>
+                            {isColoredHeadset ? <p className="text-center">identifier:{ipIdentifier} </p> : null}
                         </div>
                     }
 
@@ -108,7 +112,6 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 :
                 //  placeholder, with an eye icon
                 <div className={`${CanvasStyle} bg-stone-100`}>
-                    {/* <p>Placeholder ici</p> */}
                     <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
                 </div>
 
