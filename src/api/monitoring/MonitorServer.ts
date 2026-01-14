@@ -124,7 +124,7 @@ export class MonitorServer {
                         const simulationFromStream: Simulation = JSON.parse(Buffer.from(message).toString());
                         logger.debug("received `send simulation` message, trying to set activemodel by file path using path {filepath}", { filepath: simulationFromStream.simulation.model_file_path })
                         this.controller.model_manager.setActiveModelByFilePath(simulationFromStream.simulation.model_file_path);
-                        logger.debug("active model after set: {activeModel}", { activeModel: this.controller.model_manager.getActiveModel().getExperimentName() });
+                        logger.debug("active experiment after set: {activeModel}", { activeModel: this.controller.model_manager.getActiveModel().getExperimentName() });
                         const selectedSimulation = this.controller.model_manager.getActiveModel();
                         logger.debug("Selected simulation sent to gama: {json}", { json: selectedSimulation.getJsonSettings() });
                         //update the websocket manager

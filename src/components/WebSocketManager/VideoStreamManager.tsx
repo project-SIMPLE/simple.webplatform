@@ -7,7 +7,6 @@ import {
   WebCodecsVideoDecoder,
 } from "@yume-chan/scrcpy-decoder-webcodecs";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
-import { env } from "process";
 const host: string = window.location.hostname;
 const port: string = '8082';
 
@@ -265,10 +264,11 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       :
 
       <div className="w-full h-full flex flex-col items-center">
-        <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-col grid-rows-2 gap-2" : "flex"} h-full w-full items-center justify-center`}>
+        {/* <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-col grid-rows-2 gap-2" : "flex"} h-full w-full items-center justify-center`}> */}
+        <div className={`w-full h-full`}>
           {Object.entries(canvasList).map(([key, canvas]) =>
             <div className="h-full w-full flex flex-col justify-center items-center">
-              <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos canvasWidth="w-auto" canvasHeight="h-auto" />
+              <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos canvasWidth="w-[700px]" canvasHeight="h-[500px]" />
             </div>
           )}
            {placeholders.map((_, index) => (
