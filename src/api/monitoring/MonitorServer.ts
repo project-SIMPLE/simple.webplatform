@@ -2,9 +2,9 @@ import uWS, { TemplatedApp } from 'uWebSockets.js';
 
 import { Controller } from '../core/Controller.ts';
 import { JsonMonitor } from "../core/Constants.ts"
-import {getLogger} from "@logtape/logtape";
+import { getLogger } from "@logtape/logtape";
 
-const logger= getLogger(["monitor", "MonitorServer"]);
+const logger = getLogger(["monitor", "MonitorServer"]);
 
 /**
  * Creates a Websocket Server for handling monitor connections
@@ -79,15 +79,15 @@ export class MonitorServer {
                     case "screen_control": //TODO
                         const messageString = JSON.parse(Buffer.from(message).toString()); //? can't parse the payload of the jsonMonitor for some reason
                         logger.warn(`data recieved:${messageString.display_type}`);
-                        this.sendMessageByWs({type: "screen_control", display_type: messageString.display_type});
+                        this.sendMessageByWs({ type: "screen_control", display_type: messageString.display_type });
                         break;
-                        
+
 
                     case "remove_player_headset":
                         if (jsonMonitor.id) {
                             this.controller.purgePlayer(jsonMonitor.id);
                         } else {
-                            logger.error("Failed to remove player headset, missing PlayerID\n{jsonMonitor}", {jsonMonitor});
+                            logger.error("Failed to remove player headset, missing PlayerID\n{jsonMonitor}", { jsonMonitor });
                         }
                         break;
 
@@ -115,21 +115,21 @@ export class MonitorServer {
                         }
                         break;
 
-                        
-                        case "send_simulation":
-                            const simulationFromStream = JSON.parse(Buffer.from(message).toString());
-                            
-                            this.controller.model_manager.setActiveModelByFilePath(simulationFromStream.simulation.model_file_path);
-                            const selectedSimulation = this.controller.model_manager.getActiveModel();
-                            logger.debug("Selected simulation sent to gama: {json}", {json: selectedSimulation.getJsonSettings()} );
-                            this.sendMessageByWs({
-                                type: "get_simulation_by_index",
-                                simulation: selectedSimulation.getJsonSettings()
-                            }, ws);
-                            break;
+
+                    case "send_simulation":
+                        const simulationFromStream = JSON.parse(Buffer.from(message).toString());
+
+                        this.controller.model_manager.setActiveModelByFilePath(simulationFromStream.simulation.model_file_path);
+                        const selectedSimulation = this.controller.model_manager.getActiveModel();
+                        logger.debug("Selected simulation sent to gama: {json}", { json: selectedSimulation.getJsonSettings() });
+                        this.sendMessageByWs({
+                            type: "get_simulation_by_index",
+                            simulation: selectedSimulation.getJsonSettings()
+                        }, ws);
+                        break;
 
                     default:
-                        logger.warn("The last message received from the monitor had an unknown type.\n{jsonMonitor}", {jsonMonitor});
+                        logger.warn("The last message received from the monitor had an unknown type.\n{jsonMonitor}", { jsonMonitor });
                 }
             },
 
@@ -152,7 +152,7 @@ export class MonitorServer {
                         case 1009:
                             logger.error(`[ERR ${code}] Message too big!`);
                             if (message) {
-                                logger.error('Message : {message}', {message});
+                                logger.error('Message : {message}', { message });
                                 if (typeof message.byteLength !== 'undefined') {
                                     logger.error(`Message size: ${message.byteLength} bytes`);
                                 }
@@ -166,7 +166,7 @@ export class MonitorServer {
                                 logger.debug(`Closing normally`);
                     }
                 } catch (err) {
-                    logger.fatal('Error during close handling: {err}', {err});
+                    logger.fatal('Error during close handling: {err}', { err });
                 }
             },
         });
@@ -184,7 +184,7 @@ export class MonitorServer {
                 player: this.controller.player_manager.getArrayPlayerList(),
             };
 
-            logger.trace("Sending monitor gama state:\n{messageToSend}", {messageToSend});
+            logger.trace("Sending monitor gama state:\n{messageToSend}", { messageToSend });
             this.sendMessageByWs(messageToSend);
         }
     }
@@ -194,7 +194,7 @@ export class MonitorServer {
      */
     sendMonitorJsonSettings(): void {
         if (this.controller.model_manager.getActiveModel() !== undefined) {
-            logger.trace("Sending monitor json settings:\n{json}", {json: this.controller.model_manager.getActiveModel().getJsonSettings()});
+            logger.trace("Sending monitor json settings:\n{json}", { json: this.controller.model_manager.getActiveModel().getJsonSettings() });
             this.sendMessageByWs(this.controller.model_manager.getActiveModel().getJsonSettings());
         }
     }
@@ -215,14 +215,14 @@ export class MonitorServer {
 
                     switch (r) {
                         case 0:
-                            logger.warn(`Backpressure is building up. Data will be drain overtime to client ${client.getRemoteAddressAsText()}`);
+                            logger.warn(`Backpressure is building up. Data will be drain overtime to {client}`), { client: client.getRemoteAddressAsText() };
                             break;
                         case 2:
-                            logger.error(`Backpressure detected. Data not sent to client ${client.getRemoteAddressAsText()}`);
+                            logger.error(`Backpressure detected. Data not sent to client {client}`), { client: client.getRemoteAddressAsText() };
                             break;
                         default:
                         case 1:
-                            logger.trace(`Properly sent message to client (${client.getRemoteAddressAsText()}):\n${message}`);
+                            logger.trace(`Properly sent message to client (client\n message)`, { client: client.getRemoteAddressAsText(), message: message });
                     }
                 }
             });
