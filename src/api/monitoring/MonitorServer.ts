@@ -215,14 +215,14 @@ export class MonitorServer {
 
                     switch (r) {
                         case 0:
-                            logger.warn(`Backpressure is building up. Data will be drain overtime to {client}`), { client: client.getRemoteAddressAsText() };
+                            logger.warn(`Backpressure is building up. Data will be drain overtime to {client}`), { client: Buffer.from(client.getRemoteAddressAsText()).toString() };
                             break;
                         case 2:
-                            logger.error(`Backpressure detected. Data not sent to client {client}`), { client: client.getRemoteAddressAsText() };
+                            logger.error(`Backpressure detected. Data not sent to client {client}`), { client: Buffer.from(client.getRemoteAddressAsText()).toString() };
                             break;
                         default:
                         case 1:
-                            logger.trace(`Properly sent message to client (client\n message)`, { client: client.getRemoteAddressAsText(), message: message });
+                            logger.trace(`Properly sent message to client {client}\n{message}`, { client: Buffer.from(client.getRemoteAddressAsText()).toString(), message: message });
                     }
                 }
             });
