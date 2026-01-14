@@ -50,7 +50,7 @@ export class ScrcpyServer {
 
         this.wsClients = new Set<uWS.WebSocket<any>>();
 
-        const host = process.env.WEB_APPLICATION_HOST || 'localhost';
+        const host = process.env.WEB_APPLICATION_HOST || '0.0.0.0';
         const port = parseInt(process.env.VIDEO_WS_PORT || '8082', 10);
 
         try {
@@ -166,7 +166,9 @@ export class ScrcpyServer {
         // Use custom hotfix from rom1v (official scrcpy's dev)
         // This fix 'simply' better manage fallback video API weirdly working on MQ headsets
         // https://github.com/Genymobile/scrcpy/issues/5913#issuecomment-3677889916
-        this.server = await fs.readFile( path.join(process.cwd(), 'toolkit', 'scrcpyServer-v3.3.4-rom1v') );
+        const scrcpyServerFullPath: string = path.join(process.cwd(), 'toolkit', 'scrcpyServer-v3.3.4-rom1v');
+        this.server = await fs.readFile( scrcpyServerFullPath );
+        logger.trace(`Loading scrcpy server from '${scrcpyServerFullPath}'`);
     }
 
     async startStreaming(adbConnection: Adb, deviceModel: string, flipWidth: boolean = false): Promise<boolean|undefined> {

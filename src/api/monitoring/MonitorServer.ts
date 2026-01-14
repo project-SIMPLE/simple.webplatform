@@ -22,7 +22,7 @@ export class MonitorServer {
         this.controller = controller;
         this.wsClients = new Set<uWS.WebSocket<any>>();
 
-        const host = process.env.WEB_APPLICATION_HOST || 'localhost';
+        const host = process.env.WEB_APPLICATION_HOST || '0.0.0.0';
         const port = parseInt(process.env.MONITOR_WS_PORT || '8001', 10);
 
         this.wsServer = uWS.App(); //new WebSocketServer({ host, port });
