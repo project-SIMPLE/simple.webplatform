@@ -1,7 +1,7 @@
 import uWS, { TemplatedApp } from 'uWebSockets.js';
 
 import { Controller } from '../core/Controller.ts';
-import { JsonMonitor, Simulation } from "../core/Constants.ts"
+import { JsonMonitor } from "../core/Constants.ts"
 import { getLogger } from "@logtape/logtape";
 
 const logger = getLogger(["monitor", "MonitorServer"]);
@@ -76,11 +76,13 @@ export class MonitorServer {
                         }
                         break;
 
-                    // case "screen_control": //TODO
-                    //     const messageString = JSON.parse(Buffer.from(message).toString()); //? can't parse the payload of the jsonMonitor for some reason
-                    //     logger.warn(`data recieved:${messageString.display_type}`);
-                    //     this.sendMessageByWs({ type: "screen_control", display_type: messageString.display_type });
-                    //     break;
+                    case "screen_control": //TODO
+                        {
+                            const messageString = JSON.parse(Buffer.from(message).toString()); //? can't parse the payload of the jsonMonitor for some reason
+                            logger.warn(`data recieved:${messageString.display_type}`);
+                            this.sendMessageByWs({ type: "screen_control", display_type: messageString.display_type });
+                            break;
+                        }
 
 
                     case "remove_player_headset":
@@ -119,26 +121,20 @@ export class MonitorServer {
                     }
 
 
-                    case "send_simulation": 
-                    {
-                        const simulationFromStream: Simulation = JSON.parse(Buffer.from(message).toString());
-                        logger.debug("received `send simulation` message, trying to set activemodel by file path using path {filepath}", { filepath: simulationFromStream.simulation.model_file_path })
+                    case "send_simulation":
+                        const simulationFromStream = JSON.parse(Buffer.from(message).toString());
+
                         this.controller.model_manager.setActiveModelByFilePath(simulationFromStream.simulation.model_file_path);
-                        logger.debug("active experiment after set: {activeModel}", { activeModel: this.controller.model_manager.getActiveModel().getExperimentName() });
                         const selectedSimulation = this.controller.model_manager.getActiveModel();
                         logger.debug("Selected simulation sent to gama: {json}", { json: selectedSimulation.getJsonSettings() });
-                        //update the websocket manager
                         this.sendMessageByWs({
                             type: "get_simulation_by_index",
                             simulation: selectedSimulation.getJsonSettings()
                         }, ws);
-                        console.log(selectedSimulation.getModelFilePath())
-                        this.controller.loadExperiment()
                         break;
-                    }
 
                     default:
-                        logger.warn("The last message received from the monitor had an unknown type./n{jsonMonitor}", { jsonMonitor });
+                        logger.warn("The last message received from the monitor had an unknown type.\n{jsonMonitor}", { jsonMonitor });
                 }
             },
 
@@ -224,14 +220,14 @@ export class MonitorServer {
 
                     switch (r) {
                         case 0:
-                            logger.warn(`Backpressure is building up. Data will be drain overtime to client ${client.getRemoteAddressAsText()}`);
+                            logger.warn(`Backpressure is building up. Data will be drain overtime to {client}`), { client: client.getRemoteAddressAsText() };
                             break;
                         case 2:
-                            logger.error(`Backpressure detected. Data not sent to client ${client.getRemoteAddressAsText()}`);
+                            logger.error(`Backpressure detected. Data not sent to client {client}`), { client: client.getRemoteAddressAsText() };
                             break;
                         default:
                         case 1:
-                            logger.trace(`Properly sent message to client (${client.getRemoteAddressAsText()}):\n${message}`);
+                            logger.trace(`Properly sent message to client (client\n message)`, { client: client.getRemoteAddressAsText(), message: message });
                     }
                 }
             });
