@@ -122,6 +122,7 @@ export class MonitorServer {
 
 
                     case "send_simulation":
+                         { // définition d'une scope à cause de la définition de variable dans un bloc case
                         const simulationFromStream = JSON.parse(Buffer.from(message).toString());
 
                         this.controller.model_manager.setActiveModelByFilePath(simulationFromStream.simulation.model_file_path);
@@ -131,6 +132,7 @@ export class MonitorServer {
                             type: "get_simulation_by_index",
                             simulation: selectedSimulation.getJsonSettings()
                         }, ws);
+                    }
                         break;
 
                     default:
@@ -227,7 +229,7 @@ export class MonitorServer {
                             break;
                         default:
                         case 1:
-                            logger.trace(`Properly sent message to client (client\n message)`, { client: client.getRemoteAddressAsText(), message: message });
+                            logger.trace(`Properly sent message to client {client}\n {message})`, { client: client.getRemoteAddressAsText(), message: message });
                     }
                 }
             });
