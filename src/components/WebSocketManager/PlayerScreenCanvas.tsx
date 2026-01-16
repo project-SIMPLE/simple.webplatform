@@ -15,10 +15,11 @@ interface PlayerScreenCanvasProps {
     canvasHeight?: string; //  height of the literal canvas HTML element, takes a literal objective css unit such as pix or vh. Defaults to value h-auto tailwind value
     setActiveCanvas?: (a: string) => void //function that is passed as a prop by the videostreammanager, this function here returns the canvas and the ip of the headset that need to be displayed in a popup window
     hideInfos?: boolean; // boolean used in case you want to hide player id and identifier, used in case of fullscreen for example
+    isLimitingWidth?: boolean; //whether the maximum dimension is the width or the height
 }
 
 
-const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, canvasWidth, canvasHeight, hideInfos }: PlayerScreenCanvasProps) => {
+const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, canvasWidth, canvasHeight, hideInfos, isLimitingWidth }: PlayerScreenCanvasProps) => {
     if (!id) {
         return null;
     }
@@ -95,7 +96,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 </div>
                 : null}
 
-            {/* actually meaningful content */}
+            {/* meaningful content */}
             {!isPlaceholder ?
                 <div id={id} className={`${CanvasStyle}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
                     {hideInfos ? null :
@@ -110,10 +111,11 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                     </div>
                 </div>
                 :
-                //  placeholder, with an eye icon
-                <div className={`${CanvasStyle} bg-stone-100`}>
+                //  placeholder, with an eye icon //TODO ajouter ici des valeurs spécifiques
+                <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ? "max-h-full w-full" : "max-w-full h-full "} aspect-square m-2`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
+                {isLimitingWidth ? <p>mode portrait</p> : <p>mode paysage</p>}
                     <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
-                </div>
+                </div >
 
             }
 

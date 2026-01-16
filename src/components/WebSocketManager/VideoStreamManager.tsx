@@ -10,6 +10,7 @@ import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 const host: string = window.location.hostname;
 const port: string = '8082';
 
+
 // Deserialize the data into ScrcpyMediaStreamPacket
 const deserializeData = (serializedData: string) => {
   const parsed = JSON.parse(serializedData);
@@ -61,10 +62,13 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const [maxElements, setMaxElements] = useState<number>(0); //dictates the amount of placeholders and streams displayed on screen
+  const maxElements: int = 6 //dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
   const minElementsForGrid: int = process.env.ENV_MAX_ELEMENTS;// if there are more elements than this amount the display will be switched to a grid display instead of a row
+  const [canvasContainerStyle, setCanvasContainerStyle] = useState<string>("");
+  const [islimitingDimWidth, setIslimitingDimWidth] = useState<boolean>(false);
+  const [isPortrait, setIsPortrait] = useState<boolean>(false)
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
     string,
@@ -249,35 +253,94 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     };
   }, []);
 
-  return (
+  //apply style to the container, so that 1 element is displayed in fullscreen, 2 are displayed side by side, and more than that are displayed in a grid
+  useEffect(() => {
 
-    selectedCanvas ?
-      <div className="w-fit">
-        <p>amount of streams: {Object.keys(canvasList).length}</p>
-        {Object.entries(canvasList).map(([key, canvas]) =>
-          <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos />
+    const amountElements = Math.max(maxElements, Object.keys(canvasList).length)
+    switch (amountElements) {
+      case 1:
+        setCanvasContainerStyle("flex flex-row items-center justify-center")
+        break;
 
+      case 2:
+        setCanvasContainerStyle("flex flex-row items-center justify-center")
+        break;
+
+      case 3:
+        setCanvasContainerStyle("flex flex-row items-center justify-center")
+        break;
+
+      default:
+        setCanvasContainerStyle("grid grid-flow-col grid-rows-2 gap-2 place-items-center")
+        break;
+    }
+  }, [canvasList]
+  )
+
+
+  useEffect(() => {
+    //on récupère les dimensions de la div qui contient les canvas
+    setIsPortrait(window.innerHeight > window.innerWidth) // on compare la width et la height, si la height est plus grande on est en mode portrait
+    setIslimitingDimWidth(isPortrait) //est-ce que la dimension limitante est la largeur, ce qui est initialement le cas lors d'un portrait
+    const amountElements: int = Math.max(maxElements, Object.keys(canvasList).length) // soit le nombre de placeholders, soit le nombre de streams
+    console.log("isportrait", isPortrait)
+    console.log("largeur, hauteur calculées de la page width, height", window.innerWidth, window.innerHeight)
+    if (isPortrait) {          // on est en mode portrait, donc on change la direction du flex en vertical
+      //le changement est calculé directement dans le canvascontainer avec un operateur ternaire
+      if (amountElements > 1 && window.innerWidth * amountElements > window.innerHeight) { //si il y a plusieurs éléments, il faut vérifier qu'ils ne débordent pas en suivant la dimension la plus grande
+        // on multiplie la taille d'un canvas par le nombre de canvas pour obtenir la taille de l'ensemble, que l'on compare a la dimension la plus grande
+        // ici, on est dans le cas ou les canvas ne rentrent pas, la dimension maximale doit donc se baser sur la largeur dans le cas du portrait, puisqu'ici elle n'est pas suffisante 
+        // il faut donc affecter la hauteur comme dimension limitante
+        setIslimitingDimWidth(false)
+      } if (amountElements > 3 && window.innerWidth * amountElements > window.innerHeight) { 
+        setIslimitingDimWidth(true) //on affiche en grille, chaque grille est un rectangle de même ratio que le parent, donc on remet la dim la plus petite
+      }
+    } else {
+      //sinon, pas besoin de toucher à quoi que ce soit, la dimenison limitante reste la plus petite
+      if (amountElements > 1 && window.innerHeight * amountElements > window.innerWidth) { //si il y a plusieurs éléments, il faut vérifier qu'ils ne débordent pas en suivant la dimension la plus grande
+        // on multiplie la taille d'un canvas par le nombre de canvas pour obtenir la taille de l'ensemble, que l'on compare a la dimension la plus grande
+        // ici, on est dans le cas ou les canvas ne rentrent pas, la dimension maximale doit donc se baser sur la largeur dans le cas du portrait, puisqu'ici elle n'est pas suffisante 
+        // il faut donc affecter la hauteur comme dimension limitante
+        setIslimitingDimWidth(true)
+        console.log("width is limiting")
+      } if(amountElements > 3 && window.innerHeight * amountElements > window.innerWidth) {
+        setIslimitingDimWidth(false)
+      }
+
+    }
+  }
+  
+  )
+
+return (
+
+  selectedCanvas ?
+    <div className="w-fit">
+      <p>amount of streams: {Object.keys(canvasList).length}</p>
+      {Object.entries(canvasList).map(([key, canvas]) =>
+        <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos />
+
+      )}
+    </div>
+
+
+    :
+
+    <div className="w-full h-full flex flex-col items-center">
+      {/* <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-col grid-rows-2 gap-2" : "flex"} h-full w-full items-center justify-center`}> */}
+      <div className={`${canvasContainerStyle} w-full h-full ${isPortrait ? "flex-col" : "flex-row"}`} id="canvascontainer">
+        {Object.entries(canvasList).map(([key, canvas]) =>  //si on est en mode portrait (donc hauteur plus grande) on affiche les éléments en colonne, sinon on les affiche en ligne
+          <div className={`h-full w-full flex justify-center items-center`}>
+            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos canvasWidth="w-auto" canvasHeight="h-auto" />
+          </div>
         )}
+        {placeholders.map((_, index) => (
+          <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos isLimitingWidth={islimitingDimWidth} /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
+        ))}
+
       </div>
-
-
-      :
-
-      <div className="w-full h-full flex flex-col items-center">
-        {/* <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-col grid-rows-2 gap-2" : "flex"} h-full w-full items-center justify-center`}> */}
-        <div className={`w-full h-full`}>
-          {Object.entries(canvasList).map(([key, canvas]) =>
-            <div className="h-full w-full flex flex-col justify-center items-center">
-              <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos canvasWidth="w-[700px]" canvasHeight="h-[500px]" />
-            </div>
-          )}
-           {placeholders.map((_, index) => (
-            <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
-          ))} 
-
-        </div>
-      </div>
-  );
+    </div>
+);
 };
 
 export default VideoStreamManager
