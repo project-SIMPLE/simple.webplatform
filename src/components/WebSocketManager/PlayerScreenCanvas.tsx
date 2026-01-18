@@ -15,12 +15,12 @@ interface PlayerScreenCanvasProps {
     canvasHeight?: string; //  height of the literal canvas HTML element, takes a literal objective css unit such as pix or vh. Defaults to value h-auto tailwind value
     setActiveCanvas?: (a: string) => void //function that is passed as a prop by the videostreammanager, this function here returns the canvas and the ip of the headset that need to be displayed in a popup window
     hideInfos?: boolean; // boolean used in case you want to hide player id and identifier, used in case of fullscreen for example
-    text: string;
+    tailwindCanvasDim: string;
     isLimitingWidth?: boolean; //whether the maximum dimension is the width or the height
 }
 
 
-const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, canvasWidth, canvasHeight, hideInfos, isLimitingWidth, text }: PlayerScreenCanvasProps) => {
+const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, canvasWidth, canvasHeight, hideInfos, isLimitingWidth, tailwindCanvasDim }: PlayerScreenCanvasProps) => {
     if (!id) {
         return null;
     }
@@ -58,8 +58,8 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 if (canvasref.current) {
                     // canvas.classList.add([canvasWidth ? canvasWidth : "w-auto"])
                     // canvas.classList.add([canvasHeight ? canvasHeight : "h-auto"])
-                    canvas.classList.add([`${isLimitingWidth ? "max-w-full" : "max-h-full"}`])
-                    canvas.classList.add([`${isLimitingWidth ? "h-full" : "w-full"}`])
+                    // canvas.classList.add([`${isLimitingWidth ? "max-w-full" : "max-h-full"}`])
+                    // canvas.classList.add([`${isLimitingWidth ? "h-full" : "w-full"}`])
 
                     if (canvas.classList.contains("max-h-[90dvh]")) {
                         canvas.classList.remove("max-h-[90dvh]")
@@ -82,7 +82,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                             {hideInfos ?
                                 null
                                 :
-                                <p className="bg-slate-200  rounded-t-md p-1 text-center "> {`Player: ${id}`}</p>
+                                <p className="bg-slate-200  rounded-t-md p-1 tailwindCanvasDim-center "> {`Player: ${id}`}</p>
                             }
 
                         </div>
@@ -105,21 +105,20 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                     {hideInfos ? null :
                         <div>
                             <p>player:{id}</p>
-                            {isColoredHeadset ? <p className="text-center">identifier:{ipIdentifier} </p> : null}
+                            {isColoredHeadset ? <p className="tailwindCanvasDim-center">identifier:{ipIdentifier} </p> : null}
                         </div>
                     }
 
-                    <div ref={canvasref} className={`flex flex-col items-center justify-center ${text} p-2 rounded-lg  ${isColoredHeadset ? bgColor : "bg-slate-300"} min-h-0`}>{/*  size of the invisible container of the colored background */}
-
+                    <div className={`flex flex-col items-center justify-center ${tailwindCanvasDim} p-2 rounded-lg  min-h-0`}>{/*  size of the invisible container of the colored background */}
+                        <div ref={canvasref} className={`${isColoredHeadset ? bgColor : "bg-slate-300"} size-fit p-2 rounded-lg`} ></div>
                     </div>
                 </div>
 
 
 
                 :
-                //  placeholder, with an eye icon //TODO ajouter ici des valeurs spécifiques
+                //  placeholder, with an eye icon
                 <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"} aspect-square m-2`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
-                    {isLimitingWidth ? <p>mode portrait (limiting width = true)</p> : <p>mode paysage</p>}
 
                     <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
                 </div >

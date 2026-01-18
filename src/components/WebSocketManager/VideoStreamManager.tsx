@@ -62,7 +62,7 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const maxElements: int = 1 //! dictates the amount of placeholders and streams displayed on screen
+  const maxElements: int = 4 //! dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
   // const [canvasContainerStyle, setCanvasContainerStyle] = useState<string>("");
@@ -72,7 +72,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     width: window.innerWidth,
     height: window.innerHeight,
   }));
-  const [text, setText] = useState("");
+  const [tailwindCanvasDim, setTailwindCanvasDim] = useState("");
 
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
@@ -306,65 +306,77 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
     if (portrait) {
       if (amountElements === 1) {
-        setText("w-95[dvw] h-auto")
+        setTailwindCanvasDim("w-[95dvw] h-auto")
       }
 
       if (amountElements > 1 && width * amountElements > height) {
         limitingWidth = true;
-        setText("portrait 1")
+        setTailwindCanvasDim("w-auto h-[47dvh]")
       }
-      if (amountElements > 3 && height * 2 > width) {
-        limitingWidth = false;
-        setText("portrait 3")
+      if (amountElements === 3) {
+        setTailwindCanvasDim("w-[65dvw] h-[45dvh]")
+        limitingWidth = false
       }
+      if (amountElements > 3) {
+        setTailwindCanvasDim("w-[45dvh] h-[45dvh]")
+        if (height * 2 > width) {
+          limitingWidth = false;
+        }
+      }
+
       if (amountElements > 4 && (width / 2) * 2 > height) {
         limitingWidth = true;
-        setText("portrait 4")
+        setTailwindCanvasDim("w-[45dvw] h-[45dvh]")
       } else
-        if (amountElements > 4 && (width / 2) * 2 < height) {
-          limitingWidth = false;
-          setText("portrait 4 bis")
+        if (amountElements > 4) {
+          setTailwindCanvasDim("w-auto h-[27dvh]")
+          if ((width / 2) * 2 < height) {
+            limitingWidth = false;
+          }
         }
       if (amountElements > 4 && (width / 2) * 3 > height) {
         limitingWidth = true;
-        setText("portrait 5")
+
       }
       else if (amountElements > 4 && (width / 2) * 3 < height) {
         limitingWidth = false;
-        setText("portrait5.5")
       }
 
     }
 
 
-    else if (!portrait) {
+    else if (!portrait) { //mode paysage
 
       if (amountElements === 1) {
-        setText("w-auto h-[95dvh]")
+        setTailwindCanvasDim("w-auto h-[95dvh]")
       }
       if (amountElements > 1 && height * amountElements > width) {
         limitingWidth = false;
-        setText("paysage 1")
+        setTailwindCanvasDim("paysage 1")
+        setTailwindCanvasDim("w-auto h-[95dvh]")
       }
       else if (amountElements > 1 && height * amountElements < width) {
         limitingWidth = true;
-        setText("paysage 1")
+        setTailwindCanvasDim("paysage 1")
       }
       if (amountElements > 3 && width * 2 > height) {
         limitingWidth = true;
-        setText("paysage 3")
+        setTailwindCanvasDim("w-auto h-[45dvh]")
+
+
       } else
         if (amountElements > 3 && width * 2 < height) {
           limitingWidth = true;
-          setText("paysage 3")
+          setTailwindCanvasDim("w-[45dvw] h-[45dvh]")
         }
-      if (amountElements > 4 && (height / 2) * 3 > width) {
+      if (amountElements > 4) {
+        setTailwindCanvasDim("w-[27dvw] h-auto")
+      }
+      if ((height / 2) * 3 > width) {
         limitingWidth = false;
-        setText("paysage 4")
       }
       else if (amountElements > 4 && (height / 2) * 3 < width) {
         limitingWidth = true;
-        setText("paysage 4.5")
       }
     }
 
@@ -391,12 +403,12 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         {/* <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-col grid-rows-2 gap-2" : "flex"} h-full w-full items-center justify-center`}> */}
         <div className={`${canvasContainerStyle} w-full h-full`} id="canvascontainer">
           {Object.entries(canvasList).map(([key, canvas]) =>  //si on est en mode portrait (donc hauteur plus grande) on affiche les éléments en colonne, sinon on les affiche en ligne
-            <div className={`h-full w-full flex justify-center items-center`}>
-              <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos isLimitingWidth={!islimitingDimWidth} text={text} />
-            </div>
+
+            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos isLimitingWidth={!islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} />
+
           )}
           {placeholders.map((_, index) => (
-            <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos isLimitingWidth={islimitingDimWidth} /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
+            <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos isLimitingWidth={islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
           ))}
 
         </div>
