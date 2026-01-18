@@ -62,7 +62,7 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const maxElements: int = 4 //! dictates the amount of placeholders and streams displayed on screen
+  const maxElements: int = 6 //! dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
   // const [canvasContainerStyle, setCanvasContainerStyle] = useState<string>("");
@@ -309,40 +309,54 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         limitingWidth = true;
         setText("portrait 1")
       }
-      if (amountElements > 3 && width * amountElements > height) {
+      if (amountElements > 3 && height * 2 > width) {
         limitingWidth = false;
         setText("portrait 3")
       }
       if (amountElements > 4 && (width / 2) * 2 > height) {
-        limitingWidth = false;
+        limitingWidth = true;
         setText("portrait 4")
-      } else if(amountElements > 4 ) {
+      } else
+        if (amountElements > 4 && (width / 2) * 2 < height) {
+          limitingWidth = false;
+          setText("portrait 4 bis")
+        }
+      if (amountElements > 4 && (width / 2) * 3 > height) {
         limitingWidth = true;
         setText("portrait 5")
       }
-    } else if(!portrait) {
+      else if (amountElements > 4 && (width / 2) * 3 < height) {
+        limitingWidth = false;
+        setText("portrait5.5")
+      }
+
+    }
+
+
+    else if (!portrait) {
       if (amountElements > 1 && height * amountElements > width) {
         limitingWidth = false;
         setText("paysage 1")
       }
-    else if (amountElements > 1 && height * amountElements < width) {
+      else if (amountElements > 1 && height * amountElements < width) {
         limitingWidth = true;
         setText("paysage 1")
       }
-      if (amountElements > 3 && width * 2  > height) {
+      if (amountElements > 3 && width * 2 > height) {
         limitingWidth = true;
         setText("paysage 3")
       } else
-      if (amountElements > 3 && width * 2  < height) {
-        limitingWidth = true;
-        setText("paysage 3")
-      }
+        if (amountElements > 3 && width * 2 < height) {
+          limitingWidth = true;
+          setText("paysage 3")
+        }
       if (amountElements > 4 && (height / 2) * 3 > width) {
-        limitingWidth = true;
-        setText("paysage 4")
-      } else if(amountElements > 4){
         limitingWidth = false;
-        setText("paysage 5")
+        setText("paysage 4")
+      }
+      else if (amountElements > 4 && (height / 2) * 3 < width) {
+        limitingWidth = true;
+        setText("paysage 4.5")
       }
     }
 
