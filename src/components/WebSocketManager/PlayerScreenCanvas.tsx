@@ -50,14 +50,16 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
 
             if (showPopup) {
                 if (popupref.current) {
-                    canvas.classList.add(["max-h-[90dvh]"])
+                    // canvas.classList.add(["max-h-[90dvh]"])
                     popupref.current.appendChild(canvas);
 
                 }
             } else {
                 if (canvasref.current) {
-                    canvas.classList.add([canvasWidth ? canvasWidth : "w-auto"])
-                    canvas.classList.add([canvasHeight ? canvasHeight : "h-auto"])
+                    // canvas.classList.add([canvasWidth ? canvasWidth : "w-auto"])
+                    // canvas.classList.add([canvasHeight ? canvasHeight : "h-auto"])
+                    canvas.classList.add([`${isLimitingWidth ? "max-w-full" : "max-h-full"}`])
+                    canvas.classList.add([`${isLimitingWidth ? "h-full" : "w-full"}`])
 
                     if (canvas.classList.contains("max-h-[90dvh]")) {
                         canvas.classList.remove("max-h-[90dvh]")
@@ -107,15 +109,18 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                         </div>
                     }
 
-                    <div ref={canvasref} className={`flex flex-col items-center justify-center w-full h-full p-2 rounded-lg  ${isColoredHeadset ? bgColor : "bg-slate-300"} min-h-0`}>{/*  size of the invisible container of the colored background */}
+                    <div ref={canvasref} className={`flex flex-col items-center justify-center ${text} p-2 rounded-lg  ${isColoredHeadset ? bgColor : "bg-slate-300"} min-h-0`}>{/*  size of the invisible container of the colored background */}
 
                     </div>
                 </div>
+
+
+
                 :
                 //  placeholder, with an eye icon //TODO ajouter ici des valeurs spécifiques
-                <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ?    "max-w-full h-full": "max-h-full w-full" } aspect-square m-2`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
-                {isLimitingWidth ? <p>mode portrait (limiting width = true)</p> : <p>mode paysage</p>}
-                {text}
+                <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"} aspect-square m-2`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
+                    {isLimitingWidth ? <p>mode portrait (limiting width = true)</p> : <p>mode paysage</p>}
+
                     <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
                 </div >
 
