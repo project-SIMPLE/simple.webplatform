@@ -15,11 +15,12 @@ interface PlayerScreenCanvasProps {
     canvasHeight?: string; //  height of the literal canvas HTML element, takes a literal objective css unit such as pix or vh. Defaults to value h-auto tailwind value
     setActiveCanvas?: (a: string) => void //function that is passed as a prop by the videostreammanager, this function here returns the canvas and the ip of the headset that need to be displayed in a popup window
     hideInfos?: boolean; // boolean used in case you want to hide player id and identifier, used in case of fullscreen for example
+    text: string;
     isLimitingWidth?: boolean; //whether the maximum dimension is the width or the height
 }
 
 
-const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, canvasWidth, canvasHeight, hideInfos, isLimitingWidth }: PlayerScreenCanvasProps) => {
+const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, canvasWidth, canvasHeight, hideInfos, isLimitingWidth, text }: PlayerScreenCanvasProps) => {
     if (!id) {
         return null;
     }
@@ -112,8 +113,9 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 </div>
                 :
                 //  placeholder, with an eye icon //TODO ajouter ici des valeurs spécifiques
-                <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ? "max-h-full w-full" : "max-w-full h-full "} aspect-square m-2`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
-                {isLimitingWidth ? <p>mode portrait</p> : <p>mode paysage</p>}
+                <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ?    "max-w-full h-full": "max-h-full w-full" } aspect-square m-2`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
+                {isLimitingWidth ? <p>mode portrait (limiting width = true)</p> : <p>mode paysage</p>}
+                {text}
                     <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
                 </div >
 

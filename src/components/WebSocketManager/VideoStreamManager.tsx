@@ -62,7 +62,7 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const maxElements: int = 6 //dictates the amount of placeholders and streams displayed on screen
+  const maxElements: int = 2 //! dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
   // const [canvasContainerStyle, setCanvasContainerStyle] = useState<string>("");
@@ -72,7 +72,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     width: window.innerWidth,
     height: window.innerHeight,
   }));
-
+  const [text, setText] = useState("");
 
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
@@ -281,10 +281,13 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
   const canvasContainerStyle =
     amountElements <= 3
-      ? "flex flex-row items-center justify-center"
+      ? isPortrait ?
+        "flex flex-col items-center justify-center"
+        :
+        "flex flex-row items-center justify-center"
       : isPortrait
-        ? "grid grid-cols-2 gap-2 place-items-center"
-        : "grid grid-cols-3 gap-2 place-items-center";
+        ? "grid grid-cols-2 grid-flow-row gap-2 place-items-center"
+        : "grid grid-rows-2 grid-flow-col gap-2 place-items-center";
 
 
 
@@ -303,29 +306,41 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
     if (portrait) {
       if (amountElements > 1 && width * amountElements > height) {
-        limitingWidth = false;
+        limitingWidth = true;
+        setText("portrait 1")
       }
       if (amountElements > 3 && width * amountElements > height) {
         limitingWidth = true;
+        setText("portrait 3")
       }
       if (amountElements > 4 && (width / 2) * 3 > height) {
         limitingWidth = false;
-      } else {
+        setText("portrait 4")
+      } else if(amountElements > 4 ) {
         limitingWidth = true;
         console.log(viewport)
+        setText("portrait 5")
       }
-    } else {
-      if (amountElements > 1 && (height / 2) * 3 > width) {
+    } else if(!portrait) {
+      if (amountElements > 1 && height * amountElements > width) {
+        limitingWidth = false;
+        setText("paysage 1")
+      }
+    else if (amountElements > 1 && height * amountElements < width) {
         limitingWidth = true;
+        setText("paysage 1")
       }
       if (amountElements > 3 && width * amountElements > height) {
         limitingWidth = false;
+        setText("paysage 3")
       }
       if (amountElements > 4 && (height / 2) * 3 > width) {
         limitingWidth = true;
-      } else {
+        setText("paysage 4")
+      } else if(amountElements > 4){
         limitingWidth = false;
         console.log(viewport)
+        setText("paysage 5")
       }
     }
 
@@ -357,7 +372,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
             </div>
           )}
           {placeholders.map((_, index) => (
-            <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos isLimitingWidth={islimitingDimWidth} /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
+            <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos isLimitingWidth={islimitingDimWidth} text={text} /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
           ))}
 
         </div>
