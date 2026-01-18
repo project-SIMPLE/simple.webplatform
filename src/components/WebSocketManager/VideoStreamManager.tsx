@@ -62,7 +62,7 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const maxElements: int = 6 //! dictates the amount of placeholders and streams displayed on screen
+  const maxElements: int = 1 //! dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
   // const [canvasContainerStyle, setCanvasContainerStyle] = useState<string>("");
@@ -305,6 +305,10 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     );
 
     if (portrait) {
+      if (amountElements === 1) {
+        setText("w-95[dvw] h-auto")
+      }
+
       if (amountElements > 1 && width * amountElements > height) {
         limitingWidth = true;
         setText("portrait 1")
@@ -334,6 +338,10 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
 
     else if (!portrait) {
+
+      if (amountElements === 1) {
+        setText("w-auto h-[95dvh]")
+      }
       if (amountElements > 1 && height * amountElements > width) {
         limitingWidth = false;
         setText("paysage 1")
@@ -384,11 +392,11 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         <div className={`${canvasContainerStyle} w-full h-full`} id="canvascontainer">
           {Object.entries(canvasList).map(([key, canvas]) =>  //si on est en mode portrait (donc hauteur plus grande) on affiche les éléments en colonne, sinon on les affiche en ligne
             <div className={`h-full w-full flex justify-center items-center`}>
-              <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos canvasWidth="w-auto" canvasHeight="h-auto" />
+              <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos isLimitingWidth={!islimitingDimWidth} text={text} />
             </div>
           )}
           {placeholders.map((_, index) => (
-            <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos isLimitingWidth={islimitingDimWidth} text={text} /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
+            <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos isLimitingWidth={islimitingDimWidth} /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
           ))}
 
         </div>
