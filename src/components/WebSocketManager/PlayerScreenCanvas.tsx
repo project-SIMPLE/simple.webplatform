@@ -15,12 +15,12 @@ interface PlayerScreenCanvasProps {
     canvasHeight?: string; //  height of the literal canvas HTML element, takes a literal objective css unit such as pix or vh. Defaults to value h-auto tailwind value
     setActiveCanvas?: (a: string) => void //function that is passed as a prop by the videostreammanager, this function here returns the canvas and the ip of the headset that need to be displayed in a popup window
     hideInfos?: boolean; // boolean used in case you want to hide player id and identifier, used in case of fullscreen for example
-    tailwindCanvasDim: string;
+    tailwindCanvasDim: [string, string]; //tailwind raw dimensions to be passed to the canvas element
     isLimitingWidth?: boolean; //whether the maximum dimension is the width or the height
 }
 
 
-const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, canvasWidth, canvasHeight, hideInfos, isLimitingWidth, tailwindCanvasDim }: PlayerScreenCanvasProps) => {
+const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, hideInfos, isLimitingWidth, tailwindCanvasDim }: PlayerScreenCanvasProps) => {
     if (!id) {
         return null;
     }
@@ -39,10 +39,6 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
     // other ref, which is popupref, that represents the popup window. additionnal parameters are 
     // passed to determine the size of the canvas on the screen 
     */
-
-    /**
-     * hook qui permet de changer les classes tailwind appliquées au canvas selon s'il s'agit du mode plein écran, ou d'un canvas plein
-     */
     useEffect(() => {
         if (canvas) {
 
@@ -50,17 +46,13 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
 
             if (showPopup) {
                 if (popupref.current) {
-                    // canvas.classList.add(["max-h-[90dvh]"])
                     popupref.current.appendChild(canvas);
 
                 }
             } else {
                 if (canvasref.current) {
-                    // canvas.classList.add([canvasWidth ? canvasWidth : "w-auto"])
-                    // canvas.classList.add([canvasHeight ? canvasHeight : "h-auto"])
-                    // canvas.classList.add([`${isLimitingWidth ? "max-w-full" : "max-h-full"}`])
-                    // canvas.classList.add([`${isLimitingWidth ? "h-full" : "w-full"}`])
-
+                        canvas.classList.add(tailwindCanvasDim[0])
+                        canvas.classList.add(tailwindCanvasDim[1])
                     if (canvas.classList.contains("max-h-[90dvh]")) {
                         canvas.classList.remove("max-h-[90dvh]")
                     }
@@ -109,7 +101,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                         </div>
                     }
 
-                    <div className={`flex flex-col items-center justify-center ${tailwindCanvasDim} p-2 rounded-lg  min-h-0`}>{/*  size of the invisible container of the colored background */}
+                    <div className={`flex flex-col items-center justify-center p-2 rounded-lg  min-h-0`}>{/*  size of the invisible container of the colored background */}
                         <div ref={canvasref} className={`${isColoredHeadset ? bgColor : "bg-slate-300"} size-fit p-2 rounded-lg`} ></div>
                     </div>
                 </div>
@@ -119,7 +111,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, can
                 :
                 //  placeholder, with an eye icon
                 <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"} aspect-square m-2`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
-
+                    {tailwindCanvasDim}
                     <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
                 </div >
 

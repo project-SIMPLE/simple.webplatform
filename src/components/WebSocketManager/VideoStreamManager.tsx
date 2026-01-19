@@ -68,11 +68,11 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   // const [canvasContainerStyle, setCanvasContainerStyle] = useState<string>("");
   const [islimitingDimWidth, setIslimitingDimWidth] = useState<boolean>(false);
   const [isPortrait, setIsPortrait] = useState<boolean>(false)
-  const [viewport, setViewport] = useState(() => ({
+  const [viewport, setViewport] = useState(() => ({ //used to determine optimal display type (ie portrait or landscape mode)
     width: window.innerWidth,
     height: window.innerHeight,
   }));
-  const [tailwindCanvasDim, setTailwindCanvasDim] = useState("");
+  const [tailwindCanvasDim, setTailwindCanvasDim] = useState<[string, string]>(["", ""]);
 
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
@@ -306,19 +306,19 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
     if (portrait) {
       if (amountElements === 1) {
-        setTailwindCanvasDim("w-[95dvw] h-auto")
+        setTailwindCanvasDim(["w-[95dvw] h-auto"])
       }
 
       if (amountElements > 1 && width * amountElements > height) {
         limitingWidth = true;
-        setTailwindCanvasDim("w-auto h-[47dvh]")
+        setTailwindCanvasDim(["w-auto","h-[47dvh]"])
       }
       if (amountElements === 3) {
-        setTailwindCanvasDim("w-[65dvw] h-[45dvh]")
+        setTailwindCanvasDim(["w-[65dvw]", "h-[45dvh]"])
         limitingWidth = false
       }
       if (amountElements > 3) {
-        setTailwindCanvasDim("w-[45dvh] h-[45dvh]")
+        setTailwindCanvasDim(["w-[45dvh]","h-[45dvh]"])
         if (height * 2 > width) {
           limitingWidth = false;
         }
@@ -326,10 +326,10 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
       if (amountElements > 4 && (width / 2) * 2 > height) {
         limitingWidth = true;
-        setTailwindCanvasDim("w-[45dvw] h-[45dvh]")
+        setTailwindCanvasDim(["w-[45dvw]"," h-[45dvh]"])
       } else
         if (amountElements > 4) {
-          setTailwindCanvasDim("w-auto h-[27dvh]")
+          setTailwindCanvasDim(["w-auto","h-[27dvh]"])
           if ((width / 2) * 2 < height) {
             limitingWidth = false;
           }
@@ -348,29 +348,27 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     else if (!portrait) { //mode paysage
 
       if (amountElements === 1) {
-        setTailwindCanvasDim("w-auto h-[95dvh]")
+        setTailwindCanvasDim(["w-auto","h-[95dvh]"])
       }
       if (amountElements > 1 && height * amountElements > width) {
         limitingWidth = false;
-        setTailwindCanvasDim("paysage 1")
-        setTailwindCanvasDim("w-auto h-[95dvh]")
+        setTailwindCanvasDim(["w-auto","h-[95dvh]"])
       }
       else if (amountElements > 1 && height * amountElements < width) {
         limitingWidth = true;
-        setTailwindCanvasDim("paysage 1")
       }
       if (amountElements > 3 && width * 2 > height) {
         limitingWidth = true;
-        setTailwindCanvasDim("w-auto h-[45dvh]")
+        setTailwindCanvasDim(["w-auto","h-[45dvh]"])
 
 
       } else
         if (amountElements > 3 && width * 2 < height) {
           limitingWidth = true;
-          setTailwindCanvasDim("w-[45dvw] h-[45dvh]")
+          setTailwindCanvasDim(["w-[45dvw]","h-[45dvh]"])
         }
       if (amountElements > 4) {
-        setTailwindCanvasDim("w-[27dvw] h-auto")
+        setTailwindCanvasDim(["w-[27dvw","h-auto"])
       }
       if ((height / 2) * 3 > width) {
         limitingWidth = false;
