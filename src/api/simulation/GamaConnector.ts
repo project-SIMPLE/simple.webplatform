@@ -1,12 +1,12 @@
 import WebSocket from 'ws';
 import { ENV_VERBOSE, ENV_EXTRA_VERBOSE } from '../index.ts';
-import {GamaState, GAMA_ERROR_MESSAGES, JsonPlayerAsk} from "../core/Constants.ts";
+import { GamaState, GAMA_ERROR_MESSAGES, JsonPlayerAsk } from "../core/Constants.ts";
 import Model from "./Model.ts";
 import Controller from "../core/Controller.ts";
-import {getLogger} from "@logtape/logtape";
+import { getLogger } from "@logtape/logtape";
 
 // Override the log function
-const logger= getLogger(["sim", "GamaConnector"]);
+const logger = getLogger(["sim", "GamaConnector"]);
 
 /**
  * This class creates a websocket client for Gama Server.
@@ -38,7 +38,7 @@ class GamaConnector {
         this.connectGama();
     }
 
-    getJsonGama(){
+    getJsonGama() {
         return this.jsonGamaState;
     }
 
@@ -48,11 +48,11 @@ class GamaConnector {
         this.controller.notifyMonitor();
     }
 
-    setGamaLoading(loading: boolean){
+    setGamaLoading(loading: boolean) {
         this.jsonGamaState.loading = loading;
         this.controller.notifyMonitor();
     }
-    setGamaContentError(contentError: string){
+    setGamaContentError(contentError: string) {
         this.jsonGamaState.content_error = contentError;
         this.controller.notifyMonitor();
     }
@@ -82,15 +82,36 @@ class GamaConnector {
 
     /* Protocol messages about Gama Server */
 
-    jsonLoadExperiment() {
+    /**
+     * Asks the GAMA server to load an experiment, ready to be started.
+     * @param filepath optionnal string of a path to the model to launch the experiment from. Will default to using the activemodel's value if omitted.
+     * @param exp_name string of the name of the experiment to launch. Will default to using the activemodel's value if omitted.
+     * @returns a JSON payload of type load to be sent to the Gama server
+     */
+    jsonLoadExperiment(filepath?: string, exp_name?: string) {
         const model = this.controller.model_manager.getActiveModel();
+        console.log(model.getExperimentName())
+        logger.debug("[GAMA CONNECTOR]: active model experiment to be loaded:", model.getExperimentName())
+        if (model.getExperimentName() === undefined) {
+            logger.error("[GAMA CONNECTOR]: the name of the experiment is undefined")
+        } else {
+            console.log("GAMA CONNECTOR:",model.getModelFilePath())
+            const payload = {
+                type: "load",
+                model: filepath ? filepath : model.getModelFilePath(),
+                experiment: exp_name ? exp_name : model.getExperimentName()
+            }
+            this.listMessages = [payload]
+            this.sendMessages()
+        }
+
 
         return {
             type: "load",
-            model: model.getModelFilePath(),
-            experiment: model.getExperimentName()
-        };  
-    };
+            model: filepath ? filepath : model.getModelFilePath(),
+            experiment: exp_name ? exp_name : model.getExperimentName()
+        };
+    }
 
     /** 
      * Allow to control gama execution
@@ -118,7 +139,7 @@ class GamaConnector {
         };
     }
 
-    jsonSendExpression (expr: string){
+    jsonSendExpression(expr: string) {
         return {
             type: "expression",
             content: "Send an expression",
@@ -135,8 +156,8 @@ class GamaConnector {
      */
     connectGama(): void {
         if (this.gama_socket
-            && ( this.gama_socket.readyState === WebSocket.CONNECTING
-                || this.gama_socket.readyState === WebSocket.OPEN )
+            && (this.gama_socket.readyState === WebSocket.CONNECTING
+                || this.gama_socket.readyState === WebSocket.OPEN)
         ) {
             if (ENV_VERBOSE) logger.warn("Already connected or connecting. Skipping.");
             return; // Prevent multiple connection attempts
@@ -160,7 +181,7 @@ class GamaConnector {
                     const type = message.type;
 
                     if (ENV_EXTRA_VERBOSE) {
-                        logger.trace("Message received from Gama Server:\n{message}", {message});
+                        logger.trace("Message received from Gama Server:\n{message}", { message });
                     }
 
                     switch (type) {
@@ -185,7 +206,7 @@ class GamaConnector {
                             break;
 
                         case "CommandExecutedSuccessfully":
-                            logger.trace("Message received from Gama Server: CommandExecutedSuccessfully\n{message}", {message});
+                            logger.trace("Message received from Gama Server: CommandExecutedSuccessfully\n{message}", { message });
 
                             this.setGamaContentError('');
                             if (message.command.type === "load") this.setGamaExperimentName(message.content);
@@ -193,7 +214,7 @@ class GamaConnector {
                             try {
                                 this.controller.broadcastSimulationOutput(message);
                             } catch (exception) {
-                                logger.error("Failed to broadcast Simulation Output from Gama Server\n{exception}", {exception});
+                                logger.error("Failed to broadcast Simulation Output from Gama Server\n{exception}", { exception });
                             }
                             break;
 
@@ -204,17 +225,17 @@ class GamaConnector {
                         default:
                             // If a known GAMA error
                             if (GAMA_ERROR_MESSAGES.includes(type)) {
-                                logger.error("Error message received from Gama Server: {message}", {message});
+                                logger.error("Error message received from Gama Server: {message}", { message });
 
                                 this.setGamaContentError(message);
                                 //this.setGamaLoading(false);
                             } else {
-                                logger.error("Unknown message received from Gama Server: {message}", {message});
+                                logger.error("Unknown message received from Gama Server: {message}", { message });
                             }
                     }
 
                 } catch (error) {
-                    logger.fatal("Error with the WebSocket with Gama Server:\n{error}", {error});
+                    logger.fatal("Error with the WebSocket with Gama Server:\n{error}", { error });
 
                     if (error instanceof SyntaxError) logger.error(`Invalid JSON received:\n${event.data}`);
                 }
@@ -235,7 +256,7 @@ class GamaConnector {
             };
 
             this.gama_socket.onerror = (error) => {
-                logger.error(`An error happened within the Gama Server WebSocket\n{error}`, {error});
+                logger.error(`An error happened within the Gama Server WebSocket\n{error}`, { error });
                 this.setGamaConnection(false);
 
                 logger.warn("Reconnecting in 5s...");
@@ -244,7 +265,7 @@ class GamaConnector {
 
 
         } catch (error) {  // in case the Websocket instantiation fails for some rare reason
-            logger.fatal("An error broke the WebSocket:\n{error}", {error});
+            logger.fatal("An error broke the WebSocket:\n{error}", { error });
             this.gama_socket = null; // Set to null if there was an error, so a reconnection may be triggered
 
             this.setGamaConnection(false);
@@ -269,7 +290,7 @@ class GamaConnector {
                 if (this.gama_socket != null)
                     if (typeof message === "function") {
 
-                        this.gama_socket.send( JSON.stringify( message() ) );
+                        this.gama_socket.send(JSON.stringify(message()));
 
                         if (ENV_VERBOSE)
                             if (message().expr !== undefined)
@@ -277,15 +298,15 @@ class GamaConnector {
                             else
                                 logger.debug("Message sent to Gama Server: type " + message().type + ". Waiting for the answer (if any)...");
                     } else {
-                        this.gama_socket.send( JSON.stringify( message ) );
+                        this.gama_socket.send(JSON.stringify(message));
                     }
             }
             catch (e) {
-                logger.error("Error while sending this command to GAMA:\n{message}", {message});
+                logger.error("Error while sending this command to GAMA:\n{message}", { message });
                 logger.error(`${e}`);
             }
             finally {
-                logger.trace("Message sent to GAMA: {message}", {message});
+                logger.trace("Message sent to GAMA: {message}", { message });
                 this.listMessages.splice(this.listMessages.indexOf(message), 1);
             }
         }
@@ -298,10 +319,12 @@ class GamaConnector {
      * Asks Gama to launch the experiment
      */
     launchExperiment() {
+        logger.debug("[GAMA CONNECTOR]Called launch experiment")
         if (this.jsonGamaState.connected && this.jsonGamaState.experiment_state === 'NONE') {
             this.listMessages = [this.jsonLoadExperiment()];
+            console.log("LOG DE LIST MESSAGES", this.listMessages)
             this.setGamaLoading(true);
-
+            logger.debug("[GAMA CONNECTOR] called LaunchExperiment")
             this.sendMessages(() => {
                 this.setGamaLoading(false);
             });
@@ -321,8 +344,8 @@ class GamaConnector {
         this.pauseExperiment();
 
         // Wait for simulation to be fully paused
-        while (this.jsonGamaState.experiment_state != "PAUSED"){
-            await new Promise( resolve => setTimeout(resolve, 1) );
+        while (this.jsonGamaState.experiment_state != "PAUSED") {
+            await new Promise(resolve => setTimeout(resolve, 1));
         }
 
         // Stop experiment

@@ -52,7 +52,7 @@ class ModelManager {
      */
     #initModelsList(): Model[] {
         let modelList: Model[] = [];
-        let directoriesWithProjects: string[] = [];
+        const directoriesWithProjects: string[] = [];
 
         directoriesWithProjects.push(isAbsolute(process.env.LEARNING_PACKAGE_PATH!) ? process.env.LEARNING_PACKAGE_PATH! : path.join(process.cwd(), process.env.LEARNING_PACKAGE_PATH!));
 
@@ -122,7 +122,9 @@ class ModelManager {
     * @returns {Model} sets the active model to the model found 
     */
     setActiveModelByFilePath(filePath: string) {
-        let modelFound = this.models.find(model => model.getJsonSettings().model_file_path === filePath);
+        logger.debug("trying to set active model using file path: {filepath}",{filepath: filePath})
+        const modelFound = this.models.find(model => model.getJsonSettings().model_file_path === filePath);
+        logger.debug("found model: {model}",{model: modelFound?.toString()})
         return this.activeModel = modelFound
     }
 

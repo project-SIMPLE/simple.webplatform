@@ -15,7 +15,7 @@ export class Controller {
     monitor_server: MonitorServer;
     player_manager: PlayerManager;
     gama_connector: GamaConnector;
-    // @ts-expect-error
+
     adb_manager: AdbManager;
     // mDnsService: mDnsService;
 
@@ -134,6 +134,15 @@ export class Controller {
 
     sendAsk(json: JsonPlayerAsk) {
         this.gama_connector.sendAsk(json);
+    }
+
+    /**
+     * Asks the GAMA server to load an experiment, ready to be started.
+     * @param filepath optionnal string of a path to the model to launch the experiment from. Will default to using the activemodel's value if omitted. 
+     * @param exp_name string of the name of the experiment to launch. Will default to using the activemodel's value if omitted.
+     */
+    loadExperiment(filepath? : string, exp_name? : string){
+        this.gama_connector.jsonLoadExperiment(filepath, exp_name)
     }
 
     launchExperiment() {

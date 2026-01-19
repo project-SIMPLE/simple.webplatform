@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import { useEffect, useState } from 'react';
-import Button from '../Button/Button';
 import { useTranslation } from 'react-i18next';
 import Footer from '../Footer/Footer';
 import Header from '../Header/Header';
@@ -9,11 +8,10 @@ import SimulationList from './SimulationList';
 import arrow_back from "/src/svg_logos/arrow_back.svg";
 const SelectorSimulations = () => {
   const { ws, isWsConnected, gama, simulationList } = useWebSocket();
-  const [directoryPath, setDirectoryPath] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [connectionStatus, setConnectionStatus] = useState<string>('Waiting for connection ...');
   const { t } = useTranslation();
-  const [subProjectsList, setSubProjectsList] = useState<any[]>([]); //? unused for now, but will be used to store the sub-projects list
+  const [subProjectsList, setSubProjectsList] = useState<[]>([]);
   const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
   const [path, setPath] = useState<number[]>([]);
 
@@ -81,7 +79,7 @@ const SelectorSimulations = () => {
       return;
     }
 
-    if (subProjectsList.length <= 0) { //no subproject is selected, we either enter a folder or launch a simulation
+    if (subProjectsList.length <= 0) { //no subproject is selected, we either enter a folder or load a simulation
       if (simulationList[index].type == "catalog") { //?  we additionaly check if the simulation is a catalog, not necessary but allows for adding extra types
         // @ts-expect-error                                                                             ↓ this is a catalog, which means it must have an "entries" attribute
         console.log(`[HANDLE SIMULATION]: catalog detected, subprojectList: ${JSON.stringify(simulationList[index].entries)}`);
@@ -101,7 +99,6 @@ const SelectorSimulations = () => {
         }, 100);
       } else if (Array.isArray(simulationList[index])) {
         console.log(simulationList[index].model_file_path)
-        // setSubProjectsList(simulationList[index]); 
         addToPath(index)
       }
 

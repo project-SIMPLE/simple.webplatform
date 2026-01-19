@@ -77,10 +77,12 @@ export class MonitorServer {
                         break;
 
                     case "screen_control": //TODO
-                        const messageString = JSON.parse(Buffer.from(message).toString()); //? can't parse the payload of the jsonMonitor for some reason
-                        logger.warn(`data recieved:${messageString.display_type}`);
-                        this.sendMessageByWs({ type: "screen_control", display_type: messageString.display_type });
-                        break;
+                        {
+                            const messageString = JSON.parse(Buffer.from(message).toString()); //? can't parse the payload of the jsonMonitor for some reason
+                            logger.warn(`data recieved:${messageString.display_type}`);
+                            this.sendMessageByWs({ type: "screen_control", display_type: messageString.display_type });
+                            break;
+                        }
 
 
                     case "remove_player_headset":
@@ -95,13 +97,15 @@ export class MonitorServer {
                         this.sendMessageByWs(this.controller.getSimulationInformations(), ws);
                         break;
 
-                    case "get_simulation_by_index":
+                    case "get_simulation_by_index": {
+
                         const index = jsonMonitor.simulationIndex;
 
                         if (index !== undefined && index >= 0 && index < this.controller.model_manager.getModelList().length) {
                             // Retrieve the simulation based on the index
                             this.controller.model_manager.setActiveModelByIndex(index);
-
+                            logger.debug("set active model to", this.controller.model_manager.getActiveModel().toString())
+                            console.log(this.controller.model_manager.activeModel?.getExperimentName())
                             const selectedSimulation = this.controller.model_manager.getActiveModel();
 
                             this.sendMessageByWs({
@@ -114,9 +118,11 @@ export class MonitorServer {
                             logger.error(`Invalid index received or out of bounds. [Index: ${index}]`);
                         }
                         break;
+                    }
 
 
                     case "send_simulation":
+                         { // définition d'une scope à cause de la définition de variable dans un bloc case
                         const simulationFromStream = JSON.parse(Buffer.from(message).toString());
 
                         this.controller.model_manager.setActiveModelByFilePath(simulationFromStream.simulation.model_file_path);
@@ -126,6 +132,7 @@ export class MonitorServer {
                             type: "get_simulation_by_index",
                             simulation: selectedSimulation.getJsonSettings()
                         }, ws);
+                    }
                         break;
 
                     default:

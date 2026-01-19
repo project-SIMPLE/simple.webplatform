@@ -11,7 +11,7 @@ import WebSocketManager from './components/WebSocketManager/WebSocketManager';
 import StreamPlayerScreenControl from './components/StreamPlayerScreen/StreamPlayerScreenControl';
 import StreamPlayerScreen from './components/StreamPlayerScreen/StreamPlayerScreen';
 import StreamFullscreen from './components/StreamPlayerScreen/StreamFullscreen';
-
+import Test from './components/TestPage/Test';
 const App = () => {
   return (
     <BrowserRouter>
@@ -24,6 +24,7 @@ const App = () => {
                     <Route path="streamPlayerScreen" element={ <StreamPlayerScreen /> } />
                     <Route path="streamPlayerScreenControl" element={ <StreamPlayerScreenControl /> } />
                     <Route path="streamFullscreen" element ={<StreamFullscreen/>}></Route>
+                    <Route path="test" element ={<Test/>}></Route>
                 </Routes>
               </ScreenModeProvider>
             </WebSocketManager>

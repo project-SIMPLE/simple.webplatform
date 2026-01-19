@@ -1,19 +1,19 @@
 import fs from "fs/promises";
 import path from "path";
 
-import {ReadableStream} from "@yume-chan/stream-extra";
+import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
 import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
-import {AdbScrcpyClient, AdbScrcpyExitedError, AdbScrcpyOptions3_3_3} from "@yume-chan/adb-scrcpy";
+import { AdbScrcpyClient, AdbScrcpyExitedError, AdbScrcpyOptions3_3_3 } from "@yume-chan/adb-scrcpy";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
-import {getLogger} from "@logtape/logtape";
+import { getLogger } from "@logtape/logtape";
 
 import { ENV_VERBOSE } from "../../index.ts";
-import {AdbManager} from "../adb/AdbManager.ts";
+import { AdbManager } from "../adb/AdbManager.ts";
 
 // Override the log function
-const logger= getLogger(["android", "ScrcpyServer"]);
+const logger = getLogger(["android", "ScrcpyServer"]);
 
 const H264Capabilities = TinyH264Decoder.capabilities.h264;
 
@@ -57,7 +57,7 @@ export class ScrcpyServer {
             this.wsServer = uWS.App(); //new WebSocketServer({ host, port });
             logger.info(`Creating video stream server on: ws://${host}:${port}`);
         } catch (e) {
-            logger.error('Failed to create a new websocket {e}', {e});
+            logger.error('Failed to create a new websocket {e}', { e });
         }
 
         this.wsServer.listen(host, port, (token) => {
@@ -97,10 +97,10 @@ export class ScrcpyServer {
             },
             message: async (_ws, message) => {
                 try {
-                    const jsonMessage: {type: string, h264: boolean, h265: boolean, av1: boolean}
+                    const jsonMessage: { type: string, h264: boolean, h265: boolean, av1: boolean }
                         = JSON.parse(Buffer.from(message).toString());
 
-                    logger.debug("Received message from streaming client:\n{jsonMessage}", {jsonMessage});
+                    logger.debug("Received message from streaming client:\n{jsonMessage}", { jsonMessage });
 
                     const previousCodec = useH265;
                     if (!scrcpyCodecLock && jsonMessage.h265) {
@@ -113,7 +113,7 @@ export class ScrcpyServer {
                     }
 
                     // Reset video streams if codec changed !
-                    if (previousCodec != useH265){
+                    if (previousCodec != useH265) {
                         logger.warn(`Restarting streams with new codec (${useH265 ? "h265" : "h264"})`);
                         for (const client of this.scrcpyClients) {
                             await client.controller!.close();
@@ -125,8 +125,8 @@ export class ScrcpyServer {
                         // Ensure video stream are well init after long restart
                         this.resentAllConfigPackage(true, 500);
                     }
-                }catch (e) {
-                    logger.error("Something went wrong on message received...\n{e}", {e});
+                } catch (e) {
+                    logger.error("Something went wrong on message received...\n{e}", { e });
                 }
             },
 
@@ -153,7 +153,7 @@ export class ScrcpyServer {
                                 logger.debug(`Closing connection normally`);
                     }
                 } catch (err) {
-                    logger.fatal('Error during close handling: {err}', {err});
+                    logger.fatal('Error during close handling: {err}', { err });
                 }
             }
         });
@@ -171,8 +171,8 @@ export class ScrcpyServer {
         logger.trace(`Loading scrcpy server from '${scrcpyServerFullPath}'`);
     }
 
-    async startStreaming(adbConnection: Adb, deviceModel: string, flipWidth: boolean = false): Promise<boolean|undefined> {
-        let scrcpyOptions = new AdbScrcpyOptions3_3_3({
+    async startStreaming(adbConnection: Adb, deviceModel: string, flipWidth: boolean = false): Promise<boolean | undefined> {
+        const scrcpyOptions = new AdbScrcpyOptions3_3_3({
             // scrcpy options
             videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
                 profile: H264Capabilities.maxProfile,
@@ -191,7 +191,7 @@ export class ScrcpyServer {
             control: true,
         },
             // Spoofing version, there's only bug-fixing between .3 and .4 so should be safe
-            {version: "3.3.4"})
+            { version: "3.3.4" })
         logger.debug(`Starting scrcpy stream with ${useH265 ? "h265" : "h264"} codec`)
 
         try {
@@ -216,16 +216,16 @@ export class ScrcpyServer {
                     }),
                 });
             } catch (error) {
-                logger.fatal(`Error writing scrcpy server to  ${adbConnection.serial}: {error}`, {error});
+                logger.fatal(`Error writing scrcpy server to  ${adbConnection.serial}: {error}`, { error });
             }
             finally {
                 await sync.dispose();
             }
 
             // Apply different crop values to work with every devices
-            if (deviceModel == "Quest_3S"){
+            if (deviceModel == "Quest_3S") {
                 scrcpyOptions.value.crop = flipWidth ? "1570:1482:170:150" : "1482:1570:170:150";
-            } else if (deviceModel == "Quest_3"){
+            } else if (deviceModel == "Quest_3") {
                 scrcpyOptions.value.angle = 23;
                 scrcpyOptions.value.crop = flipWidth ? "1570:1482:300:250" : "1482:1570:300:250";
             } else {
@@ -233,17 +233,17 @@ export class ScrcpyServer {
             }
 
             logger.debug(`Pushing & start scrcpy server from ${adbConnection.serial}`);
-            let client : AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>> = await AdbScrcpyClient.start(
+            let client: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>> = await AdbScrcpyClient.start(
                 adbConnection,
                 DefaultServerPath,
                 scrcpyOptions
             );
 
             const { metadata, stream: videoPacketStream } = await client.videoStream;
-            logger.debug({metadata});
+            logger.debug({ metadata });
             // Prevent having stream ratio inverted, happpened on some weird device..
             // https://github.com/project-SIMPLE/simple.webplatform/issues/78
-            if ((metadata == undefined || metadata.width! < metadata.height!) && deviceModel.startsWith("Quest") ) {
+            if ((metadata == undefined || metadata.width! < metadata.height!) && deviceModel.startsWith("Quest")) {
                 logger.warn("Something's weird here, headset's stream isn't in the good size ratio, restarting...");
                 // Make it crash voluntarily to restart stream
                 client = await AdbScrcpyClient.start(
@@ -262,7 +262,7 @@ export class ScrcpyServer {
                 // @ts-expect-error
                 new WritableStream<string>({
                     write(chunk: string): void {
-                        logger.trace({chunk});
+                        logger.trace({ chunk });
                     },
                 }),
             );
@@ -289,7 +289,7 @@ export class ScrcpyServer {
                                         });
                                         // Save packet for clients after this first packet emission
                                         myself.broadcastToClients(newStreamConfig);
-                                        logger.trace("Sending configuration frame {newStreamConfig}", {newStreamConfig})
+                                        logger.trace("Sending configuration frame {newStreamConfig}", { newStreamConfig })
 
                                         // It is sent only once while opening the video stream and set the renderer
                                         myself.scrcpyStreamConfig = newStreamConfig;
@@ -310,12 +310,12 @@ export class ScrcpyServer {
                                         );
                                         break;
                                     default:
-                                        logger.warn("Unkown packet from video pipe: {packet}", {packet});
+                                        logger.warn("Unkown packet from video pipe: {packet}", { packet });
                                 }
                             },
                         }),
                     ).catch((e) => {
-                        logger.error(`Error while piping video stream of ${adbConnection.serial}\n{e}`, {e});
+                        logger.error(`Error while piping video stream of ${adbConnection.serial}\n{e}`, { e });
                     });
             } else {
                 logger.error(`Couldn't find a video stream from ${adbConnection.serial}'s scrcpy server`)
@@ -324,12 +324,12 @@ export class ScrcpyServer {
         } catch (error) {
             if (error instanceof AdbScrcpyExitedError) {
                 // Do not raise an error if the stream been properly closed while switching codec
-                if ( !error.output[0].startsWith("Aborted") )
-                    logger.fatal("Error in startStreaming: {error}", {error});
+                if (!error.output[0].startsWith("Aborted"))
+                    logger.fatal("Error in startStreaming: {error}", { error });
                 else if (!flipWidth)
                     return false;
             } else {
-                logger.fatal("Error in startStreaming: {error}", {error});
+                logger.fatal("Error in startStreaming: {error}", { error });
             }
         }
     }
@@ -356,16 +356,16 @@ export class ScrcpyServer {
         if (promiseResult)
             promiseResult
                 .then((res) => {
-                    logger.trace("Properly reset video stream {res}", {res});
+                    logger.trace("Properly reset video stream {res}", { res });
                 })
                 .catch(err => {
                     const textError = err && (typeof err === 'string' ? err : err.message || String(err));
 
                     // Hide from non verbose since it's an _expected_ error
                     if (textError.includes("WritableStream is closed") && !ENV_VERBOSE)
-                        logger.error("ResetVideo failed, probably leftover timeout from previous video stream { err }", {err});
+                        logger.error("ResetVideo failed, probably leftover timeout from previous video stream { err }", { err });
                     else if (!textError.includes("WritableStream is closed"))
-                        logger.error("Error while reseting video stream { err }", {err});
+                        logger.error("Error while reseting video stream { err }", { err });
 
                     gotError = true;
                 });

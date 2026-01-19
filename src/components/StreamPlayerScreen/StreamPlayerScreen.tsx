@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
 import Header from "../Header/Header";
-import gama from '/images/gama_example.png?url';
 const StreamPlayerScreen = () => {
   const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen"); // Get the screen mode display from the context
   const videoContainerRef = useRef<HTMLDivElement>(null); // Add ref for the target div
-  const placeholdercontrol2 = ` size-full bg-green-100 items-center justify-center flex flex-col`
-  const placeholdercontrol = ` size-full items-center justify-center flex flex-col `
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isWsConnected, setIsWsConnected] = useState<boolean>(false);
   const host = window.location.hostname;

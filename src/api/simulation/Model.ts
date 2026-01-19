@@ -1,6 +1,9 @@
 import path from 'path';
 import { JsonSettings } from "../core/Constants.ts";
+import { getLogger } from '@logtape/logtape';
 
+
+const logger = new getLogger(["api", "simulation"])
 class Model {
     readonly #jsonSettings: JsonSettings;
     readonly #modelFilePath: string;
@@ -17,7 +20,9 @@ class Model {
         const modelFilePath = this.#jsonSettings.model_file_path
         if (path.isAbsolute(modelFilePath)) {
             this.#modelFilePath = modelFilePath;
+            logger.info("GAMA CONNECTOR path is absolute")
         } else {
+            logger.info("GAMA CONNECTOR path is relative")
             this.#modelFilePath = path.join(path.dirname(settingsPath), this.#jsonSettings.model_file_path);
             
         }

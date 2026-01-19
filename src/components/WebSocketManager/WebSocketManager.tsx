@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-
+import { Simulation } from "../core/Constants.ts"
 interface Player {
     connected: boolean;
     date_connection: string;
@@ -10,19 +10,6 @@ interface PlayerList {
     [key: string]: Player;
 }
 
-interface Simulation {
-    experiment_name: string;
-    model_file_path: string;
-    name: string;
-    player_html_file: string;
-    player_web_interface: string;
-    splashscreen: string;
-    type: string;
-    type_model_file_path: string;
-    maximal_players: string,
-    minimal_players: string,
-    selected_monitoring: string
-}
 
 // Define types for the WebSocket context
 interface WebSocketContextType {
@@ -51,7 +38,7 @@ interface WebSocketManagerProps {
     children: ReactNode;
 }
 
-const WebSocketManager = ({ children }: WebSocketManagerProps) => { 
+const WebSocketManager = ({ children }: WebSocketManagerProps) => {
     const [ws, setWs] = useState<WebSocket | null>(null);
     const [isWsConnected, setIsWsConnected] = useState<boolean>(false);
     const [gama, setGama] = useState({
@@ -93,10 +80,11 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
         socket.onmessage = (event: MessageEvent) => {
             console.log(`[WebSocketManager] message received`)
             let data = JSON.parse(event.data);
-            if (typeof data == "string"){
-                try{
+            console.log(data.type)
+            if (typeof data == "string") {
+                try {
                     data = JSON.parse(data);
-                }catch (e){
+                } catch (e) {
                     console.error("Can't JSON parse this received string", data);
                 }
             }
@@ -111,14 +99,17 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
                         setGama(data.gama);
                         setPlayerList(data.player);
                         break;
+                    //Sets the selected simulation for the websocketManager's context
                     case 'get_simulation_by_index':
                         setSelectedSimulation(data.simulation);
                         break;
                     case 'screen_control':
+                        //TODO voir si on a toujours besoin de ça ?
                         break;
                     default:
-                        console.warn('[WebSocketManager] Message not processed', data);
-                        setSimulationList(data) 
+                        console.warn('[WebSocketManager] Message not processed, defaulted to setSimulationList', data);
+                        setSimulationList(data)
+                    //TODO changer cette mocheté, le message est traité dans certain cas si on appelle une méthode sur le contenu du message, ça limitera le logspam potentiellement
                 }
             }
         };
@@ -136,7 +127,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
         };
     }, []);
 
-     
+
 
 
 

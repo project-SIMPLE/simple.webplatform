@@ -10,15 +10,19 @@ import x_cross from '/src/svg_logos/x_cross.svg';
 import visibility from '/src/svg_logos/visibility.svg'
 import Header from '../Header/Header';
 import { Link } from 'react-router-dom';
+import { getLogger } from '@logtape/logtape';
 export interface Player {
   connected: boolean;
   date_connection: string;
   in_game: boolean;
 }
+
+const logger= getLogger(["simulationManager", "SimulationManager"]);
+
 const SimulationManager = () => {
   const { ws, gama, playerList, selectedSimulation } = useWebSocket(); // `removePlayer` is now available
   const navigate = useNavigate();
-  let [simulationStarted, setSimulationStarted] = useState(false);
+  const [simulationStarted, setSimulationStarted] = useState(false);
   const { t } = useTranslation();
   const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen");
   const [startButtonClicked, setStartButtonClicked] = useState(false);
@@ -42,14 +46,12 @@ const SimulationManager = () => {
 
 
 
-  // Calcul du nombre de casques non détectés (casques vides)
-  const remainingPlayers = Number(maxPlayers) - detectedPlayers.length;
-
 
   const handlePlayPause = () => {
     if (ws !== null) {
       if (gama.experiment_state == "NONE" && !simulationStarted) {
         setSimulationStarted(true);
+        logger.debug("sent message {type: launch experiment}")
         ws.send(JSON.stringify({ "type": "launch_experiment" }));
       } else if (gama.experiment_state != "NOTREADY") {
         ws.send(JSON.stringify({ "type": (gama.experiment_state != "RUNNING" ? "resume_experiment" : "pause_experiment") }));
@@ -236,8 +238,10 @@ const SimulationManager = () => {
                           className='flex w-15 h-full'
                         ></Button>
                       </Link>
+                     {/* //! unused code that uses websockets to change the type of display to one with space to accomodate for the gama map of the game, but is not implemented for now
+                     //! having these buttons that do nothing may confuse the user */}
                     </div>
-                    {/* <div className="flex justify-center mt-3 gap-4"> feature not implemented yet, removed for clarity
+                    {/* <div className="flex justify-center mt-3 gap-4">
                       <Button
                         onClick={() => updateDisplay("gama_screen")}
                         bgColor={"bg-white"}
