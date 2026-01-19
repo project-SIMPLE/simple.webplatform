@@ -62,7 +62,7 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const maxElements: int = 5 //! dictates the amount of placeholders and streams displayed on screen
+  const maxElements: int = 6 //! dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
   // const [canvasContainerStyle, setCanvasContainerStyle] = useState<string>("");
@@ -287,8 +287,8 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         :
         "flex flex-row items-center justify-around"
       : isPortrait
-        ? "grid grid-cols-2 grid-flow-row gap-2 place-items-center"
-        : "grid grid-rows-2 grid-flow-col gap-2 place-items-center";
+        ? "grid grid-cols-2 auto-rows-fr grid-flow-row gap-2 place-items-center"
+        : "grid grid-rows-2 auto-cols-fr grid-flow-col gap-2 place-items-center";
 
 
 
