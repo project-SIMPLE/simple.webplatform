@@ -114,7 +114,6 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, hid
                 :
                 //  placeholder, with an eye icon
                 <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"} aspect-square m-2`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
-                     {tailwindCanvasDim}
                     <img src={visibility_off} alt="" className="mix-blend-difference size-full" />
                 </div >
 
