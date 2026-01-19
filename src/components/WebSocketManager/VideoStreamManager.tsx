@@ -62,7 +62,7 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const maxElements: int = 6 //! dictates the amount of placeholders and streams displayed on screen
+  const maxElements: int = 5 //! dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
   // const [canvasContainerStyle, setCanvasContainerStyle] = useState<string>("");
@@ -73,6 +73,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     height: window.innerHeight,
   }));
   const [tailwindCanvasDim, setTailwindCanvasDim] = useState<[string, string]>(["", ""]);
+  const [gridDisplay, setGriDisplay] = useState<boolean>(false);
 
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
@@ -282,9 +283,9 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   const canvasContainerStyle =
     amountElements <= 3
       ? isPortrait ?
-        "flex flex-col items-center justify-center"
+        "flex flex-col items-center justify-around"
         :
-        "flex flex-row items-center justify-center"
+        "flex flex-row items-center justify-around"
       : isPortrait
         ? "grid grid-cols-2 grid-flow-row gap-2 place-items-center"
         : "grid grid-rows-2 grid-flow-col gap-2 place-items-center";
@@ -296,6 +297,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     const portrait = height > width;
     setIsPortrait(portrait);
     let limitingWidth = portrait;
+    let isGrid = false;
     const amountElements = Math.max(
       maxElements,
       Object.keys(canvasList).length
@@ -304,7 +306,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     if (portrait) {
       switch (amountElements) {
         case 1:
-          setTailwindCanvasDim(["w-auto", "h-[95dvh]"])
+          setTailwindCanvasDim(["w-[95dvh]", "h-[95dvh]"])
           limitingWidth = true;
           break;
 
@@ -329,16 +331,14 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
           break;
 
         case 4:
-          setTailwindCanvasDim(["w-[45dvh]", "h-[45dvh]"])
-          if (height * 2 > width) {
-            limitingWidth = false;
-          } else {
-            setTailwindCanvasDim(["w-[45dvw]", "h-[45dvw]"])
-            limitingWidth = true;
-          }
+          setTailwindCanvasDim(["w-[45dvw]", "h-[45dvw]"])
+          limitingWidth = false;
+          isGrid = true
+
           break;
 
         case 5:
+          isGrid = true
           if (width / 2 * 3 > height) {
             limitingWidth = true;
             setTailwindCanvasDim(["w-[29dvh]", "h-[29dvh]"])
@@ -349,6 +349,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
           break;
 
         case 6:
+          isGrid = true
           if (width / 2 * 3 > height) {
             limitingWidth = true;
             setTailwindCanvasDim(["w-[29dvh]", "h-[29dvh]"])
@@ -367,23 +368,36 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     else if (!portrait) { //mode paysage
       switch (amountElements) {
         case 1:
-          limitingWidth = false
+          limitingWidth = true
           setTailwindCanvasDim(["w-[95dvh]", "h-[95dvh]"])
           break;
         case 2:
-          setTailwindCanvasDim(["w-[45dvw]", "h-[45dvw]"])
-          limitingWidth = false
+          if (height * 2 > width) {
+            setTailwindCanvasDim(["w-[45dvw]", "h-[45dvw]"])
+            limitingWidth = false
+          } else {
+            setTailwindCanvasDim(["w-[92dvh]", "h-[90dvh]"])
+            limitingWidth = true
+
+          }
           break;
         case 3:
-          setTailwindCanvasDim(["w-[35dvw]", "h-[30dvw]"])
-          limitingWidth = false
+          if (height * 3 > width) {
+            setTailwindCanvasDim(["w-[35dvw]", "h-[30dvw]"])
+            limitingWidth = false
+          } else {
+            setTailwindCanvasDim(["w-[90dvh]", "h-[90dvh]"])
+            limitingWidth = true
+          }
           break;
         case 4:
+          isGrid = true
           limitingWidth = true
-          setTailwindCanvasDim(["w-[43dvh]", "h-[43dvh]"])
+          setTailwindCanvasDim(["w-[43dvh]", "h-[46dvh]"])
 
           break;
         case 5:
+          isGrid = true
           if (height / 2 * 3 > width) {
             limitingWidth = false
             setTailwindCanvasDim(["w-[27dvw]", "h-[27dvw]"])
@@ -394,13 +408,13 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
           }
           break;
         case 6:
+          isGrid = true
           if (height / 2 * 3 > width) {
             limitingWidth = false
-            setTailwindCanvasDim(["w-[27dvw]", "h-[27dvw]"])
-
+            setTailwindCanvasDim(["w-[27dvw]", "h-[29dvw]"])
           } else {
             limitingWidth = true
-            setTailwindCanvasDim(["w-[43dvh]", "h-[43dvh]"])
+            setTailwindCanvasDim(["w-[43dvh]", "h-[46dvh]"])
           }
           break;
 
@@ -412,7 +426,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     }
 
     setIslimitingDimWidth(limitingWidth);
-
+    setGriDisplay(isGrid);
   }, [viewport, canvasList, maxElements]);
 
 
@@ -435,7 +449,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         <div className={`${canvasContainerStyle} w-full h-full`} id="canvascontainer">
           {Object.entries(canvasList).map(([key, canvas]) =>  //si on est en mode portrait (donc hauteur plus grande) on affiche les éléments en colonne, sinon on les affiche en ligne
 
-            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos isLimitingWidth={islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} />
+            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos isLimitingWidth={islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} gridDisplay={gridDisplay} />
 
           )}
           {placeholders.map((_, index) => (

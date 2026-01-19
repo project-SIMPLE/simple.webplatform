@@ -17,10 +17,11 @@ interface PlayerScreenCanvasProps {
     hideInfos?: boolean; // boolean used in case you want to hide player id and identifier, used in case of fullscreen for example
     tailwindCanvasDim: [string, string]; //tailwind raw dimensions to be passed to the canvas element
     isLimitingWidth?: boolean; //whether the maximum dimension is the width or the height
+    gridDisplay?: boolean;
 }
 
 
-const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, hideInfos, isLimitingWidth, tailwindCanvasDim }: PlayerScreenCanvasProps) => {
+const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, hideInfos, isLimitingWidth, tailwindCanvasDim, gridDisplay }: PlayerScreenCanvasProps) => {
     if (!id) {
         return null;
     }
@@ -95,25 +96,25 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, hid
 
             {/* meaningful content */}
             {!isPlaceholder ?
-                <div id={id} className={`${CanvasStyle}size-fit ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
-                    {hideInfos ? null :
-                        <div>
-                            <p>player:{id}</p>
-                            {isColoredHeadset ? <p className="tailwindCanvasDim-center">identifier:{ipIdentifier} </p> : null}
-                        </div>
-                    }
+                //     {hideInfos ? null :
+                // <div id={id} className={`${CanvasStyle}size-fit ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"} bg-slate-600`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
+                //         <div>
+                //             <p>player:{id}</p>
+                //             {isColoredHeadset ? <p className="tailwindCanvasDim-center">identifier:{ipIdentifier} </p> : null}
+                //         </div>
+                //     }
 
-                    <div className={`flex flex-col items-center justify-center p-2 rounded-lg size-fit`}>{/*  size of the invisible container of the colored background */}
-                        <div ref={canvasref} className={`${isColoredHeadset ? bgColor : "bg-slate-300"}  p-2 rounded-lg`} ></div>
-                    </div>
-                </div>
+                    // <div className={`flex flex-col items-center justify-center rounded-lg size-fit`}>{/*  size of the invisible container of the colored background */}
+                        <div ref={canvasref} className={`${isColoredHeadset ? bgColor : "bg-slate-300"} flex flex-row align-middle justify-center p-2 rounded-lg ${gridDisplay ? null : isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full" }` } ></div>
+                    // </div>
+                // </div>
 
 
 
                 :
                 //  placeholder, with an eye icon
                 <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"} aspect-square m-2`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
-                    {/* {tailwindCanvasDim} */}
+                     {tailwindCanvasDim}
                     <img src={visibility_off} alt="" className="mix-blend-difference size-full" />
                 </div >
 
