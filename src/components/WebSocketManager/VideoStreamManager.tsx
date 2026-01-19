@@ -6,10 +6,20 @@ import {
   BitmapVideoFrameRenderer,
   WebCodecsVideoDecoder,
 } from "@yume-chan/scrcpy-decoder-webcodecs";
+import { configure, getConsoleSink, getLogger } from "@logtape/logtape";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 const host: string = window.location.hostname;
 const port: string = '8082';
 
+await configure({
+  sinks: {
+    console: getConsoleSink(),
+  },
+  loggers: [
+    { category: ["components", "VideoStreamManager"], sinks: ["console"] }
+  ],
+});
+const logger = getLogger(["components", "VideoStreamManager"]);
 
 // Deserialize the data into ScrcpyMediaStreamPacket
 const deserializeData = (serializedData: string) => {
@@ -42,13 +52,13 @@ const deserializeData = (serializedData: string) => {
 function createVideoFrameRenderer(): VideoFrameRenderer {
 
   if (WebGLVideoFrameRenderer.isSupported) {
-    console.log("[SCRCPY] Using WebGLVideoFrameRenderer");
+    logger.debug("[SCRCPY] Using WebGLVideoFrameRenderer");
     return new WebGLVideoFrameRenderer();
   } else {
-    console.warn("[SCRCPY] WebGL isn't supported... ");
+    logger.warn("[SCRCPY] WebGL isn't supported... ");
   }
 
-  console.log("[SCRCPY] Using fallback BitmapVideoFrameRenderer");
+  logger.debug("[SCRCPY] Using fallback BitmapVideoFrameRenderer");
   return new BitmapVideoFrameRenderer();
 }
 
@@ -101,11 +111,11 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     // Wait for HTML to be available
 
     if (document.getElementById(deviceId)) {
-      console.log("[Scrcpy-VideoStreamManager] Restarting new ReadableStream for", deviceId);
+      logger.info(" Restarting new ReadableStream for {deviceId}", { deviceId })
       document.getElementById(deviceId)?.querySelector('canvas')?.remove();
     } else {
       // Create new stream
-      console.log("[Scrcpy-VideoStreamManager] Create new ReadableStream for", deviceId);
+      logger.info(" Create new ReadableStream for {deviceId}", { deviceId })
     }
     // Prepare video stream =======================
 
@@ -131,7 +141,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       codec: "hev1.1.60.L153.B0.0.0.0.0.0",
     }).then((supported) => {
       if (useH265 && !supported.supported) {
-        console.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
+        // logger.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
         readableControllers.delete(deviceId);
         return;
       }
@@ -141,7 +151,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
           codec: useH265 ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264,
           renderer: renderer,
         });
-        console.log("[Scrcpy-VideoStreamManager] Decoder for", useH265 ? "h265" : "h264", "loaded");
+        // logger.log("[Scrcpy-VideoStreamManager] Decoder for {useH265} ? \"h265\" : \"h264\", loaded", { useH265: "h265" });
         // Create new ReadableStream used for scrcpy decoding
         const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
           start(controller) {
@@ -157,22 +167,22 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
             try {
               canvasList[deviceId].remove();
             } catch (e) {
-              console.error("Can't delete canvas", canvasList, e);
+              logger.error("Can't delete canvas {canvasList}, {e}", { canvasList, e });
             }
           },
         });
 
         // Feed the scrcpy stream to the video decoder
         void stream.pipeTo(decoder.writable).catch((err) => {
-          console.error("[Scrcpy] Error piping to decoder writable stream:", err);
+          logger.error("[Scrcpy] Error piping to decoder writable stream: {err}", { err });
         });
 
         return stream;
       } else {
-        console.error("[Scrcpy] Error piping to decoder writable stream");
+        logger.error("[Scrcpy] Error piping to decoder writable stream");
       }
     }).catch((error) => {
-      console.error('Error checking H.264 configuration support:', error);
+      logger.error('Error checking H.264 configuration support: {error}', { error });
     });
   }
 
@@ -191,19 +201,19 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       // Check if h264 is supported
       await VideoDecoder.isConfigSupported({ codec: "avc1.4D401E" }).then((r) => {
         supportH264 = r.supported!;
-        console.log("[SCRCPY] Supports h264", supportH264);
+        logger.info("[SCRCPY] Supports h264", supportH264);
       })
 
       // Check if h265 is supported
       await VideoDecoder.isConfigSupported({ codec: "hev1.1.60.L153.B0.0.0.0.0.0" }).then((r) => {
         supportH265 = r.supported!;
-        console.log("[SCRCPY] Supports h265", supportH265);
+        logger.info("[SCRCPY] Supports h265 {supportH265}", { supportH265 });
       })
 
       // Check if AV1 is supported
       await VideoDecoder.isConfigSupported({ codec: "av01.0.05M.08" }).then((r) => {
         supportAv1 = r.supported!;
-        console.log("[SCRCPY] Supports AV1", supportAv1);
+        logger.info("[SCRCPY] Supports AV1 {supportAv1}", { supportAv1 });
       })
 
       socket.send(JSON.stringify({
@@ -248,14 +258,14 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
             isDecoderHasConfig.set(deserializedData!.streamId, true);
           }
         } else {
-          console.warn("[Scrcpy] Error piping to decoder writable stream, closing controller...");
+          logger.warn("[Scrcpy] Error piping to decoder writable stream, closing controller...");
           controller!.close();
         }
       }
     };
 
     socket.onclose = () => {
-      console.log("[Scrcpy-VideoStreamManager] Closing readable");
+      logger.info("[Scrcpy-VideoStreamManager] Closing readable");
     };
   }, []);
 

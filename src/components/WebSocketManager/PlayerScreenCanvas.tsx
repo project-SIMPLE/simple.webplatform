@@ -11,8 +11,6 @@ interface PlayerScreenCanvasProps {
     needsInteractivity?: boolean; //boolean used when a player screen canvas is displayed in the StreamPlayersScreenControl page, in order to be able to click each mirror to have a pop up window
     canvas?: HTMLCanvasElement;
     id?: string;
-    canvasWidth?: string;
-    canvasHeight?: string; //  height of the literal canvas HTML element, takes a literal objective css unit such as pix or vh. Defaults to value h-auto tailwind value
     setActiveCanvas?: (a: string) => void //function that is passed as a prop by the videostreammanager, this function here returns the canvas and the ip of the headset that need to be displayed in a popup window
     hideInfos?: boolean; // boolean used in case you want to hide player id and identifier, used in case of fullscreen for example
     tailwindCanvasDim: [string, string]; //tailwind raw dimensions to be passed to the canvas element
@@ -21,7 +19,7 @@ interface PlayerScreenCanvasProps {
 }
 
 
-const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, hideInfos, isLimitingWidth, tailwindCanvasDim, gridDisplay }: PlayerScreenCanvasProps) => {
+const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWidth, tailwindCanvasDim, gridDisplay }: PlayerScreenCanvasProps) => {
     if (!id) {
         return null;
     }
