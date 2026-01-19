@@ -31,7 +31,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, hid
     const bgColor = HEADSET_COLOR[ipIdentifier] //careful, the constant file has been modified, these are now tailwind values
     const [showPopup, setShowPopup] = useState<boolean>(false);
     const isColoredHeadset = HEADSET_COLOR[ipIdentifier] !== undefined;
-    const CanvasStyle = "flex flex-col border-4 border-none p-2 rounded-lg items-center justify-center min-h-0" //style of the colored border
+    const CanvasStyle = "flex flex-col border-4 border-none p-2 rounded-lg items-center justify-center " //style of the colored border
     /**
     // this hook is used to add the canvases to the proper divs.
     // by default, it will use the base display (canvasref) that is the element of the list.
@@ -41,18 +41,20 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, hid
     */
     useEffect(() => {
         if (canvas) {
-
+            canvas.classList.remove(...canvas.classList)
             canvas.classList.add("rounded-lg")
 
             if (showPopup) {
                 if (popupref.current) {
                     popupref.current.appendChild(canvas);
+                     canvas.classList.add("max-h-[90dvh]")
 
                 }
             } else {
                 if (canvasref.current) {
-                        canvas.classList.add(tailwindCanvasDim[0])
-                        canvas.classList.add(tailwindCanvasDim[1])
+                    canvas.classList.add(tailwindCanvasDim[0])
+                    canvas.classList.add(tailwindCanvasDim[1])
+
                     if (canvas.classList.contains("max-h-[90dvh]")) {
                         canvas.classList.remove("max-h-[90dvh]")
                     }
@@ -93,7 +95,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, hid
 
             {/* meaningful content */}
             {!isPlaceholder ?
-                <div id={id} className={`${CanvasStyle}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
+                <div id={id} className={`${CanvasStyle}size-fit ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"}`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
                     {hideInfos ? null :
                         <div>
                             <p>player:{id}</p>
@@ -101,8 +103,8 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, hid
                         </div>
                     }
 
-                    <div className={`flex flex-col items-center justify-center p-2 rounded-lg  min-h-0`}>{/*  size of the invisible container of the colored background */}
-                        <div ref={canvasref} className={`${isColoredHeadset ? bgColor : "bg-slate-300"} size-fit p-2 rounded-lg`} ></div>
+                    <div className={`flex flex-col items-center justify-center p-2 rounded-lg size-fit`}>{/*  size of the invisible container of the colored background */}
+                        <div ref={canvasref} className={`${isColoredHeadset ? bgColor : "bg-slate-300"}  p-2 rounded-lg`} ></div>
                     </div>
                 </div>
 
@@ -111,8 +113,8 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity, hid
                 :
                 //  placeholder, with an eye icon
                 <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"} aspect-square m-2`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
-                    {tailwindCanvasDim}
-                    <img src={visibility_off} alt="" className="mix-blend-difference size-60" />
+                    {/* {tailwindCanvasDim} */}
+                    <img src={visibility_off} alt="" className="mix-blend-difference size-full" />
                 </div >
 
             }

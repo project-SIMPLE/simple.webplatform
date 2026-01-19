@@ -62,7 +62,7 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const maxElements: int = 4 //! dictates the amount of placeholders and streams displayed on screen
+  const maxElements: int = 6 //! dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
   // const [canvasContainerStyle, setCanvasContainerStyle] = useState<string>("");
@@ -293,89 +293,122 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
   useEffect(() => {
     const { width, height } = viewport;
-
     const portrait = height > width;
     setIsPortrait(portrait);
-
     let limitingWidth = portrait;
-
     const amountElements = Math.max(
       maxElements,
       Object.keys(canvasList).length
     );
 
     if (portrait) {
-      if (amountElements === 1) {
-        setTailwindCanvasDim(["w-[95dvw] h-auto"])
-      }
+      switch (amountElements) {
+        case 1:
+          setTailwindCanvasDim(["w-auto", "h-[95dvh]"])
+          limitingWidth = true;
+          break;
 
-      if (amountElements > 1 && width * amountElements > height) {
-        limitingWidth = true;
-        setTailwindCanvasDim(["w-auto","h-[47dvh]"])
-      }
-      if (amountElements === 3) {
-        setTailwindCanvasDim(["w-[65dvw]", "h-[45dvh]"])
-        limitingWidth = false
-      }
-      if (amountElements > 3) {
-        setTailwindCanvasDim(["w-[45dvh]","h-[45dvh]"])
-        if (height * 2 > width) {
-          limitingWidth = false;
-        }
-      }
+        case 2:
+          if (width * amountElements > height) {
+            limitingWidth = true
+            setTailwindCanvasDim(["w-[45dvh]", "h-[47dvh]"])
+          } else {
+            limitingWidth = false
+            setTailwindCanvasDim(["w-[45dvw]", "h-[47dvw]"])
+          }
+          break;
 
-      if (amountElements > 4 && (width / 2) * 2 > height) {
-        limitingWidth = true;
-        setTailwindCanvasDim(["w-[45dvw]"," h-[45dvh]"])
-      } else
-        if (amountElements > 4) {
-          setTailwindCanvasDim(["w-auto","h-[27dvh]"])
-          if ((width / 2) * 2 < height) {
+        case 3:
+          if (width * amountElements > height) {
+            setTailwindCanvasDim(["w-[33dvw]", "h-[33dvw]"])
+            limitingWidth = false
+          } else {
+            setTailwindCanvasDim(["w-[33dvh]", "h-[33dvh]"])
+            limitingWidth = true
+          }
+          break;
+
+        case 4:
+          setTailwindCanvasDim(["w-[45dvh]", "h-[45dvh]"])
+          if (height * 2 > width) {
+            limitingWidth = false;
+          } else {
+            setTailwindCanvasDim(["w-[45dvw]", "h-[45dvw]"])
+            limitingWidth = true;
+          }
+          break;
+
+        case 5:
+          if (width / 2 * 3 > height) {
+            limitingWidth = true;
+            setTailwindCanvasDim(["w-[29dvh]", "h-[29dvh]"])
+          } else {
+            setTailwindCanvasDim(["w-[30dvh]", "h-[27dvh]"])
             limitingWidth = false;
           }
-        }
-      if (amountElements > 4 && (width / 2) * 3 > height) {
-        limitingWidth = true;
+          break;
 
-      }
-      else if (amountElements > 4 && (width / 2) * 3 < height) {
-        limitingWidth = false;
+        case 6:
+          if (width / 2 * 3 > height) {
+            limitingWidth = true;
+            setTailwindCanvasDim(["w-[29dvh]", "h-[29dvh]"])
+          } else {
+            setTailwindCanvasDim(["w-[30dvh]", "h-[27dvh]"])
+            limitingWidth = false;
+          }
+          break;
+
+        default:
+          break;
       }
 
     }
 
-
     else if (!portrait) { //mode paysage
+      switch (amountElements) {
+        case 1:
+          limitingWidth = false
+          setTailwindCanvasDim(["w-[95dvh]", "h-[95dvh]"])
+          break;
+        case 2:
+          setTailwindCanvasDim(["w-[45dvw]", "h-[45dvw]"])
+          limitingWidth = false
+          break;
+        case 3:
+          setTailwindCanvasDim(["w-[35dvw]", "h-[30dvw]"])
+          limitingWidth = false
+          break;
+        case 4:
+          limitingWidth = true
+          setTailwindCanvasDim(["w-[43dvh]", "h-[43dvh]"])
 
-      if (amountElements === 1) {
-        setTailwindCanvasDim(["w-auto","h-[95dvh]"])
+          break;
+        case 5:
+          if (height / 2 * 3 > width) {
+            limitingWidth = false
+            setTailwindCanvasDim(["w-[27dvw]", "h-[27dvw]"])
+
+          } else {
+            limitingWidth = true
+            setTailwindCanvasDim(["w-[43dvh]", "h-[43dvh]"])
+          }
+          break;
+        case 6:
+          if (height / 2 * 3 > width) {
+            limitingWidth = false
+            setTailwindCanvasDim(["w-[27dvw]", "h-[27dvw]"])
+
+          } else {
+            limitingWidth = true
+            setTailwindCanvasDim(["w-[43dvh]", "h-[43dvh]"])
+          }
+          break;
+
+        default:
+          break;
       }
-      if (amountElements > 1 && height * amountElements > width) {
-        limitingWidth = false;
-        setTailwindCanvasDim(["w-auto","h-[95dvh]"])
-      }
-      else if (amountElements > 1 && height * amountElements < width) {
-        limitingWidth = true;
-      }
-      if (amountElements > 3 && width * 2 > height) {
-        limitingWidth = true;
-        setTailwindCanvasDim(["w-auto","h-[45dvh]"])
 
 
-      } else
-        if (amountElements > 3 && width * 2 < height) {
-          limitingWidth = true;
-          setTailwindCanvasDim(["w-[45dvw]","h-[45dvh]"])
-        }
-      if (amountElements > 4) {
-        setTailwindCanvasDim(["w-[27dvw","h-auto"])
-      }
-      if ((height / 2) * 3 > width) {
-        limitingWidth = false;
-      }
-      else if (amountElements > 4 && (height / 2) * 3 < width) {
-        limitingWidth = true;
-      }
     }
 
     setIslimitingDimWidth(limitingWidth);
@@ -402,7 +435,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         <div className={`${canvasContainerStyle} w-full h-full`} id="canvascontainer">
           {Object.entries(canvasList).map(([key, canvas]) =>  //si on est en mode portrait (donc hauteur plus grande) on affiche les éléments en colonne, sinon on les affiche en ligne
 
-            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos isLimitingWidth={!islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} />
+            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos isLimitingWidth={islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} />
 
           )}
           {placeholders.map((_, index) => (
