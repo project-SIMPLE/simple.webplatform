@@ -7,7 +7,7 @@ const SimulationManagerButtons = () => {
         if(ws !== null){
             ws.send(JSON.stringify({"type": gama.experiment_state == "NONE" ? "launch_experiment" : (gama.experiment_state != "RUNNING" ? "resume_experiment" : "pause_experiment") }));
           }else{
-          console.error("WS is null");
+          logger.error("WS is null");
         }
       };
     
@@ -15,7 +15,7 @@ const SimulationManagerButtons = () => {
         if(ws !== null){
             ws.send(JSON.stringify({"type": "stop_experiment"}));
           }else{
-          console.error("WS is null");
+          logger.error("WS is null");
         }
       };
 

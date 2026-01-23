@@ -3,6 +3,9 @@ import { useTranslation } from "react-i18next";
 import { useState } from 'react';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import cross from '/src/svg_logos/x_cross.svg';
+import { getLogger, configure, getConsoleSink } from "@logtape/logtape";
+
+const logger = getLogger(["components", "SimulationManagerPlayer"]);
 interface PlayerProps {
   Playerkey: string
   selectedPlayer?: any;
@@ -14,7 +17,7 @@ interface PlayerProps {
 const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerId }: PlayerProps) => {
   const { t } = useTranslation();
 
-  const { ws,  playerList } = useWebSocket(); // `removePlayer` is now available
+  const { ws, playerList } = useWebSocket(); // `removePlayer` is now available
 
 
   const [showPopUpManageHeadset, setshowPopUpManageHeadset] = useState(false);
@@ -25,26 +28,26 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
 
   const handleRemove = (id: string) => {
     if (ws !== null) {
-      console.log(`ID headset ${id}`);
+      logger.info("ID headset: {id}",{id});
       ws.send(JSON.stringify({ "type": "remove_player_headset", id }));
       // removePlayer(id);  // already did in WebSocketManagers
       toggleShowPopUpManageHeadset();
     } else {
-      console.error('WebSocket is not connected');
+      logger.error("Websocket not connected")
     }
   };
 
   const handleRestart = (id: string) => {
-    console.log(`Restart button clicked for headset ${id}`);
+    logger.error(`Restart button clicked for headset ${id}`);
     // Logic for restart button
   };
 
   // Method launch button hide , at the bottom of this component 
   const handleGetPlayers = () => {
     if (ws !== null) {
-      console.log('Player list:', playerList);
+      logger.info('Player list:', playerList);
     } else {
-      console.error('WebSocket is not connected');
+      logger.error('WebSocket is not connected');
     }
   };
 
@@ -60,10 +63,10 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
 
           <div className="fixed inset-0 flex items-center justify-center bg-slate-800 bg-opacity-75 z-10" onClick={toggleShowPopUpManageHeadset}  >
 
-            <div className="rounded-md shadow-lg w-72 text-center z-20" onClick={(e)=> e.stopPropagation()}  > {/*this prevent event bubbling, so that clicking the child div does not close the popup window*/}
+            <div className="rounded-md shadow-lg w-72 text-center z-20" onClick={(e) => e.stopPropagation()}  > {/*this prevent event bubbling, so that clicking the child div does not close the popup window*/}
               <div className="p-3 flex items-top bg-slate-300 rounded-t-md justify-between">
                 <h2 className="text-lg font-semibold"  >
-                   {Playerkey}:  {/* //TODO ajouter les traduction ici  */}
+                  {Playerkey}:  {/* //TODO ajouter les traduction ici  */}
                 </h2>
                 <img src={cross} alt="X" className={`w-8 h-8 rounded-full cursor-pointer mix-blend-difference hover:bg-gray-800 ${className}`} onClick={toggleShowPopUpManageHeadset} />
               </div>
@@ -77,18 +80,18 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
               {/* //*   */}
               <div className="bg-red-300 pb-3 rounded-b-md">
                 <button
-                    className="bg-red-500 text-white px-4 py-2 mt-4 rounded-l-md rounded-r-none"
-                    onClick={() => handleRemove(Playerkey)}  >
+                  className="bg-red-500 text-white px-4 py-2 mt-4 rounded-l-md rounded-r-none"
+                  onClick={() => handleRemove(Playerkey)}  >
 
-                    {t('remove')}
-                  </button>
-              {/* bouton vers le mirror d ece casque spécifiquement */}
-                  <button
-                    className="bg-orange-500 text-white px-4 py-2 mt-4 rounded-r-md rounded-l-none"
-                    onClick={() => handleRestart(Playerkey)}  >
+                  {t('remove')}
+                </button>
+                {/* bouton vers le mirror d ece casque spécifiquement */}
+                <button
+                  className="bg-orange-500 text-white px-4 py-2 mt-4 rounded-r-md rounded-l-none"
+                  onClick={() => handleRestart(Playerkey)}  >
 
-                    {t('relaunch')}
-                  </button> 
+                  {t('relaunch')}
+                </button>
 
 
               </div>

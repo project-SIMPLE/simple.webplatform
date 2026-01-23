@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
 import Header from "../Header/Header";
+import { getLogger, getConsoleSink, configure } from "@logtape/logtape";
 const StreamPlayerScreen = () => {
   const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen"); // Get the screen mode display from the context
   const videoContainerRef = useRef<HTMLDivElement>(null); // Add ref for the target div
@@ -11,11 +12,13 @@ const StreamPlayerScreen = () => {
   const socket = new WebSocket(`ws://${host}:${port}`);
 
 
+  const logger = getLogger(["components", "StreamPlayerScreen"]);
+
   useEffect(() => {
 
     setWs(socket);
     socket.onopen = () => {
-      console.log('[TVControlSocket] WebSocket connected to backend');
+      logger.info('WebSocket connected to backend');
       setIsWsConnected(true);
     };
 
@@ -25,19 +28,19 @@ const StreamPlayerScreen = () => {
         try {
           data = JSON.parse(data);
         } catch (e) {
-          console.error("Can't JSON parse this received string", data);
+          logger.error("Can't JSON parse this received string", { data });
         }
       }
 
       if (data.type == 'screen_control') {
-        console.log(data);
+        logger.debug(data);
         setScreenModeDisplay(data.display_type);
 
       }
     }
 
     socket.onclose = () => {
-      console.log('[WebSocketManager] WebSocket disconnected');
+      logger.info('[WebSocketManager] WebSocket disconnected');
       setIsWsConnected(false);
     };
 

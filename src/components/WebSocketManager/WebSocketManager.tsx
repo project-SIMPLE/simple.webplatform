@@ -1,5 +1,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Simulation } from "../core/Constants.ts"
+import { getLogger, configure, getConsoleSink } from '@logtape/logtape';
+
+
+
+const logger = getLogger(["components", "WebSocketManager"]);
 interface Player {
     connected: boolean;
     date_connection: string;
@@ -61,7 +66,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 
             return updatedPlayerList;
         });
-        // console.log(" This player have been removed from playerList : ", id);
+        logger.info(" This player have been removed from playerList : ", id);
     };
 
 
@@ -73,25 +78,25 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
         setWs(socket);
 
         socket.onopen = () => {
-            console.log('[WebSocketManager] WebSocket connected to backend');
+            logger.info('[WebSocketManager] WebSocket connected to backend');
             setIsWsConnected(true);
         };
 
         socket.onmessage = (event: MessageEvent) => {
-            console.log(`[WebSocketManager] message received`)
+            logger.info(`[WebSocketManager] message received`)
             let data = JSON.parse(event.data);
-            console.log(data.type)
+            logger.debug(data.type)
             if (typeof data == "string") {
                 try {
                     data = JSON.parse(data);
                 } catch (e) {
-                    console.error("Can't JSON parse this received string", data);
+                    logger.error("Can't JSON parse this received string: {data}", { data });
                 }
             }
 
             if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
                 setSimulationList(data.map(sim => sim.jsonSettings));
-                console.log('[WebSocketManager] Simulation list:', data);
+                logger.debug('[WebSocketManager] Simulation list:', data);
             } else {
                 switch (data.type) {
                     // this case is launch too much time
@@ -107,7 +112,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
                         //TODO voir si on a toujours besoin de ça ?
                         break;
                     default:
-                        console.warn('[WebSocketManager] Message not processed, defaulted to setSimulationList', data);
+                        logger.warn('[WebSocketManager] Message not processed, defaulted to setSimulationList. data:{data}', { data });
                         setSimulationList(data)
                     //TODO changer cette mocheté, le message est traité dans certain cas si on appelle une méthode sur le contenu du message, ça limitera le logspam potentiellement
                 }
@@ -116,7 +121,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 
 
         socket.onclose = () => {
-            console.log('[WebSocketManager] WebSocket disconnected');
+            logger.info('[WebSocketManager] WebSocket disconnected');
             setIsWsConnected(false);
         };
 

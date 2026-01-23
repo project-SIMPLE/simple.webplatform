@@ -57,7 +57,7 @@ const SimulationManager = () => {
         ws.send(JSON.stringify({ "type": (gama.experiment_state != "RUNNING" ? "resume_experiment" : "pause_experiment") }));
       }
     } else {
-      console.error("WS is null");
+      logger.error("WS is null");
     }
   };
 
@@ -67,7 +67,7 @@ const SimulationManager = () => {
       //  redirect to the main page :
       navigate('/');
     } else {
-      console.error("WS is null");
+      logger.error("WS is null");
     }
   };
 

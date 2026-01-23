@@ -6,19 +6,11 @@ import {
   BitmapVideoFrameRenderer,
   WebCodecsVideoDecoder,
 } from "@yume-chan/scrcpy-decoder-webcodecs";
-import { configure, getConsoleSink, getLogger } from "@logtape/logtape";
+import {getLogger } from "@logtape/logtape";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 const host: string = window.location.hostname;
 const port: string = '8082';
 
-await configure({
-  sinks: {
-    console: getConsoleSink(),
-  },
-  loggers: [
-    { category: ["components", "VideoStreamManager"], sinks: ["console"] }
-  ],
-});
 const logger = getLogger(["components", "VideoStreamManager"]);
 
 // Deserialize the data into ScrcpyMediaStreamPacket
@@ -463,7 +455,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
           )}
           {placeholders.map((_, index) => (
-            <PlayerScreenCanvas isPlaceholder id={index.toString()} needsInteractivity={needsInteractivity} hideInfos isLimitingWidth={islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
+            <PlayerScreenCanvas isPlaceholder id={index.toString()} key={index} needsInteractivity={needsInteractivity} hideInfos isLimitingWidth={islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
           ))}
 
         </div>

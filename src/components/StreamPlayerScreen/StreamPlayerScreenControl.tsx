@@ -1,8 +1,8 @@
 import Header from '../Header/Header';
 import { useState, useEffect } from 'react';
 import VideoStreamManager from '../WebSocketManager/VideoStreamManager';
+import { getLogger, configure, getConsoleSink } from '@logtape/logtape';
 const StreamPlayerScreenControl = () => {
-
     const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen");
     const [ws, setWs] = useState<WebSocket | null>(null);
     const [isWsConnected, setIsWsConnected] = useState<boolean>(false);
@@ -11,14 +11,15 @@ const StreamPlayerScreenControl = () => {
 
 
     const socket = new WebSocket(`ws://${host}:${port}`);
-    
+   
+    const logger = getLogger(["components", "StreamPlayerScreenControl"]);
 
 
     useEffect(() => {
 
         setWs(socket);
         socket.onopen = () => {
-            console.log('[TVControlSocket] WebSocket connected to backend');
+            logger.info('[TVControlSocket] WebSocket connected to backend');
             setIsWsConnected(true);
         };
 
@@ -28,19 +29,19 @@ const StreamPlayerScreenControl = () => {
                 try {
                     data = JSON.parse(data);
                 } catch (e) {
-                    console.error("Can't JSON parse this received string", data);
+                    logger.error("Can't JSON parse this received string", data);
                 }
             }
 
             if (data.type == 'screen_control') {
-                console.log(data);
+                logger.debug(data);
                 setScreenModeDisplay(data.display_type);
 
             }
         }
 
         socket.onclose = () => {
-            console.log('[WebSocketManager] WebSocket disconnected');
+            logger.info('[WebSocketManager] WebSocket disconnected');
             setIsWsConnected(false);
         };
 
@@ -56,7 +57,7 @@ const StreamPlayerScreenControl = () => {
 
     const emitDisplay = (displayType: string) => {
         let payload = { "type": 'screen_control', display_type: displayType };
-        console.log(`emitted message:${JSON.stringify(payload)}`);
+        logger.info(`emitted message:${JSON.stringify(payload)}`);
         socket.send((JSON.stringify(payload)));
 
     }
