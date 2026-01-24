@@ -1,0 +1,44 @@
+# Node modules
+node_modules
+dist
+
+# Testing
+coverage
+.nyc_output
+
+# Logs
+logs
+*.log
+
+# Cache
+.cache
+
+# IDE and editor files
+.idea
+.vscode
+*.iml
+
+# Git-related files
+.git
+.gitignore
+
+# npm/yarn/pnpm cache and lockfiles (optional, uncomment if used)
+.npm
+# .yarn
+# yarn.lock
+# pnpm-lock.yaml
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Configuration files
+.env
+
+# Other temporary files
+*.swp
+*.swo
+*~
+
+# SIMPLE exclusive
+learning-packages
