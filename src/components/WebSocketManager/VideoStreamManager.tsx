@@ -6,7 +6,7 @@ import {
   BitmapVideoFrameRenderer,
   WebCodecsVideoDecoder,
 } from "@yume-chan/scrcpy-decoder-webcodecs";
-import {getLogger } from "@logtape/logtape";
+import { getLogger } from "@logtape/logtape";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 const host: string = window.location.hostname;
 const port: string = '8082';
@@ -64,7 +64,7 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-  const maxElements: int = 6 //! dictates the amount of placeholders and streams displayed on screen
+  const maxElements: int = 1 //! dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
   // const [canvasContainerStyle, setCanvasContainerStyle] = useState<string>("");
@@ -308,8 +308,9 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     if (portrait) {
       switch (amountElements) {
         case 1:
-          setTailwindCanvasDim(["w-[95dvh]", "h-[95dvh]"])
-          limitingWidth = true;
+          setTailwindCanvasDim(["w-[95dvw]", "h-[95dvw]"])
+          limitingWidth = false;
+
           break;
 
         case 2:
