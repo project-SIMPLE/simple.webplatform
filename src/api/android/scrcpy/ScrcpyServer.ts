@@ -167,7 +167,7 @@ export class ScrcpyServer {
         // This fix 'simply' better manage fallback video API weirdly working on MQ headsets
         // https://github.com/Genymobile/scrcpy/issues/5913#issuecomment-3677889916
         const scrcpyServerFullPath: string = path.join(process.cwd(), 'toolkit', 'scrcpyServer-v3.3.4-rom1v');
-        this.server = await fs.readFile( scrcpyServerFullPath );
+        this.server = await fs.readFile(scrcpyServerFullPath);
         logger.trace(`Loading scrcpy server from '${scrcpyServerFullPath}'`);
     }
 
@@ -244,7 +244,7 @@ export class ScrcpyServer {
             // Prevent having stream ratio inverted, happpened on some weird device..
             // https://github.com/project-SIMPLE/simple.webplatform/issues/78
             if ((metadata == undefined || metadata.width! < metadata.height!) && deviceModel.startsWith("Quest")) {
-                logger.warn("Something's weird here, headset's stream isn't in the good size ratio, restarting...");
+                logger.warn("Something's weird here, headset's stream isn't in the good size ratio, restarting... metadata:{metadata}", { metadata: metadata ? metadata : "the metadata is undefined" });
                 // Make it crash voluntarily to restart stream
                 client = await AdbScrcpyClient.start(
                     adbConnection,
@@ -258,14 +258,15 @@ export class ScrcpyServer {
             this.scrcpyClients.push(client);
 
             // Print output of Scrcpy server
-            void client.output.pipeTo(
-                // @ts-expect-error
+            client.output.pipeTo(
                 new WritableStream<string>({
                     write(chunk: string): void {
                         logger.trace({ chunk });
                     },
                 }),
-            );
+            ).catch(err => {
+                logger.debug("Scrcpy output stream closed: {err}", { err });
+            });
 
             if (videoPacketStream != null) {
                 const myself = this;
@@ -280,19 +281,20 @@ export class ScrcpyServer {
                             write(packet: ScrcpyMediaStreamPacket) {
                                 switch (packet.type) {
                                     case "configuration":
-                                        // Handle configuration packet
-                                        const newStreamConfig = JSON.stringify({
-                                            streamId: adbConnection.serial,
-                                            h265: useH265,
-                                            type: "configuration",
-                                            data: Buffer.from(packet.data).toString('base64'), // Convert Uint8Array to Base64 string
-                                        });
-                                        // Save packet for clients after this first packet emission
-                                        myself.broadcastToClients(newStreamConfig);
-                                        logger.trace("Sending configuration frame {newStreamConfig}", { newStreamConfig })
+                                        {  // Handle configuration packet
+                                            const newStreamConfig = JSON.stringify({
+                                                streamId: adbConnection.serial,
+                                                h265: useH265,
+                                                type: "configuration",
+                                                data: Buffer.from(packet.data).toString('base64'), // Convert Uint8Array to Base64 string
+                                            });
+                                            // Save packet for clients after this first packet emission
+                                            myself.broadcastToClients(newStreamConfig);
+                                            logger.trace("Sending configuration frame {newStreamConfig}", { newStreamConfig })
 
-                                        // It is sent only once while opening the video stream and set the renderer
-                                        myself.scrcpyStreamConfig = newStreamConfig;
+                                            // It is sent only once while opening the video stream and set the renderer
+                                            myself.scrcpyStreamConfig = newStreamConfig;
+                                        }
                                         break;
 
                                     case "data":
