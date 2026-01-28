@@ -9,7 +9,6 @@ import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
 import { getLogger } from "@logtape/logtape";
 
-import { ENV_VERBOSE } from "../../index.ts";
 import { AdbManager } from "../adb/AdbManager.ts";
 
 // Override the log function

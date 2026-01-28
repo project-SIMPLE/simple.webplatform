@@ -69,25 +69,20 @@ export class AdbManager {
             }
         });
 
-        this.observer.onDeviceRemove((devices) => {
-            logger.warn("A device has been removed");
-            for (const device of devices) {
-                logger.warn(`${device}`);
-                this.clientCurrentlyStreaming.filter((ele,) => ele !== device)
-            }
-        });
-
         this.observer.onListChange((devices) => {
             // Fallback mechanism as the onRemove isn't catching everything...
             if (devices.length < this.clientCurrentlyStreaming.length) {
-                logger.debug("A headset has been disconnected and is not well represented");
+                logger.debug("A headset has been disconnected, removing it from the list...");
                 for (const device of this.clientCurrentlyStreaming) {
                     if (!devices.includes(device)) {
-                        logger.warn(`A device has been removed ${device}`);
-                        this.clientCurrentlyStreaming.filter((ele,) => ele !== device)
+                        logger.warn(`This device has been removed {device}`, {device});
+
+                        const index = this.clientCurrentlyStreaming.indexOf(device);
+                        if (index > -1) {
+                            this.clientCurrentlyStreaming.splice(index, 1);
+                        }
                     }
                 }
-                logger.warn(`${this.clientCurrentlyStreaming.length}`);
             }
         });
 
