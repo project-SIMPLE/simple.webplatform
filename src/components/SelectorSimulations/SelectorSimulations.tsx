@@ -6,7 +6,7 @@ import Footer from '../Footer/Footer';
 import Header from '../Header/Header';
 import SimulationList from './SimulationList';
 import arrow_back from "/src/svg_logos/arrow_back.svg";
-import { getLogger, configure, getConsoleSink } from '@logtape/logtape';
+import { getLogger } from '@logtape/logtape';
 import { Simulation } from '../../api/core/Constants';
 const SelectorSimulations = () => {
   const { ws, isWsConnected, gama, simulationList } = useWebSocket();
@@ -44,7 +44,7 @@ const SelectorSimulations = () => {
     if (path.length > 0) {
       let list = simulationList
       for (const index of path) {
-        logger.info("index in the use effect: {index}", { index })
+        logger.debug("index in the use effect: {index}", { index })
         // @ts-expect-error
         if (list[index].entries.length > 0) {
           // @ts-expect-error
@@ -138,7 +138,6 @@ const SelectorSimulations = () => {
   // Loop which tries to connect to Gama
   useEffect(() => {
     let interval: NodeJS.Timeout;
-
     if (ws && !gama.connected) {
       interval = setInterval(() => {
         ws.send(JSON.stringify({ type: 'try_connection' }));
