@@ -48,44 +48,50 @@ export class MonitorServer {
             message: (ws, message) => {
                 const jsonMonitor: JsonMonitor = JSON.parse(Buffer.from(message).toString());
                 const type = jsonMonitor.type;
+                logger.trace("Received message on monitor server : {jsonMonitor}", {jsonMonitor});
 
                 switch (type) {
                     case "launch_experiment":
+                        logger.trace("Launching experiment");
                         this.controller.launchExperiment();
                         break;
 
                     case "stop_experiment":
+                        logger.trace("Stoping experiment");
                         this.controller.stopExperiment();
                         break;
 
                     case "pause_experiment":
+                        logger.trace("Pausing experiment");
                         this.controller.pauseExperiment();
                         break;
 
                     case "resume_experiment":
+                        logger.trace("Resuming experiment");
                         this.controller.resumeExperiment();
                         break;
 
                     case "try_connection":
+                        logger.trace("Manually trying to connect to GAMA");
                         this.controller.connectGama();
                         break;
 
                     case "add_player_headset":
+                        logger.trace("Adding a new player headset");
                         if (jsonMonitor.id) {
                             this.controller.addInGamePlayer(jsonMonitor.id);
                         }
                         break;
 
                     case "screen_control": //TODO
-                        {
-                            const messageString = JSON.parse(Buffer.from(message).toString()); //? can't parse the payload of the jsonMonitor for some reason
-                            logger.warn(`data recieved:${messageString.display_type}`);
-                            this.sendMessageByWs({ type: "screen_control", display_type: messageString.display_type });
-                            break;
-                        }
+                        const messageString = JSON.parse(Buffer.from(message).toString()); //? can't parse the payload of the jsonMonitor for some reason
+                        logger.warn(`data recieved:${messageString.display_type}`);
+                        this.sendMessageByWs({ type: "screen_control", display_type: messageString.display_type });
+                        break;
 
 
                     case "remove_player_headset":
+                        logger.trace("Removing a player headset");
                         if (jsonMonitor.id) {
                             this.controller.purgePlayer(jsonMonitor.id);
                         } else {
@@ -94,11 +100,12 @@ export class MonitorServer {
                         break;
 
                     case "get_simulation_informations":
+                        logger.trace("Requesting and sending back simulation information");
                         this.sendMessageByWs(this.controller.getSimulationInformations(), ws);
                         break;
 
-                    case "get_simulation_by_index": {
-
+                    case "get_simulation_by_index":
+                        logger.trace("Requesting and sending back simulation by index");
                         const index = jsonMonitor.simulationIndex;
 
                         if (index !== undefined && index >= 0 && index < this.controller.model_manager.getModelList().length) {
@@ -108,6 +115,7 @@ export class MonitorServer {
                             console.log(this.controller.model_manager.activeModel?.getExperimentName())
                             const selectedSimulation = this.controller.model_manager.getActiveModel();
 
+                            logger.trace("Sending back");
                             this.sendMessageByWs({
                                 type: "get_simulation_by_index",
                                 simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
@@ -118,11 +126,10 @@ export class MonitorServer {
                             logger.error(`Invalid index received or out of bounds. [Index: ${index}]`);
                         }
                         break;
-                    }
 
 
                     case "send_simulation":
-                         { // définition d'une scope à cause de la définition de variable dans un bloc case
+                        logger.trace("Sending simulation");
                         const simulationFromStream = JSON.parse(Buffer.from(message).toString());
 
                         this.controller.model_manager.setActiveModelByFilePath(simulationFromStream.simulation.model_file_path);
@@ -132,7 +139,6 @@ export class MonitorServer {
                             type: "get_simulation_by_index",
                             simulation: selectedSimulation.getJsonSettings()
                         }, ws);
-                    }
                         break;
 
                     default:
@@ -209,7 +215,7 @@ export class MonitorServer {
     /**
      *
      * @param message Any string which will be JSON.stringify before sending
-     * @param clientWsId (optional) WS to send the the message to
+     * @param clientWsId (optional) WS to send the message to
      * @return void
      */
     sendMessageByWs(message: any, clientWsId?: any): void {
@@ -229,7 +235,7 @@ export class MonitorServer {
                             break;
                         default:
                         case 1:
-                            logger.trace(`Properly sent message to client {client}\n{message}`, { client: Buffer.from(client.getRemoteAddressAsText()).toString(), message: message });
+                            logger.trace(`Properly sent message to client {client}`, { client: Buffer.from(client.getRemoteAddressAsText()).toString() });
                     }
                 }
             });
