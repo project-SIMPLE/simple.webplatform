@@ -239,6 +239,34 @@ export class ScrcpyServer {
                 scrcpyOptions
             );
 
+            // Set up exit handler immediately after client creation
+            client.exited
+                .then(() => {
+                    logger.info(`Scrcpy server exited for ${adbConnection.serial}`);
+                    // Remove client from array
+                    const index = this.scrcpyClients.indexOf(client);
+                    if (index > -1) {
+                        this.scrcpyClients.splice(index, 1);
+                    }
+                })
+                .catch((error) => {
+                    if (error instanceof AdbScrcpyExitedError) {
+                        if (!error.output[0]?.startsWith("Aborted")) {
+                            logger.error(`Scrcpy exited with error for ${adbConnection.serial}: {error}`, { error });
+                        } else {
+                            logger.debug(`Scrcpy aborted normally for ${adbConnection.serial}`);
+                        }
+                    } else {
+                        logger.error(`Unexpected exit error for ${adbConnection.serial}: {error}`, { error });
+                    }
+
+                    // Remove client from array
+                    const index = this.scrcpyClients.indexOf(client);
+                    if (index > -1) {
+                        this.scrcpyClients.splice(index, 1);
+                    }
+                });
+
             const { metadata, stream: videoPacketStream } = await client.videoStream;
             logger.debug({ metadata });
             // Prevent having stream ratio inverted, happpened on some weird device..
@@ -336,41 +364,67 @@ export class ScrcpyServer {
         }
     }
 
-    resentAllConfigPackage(retry: boolean = false, timeoutDelay: number = 500) {
-        logger.debug("Force reset video")
+    async resentAllConfigPackage(retry: boolean = false, timeoutDelay: number = 500) {
+        logger.debug("Force reset video");
         let anyFailed = false;
+
         for (const c of this.scrcpyClients) {
+            // Check if client has already exited (non-blocking check)
+            const hasExited = await Promise.race([
+                c.exited.then(() => true),
+                Promise.resolve(false)
+            ]);
+
+            if (hasExited) {
+                logger.warn("Client already exited, skipping reset");
+                continue;
+            }
+
             setTimeout(() => {
-                anyFailed = anyFailed || this.resentConfigPackage(c);
+                this.resentConfigPackage(c).then(failed => {
+                    anyFailed = anyFailed || failed;
+                });
             }, timeoutDelay);
         }
 
         if (anyFailed && retry) {
             logger.debug("Some failed, restarting now...");
+            await new Promise(resolve => setTimeout(resolve, timeoutDelay + 100));
             this.resentAllConfigPackage();
         }
     }
 
 
-    resentConfigPackage(client: AdbScrcpyClient<any>): boolean {
-        let gotError: boolean = false;
-        const promiseResult = client.controller?.resetVideo();
-        if (promiseResult)
-            promiseResult
-                .then((res) => {
-                    logger.trace("Properly reset video stream {res}", { res });
-                })
-                .catch(err => {
-                    const textError = err && (typeof err === 'string' ? err : err.message || String(err));
+    async resentConfigPackage(client: AdbScrcpyClient<any>): Promise<boolean> {
+        logger.trace("Reset video for client {client}", { client });
 
-                    // Hide from non verbose since it's an _expected_ error
-                    if (textError.includes("WritableStream is closed") && !ENV_VERBOSE)
-                        logger.error("ResetVideo failed, probably leftover timeout from previous video stream { err }", { err });
-                    else if (!textError.includes("WritableStream is closed"))
-                        logger.error("Error while reseting video stream { err }", { err });
+        let gotError: boolean = true;
 
-                    gotError = true;
-                });
+        try {
+            const promiseResult = client.controller?.resetVideo();
+
+            if (promiseResult){
+                promiseResult
+                    .then((res) => {
+                        logger.trace("Properly reset video stream {res}", { res });
+
+                        // No problem happened
+                        gotError = false;
+                    })
+                    .catch(err => {
+                        const textError = err && (typeof err === 'string' ? err : err.message || String(err));
+
+                        // Hide from non verbose since it's an _expected_ error
+                        if (textError.includes("WritableStream is closed"))
+                            logger.error("ResetVideo failed, probably leftover timeout from previous video stream { err }", { err });
+                        else
+                            logger.error("Error while reseting video stream { err }", { err });
+                    });
+            }
+        } catch (e) {
+            logger.error("Something horrible !! {e}", {e});
+        }
+
         return gotError;
     }
 
