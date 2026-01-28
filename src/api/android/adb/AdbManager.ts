@@ -130,11 +130,22 @@ export class AdbManager {
     async connectNewDevice(ip: string, port: string): Promise<boolean> {
         let success: boolean = false;
 
-        try {
-            await this.adbServer.wireless.connect(ip + ':' + port);
-            success = true;
-        } catch (e) {
-            if (ENV_EXTRA_VERBOSE) logger.error(`Couldn't connect with this error message ${e}`);
+        let alreadyConnected: boolean = false;
+        logger.debug(`Checking if ${ip} is already connected...`);
+        for (const device of this.observer.current) {
+            if (device.serial.startsWith(ip)) {
+                logger.debug(`${ip} is already connected ! Skipping new device...`);
+                alreadyConnected = success = true;
+            }
+        }
+
+        if (!alreadyConnected) {
+            try {
+                await this.adbServer.wireless.connect(ip + ':' + port);
+                success = true;
+            } catch (e) {
+                if (ENV_EXTRA_VERBOSE) logger.error(`Couldn't connect with this error message ${e}`);
+            }
         }
 
         return success
