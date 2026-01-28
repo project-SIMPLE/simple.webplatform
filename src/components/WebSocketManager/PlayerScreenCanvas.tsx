@@ -19,7 +19,7 @@ interface PlayerScreenCanvasProps {
 }
 
 
-const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWidth, tailwindCanvasDim, gridDisplay }: PlayerScreenCanvasProps) => {
+const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWidth, tailwindCanvasDim, gridDisplay, needsInteractivity }: PlayerScreenCanvasProps) => {
     if (!id) {
         return null;
     }
@@ -46,7 +46,8 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
             if (showPopup) {
                 if (popupref.current) {
                     popupref.current.appendChild(canvas);
-                     canvas.classList.add("max-h-[90dvh]")
+                    canvas.classList.add("max-h-[95dvh]")
+                    canvas.classList.add("max-w-[95dvw]")
 
                 }
             } else {
@@ -54,9 +55,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
                     canvas.classList.add(tailwindCanvasDim[0])
                     canvas.classList.add(tailwindCanvasDim[1])
 
-                    if (canvas.classList.contains("max-h-[90dvh]")) {
-                        canvas.classList.remove("max-h-[90dvh]")
-                    }
+    
 
                     canvasref.current.appendChild(canvas);
                 }
@@ -70,12 +69,12 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
             {showPopup === true ?
                 <div className={`backdrop-blur-md w-full h-full fixed inset-0 flex flex-col items-center justify-center z-10`} onClick={() => setShowPopup(false)}>
                     {/* <div ref={popupref} className={` ${isColoredHeadset ? bgColor : "bg-slate-500"} size-2/3 flex flex-col items-center justify-center`}> */}
-                    <div className={`rounded-md size-fit border-4  flex flex-col items-center relative`} onClick={(e) => e.stopPropagation()}>
-                        <div ref={popupref} className={`h-full flex flex-col ${isColoredHeadset ? bgColor : "bg-slate-500"}`}>
+                    <div className={`rounded-md size-fit flex flex-col items-center relative`} onClick={(e) => e.stopPropagation()}>
+                        <div ref={popupref} className={`h-full flex flex-col p-1 rounded-md ${isColoredHeadset ? bgColor : "bg-slate-500"}`}>
                             {hideInfos ?
                                 null
                                 :
-                                <p className="bg-slate-200  rounded-t-md p-1 tailwindCanvasDim-center "> {`Player: ${id}`}</p>
+                            <p className="bg-slate-200  rounded-t-md p-1 tailwindCanvasDim-center "> {`Player: ${id}`}</p>
                             }
 
                         </div>
@@ -94,18 +93,15 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
 
             {/* meaningful content */}
             {!isPlaceholder ?
-                //     {hideInfos ? null :
-                // <div id={id} className={`${CanvasStyle}size-fit ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"} bg-slate-600`} onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}>
-                //         <div>
-                //             <p>player:{id}</p>
-                //             {isColoredHeadset ? <p className="tailwindCanvasDim-center">identifier:{ipIdentifier} </p> : null}
-                //         </div>
-                //     }
 
-                    // <div className={`flex flex-col items-center justify-center rounded-lg size-fit`}>{/*  size of the invisible container of the colored background */}
-                        <div ref={canvasref} className={`${isColoredHeadset ? bgColor : "bg-slate-300"} flex flex-row align-middle justify-center p-2 rounded-lg ${gridDisplay ? null : isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full" }` } ></div>
-                    // </div>
-                // </div>
+
+            <div ref={canvasref} className={`${isColoredHeadset ? bgColor : "bg-slate-300"}
+             flex flex-row align-middle justify-center p-2 rounded-lg
+              ${gridDisplay ? null : isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"}`} 
+            onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined} >
+               {/* { tailwindCanvasDim } */}
+            </div>
+
 
 
 

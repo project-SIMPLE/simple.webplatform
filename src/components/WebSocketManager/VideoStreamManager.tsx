@@ -452,11 +452,11 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         <div className={`${canvasContainerStyle} w-full h-full`} id="canvascontainer">
           {Object.entries(canvasList).map(([key, canvas]) =>  //si on est en mode portrait (donc hauteur plus grande) on affiche les éléments en colonne, sinon on les affiche en ligne
 
-            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos isLimitingWidth={islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} gridDisplay={gridDisplay} />
+            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos={hideInfos} isLimitingWidth={islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} gridDisplay={gridDisplay} />
 
           )}
           {placeholders.map((_, index) => (
-            <PlayerScreenCanvas isPlaceholder id={index.toString()} key={index} needsInteractivity={needsInteractivity} hideInfos isLimitingWidth={islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
+            <PlayerScreenCanvas isPlaceholder id={index.toString()} key={index} needsInteractivity={needsInteractivity} hideInfos={hideInfos} isLimitingWidth={islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} /> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
           ))}
 
         </div>
