@@ -27,7 +27,8 @@ await configure({
       category: [], // The empty array acts as a wildcard for all categories
       sinks: ["console"],
       lowestLevel: "debug" // Capture everything from debug and above
-    }
+    },
+    { category: ["logtape", "meta"], sinks: ["console"], lowestLevel: "warning" },
   ]
 });
 
