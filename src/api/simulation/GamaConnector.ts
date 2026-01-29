@@ -256,13 +256,17 @@ class GamaConnector {
             };
 
             this.gama_socket.onerror = (error) => {
-                logger.error(`An error happened within the Gama Server WebSocket\n{error}`, { error });
+                if (error.error.code == 'ECONNREFUSED') {
+                    logger.trace(`Show full stack for Error CONNREFUSED {error}`, {error});
+                    logger.error(`The platform can't connect to GAMA, please verify that GAMA is open/running and that it's reachable at the address ${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
+                } else {
+                    logger.error(`An error happened within the Gama Server WebSocket\n{error}`, { error });
+                }
                 this.setGamaConnection(false);
 
                 logger.warn("Reconnecting in 5s...");
                 setTimeout(() => this.connectGama(), 5000);
             };
-
 
         } catch (error) {  // in case the Websocket instantiation fails for some rare reason
             logger.fatal("An error broke the WebSocket:\n{error}", { error });
