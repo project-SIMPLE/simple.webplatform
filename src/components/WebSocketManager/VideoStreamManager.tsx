@@ -289,7 +289,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   //apply style to the container, so that 1 element is displayed in fullscreen, 2 are displayed side by side, and more than that are displayed in a grid
   const amountElements = Math.max(
     maxElements,
-    Object.keys(canvasList).length
+    canvasList.size
   );
 
   const canvasContainerStyle =
@@ -312,7 +312,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     let isGrid = false;
     const amountElements = Math.max(
       maxElements,
-      Object.keys(canvasList).length
+      canvasList.size
     );
 
     if (portrait) {
@@ -447,7 +447,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
     selectedCanvas ? 
       <div className="w-fit">
-        <p>amount of streams: {Object.keys(canvasList).length}</p>
+        <p>amount of streams: {canvasList.size}</p>
         {Object.entries(canvasList).map(([key, canvas]) =>
           <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos />
 
