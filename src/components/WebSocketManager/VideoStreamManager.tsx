@@ -125,7 +125,13 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     if (selectedCanvas && selectedCanvas === canvasId) {
       setCanvasList({ [deviceId]: canvas })
     } else if (!selectedCanvas) {
-      setCanvasList(prevCanvasList => ({ ...prevCanvasList, [deviceId]: canvas }));
+      if (deviceId in canvasList) {
+        logger.warn("tried adding an already existing canvas to the list, cancelling")
+      } else {
+        setCanvasList(prevCanvasList => ({ ...prevCanvasList, [deviceId]: canvas }));
+        logger.info("added canvas")
+
+      }
     }
 
     await VideoDecoder.isConfigSupported({
@@ -133,7 +139,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       codec: "hev1.1.60.L153.B0.0.0.0.0.0",
     }).then((supported) => {
       if (useH265 && !supported.supported) {
-        // logger.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
+        logger.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
         readableControllers.delete(deviceId);
         return;
       }
@@ -143,7 +149,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
           codec: useH265 ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264,
           renderer: renderer,
         });
-        // logger.log("[Scrcpy-VideoStreamManager] Decoder for {useH265} ? \"h265\" : \"h264\", loaded", { useH265: "h265" });
+        logger.log("[Scrcpy-VideoStreamManager] Decoder for {useH265} ? \"h265\" : \"h264\", loaded", { useH265: "h265" });
         // Create new ReadableStream used for scrcpy decoding
         const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
           start(controller) {
@@ -158,6 +164,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
             isDecoderHasConfig.delete(deviceId);
             try {
               canvasList[deviceId].remove();
+              logger.info("deleted canvas", deviceId)
             } catch (e) {
               logger.error("Can't delete canvas {canvasList}, {e}", { canvasList, e });
             }
@@ -185,7 +192,6 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   useEffect(() => {
     // Open the WebSocket connection
     const socket = new WebSocket("ws://" + host + ":" + port);
-
     // Send browser's codecs compatibility
     socket.onopen = async () => {
       let supportH264: boolean, supportH265: boolean, supportAv1: boolean;
