@@ -67,7 +67,6 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   const maxElements: int = 1 //! dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
-  // const [canvasContainerStyle, setCanvasContainerStyle] = useState<string>("");
   const [islimitingDimWidth, setIslimitingDimWidth] = useState<boolean>(false);
   const [isPortrait, setIsPortrait] = useState<boolean>(false)
   const [viewport, setViewport] = useState(() => ({ //used to determine optimal display type (ie portrait or landscape mode)
@@ -125,7 +124,13 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     if (selectedCanvas && selectedCanvas === canvasId) {
       setCanvasList({ [deviceId]: canvas })
     } else if (!selectedCanvas) {
-      setCanvasList(prevCanvasList => ({ ...prevCanvasList, [deviceId]: canvas }));
+      if (deviceId in canvasList) {
+        logger.warn("tried adding an already existing canvas to the list, cancelling")
+      } else {
+        setCanvasList(prevCanvasList => ({ ...prevCanvasList, [deviceId]: canvas }));
+        logger.info("added canvas")
+
+      }
     }
 
     await VideoDecoder.isConfigSupported({
@@ -133,7 +138,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       codec: "hev1.1.60.L153.B0.0.0.0.0.0",
     }).then((supported) => {
       if (useH265 && !supported.supported) {
-        // logger.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
+        logger.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
         readableControllers.delete(deviceId);
         return;
       }
@@ -143,7 +148,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
           codec: useH265 ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264,
           renderer: renderer,
         });
-        // logger.log("[Scrcpy-VideoStreamManager] Decoder for {useH265} ? \"h265\" : \"h264\", loaded", { useH265: "h265" });
+        logger.log("[Scrcpy-VideoStreamManager] Decoder for {useH265} ? \"h265\" : \"h264\", loaded", { useH265: "h265" });
         // Create new ReadableStream used for scrcpy decoding
         const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
           start(controller) {
@@ -158,6 +163,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
             isDecoderHasConfig.delete(deviceId);
             try {
               canvasList[deviceId].remove();
+              logger.info("deleted canvas", deviceId)
             } catch (e) {
               logger.error("Can't delete canvas {canvasList}, {e}", { canvasList, e });
             }
@@ -185,7 +191,6 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   useEffect(() => {
     // Open the WebSocket connection
     const socket = new WebSocket("ws://" + host + ":" + port);
-
     // Send browser's codecs compatibility
     socket.onopen = async () => {
       let supportH264: boolean, supportH265: boolean, supportAv1: boolean;
@@ -243,7 +248,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
             controller!.enqueue(deserializedData!.packet);
             // Ensure starting stream with a configuration package holding keyframe
           } else if (
-            //!isDecoderHasConfig.get(deserializedData!.streamId) &&
+            //\!isDecoderHasConfig.get(deserializedData!.streamId) &&
             deserializedData!.packet.type == "configuration"
           ) {
             controller!.enqueue(deserializedData!.packet);
@@ -448,7 +453,6 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       :
 
       <div className="w-full h-full flex flex-col items-center">
-        {/* <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-col grid-rows-2 gap-2" : "flex"} h-full w-full items-center justify-center`}> */}
         <div className={`${canvasContainerStyle} w-full h-full`} id="canvascontainer">
           {Object.entries(canvasList).map(([key, canvas]) =>  //si on est en mode portrait (donc hauteur plus grande) on affiche les éléments en colonne, sinon on les affiche en ligne
 
