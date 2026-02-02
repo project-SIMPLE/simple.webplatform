@@ -16,10 +16,11 @@ interface PlayerScreenCanvasProps {
     tailwindCanvasDim: [string, string]; //tailwind raw dimensions to be passed to the canvas element
     isLimitingWidth?: boolean; //whether the maximum dimension is the width or the height
     gridDisplay?: boolean;
+    key: string;
 }
 
 
-const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWidth, tailwindCanvasDim, gridDisplay, needsInteractivity }: PlayerScreenCanvasProps) => {
+const PlayerScreenCanvas = ({ key, canvas, id, isPlaceholder, hideInfos, isLimitingWidth, tailwindCanvasDim, gridDisplay, needsInteractivity }: PlayerScreenCanvasProps) => {
     if (!id) {
         return null;
     }
@@ -55,7 +56,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
                     canvas.classList.add(tailwindCanvasDim[0])
                     canvas.classList.add(tailwindCanvasDim[1])
 
-    
+
 
                     canvasref.current.appendChild(canvas);
                 }
@@ -74,7 +75,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
                             {hideInfos ?
                                 null
                                 :
-                            <p className="bg-slate-200  rounded-t-md p-1 tailwindCanvasDim-center "> {`Player: ${id}`}</p>
+                                <p className="bg-slate-200  rounded-t-md p-1 tailwindCanvasDim-center "> {`Player: ${id}`}</p>
                             }
 
                         </div>
@@ -95,15 +96,13 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
             {!isPlaceholder ?
 
 
-            <div ref={canvasref} className={`${isColoredHeadset ? bgColor : "bg-slate-300"}
+                <div ref={canvasref} className={`${isColoredHeadset ? bgColor : "bg-slate-300"}
              flex flex-row align-middle justify-center p-2 rounded-lg
-              ${gridDisplay ? null : isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"}`} 
-            onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined} >
-               {/* { tailwindCanvasDim } */}
-            </div>
+              ${gridDisplay ? null : isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"}`}
+                    onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}
+                    key={key}>
 
-
-
+                </div>
 
                 :
                 //  placeholder, with an eye icon

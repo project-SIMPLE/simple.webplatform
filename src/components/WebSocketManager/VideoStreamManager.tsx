@@ -67,7 +67,6 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   const maxElements: int = 1 //! dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
-  // const [canvasContainerStyle, setCanvasContainerStyle] = useState<string>("");
   const [islimitingDimWidth, setIslimitingDimWidth] = useState<boolean>(false);
   const [isPortrait, setIsPortrait] = useState<boolean>(false)
   const [viewport, setViewport] = useState(() => ({ //used to determine optimal display type (ie portrait or landscape mode)
@@ -249,7 +248,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
             controller!.enqueue(deserializedData!.packet);
             // Ensure starting stream with a configuration package holding keyframe
           } else if (
-            //!isDecoderHasConfig.get(deserializedData!.streamId) &&
+            //\!isDecoderHasConfig.get(deserializedData!.streamId) &&
             deserializedData!.packet.type == "configuration"
           ) {
             controller!.enqueue(deserializedData!.packet);
@@ -454,7 +453,6 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       :
 
       <div className="w-full h-full flex flex-col items-center">
-        {/* <div className={`${Object.keys(canvasList).length + placeholders.length > minElementsForGrid ? "grid grid-flow-col grid-rows-2 gap-2" : "flex"} h-full w-full items-center justify-center`}> */}
         <div className={`${canvasContainerStyle} w-full h-full`} id="canvascontainer">
           {Object.entries(canvasList).map(([key, canvas]) =>  //si on est en mode portrait (donc hauteur plus grande) on affiche les éléments en colonne, sinon on les affiche en ligne
 
