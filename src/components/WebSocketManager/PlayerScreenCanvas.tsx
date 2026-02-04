@@ -16,11 +16,10 @@ interface PlayerScreenCanvasProps {
     tailwindCanvasDim: [string, string]; //tailwind raw dimensions to be passed to the canvas element
     isLimitingWidth?: boolean; //whether the maximum dimension is the width or the height
     gridDisplay?: boolean;
-    key: string;
 }
 
 
-const PlayerScreenCanvas = ({ key, canvas, id, isPlaceholder, hideInfos, isLimitingWidth, tailwindCanvasDim, gridDisplay, needsInteractivity }: PlayerScreenCanvasProps) => {
+const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWidth, tailwindCanvasDim, gridDisplay, needsInteractivity }: PlayerScreenCanvasProps) => {
     if (!id) {
         return null;
     }
@@ -100,7 +99,7 @@ const PlayerScreenCanvas = ({ key, canvas, id, isPlaceholder, hideInfos, isLimit
              flex flex-row align-middle justify-center p-2 rounded-lg
               ${gridDisplay ? null : isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"}`}
                     onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}
-                    key={key}>
+                 >
 
                 </div>
 

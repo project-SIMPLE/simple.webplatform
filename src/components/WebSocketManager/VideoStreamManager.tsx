@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import PlayerScreenCanvas from "./PlayerScreenCanvas.tsx";
 import {
   VideoFrameRenderer,
@@ -44,13 +44,13 @@ const deserializeData = (serializedData: string) => {
 function createVideoFrameRenderer(): VideoFrameRenderer {
 
   if (WebGLVideoFrameRenderer.isSupported) {
-    logger.debug("[SCRCPY] Using WebGLVideoFrameRenderer");
+     logger.debug("[SCRCPY] Using WebGLVideoFrameRenderer");
     return new WebGLVideoFrameRenderer();
   } else {
-    logger.warn("[SCRCPY] WebGL isn't supported... ");
+     logger.warn("[SCRCPY] WebGL isn't supported... ");
   }
 
-  logger.debug("[SCRCPY] Using fallback BitmapVideoFrameRenderer");
+   logger.debug("[SCRCPY] Using fallback BitmapVideoFrameRenderer");
   return new BitmapVideoFrameRenderer();
 }
 
@@ -75,6 +75,13 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   }));
   const [tailwindCanvasDim, setTailwindCanvasDim] = useState<[string, string]>(["", ""]);
   const [gridDisplay, setGriDisplay] = useState<boolean>(false);
+
+  const sortedKeys = useMemo(() => {
+    return Object.keys(canvasList).sort((a, b) =>
+      a.localeCompare(b, undefined, { numeric: true })
+    );
+  }, [canvasList]);
+
 
   // Tables storing data for decoding scrcpy streams
   const readableControllers = new Map<
@@ -102,11 +109,11 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     // Wait for HTML to be available
 
     if (document.getElementById(deviceId)) {
-      logger.info(" Restarting new ReadableStream for {deviceId}", { deviceId })
+       logger.info(" Restarting new ReadableStream for {deviceId}", { deviceId })
       document.getElementById(deviceId)?.querySelector('canvas')?.remove();
     } else {
       // Create new stream
-      logger.info(" Create new ReadableStream for {deviceId}", { deviceId })
+       logger.info(" Create new ReadableStream for {deviceId}", { deviceId })
     }
     // Prepare video stream =======================
 
@@ -125,10 +132,10 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       setCanvasList({ [deviceId]: canvas })
     } else if (!selectedCanvas) {
       if (deviceId in canvasList) {
-        logger.warn("tried adding an already existing canvas to the list, cancelling")
+         logger.warn("tried adding an already existing canvas to the list, cancelling")
       } else {
         setCanvasList(prevCanvasList => ({ ...prevCanvasList, [deviceId]: canvas }));
-        logger.info("added canvas")
+         logger.info("added canvas")
 
       }
     }
@@ -138,7 +145,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       codec: "hev1.1.60.L153.B0.0.0.0.0.0",
     }).then((supported) => {
       if (useH265 && !supported.supported) {
-        logger.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
+         logger.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
         readableControllers.delete(deviceId);
         return;
       }
@@ -148,7 +155,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
           codec: useH265 ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264,
           renderer: renderer,
         });
-        logger.log("[Scrcpy-VideoStreamManager] Decoder for {useH265} ? \"h265\" : \"h264\", loaded", { useH265: "h265" });
+         //TODO fix ce log logger.log("[Scrcpy-VideoStreamManager] Decoder for {useH265} ? \"h265\" : \"h264\", loaded", { useH265: "h265" }); 
         // Create new ReadableStream used for scrcpy decoding
         const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
           start(controller) {
@@ -163,7 +170,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
             isDecoderHasConfig.delete(deviceId);
             try {
               canvasList[deviceId].remove();
-              logger.info("deleted canvas", deviceId)
+               logger.info("deleted canvas", deviceId)
             } catch (e) {
               logger.error("Can't delete canvas {canvasList}, {e}", { canvasList, e });
             }
@@ -172,7 +179,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
         // Feed the scrcpy stream to the video decoder
         void stream.pipeTo(decoder.writable).catch((err) => {
-          logger.error("[Scrcpy] Error piping to decoder writable stream: {err}", { err });
+          ogger.error("[Scrcpy] Error piping to decoder writable stream: {err}", { err });
         });
 
         return stream;
@@ -180,7 +187,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         logger.error("[Scrcpy] Error piping to decoder writable stream");
       }
     }).catch((error) => {
-      logger.error('Error checking H.264 configuration support: {error}', { error });
+       logger.error('Error checking H.264 configuration support: {error}', { error });
     });
   }
 
@@ -194,23 +201,22 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     // Send browser's codecs compatibility
     socket.onopen = async () => {
       let supportH264: boolean, supportH265: boolean, supportAv1: boolean;
-
       // Check if h264 is supported
       await VideoDecoder.isConfigSupported({ codec: "avc1.4D401E" }).then((r) => {
         supportH264 = r.supported!;
-        logger.info("[SCRCPY] Supports h264", supportH264);
+         logger.info("[SCRCPY] Supports h264", supportH264);
       })
 
       // Check if h265 is supported
       await VideoDecoder.isConfigSupported({ codec: "hev1.1.60.L153.B0.0.0.0.0.0" }).then((r) => {
         supportH265 = r.supported!;
-        logger.info("[SCRCPY] Supports h265 {supportH265}", { supportH265 });
+         logger.info("[SCRCPY] Supports h265 {supportH265}", { supportH265 });
       })
 
       // Check if AV1 is supported
       await VideoDecoder.isConfigSupported({ codec: "av01.0.05M.08" }).then((r) => {
         supportAv1 = r.supported!;
-        logger.info("[SCRCPY] Supports AV1 {supportAv1}", { supportAv1 });
+         logger.info("[SCRCPY] Supports AV1 {supportAv1}", { supportAv1 });
       })
 
       socket.send(JSON.stringify({
@@ -255,14 +261,14 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
             isDecoderHasConfig.set(deserializedData!.streamId, true);
           }
         } else {
-          logger.warn("[Scrcpy] Error piping to decoder writable stream, closing controller...");
+           logger.warn("[Scrcpy] Error piping to decoder writable stream, closing controller...");
           controller!.close();
         }
       }
     };
 
     socket.onclose = () => {
-      logger.info("[Scrcpy-VideoStreamManager] Closing readable");
+       logger.info("[Scrcpy-VideoStreamManager] Closing readable");
     };
   }, []);
 
@@ -449,14 +455,13 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         )}
       </div>
 
-
       :
 
       <div className="w-full h-full flex flex-col items-center">
         <div className={`${canvasContainerStyle} w-full h-full`} id="canvascontainer">
-          {Object.entries(canvasList).map(([key, canvas]) =>  //si on est en mode portrait (donc hauteur plus grande) on affiche les éléments en colonne, sinon on les affiche en ligne
+          {sortedKeys.map((key) =>
 
-            <PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={true} hideInfos={hideInfos} isLimitingWidth={islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} gridDisplay={gridDisplay} />
+            <PlayerScreenCanvas key={key} id={key} canvas={canvasList[key]} needsInteractivity={true} hideInfos={hideInfos} isLimitingWidth={islimitingDimWidth} tailwindCanvasDim={tailwindCanvasDim} gridDisplay={gridDisplay} />
 
           )}
           {placeholders.map((_, index) => (
