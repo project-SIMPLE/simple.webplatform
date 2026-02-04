@@ -31,7 +31,8 @@ export class MonitorServer {
             if (token) {
                 logger.info(`Creating monitor server on: ws://${host}:${port}`);
             } else {
-                logger.error('Failed to listen on the specified port and host');
+                logger.fatal('Failed to listen on the specified port and host');
+                process.exit(1);
             }
         });
 
