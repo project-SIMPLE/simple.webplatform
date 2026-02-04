@@ -169,7 +169,7 @@ class GamaConnector {
             this.gama_socket = new WebSocket(`ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
 
             this.gama_socket.onopen = () => {
-                logger.info(`Opening connection with GAMA Server`);
+                logger.debug(`Opening connection with GAMA Server`);
 
                 this.setGamaConnection(true);
                 this.setGamaExperimentState('NONE');
@@ -219,7 +219,7 @@ class GamaConnector {
                             break;
 
                         case "ConnectionSuccessful":
-                            logger.debug(`Connected to Gama Server on ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
+                            logger.info(`Connected to Gama Server on ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
                             break;
 
                         default:
