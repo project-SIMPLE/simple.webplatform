@@ -1,5 +1,5 @@
 // Import des modules nécessaires
-import { spawn } from "child_process";
+import { spawnSync } from "child_process";
 import dotenv from 'dotenv';
 import {
     configure,
@@ -12,27 +12,20 @@ import { getRotatingFileSink } from "@logtape/file";
 import { getPrettyFormatter } from "@logtape/pretty";
 
 import Controller from './core/Controller.ts';
+import { StaticServer } from './infra/StaticServer.ts';
+import path from 'path';
 
 /*
     TOOLBOX ================================
  */
 
-async function isCommandAvailable(commandName: string): Promise<boolean> {
+function isCommandAvailable(commandName: string): boolean {
     if (process.platform === "win32") {
-        const checkAdbProcess = spawn("where", [commandName]);
-        return new Promise((resolve) => {
-            checkAdbProcess.on("close", (code) => {
-                resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
-            });
-        });
+        const checkAdbProcess = spawnSync("where", [commandName]);
+        return checkAdbProcess.status === 0;
     } else {
-        return new Promise((resolve) => {
-            const checkAdbProcess = spawn("which", [commandName]);
-
-            checkAdbProcess.on("close", (code) => {
-                resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
-            });
-        });
+        const checkAdbProcess = spawnSync("which", [commandName]);
+        return checkAdbProcess.status === 0;
     }
 }
 
@@ -41,7 +34,12 @@ async function isCommandAvailable(commandName: string): Promise<boolean> {
  */
 
 // Load options
-dotenv.config();
+const isPackaged = (process as any).pkg || process.env.PKG_EXECPATH || !process.argv[0].endsWith('node');
+const exeDir = isPackaged ? path.dirname(process.execPath) : process.cwd();
+dotenv.config({ path: path.join(exeDir, '.env') });
+
+// Fix for some dependencies (like evilscan) that might use undeclared variables
+(global as any).targetMatch = undefined;
 
 // Default value for every option value
 // GAMA =====
@@ -81,11 +79,16 @@ const ENV_VERBOSE: boolean = ENV_EXTRA_VERBOSE ?
         
 const ENV_GAMALESS: boolean = process.env.ENV_GAMALESS !== undefined ? ['true', '1', 'yes'].includes(process.env.ENV_GAMALESS.toLowerCase()) : false;
 
+const useAdb: boolean = isCommandAvailable("adb") && (() => {
+    const checkAdb = spawnSync("adb", ["devices"]);
+    return checkAdb.status === 0;
+})();
+
 /*
     SETUP LOGGING SYSTEM ================================
  */
 
-await configure({
+const logConfig = configure({
     sinks: {
         // Simple non-blocking mode with default settings
         console: withFilter(
@@ -122,29 +125,39 @@ await configure({
         }
     ]
 });
+
 const logger = getLogger(["core", "index"]);
 
 /*
     APPLICATION ENTRY POINT ================================
  */
 
-logger.info(`Starting the SIMPLE Webplatform !`);
+async function start() {
+    await logConfig;
+    logger.info(`Starting the SIMPLE Webplatform !`);
 
-logger.trace(process.env);
+    logger.debug(`Node version: ${process.version}`);
+    logger.debug(`Module version: ${process.versions.modules}`);
+    logger.debug(`Platform: ${process.platform}`);
+    logger.debug(`Arch: ${process.arch}`);
+    logger.debug(`Is Packaged: {isPackaged}`, {isPackaged});
+    logger.debug(`NODE_ENV: ${process.env.NODE_ENV}`);
 
-const useAdb: boolean =
-    (await isCommandAvailable("adb"))
-        ? await new Promise((resolve) => {
-            logger.debug("Waking up ADB...");
-            const checkAdb = spawn("adb", ["devices"]);
-            checkAdb.on('close', (code) => {
-                resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
-            });
-        })
-        : false;
+    logger.trace(process.env);
 
-const c = new Controller(useAdb);
-await c.initialize();
+    // Start static server to serve the frontend in production/executable mode
+    if (process.env.NODE_ENV === 'production' || isPackaged) {
+        new StaticServer();
+    }
+
+    const c = new Controller(useAdb);
+    await c.initialize();
+}
+
+start().catch(err => {
+    console.error("Failed to start application:", err);
+    process.exit(1);
+});
 
 export {
     ENV_GAMALESS,

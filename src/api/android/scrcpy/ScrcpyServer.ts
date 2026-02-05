@@ -286,6 +286,7 @@ export class ScrcpyServer {
 
             // Print output of Scrcpy server
             client.output.pipeTo(
+                // @ts-expect-error
                 new WritableStream<string>({
                     write(chunk: string): void {
                         logger.trace({ chunk });
