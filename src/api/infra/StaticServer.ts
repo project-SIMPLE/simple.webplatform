@@ -42,7 +42,7 @@ export class StaticServer {
         app.use(express.static(distPath));
         
         // Handle SPA routing
-        app.get('*', (req, res) => {
+        app.get('*', (_req: any, res: any) => {
             res.sendFile(path.join(distPath, 'index.html'));
         });
 

@@ -3,10 +3,10 @@ import { ENV_VERBOSE, ENV_EXTRA_VERBOSE } from '../index.ts';
 import { GamaState, GAMA_ERROR_MESSAGES, JsonPlayerAsk } from "../core/Constants.ts";
 import Model from "./Model.ts";
 import Controller from "../core/Controller.ts";
-import { getLogger } from "@logtape/logtape";
+import {getLogger, Logger} from "@logtape/logtape";
 
 // Override the log function
-const logger = getLogger(["sim", "GamaConnector"]);
+const logger: Logger = getLogger(["sim", "GamaConnector"]);
 
 /**
  * This class creates a websocket client for Gama Server.
@@ -84,14 +84,14 @@ class GamaConnector {
 
     /**
      * Asks the GAMA server to load an experiment, ready to be started.
-     * @param filepath optionnal string of a path to the model to launch the experiment from. Will default to using the activemodel's value if omitted.
-     * @param exp_name string of the name of the experiment to launch. Will default to using the activemodel's value if omitted.
+     * @param filepath optional string of a path to the model to launch the experiment from. Will default to using the active model's value if omitted.
+     * @param exp_name string of the name of the experiment to launch. Will default to using the active model's value if omitted.
      * @returns a JSON payload of type load to be sent to the Gama server
      */
     jsonLoadExperiment(filepath?: string, exp_name?: string) {
         const model = this.controller.model_manager.getActiveModel();
         console.log(model.getExperimentName())
-        logger.debug("[GAMA CONNECTOR]: active model experiment to be loaded:", model.getExperimentName())
+        logger.debug("[GAMA CONNECTOR]: active model experiment to be loaded: {modelName}", {modelName: model.getExperimentName()})
         if (model.getExperimentName() === undefined) {
             logger.error("[GAMA CONNECTOR]: the name of the experiment is undefined")
         } else {

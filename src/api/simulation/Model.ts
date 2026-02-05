@@ -1,30 +1,28 @@
 import path from 'path';
 import { JsonSettings } from "../core/Constants.ts";
-import { getLogger } from '@logtape/logtape';
+import { Logger, getLogger } from '@logtape/logtape';
 
-
-const logger = new getLogger(["api", "simulation"])
+const logger: Logger = getLogger(["api", "simulation"]);
 class Model {
     readonly #jsonSettings: JsonSettings;
     readonly #modelFilePath: string;
 
     /**
      * Creates the model
-     * @param {any} controller - The controller of the server project
      * @param {string} settingsPath - Path to the settings file
-     * @param {string} modelFilePath - an optionnnal parameter, if not present, the function defaults to searching for the path the old way
+     * @param {string} jsonSettings -
      */
     constructor(settingsPath: string, jsonSettings: string) {
         this.#jsonSettings = JSON.parse(jsonSettings);
+
+        logger.debug("Parsing {json}", { json: this.#jsonSettings });
+
         //if the path is relative, we rebuild it using the path of the settings.json it is found in
-        const modelFilePath = this.#jsonSettings.model_file_path
+        const modelFilePath = this.#jsonSettings.model_file_path;
         if (path.isAbsolute(modelFilePath)) {
             this.#modelFilePath = modelFilePath;
-            logger.debug("GAMA CONNECTOR path is absolute")
         } else {
-            logger.debug("GAMA CONNECTOR path is relative")
             this.#modelFilePath = path.join(path.dirname(settingsPath), this.#jsonSettings.model_file_path);
-            
         }
     }
 

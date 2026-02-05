@@ -1,5 +1,5 @@
 // Import des modules nécessaires
-import { spawn, spawnSync } from "child_process";
+import { spawnSync } from "child_process";
 import dotenv from 'dotenv';
 import {
     configure,
@@ -14,7 +14,6 @@ import { getPrettyFormatter } from "@logtape/pretty";
 import Controller from './core/Controller.ts';
 import { StaticServer } from './infra/StaticServer.ts';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 /*
     TOOLBOX ================================
@@ -35,7 +34,7 @@ function isCommandAvailable(commandName: string): boolean {
  */
 
 // Load options
-const isPackaged = (process as any).pkg || process.env.PKG_EXECPATH || process.argv[0].endsWith('node') === false;
+const isPackaged = (process as any).pkg || process.env.PKG_EXECPATH || !process.argv[0].endsWith('node');
 const exeDir = isPackaged ? path.dirname(process.execPath) : process.cwd();
 dotenv.config({ path: path.join(exeDir, '.env') });
 

@@ -73,7 +73,7 @@ class ModelManager {
                     if (fs.existsSync(settingsPath)) {
                         logger.debug(`Append new package to ModelManager: ${folderPath}`);
 
-                        const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
+                        const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
                         this.jsonList.push(settings); // add the settings file to the list of json files
 
                         logger.trace(`{jsonList}`, {jsonList: this.jsonList});
@@ -81,20 +81,20 @@ class ModelManager {
 
                         if (settings.type === "catalog") { //it's a catalog, i.e it contains a subset of catalogs and models
                             logger.debug(`Found catalog in ${folderPath}`);
-                            this.parseCatalog(settings, modelList, settingsPath)
+                            this.parseCatalog(settings, modelList, settingsPath);
                         } else if (Array.isArray(settings)) {
                             logger.debug(`Found array in ${color.cyan}${folderPath}${color.reset},iterating through`);
 
                             for (const item of settings) {
-                                logger.debug(`\titem: ${item.type}`)
-                                this.parseCatalog(item, modelList, settingsPath)
+                                logger.debug(`\titem: ${item.type}`);
+                                this.parseCatalog(item, modelList, settingsPath);
                             }
 
                         } else if (settings.type === "json_settings") {
-                            logger.debug("{settings}", {settings: settings.model_file_path})
+                            logger.debug("{settings}", {settings: settings.model_file_path});
 
                             modelList = modelList.concat(
-                                new Model(settingsPath, JSON.stringify(settings), settings.model_file_path)
+                                new Model(settingsPath, JSON.stringify(settings))
                             );
                         }
                         logger.trace(modelList.toString());
