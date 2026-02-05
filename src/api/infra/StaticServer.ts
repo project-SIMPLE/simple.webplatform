@@ -8,6 +8,7 @@ const logger = getLogger(["infra", "StaticServer"]);
 
 export class StaticServer {
     constructor() {
+        logger.debug(`Starting express server for static files...`);
         const app = express();
         const port = process.env.WEB_APPLICATION_PORT || '5173';
         
@@ -37,7 +38,7 @@ export class StaticServer {
             return;
         }
 
-        logger.info(`Serving static files from: ${distPath}`);
+        logger.debug(`Serving static files from: ${distPath}`);
         app.use(express.static(distPath));
         
         // Handle SPA routing
@@ -46,7 +47,7 @@ export class StaticServer {
         });
 
         app.listen(port, () => {
-            logger.info(`Frontend served on http://localhost:${port}`);
+            logger.info(`=========================================\n\n\tWebplatform started and is accessible\n\t\t     http://localhost:${port}\n\n=========================================`);
         });
     }
 }

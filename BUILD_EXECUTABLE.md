@@ -18,10 +18,10 @@ To package this application into a single Linux executable, follow these steps:
 
 ### Distribution
 
-The generated executable is located at `bin/simple`. 
+The generated executables are located in the `bin/` directory.
 
 **Requirements for running**:
-- **Operating System**: Linux (x64).
+- **Operating System**: Linux (x64) or Windows (x64).
 - **External Configuration**: The application expects a `.env` file to be present in the **same directory** as the executable.
 - **Dependencies**: No Node.js installation is required. However, the application still relies on `adb` being installed on the host system if Android device management is needed.
 

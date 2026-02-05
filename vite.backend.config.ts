@@ -4,7 +4,7 @@ import path from 'path';
 
 export default defineConfig({
   build: {
-    target: 'node20',
+    target: 'node24',
     lib: {
       entry: path.resolve(__dirname, 'src/api/index.ts'),
       formats: ['cjs'],

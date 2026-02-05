@@ -137,15 +137,22 @@ async function start() {
     await logConfig;
     logger.info(`Starting the SIMPLE Webplatform !`);
 
-    logger.trace(process.env);
+    logger.debug(`Node version: ${process.version}`);
+    logger.debug(`Module version: ${process.versions.modules}`);
+    logger.debug(`Platform: ${process.platform}`);
+    logger.debug(`Arch: ${process.arch}`);
+    logger.debug(`Is Packaged: {isPackaged}`, {isPackaged});
+    logger.debug(`NODE_ENV: ${process.env.NODE_ENV}`);
 
-    const c = new Controller(useAdb);
-    await c.initialize();
+    logger.trace(process.env);
 
     // Start static server to serve the frontend in production/executable mode
     if (process.env.NODE_ENV === 'production' || isPackaged) {
         new StaticServer();
     }
+
+    const c = new Controller(useAdb);
+    await c.initialize();
 }
 
 start().catch(err => {
