@@ -31,9 +31,29 @@ jobs:
       - name: Export release to artifact
         uses: actions/upload-artifact@v4
         with:
-          name: webplatform-compiled-archive
+          name: linux-compiled-archive
           if-no-files-found: error
           compression-level: 0
           overwrite: true
           path: |
-            ${{ github.workspace }}/bin/*
+            ${{ github.workspace }}/bin/simple-linux*
+
+      - name: Export release to artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-compiled-archive
+          if-no-files-found: error
+          compression-level: 0
+          overwrite: true
+          path: |
+            ${{ github.workspace }}/bin/simple-win*
+
+      - name: Export release to artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-compiled-archive
+          if-no-files-found: error
+          compression-level: 0
+          overwrite: true
+          path: |
+            ${{ github.workspace }}/bin/simple-macos*
