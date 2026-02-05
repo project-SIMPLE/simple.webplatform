@@ -51,19 +51,29 @@ this command should return the version of both tools.
    ```bash
    npm install
    ```
-3. Configure environment variables:  
+   
+3. Configure environment variables:
+   -If you have a GAMA simulation VR game with its own generated .env:
+   copy this `.env` to the location `simple.webplatform/.env` in the web platform. 
+   
+   **OR**
+
+   -If you do not have a generated .env, use the example one provided in the application:
+   
    - Copy `.env.example` to `.env`:  
      ```bash
      cp .env.example .env
      ```
-   - Update the values based on your setup.  
+     
+   - Update the values based on your setup, most notably the `EXTRA_LEARNING_PACKAGE_PATH` to add an extra folder to scan for GAMA experiments, and the values `GAMA_WS_PORT` and `GAMA_IP_ADRESS` if you have a custom setup different from the default one.
+   - For more informations about the .env file, refer to the Documentation reference, that can be found (here)[https://doc.project-simple.eu/Technical/env_reference].
 
-4. Start the development server:  
+5. Start the development server:  
    ```bash
    npm start
    ```
    
-> Mind that the GAMA Platform have to be running and accessible by the web platform, it can be started at any time
+> Mind that while the GAMA Platform have to be running and accessible by the web platform, it can be started at any time, and will automatically connect if started after the webplatform.
 
 ---
 
