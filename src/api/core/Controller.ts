@@ -174,7 +174,9 @@ export class Controller {
     }
 
     connectGama() {
-        // this.gama_connector.connectGama();
+        if(ENV_GAMALESS){    
+            this.gama_connector.connectGama();
+        }
     }
 }
 
