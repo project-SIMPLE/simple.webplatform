@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "build:frontend": "vite build",
     "build:backend": "vite build -c vite.backend.config.ts",
-    "build:executable": "npm run build:frontend && npm run build:backend && pkg ."
+    "build:executable": "npm run build:frontend && npm run build:backend && pkg .",
+    "build:executable-compressed": "npm run build:frontend && npm run build:backend && pkg . --compress Brotli"
   },
   "bin": "dist-api/index.cjs",
   "pkg": {
@@ -20,7 +21,8 @@
     ],
     "targets": [
       "node24-linux-x64",
-      "node24-windows-x64"
+      "node24-windows-x64",
+      "node24-macos-x64"
     ],
     "outputPath": "bin"
   },
