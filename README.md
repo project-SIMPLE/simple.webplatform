@@ -102,7 +102,7 @@ This project is licensed under the AGPL-3.0 License. See the [LICENSE](LICENSE) 
 
 ## Acknowledgments 🙌
 - Built with ❤️ by the [Project SIMPLE](https://github.com/project-SIMPLE) team.  
-- Thanks to [yume-chan](https://github.com/yume-chan/) for he's awesome [ya-webadb](https://github.com/yume-chan/ya-webadb) library
+- Thanks to [yume-chan](https://github.com/yume-chan/) for his awesome [ya-webadb](https://github.com/yume-chan/ya-webadb) library
 
 --- 
 
