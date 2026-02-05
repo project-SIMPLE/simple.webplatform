@@ -1,0 +1,49 @@
+name: "Releasing with compressed binary"
+
+on:
+  workflow_call:
+
+jobs:
+  compilation:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Get utils
+        run: sudo apt install -y ldid qemu-user-binfmt
+
+      - uses: MOZGIII/install-ldid-action@v1
+        with:
+          tag: v2.1.5-procursus7
+
+      - name: Install npm modules
+        run: npm i
+
+      - name: Get release metadata
+        id: setup_new_release_data
+        run: |
+          date=$(date +'%d/%m/%y %R')
+          echo "date=$date" >> "$GITHUB_OUTPUT"
+
+      - name: Package application
+        run: npm run build:executable-compressed
+
+      # Publish
+
+      - name: Publish alpha to Github
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          make_latest: false
+          tag_name: "alpha"
+          name: Alpha Version
+          body: |
+            Alpha release of the SIMPLE webplatform. Please test and report issues.
+            Lastly updated on $(date +'%d/%m/%y %R').
+          generate_release_notes: true
+          files: ${{ github.workspace }}/bin/*
+          fail_on_unmatched_files: true
