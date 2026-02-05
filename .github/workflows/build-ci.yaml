@@ -20,6 +20,9 @@ jobs:
         with:
           tag: v2.1.5-procursus7
 
+      - name: Test ldid installation
+        run: ldid -v
+
       - name: Install npm modules
         run: npm i
 
@@ -28,7 +31,7 @@ jobs:
 
       # Publish
 
-      - name: Export release to artifact
+      - name: Export release for Linux
         uses: actions/upload-artifact@v4
         with:
           name: linux-compiled-archive
@@ -38,7 +41,7 @@ jobs:
           path: |
             ${{ github.workspace }}/bin/simple-linux*
 
-      - name: Export release to artifact
+      - name: Export release for Windows
         uses: actions/upload-artifact@v4
         with:
           name: windows-compiled-archive
@@ -48,7 +51,7 @@ jobs:
           path: |
             ${{ github.workspace }}/bin/simple-win*
 
-      - name: Export release to artifact
+      - name: Export release for MacOS
         uses: actions/upload-artifact@v4
         with:
           name: macos-compiled-archive
