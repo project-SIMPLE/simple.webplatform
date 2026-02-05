@@ -20,9 +20,6 @@ jobs:
         with:
           tag: v2.1.5-procursus7
 
-      - name: Test ldid installation
-        run: ldid -v
-
       - name: Install npm modules
         run: npm i
 
