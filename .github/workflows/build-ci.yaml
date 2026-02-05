@@ -36,4 +36,4 @@ jobs:
           compression-level: 0
           overwrite: true
           path: |
-            ${{ runner.temp }}/bin/*
+            ${{ github.workspace }}/bin/*
