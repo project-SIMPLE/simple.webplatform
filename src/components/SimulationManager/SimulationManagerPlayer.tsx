@@ -42,15 +42,6 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
     // Logic for restart button
   };
 
-  // Method launch button hide , at the bottom of this component 
-  const handleGetPlayers = () => {
-    if (ws !== null) {
-      logger.info('Player list:', playerList);
-    } else {
-      logger.error('WebSocket is not connected');
-    }
-  };
-
   {
 
     return (

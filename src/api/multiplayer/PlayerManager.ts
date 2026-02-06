@@ -132,9 +132,9 @@ class PlayerManager {
                         break;
 
                     case "ask":
-                        const askJsonPlayer: JsonPlayerAsk = JSON.parse(Buffer.from(message).toString());
+                     {   const askJsonPlayer: JsonPlayerAsk = JSON.parse(Buffer.from(message).toString());
                         logger.trace(`[PLAYER ${this.playerList.get(playerIP)!.id}] Sent expression: {json}`, {json: askJsonPlayer });
-                        this.controller.sendAsk(askJsonPlayer);
+                        this.controller.sendAsk(askJsonPlayer);}
                         break;
 
                     case "disconnect_properly":
@@ -199,7 +199,9 @@ class PlayerManager {
                                 if (typeof message.byteLength !== 'undefined') {
                                     logger.error(`Message size: ${message.byteLength} bytes`);
                                 }
-                            } catch {}
+                            } catch(error){
+                                logger.error("couldn't display error message",error)
+                            }
                         }
                         break;
 
@@ -467,7 +469,7 @@ class PlayerManager {
      * @return Returns 1 for success, 2 for dropped due to backpressure limit, and 0 for built up backpressure that will drain over time.
      * @return -1 if playerWsId missing or not connected
      */
-    sendMessageByWs(playerWsId: string, message: any): number {
+    sendMessageByWs(playerWsId: string, message: string): number {
         let jsonPlayer!: Player;
         if (this.playerList.has(playerWsId) && this.playerList.get(playerWsId)!.connected )
             jsonPlayer = this.playerList.get(playerWsId)!;

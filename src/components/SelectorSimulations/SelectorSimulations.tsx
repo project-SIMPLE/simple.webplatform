@@ -45,18 +45,16 @@ const SelectorSimulations = () => {
       let list = simulationList
       for (const index of path) {
         logger.debug("index in the use effect: {index}", { index })
-        // @ts-expect-error
         if (list[index].entries.length > 0) {
-          // @ts-expect-error
           list = list[index].entries
         } else {
-          // @ts-expect-error
           list = list[index]
         }
         setSubProjectsList(list)
       }
     }
-  })
+    // @ts-expect-error the logger is not required in the dependency array, updates made to it should not trigger this hook
+  }, [path, simulationList])
 
 
   const addToPath = (index: number) => {

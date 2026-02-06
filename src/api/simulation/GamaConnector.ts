@@ -17,11 +17,11 @@ class GamaConnector {
     jsonGamaState: GamaState;
     gama_socket: WebSocket | null = null;
 
-    listMessages: any[] = [];
+    listMessages: string[] = [];
 
     /**
      * Constructor of the websocket client
-     * @param {any} controller - The controller of the project
+     * @param {Controller} controller - The controller of the project
      */
     constructor(controller: Controller) {
         this.controller = controller;

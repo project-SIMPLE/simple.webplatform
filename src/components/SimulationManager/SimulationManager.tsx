@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */ //! The unused var are for potential buttons to be implemented next, that allows changing the display to something that
+//! accomodates the gama server map
 import { useState, useEffect } from 'react';
 import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
