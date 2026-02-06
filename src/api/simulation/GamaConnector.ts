@@ -83,7 +83,7 @@ class GamaConnector {
     /* Protocol messages about Gama Server */
 
     /**
-     * Asks the GAMA server to load an experiment, ready to be started.
+     * Prepares the payload needed to launch an experiment
      * @param filepath optionnal string of a path to the model to launch the experiment from. Will default to using the activemodel's value if omitted.
      * @param exp_name string of the name of the experiment to launch. Will default to using the activemodel's value if omitted.
      * @returns a JSON payload of type load to be sent to the Gama server
@@ -96,13 +96,6 @@ class GamaConnector {
             logger.error("[GAMA CONNECTOR]: the name of the experiment is undefined")
         } else {
             console.log("GAMA CONNECTOR:",model.getModelFilePath())
-            const payload = {
-                type: "load",
-                model: filepath ? filepath : model.getModelFilePath(),
-                experiment: exp_name ? exp_name : model.getExperimentName()
-            }
-            this.listMessages = [payload]
-            this.sendMessages()
         }
 
 
@@ -326,7 +319,7 @@ class GamaConnector {
         logger.debug("[GAMA CONNECTOR]Called launch experiment")
         if (this.jsonGamaState.connected && this.jsonGamaState.experiment_state === 'NONE') {
             this.listMessages = [this.jsonLoadExperiment()];
-            console.log("LOG DE LIST MESSAGES", this.listMessages)
+            logger.debug("LOG DE LIST MESSAGES", this.listMessages)
             this.setGamaLoading(true);
             logger.debug("[GAMA CONNECTOR] called LaunchExperiment")
             this.sendMessages(() => {
