@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import { useState } from 'react';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import cross from '/src/svg_logos/x_cross.svg';
-import { getLogger, configure, getConsoleSink } from "@logtape/logtape";
-
+import { getLogger } from "@logtape/logtape";
+import { Player } from "./SimulationManager";
 const logger = getLogger(["components", "SimulationManagerPlayer"]);
 interface PlayerProps {
   Playerkey: string
-  selectedPlayer?: any;
+  selectedPlayer?: Player;
   className?: string;
   playerId?: string;
 
@@ -68,7 +68,7 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
                 <p>{t('Hour of connection')} : {selectedPlayer.date_connection}</p>
                 <p>{t('In game')} : {String(selectedPlayer.in_game)}</p>
               </div>
-              {/* //*   */}
+
               <div className="bg-red-300 pb-3 rounded-b-md">
                 <button
                   className="bg-red-500 text-white px-4 py-2 mt-4 rounded-l-md rounded-r-none"

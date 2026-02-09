@@ -1,7 +1,7 @@
 import Header from '../Header/Header';
 import { useState, useEffect } from 'react';
 import VideoStreamManager from '../WebSocketManager/VideoStreamManager';
-import { getLogger, configure, getConsoleSink } from '@logtape/logtape';
+import { getLogger } from '@logtape/logtape';
 const StreamPlayerScreenControl = () => {
     const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen");
     const [ws, setWs] = useState<WebSocket | null>(null);
