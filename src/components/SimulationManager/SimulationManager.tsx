@@ -195,7 +195,7 @@ const SimulationManager = () => {
                           } />
 
 
-                        <Link to={"../streamPlayerScreenControl"} className='bg-white rounded-lg' target='_blank'>
+                        <Link to={"../streamPlayerScreen"} className='bg-white rounded-lg' target='_blank'>
                           <Button bgColor='bg-purple-500'
                             text="VR screens"
                             icon={<img src={visibility} />}
@@ -233,7 +233,7 @@ const SimulationManager = () => {
                           style={{ width: "50px", height: "50px" }} />}
                         showText={true}
                       />
-                      <Link to={"../streamPlayerScreenControl"} className=' rounded-lg'>
+                      <Link to={"../streamPlayerScreen"} className=' rounded-lg'>
                         <Button bgColor='bg-purple-500 h-full'
                           text="VR displays"
                           icon={<img src={visibility} />}
