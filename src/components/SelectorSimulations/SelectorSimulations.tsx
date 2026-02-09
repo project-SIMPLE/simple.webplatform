@@ -4,10 +4,13 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Footer from '../Footer/Footer';
 import Header from '../Header/Header';
+import { Link } from 'react-router-dom';
+import Button from '../Button/Button';
 import SimulationList from './SimulationList';
 import arrow_back from "/src/svg_logos/arrow_back.svg";
 import { getLogger } from '@logtape/logtape';
 import { Simulation } from '../../api/core/Constants';
+import visibility from '/src/svg_logos/visibility.svg';
 const SelectorSimulations = () => {
   const { ws, isWsConnected, gama, simulationList } = useWebSocket();
   const [loading, setLoading] = useState<boolean>(true);
@@ -213,8 +216,8 @@ const SelectorSimulations = () => {
                 : <SimulationList list={simulationList} handleSimulation={handleSimulation} gama={gama} />
               }
 
-            </div>
 
+            </div>
 
           </div>
 
@@ -226,6 +229,14 @@ const SelectorSimulations = () => {
             </span>
 
           </div>
+            <Link to={"../streamPlayerScreen"} className='bg-white rounded-lg' target='_blank'>
+              <Button bgColor='bg-purple-500'
+                text="VR screens"
+                icon={<img src={visibility} />}
+                className='flex w-15'
+
+              ></Button>
+            </Link>
 
         </div>
 
