@@ -153,7 +153,7 @@ export class AdbManager {
 
     async checkAdbParameters(device: Device) {
         // Only modify headsets, don't jam phone's parameters
-        if (device.model?.startsWith("Quest_")) return;
+        if (!device.model?.startsWith("Quest_")) return;
 
         logger.debug(`[${device.serial}] Checking on-device global ADB settings...`);
         const transport = await this.adbServer.createTransport(device);
