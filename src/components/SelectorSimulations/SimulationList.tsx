@@ -1,6 +1,6 @@
 import arrow_down from '../../svg_logos/arrow_drop_down.svg';
 import { Simulation } from '../../api/core/Constants';
-
+import { getLogger } from '@logtape/logtape';
 interface SimulationListProps {
   list: Simulation[];
   handleSimulation: (index) => void;
@@ -13,6 +13,7 @@ interface SimulationListProps {
 }
   className?: string;
 }
+    const logger = getLogger(["components", "SimulationList"]);
 
 const SimulationList = ({ list, handleSimulation, gama, className }: SimulationListProps) => {
 
@@ -22,17 +23,14 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
 
       {list.map((simulation, index) => (
         <div className='items-center text-center w-24' key={index}>       
-        {/* //TODO changer ce qu'il y a dans le key (mettre un index défini par l'élément, passer ça en prop ?) tel quel, si la liste change, alors l'index de chaque élément peut changer, donc l'affichage est pseudo aléatoire */}
           <div
-          className={`shadow-lg rounded-3xl p-6 flex flex-col items-center h-40 cursor-pointer bg-slate-100
+          className={`shadow-lg rounded-2xl flex flex-col items-center h-40 cursor-pointer bg-slate-100
                     ${className} 
                     ${!gama.connected ? 'opacity-50' : null} 
                     ${simulation.type == "catalog"}  
                     `}
 
           style={{
-            backgroundImage: simulation.type == "json_settings" ? `url(${simulation.splashscreen})` : simulation.splashscreen ? `url(${simulation.splashscreen})` : `url(/images/simple_logo.png)`,
-            backgroundSize: 'cover',
             width: '100px',
             height: '100px',
             zIndex: 1,
@@ -43,7 +41,10 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
           onClick={gama.connected ? () => handleSimulation(index) : () => { }}
         >
           {simulation.type == "catalog" ? <img src={arrow_down} className='rounded-full bg-slate-500 opacity-90 size-16' /> : null} {/* //? downward arrow */}
-
+          <img src={` ${simulation.splashscreen}`} 
+          onError={(e) => { e.target.src = "/images/simple_logo.png"; logger.warn("couldn't load an image for simulation {index}, using the placeholder",{index})}}
+          className='size-full rounded-2xl'
+          />
 
 
 
