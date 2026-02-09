@@ -1,9 +1,16 @@
 import arrow_down from '../../svg_logos/arrow_drop_down.svg';
+import { Simulation } from '../../api/core/Constants';
 
 interface SimulationListProps {
-  list: any[];
-  handleSimulation: any;
-  gama: any;
+  list: Simulation[];
+  handleSimulation: (index) => void;
+  gama: {
+    connected: boolean;
+    loading: "hidden" | "visible";
+    experiment_state: string;
+    experiment_name: string;
+    content_error: string;
+}
   className?: string;
 }
 
