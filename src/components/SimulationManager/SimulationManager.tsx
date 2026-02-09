@@ -197,7 +197,7 @@ const SimulationManager = () => {
 
                         <Link to={"../streamPlayerScreenControl"} className='bg-white rounded-lg' target='_blank'>
                           <Button bgColor='bg-purple-500'
-                            text="Displays"
+                            text="VR screens"
                             icon={<img src={visibility} />}
                             className='flex w-15'
 
@@ -235,7 +235,7 @@ const SimulationManager = () => {
                       />
                       <Link to={"../streamPlayerScreenControl"} className=' rounded-lg'>
                         <Button bgColor='bg-purple-500 h-full'
-                          text="Displays"
+                          text="VR displays"
                           icon={<img src={visibility} />}
                           className='flex w-15 h-full'
                         ></Button>
