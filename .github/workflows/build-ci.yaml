@@ -14,7 +14,9 @@ jobs:
           node-version: 24
 
       - name: Get utils
-        run: sudo apt install -y qemu-user-binfmt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-binfmt
 
       - uses: MOZGIII/install-ldid-action@v1
         with:
