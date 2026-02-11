@@ -84,9 +84,19 @@ export interface Player {
 }
 
 /*
+    GAMA    ============================================
+ */
+
+export interface GAMA_JSON_LOAD_EXPERIMENT {
+    type: string,
+    model: string,
+    experiment: string
+}
+
+/*
     CONSTANTS   ========================================
  */
-export const GAMA_ERROR_MESSAGES = [
+export const GAMA_ERROR_MESSAGES: string[] = [
     "SimulationStatusError",
     "SimulationErrorDialog",
     "SimulationError",
@@ -126,7 +136,7 @@ export const ANSI_COLORS: Record<string,string> ={
     "reset": "\x1b[0m"
 }
 
-export const ON_DEVICE_ADB_GLOBAL_SETTINGS = {
+export const ON_DEVICE_ADB_GLOBAL_SETTINGS: Record<string,number|string> = {
     // Probing
     "captive_portal_detection_enabled": 0,
     "captive_portal_mode": 0,

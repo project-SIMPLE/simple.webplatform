@@ -1,6 +1,6 @@
 import WebSocket from 'ws';
 import { ENV_VERBOSE, ENV_EXTRA_VERBOSE } from '../index.ts';
-import { GamaState, GAMA_ERROR_MESSAGES, JsonPlayerAsk } from "../core/Constants.ts";
+import {GamaState, GAMA_ERROR_MESSAGES, JsonPlayerAsk, GAMA_JSON_LOAD_EXPERIMENT} from "../core/Constants.ts";
 import Model from "./Model.ts";
 import Controller from "../core/Controller.ts";
 import { getLogger } from "@logtape/logtape";
@@ -17,7 +17,7 @@ class GamaConnector {
     jsonGamaState: GamaState;
     gama_socket: WebSocket | null = null;
 
-    listMessages: string[] = [];
+    listMessages: any[] = [];
 
     /**
      * Constructor of the websocket client
@@ -83,34 +83,20 @@ class GamaConnector {
     /* Protocol messages about Gama Server */
 
     /**
-     * Asks the GAMA server to load an experiment, ready to be started.
-     * @param filepath optionnal string of a path to the model to launch the experiment from. Will default to using the activemodel's value if omitted.
-     * @param exp_name string of the name of the experiment to launch. Will default to using the activemodel's value if omitted.
+     * Generate a properly formated json to load experiment on GAMA
      * @returns a JSON payload of type load to be sent to the Gama server
      */
-    jsonLoadExperiment(filepath?: string, exp_name?: string) {
+    jsonLoadExperiment(): GAMA_JSON_LOAD_EXPERIMENT {
         const model = this.controller.model_manager.getActiveModel();
-        console.log(model.getExperimentName())
-        logger.debug("[GAMA CONNECTOR]: active model experiment to be loaded:", model.getExperimentName())
-        if (model.getExperimentName() === undefined) {
-            logger.error("[GAMA CONNECTOR]: the name of the experiment is undefined")
-        } else {
-            console.log("GAMA CONNECTOR:",model.getModelFilePath())
-            const payload = {
+
+        const payload: GAMA_JSON_LOAD_EXPERIMENT = {
                 type: "load",
-                model: filepath ? filepath : model.getModelFilePath(),
-                experiment: exp_name ? exp_name : model.getExperimentName()
+                model: model.getModelFilePath(),
+                experiment: model.getExperimentName()
             }
-            this.listMessages = [payload]
-            this.sendMessages()
-        }
+        logger.trace("Generating json to load GAMA simulation {payload}", {payload});
 
-
-        return {
-            type: "load",
-            model: filepath ? filepath : model.getModelFilePath(),
-            experiment: exp_name ? exp_name : model.getExperimentName()
-        };
+        return payload;
     }
 
     /** 
@@ -291,6 +277,7 @@ class GamaConnector {
         const copy_listMessages = this.listMessages;
         for (const message of copy_listMessages) {
             try {
+                logger.trace("Sending to GAMA: {message}", { message });
                 if (this.gama_socket != null)
                     if (typeof message === "function") {
 
@@ -306,11 +293,11 @@ class GamaConnector {
                     }
             }
             catch (e) {
-                logger.error("Error while sending this command to GAMA:\n{message}", { message });
+                logger.error("Error while sending this message to GAMA:\n{message}", { message });
                 logger.error(`${e}`);
             }
             finally {
-                logger.trace("Message sent to GAMA: {message}", { message });
+                // Remove message sent from the list
                 this.listMessages.splice(this.listMessages.indexOf(message), 1);
             }
         }
@@ -326,7 +313,6 @@ class GamaConnector {
         logger.debug("[GAMA CONNECTOR]Called launch experiment")
         if (this.jsonGamaState.connected && this.jsonGamaState.experiment_state === 'NONE') {
             this.listMessages = [this.jsonLoadExperiment()];
-            console.log("LOG DE LIST MESSAGES", this.listMessages)
             this.setGamaLoading(true);
             logger.debug("[GAMA CONNECTOR] called LaunchExperiment")
             this.sendMessages(() => {
