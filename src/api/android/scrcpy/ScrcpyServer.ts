@@ -78,12 +78,8 @@ export class ScrcpyServer {
                 this.wsClients.add(ws);
                 logger.debug("Web view connected");
 
-                // Send configuration message if scrcpy is already started
-                if (this.scrcpyStreamConfig) {
-                    ws.send(this.scrcpyStreamConfig, false, true);
-                }
-
-                this.resentAllConfigPackage(true);
+                // Restart every video stream on new client to have them all sync
+                this.resentAllConfigPackage(true).then(() => logger.debug("Streams restarted for new client connected"));
             },
 
             drain: (ws) => {
@@ -268,7 +264,7 @@ export class ScrcpyServer {
 
             const { metadata, stream: videoPacketStream } = await client.videoStream;
             logger.debug({ metadata });
-            // Prevent having stream ratio inverted, happpened on some weird device..
+            // Prevent having stream ratio inverted, happened on some weird device...
             // https://github.com/project-SIMPLE/simple.webplatform/issues/78
             if ((metadata == undefined || metadata.width! < metadata.height!) && deviceModel.startsWith("Quest")) {
                 logger.warn("Something's weird here, headset's stream isn't in the good size ratio, restarting... metadata:{metadata}", { metadata: metadata ? metadata : "the metadata is undefined" });
