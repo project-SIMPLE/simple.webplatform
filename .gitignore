@@ -28,4 +28,8 @@ dist-ssr
 package-lock.json
 errorLog.log*
 learning-packages/ACROSS-Lab QuangBinhProject MIAT-version Gama/
-eslint.config.ts
+
+# Compilation related
+bin
+dist
+dist-api

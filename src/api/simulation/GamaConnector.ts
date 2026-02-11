@@ -3,10 +3,10 @@ import { ENV_VERBOSE, ENV_EXTRA_VERBOSE } from '../index.ts';
 import {GamaState, GAMA_ERROR_MESSAGES, JsonPlayerAsk, GAMA_JSON_LOAD_EXPERIMENT} from "../core/Constants.ts";
 import Model from "./Model.ts";
 import Controller from "../core/Controller.ts";
-import { getLogger } from "@logtape/logtape";
+import {getLogger, Logger} from "@logtape/logtape";
 
 // Override the log function
-const logger = getLogger(["sim", "GamaConnector"]);
+const logger: Logger = getLogger(["sim", "GamaConnector"]);
 
 /**
  * This class creates a websocket client for Gama Server.

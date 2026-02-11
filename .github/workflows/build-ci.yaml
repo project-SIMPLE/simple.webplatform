@@ -1,0 +1,59 @@
+name: "Testing build on commit"
+
+on:
+  push:
+
+jobs:
+  compilation:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Get utils
+        run: sudo apt install -y qemu-user-binfmt
+
+      - uses: MOZGIII/install-ldid-action@v1
+        with:
+          tag: v2.1.5-procursus7
+
+      - name: Install npm modules
+        run: npm i
+
+      - name: Package application
+        run: npm run build:executable
+
+      # Publish
+
+      - name: Export release for Linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-compiled-archive
+          if-no-files-found: error
+          compression-level: 0
+          overwrite: true
+          path: |
+            ${{ github.workspace }}/bin/simple-linux*
+
+      - name: Export release for Windows
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-compiled-archive
+          if-no-files-found: error
+          compression-level: 0
+          overwrite: true
+          path: |
+            ${{ github.workspace }}/bin/simple-win*
+
+      - name: Export release for MacOS
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-compiled-archive
+          if-no-files-found: error
+          compression-level: 0
+          overwrite: true
+          path: |
+            ${{ github.workspace }}/bin/simple-macos*

@@ -7,7 +7,24 @@
     "start": "concurrently \"npx tsx src/api/index.ts\" \"vite\"",
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:frontend": "vite build",
+    "build:backend": "vite build -c vite.backend.config.ts",
+    "build:executable": "npm run build:frontend && npm run build:backend && pkg .",
+    "build:executable-compressed": "npm run build:frontend && npm run build:backend && pkg . --compress Brotli"
+  },
+  "bin": "dist-api/index.cjs",
+  "pkg": {
+    "assets": [
+      "dist/**/*",
+      "node_modules/uWebSockets.js/**.node"
+    ],
+    "targets": [
+      "node24-linux-x64",
+      "node24-windows-x64",
+      "node24-macos-x64"
+    ],
+    "outputPath": "bin"
   },
   "dependencies": {
     "@homebridge/ciao": "^1.1.8",
@@ -37,6 +54,7 @@
     "eslint-plugin-react-refresh": "^0.4.7",
     "evilscan": "^1.9.1",
     "express": "^4.21.2",
+    "geoip-lite": "^1.4.10",
     "i18next": "^23.15.1",
     "postcss": "^8.4.40",
     "react": "^18.3.1",
@@ -61,6 +79,8 @@
     "globals": "^17.3.0",
     "jest": "^29.7.0",
     "jiti": "^2.6.1",
-    "typescript-eslint": "^8.54.0"
+    "typescript-eslint": "^8.54.0",
+    "@types/express": "^5.0.6",
+    "@yao-pkg/pkg": "^6.12.0"
   }
 }
