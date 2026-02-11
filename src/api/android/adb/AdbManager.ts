@@ -69,7 +69,7 @@ export class AdbManager {
             }
         });
 
-        this.observer.onListChange((devices) => {
+        this.observer.onListChange(async (devices) => {
             // Fallback mechanism as the onRemove isn't catching everything...
             if (devices.length < this.clientCurrentlyStreaming.length) {
                 logger.debug("A headset has been disconnected, removing it from the list...");
@@ -81,6 +81,14 @@ export class AdbManager {
                         if (index > -1) {
                             this.clientCurrentlyStreaming.splice(index, 1);
                         }
+
+                        logger.warn("Trying to reconnect automatically to the device");
+                        let reconnected: boolean = false;
+                        const df: DeviceFinder = new DeviceFinder(this);
+                        while (!reconnected){
+                            reconnected =  await df.scanAndConnectIP(device.serial.split(":")[0]);
+                        }
+                        logger.info("Successfully reconnected to device {serial}", {serial: device.serial.split(":")[0]});
                     }
                 }
             }
