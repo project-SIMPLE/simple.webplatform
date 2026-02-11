@@ -1,18 +1,18 @@
 import path from 'path';
-import { JsonSettings } from "../core/Constants.ts";
-import { getLogger } from '@logtape/logtape';
+import { SETTINGS_FILE_JSON } from "../core/Constants.ts";
+import {getLogger, Logger} from '@logtape/logtape';
 
 
-const logger = new getLogger(["api", "simulation"])
+const logger: Logger = getLogger(["api", "simulation"]);
+
 class Model {
-    readonly #jsonSettings: JsonSettings;
+    readonly #jsonSettings: SETTINGS_FILE_JSON;
     readonly #modelFilePath: string;
 
     /**
-     * Creates the model
-     * @param {any} controller - The controller of the server project
+     * Creates a Model object based on VU founded by the ModelManager
      * @param {string} settingsPath - Path to the settings file
-     * @param {string} modelFilePath - an optionnnal parameter, if not present, the function defaults to searching for the path the old way
+     * @param {string} jsonSettings - Json content _Stringyfied_ of the settings file
      */
     constructor(settingsPath: string, jsonSettings: string) {
         this.#jsonSettings = JSON.parse(jsonSettings);
@@ -48,9 +48,9 @@ class Model {
 
     /**
      * Gets the JSON settings
-     * @returns {JsonSettings} - The JSON settings
+     * @returns {SETTINGS_FILE_JSON} - The JSON settings
      */
-    getJsonSettings(): JsonSettings {
+    getJsonSettings(): SETTINGS_FILE_JSON {
         return this.#jsonSettings;
     }
 

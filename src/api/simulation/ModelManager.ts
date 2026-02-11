@@ -91,10 +91,10 @@ class ModelManager {
                             }
 
                         } else if (settings.type === "json_settings") {
-                            logger.debug("{settings}", {settings: settings.model_file_path})
+                            logger.debug("{settings}", {settings})
 
                             modelList = modelList.concat(
-                                new Model(settingsPath, JSON.stringify(settings), settings.model_file_path)
+                                new Model(settingsPath, JSON.stringify(settings))
                             );
                         }
                         logger.trace(modelList.toString());

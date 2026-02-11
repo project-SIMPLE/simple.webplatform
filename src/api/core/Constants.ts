@@ -12,7 +12,7 @@ export interface JsonOutput {
     }>;
 }
 
-export interface JsonSettings {
+export interface SETTINGS_FILE_JSON {
     type?: string;
     model_file_path: string;
     experiment_name: string;
