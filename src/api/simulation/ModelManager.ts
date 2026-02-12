@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { isAbsolute } from 'path';
-import { ANSI_COLORS as color } from '../core/Constants.ts';
+import { VU_MODEL_SETTING_JSON, VU_CATALOG_SETTING_JSON, MIN_VU_MODEL_SETTING_JSON, MIN_VU_CATALOG_SETTING_JSON } from '../core/Constants.ts';
 import Model from './Model.ts';
 import Controller from "../core/Controller.ts";
 import {getLogger} from "@logtape/logtape";
@@ -13,7 +13,7 @@ class ModelManager {
     controller: Controller;
     models: Model[];
     activeModel: Model | undefined;
-    jsonList: string[] = [];  // List of all the models as written in each settings.json file, useful to keep the structure of subprojects
+    monitorNestedModels: any[] = [];
 
     /**
      * Creates the model manager
@@ -21,21 +21,18 @@ class ModelManager {
      */
     constructor(controller: Controller) {
         this.controller = controller;
-        this.models = this.#initModelsList();
+        this.models = []
+        this.#initModelsList();
     }
-
-
 
     /**
      * Initialize the models list by scanning the learning packages
      * checks for the type of settings
      * if it is a single model, it is directly added to the modelList
-     * if it is a catalog, it will parse it and it's sub objects
+     * if it is a catalog, it will parse it, and it's sub objects
      * if it is an array, it will parse the array and create a model for each object, and read catalogs if any
-     * @returns {Model[]} - List of models
      */
-    #initModelsList(): Model[] {
-        let modelList: Model[] = [];
+    #initModelsList(): void {
         const directoriesWithProjects: string[] = [];
 
         directoriesWithProjects.push(isAbsolute(process.env.LEARNING_PACKAGE_PATH!) ? process.env.LEARNING_PACKAGE_PATH! : path.join(process.cwd(), process.env.LEARNING_PACKAGE_PATH!));
@@ -47,7 +44,7 @@ class ModelManager {
         directoriesWithProjects.forEach((packageRootDir) => {
             const packageFolder: string[] = ["."].concat(fs.readdirSync(packageRootDir));
 
-            // Browse in learning package folder to find available packages
+            // Browse in the learning package folder to find available packages
             packageFolder.forEach((file) => {
                 const folderPath = path.join(packageRootDir, file);
 
@@ -57,59 +54,130 @@ class ModelManager {
                     if (fs.existsSync(settingsPath)) {
                         logger.debug(`Append new package to ModelManager: ${folderPath}`);
 
-                        const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
-                        this.jsonList.push(settings); // add the settings file to the list of json files
+                        const settings: VU_MODEL_SETTING_JSON|VU_CATALOG_SETTING_JSON = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
 
-                        logger.trace(`{jsonList}`, {jsonList: this.jsonList});
-                        logger.debug(`Found settings file in ${folderPath}`);
+                        switch (settings.type) {
+                            //it's a catalog, i.e it contains a subset of catalogs and models
+                            case "catalog":
+                                logger.debug(`Found catalog in ${folderPath}`);
 
-                        if (settings.type === "catalog") { //it's a catalog, i.e it contains a subset of catalogs and models
-                            logger.debug(`Found catalog in ${folderPath}`);
-                            this.parseCatalog(settings, modelList, settingsPath);
-                        } else if (Array.isArray(settings)) {
-                            logger.debug(`Found array in ${color.cyan}${folderPath}${color.reset},iterating through`);
+                                // Save final recursion in variable
+                                this.monitorNestedModels.push({
+                                    "type": "catalog",
+                                    "name": settings.name,
+                                    "entries": this.parseCatalog(settings, settingsPath),
+                                    ...(settings.splashscreen !== undefined && { "splashscreen": settings.splashscreen })
+                                });
 
-                            for (const item of settings) {
-                                logger.debug(`\titem: ${item.type}`);
-                                this.parseCatalog(item, modelList, settingsPath);
-                            }
+                                break;
 
-                        } else if (settings.type === "json_settings") {
-                            logger.debug("{settings}", {settings});
+                            case "json_settings":
+                                logger.debug(`Found single game settings in ${folderPath}`);
 
-                            modelList = modelList.concat(
-                                new Model(settingsPath, JSON.stringify(settings))
-                            );
+                                // Directly save new models not in catalog
+                                this.monitorNestedModels.push(
+                                    this.saveNewModel(settingsPath, settings)
+                                );
+
+                                break;
+
+                            default:
+                                // TODO: Remove ?
+                                if (Array.isArray(settings)) {
+                                    logger.debug(`Found array in ${folderPath},iterating through`);
+                                    // @ts-expect-error I don't know what this code is supposed to catch
+                                    // Will probably remove it soon...
+                                    for (const item of settings) {
+                                        logger.debug(`\titem: ${item.type}`);
+                                        this.parseCatalog(item, settingsPath);
+                                    }
+                                } else {
+                                    logger.error(`Can't identify setting's type from ${settingsPath}`);
+                                    logger.error(`{settings}`, {settings});
+                                }
                         }
-                        logger.trace(modelList.toString());
                     } else {
                         logger.warn(`Couldn't find settings file in folder ${folderPath}`);
                     }
                 }
             });
-        })
+        });
+    }
 
-        return modelList;
+    /**
+     * recursively parse a Json catalog passed in parameter
+     * adds the list of model to a list provided in parameter.
+     * declared as a separate function to be used recursively
+     * @param catalog a json catalog object containing catalogs or settings
+     * @param settingsPath the path of the current settings being parsed, used for creating models in the constructor
+     */
+    parseCatalog(catalog: VU_CATALOG_SETTING_JSON, settingsPath: string) {
+        const catalogName: string = catalog.name;
+
+        logger.debug(`Start parsing catalog: ${catalogName}`);
+        logger.trace(`{catalog}`,{catalog});
+
+        let cleanedEntry: MIN_VU_MODEL_SETTING_JSON[] = [];
+        let cleanedCatalog: MIN_VU_CATALOG_SETTING_JSON[] = [];
+
+        for (const entry of catalog.entries) {
+            logger.info(`[${catalogName}] Parsing entry found: {entry}`, {entry: entry.name});
+            switch (entry.type) {
+                case "catalog":
+                    logger.debug(`[${catalogName}] Found catalog, parsing it recursively`)
+                    cleanedCatalog.push({
+                        "type": "catalog",
+                        "name": entry.name,
+                        // @ts-expect-error Can't properly set what are entries since it can be a list of any MIN_VU
+                        "entries": this.parseCatalog(entry, settingsPath),
+                        ...(entry.splashscreen !== undefined && { "splashscreen": entry.splashscreen })
+                    })
+                    break;
+                // @ts-expect-error If unknown, trying to parse it as a legacy entry...
+                default:
+                    logger.warn(`[${catalogName}] Unknown type for this entry: {entry}`, {entry});
+                    logger.warn(`[${catalogName}] Trying to parse it as a legacy entry...`);
+                case "json_settings":
+                    try {
+                        logger.debug(`[${catalogName}] Parsing json_settings entry`);
+
+                        cleanedEntry.push(
+                            this.saveNewModel(settingsPath, entry)
+                        );
+                    } catch (e) {
+                        logger.error(`[${catalogName}] Couldn't parse catalog entry: {entry}, error: {e}`, {entry, e});
+                    }
+            }
+        }
+
+        return [...cleanedEntry, ...cleanedCatalog];
+    }
+
+    // -------------------
+
+    saveNewModel(settingsPath: string, settings: VU_MODEL_SETTING_JSON): MIN_VU_MODEL_SETTING_JSON {
+        logger.debug(`Saving new model: ${settings.name}`);
+        logger.trace(`{settings}`,{settings});
+
+        // TODO Check that settings if of type VU_MODEL_SETTING_JSON
+        const newModel: Model = new Model(settingsPath, settings);
+        const cleanedJson: VU_MODEL_SETTING_JSON = newModel.getJsonSettings();
+
+        return {
+            type: "json_settings",
+            name: cleanedJson.name,
+            splashscreen: cleanedJson.splashscreen,
+            // -1 as `push` return the new array size, not the index
+            // Add full Model object for GAMA
+            model_index: (this.models.push(newModel) - 1)
+        }
     }
 
     // -------------------
 
     setActiveModelByIndex(index: number) {
+        logger.debug(`Setting active model to index ${index}`);
         this.activeModel = this.models[index];
-    }
-
-    // -------------------
-
-    /**
-    *returns the model with the model_file_path specified 
-    * @filepath the path of the model, specified in the settings.json of the model
-    * @returns {Model} sets the active model to the model found 
-    */
-    setActiveModelByFilePath(filePath: string) {
-        logger.debug("trying to set active model using file path: {filepath}",{filepath: filePath})
-        const modelFound = this.models.find(model => model.getJsonSettings().model_file_path === filePath);
-        logger.debug("found model: {model}",{model: modelFound?.toString()})
-        return this.activeModel = modelFound
     }
 
     getActiveModel() {
@@ -119,19 +187,11 @@ class ModelManager {
     // -------------------
 
     /**
-     * Converts the model list to JSON format
-     * @returns {string} - JSON string of models
-     */
-    getModelListJSON(): string {
-        const jsonSafeModels = this.models.map(model => model.toJSON());
-        return JSON.stringify(jsonSafeModels);
-    }
-    /**
      * used to send the models structure to the front end for proper display
      * @returns {string} - JSON string of the list of models as written in each settings.json file
      */
     getCatalogListJSON(): string {
-        return JSON.stringify(this.jsonList);
+        return JSON.stringify(this.monitorNestedModels);
     }
 
     /**
@@ -141,32 +201,6 @@ class ModelManager {
     getModelList(): Model[] {
         return this.models;
     }
-    /**
-     * recursively parse a Json catalog passed in parameter
-     * adds the list of model to a list provided in parameter.
-     * declared as a separate function to be used recursively
-     * @param catalog a json catalog object containing catalogs or settings
-     * @param list the list of models containing all parsed models throughout all the settings files
-     * @param settingsPath the path of the current settings being parsed, used for creating models in the constructor
-     */
-    parseCatalog(catalog: Catalog, list: Model[], settingsPath: string) {
-        for (const entry of catalog.entries) {
-            if ('type' in entry) {
-                logger.info(`entry found: ${entry}`)
-                if (entry.type === "json_settings") {
-                    logger.info(`${entry.name}`)
-
-                    const model = new Model(settingsPath, JSON.stringify(entry));
-                    logger.debug(model.toString());
-                    list.push(model);
-                } else if (entry.type === "catalog") {
-                    this.parseCatalog(entry, list, settingsPath);
-                }
-            }
-        }
-    }
 }
-
-
 
 export default ModelManager;
