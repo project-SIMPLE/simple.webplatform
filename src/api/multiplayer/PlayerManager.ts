@@ -4,11 +4,11 @@ import {ENV_EXTRA_VERBOSE, ENV_AGGRESSIVE_DISCONNECT} from '../index.ts';
 import {JsonPlayer, JsonOutput, PlayerState, Player, JsonPlayerAsk} from "../core/Constants.ts";
 import Controller from "../core/Controller.ts";
 import {clearInterval} from "node:timers";
-import {getLogger} from "@logtape/logtape";
+import {getLogger, Logger} from "@logtape/logtape";
 
 
 // Override the log function
-const logger= getLogger(["multi", "PlayerManager"]);
+const logger: Logger = getLogger(["multi", "PlayerManager"]);
 
 /**
  * Creates a websocket server to handle player connections
@@ -299,7 +299,7 @@ class PlayerManager {
         this.playerList.get(playerWsId)!.connected = connected;
         this.playerList.get(playerWsId)!.date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
 
-        if ( !['NONE', "NOTREADY"].includes(this.controller.gama_connector.jsonGamaState.experiment_state) ) {
+        if ( this.controller.gama_connector !== undefined && !['NONE', "NOTREADY"].includes(this.controller.gama_connector.jsonGamaState.experiment_state) ) {
             logger.debug(`Adding player ${this.playerList.get(playerWsId)!.id} to GAMA simulation...`);
             this.controller.addInGamePlayer(playerWsId);
             this.togglePlayerInGame(playerWsId, true);
@@ -385,7 +385,7 @@ class PlayerManager {
 
         for (const [playerWsId, player] of this.playerList) {
 
-            if (!player.in_game){
+            if (this.controller.gama_connector !== undefined && !player.in_game){
                 this.controller.gama_connector.addInGamePlayer(playerWsId);
                 this.togglePlayerInGame(playerWsId, true);
             }

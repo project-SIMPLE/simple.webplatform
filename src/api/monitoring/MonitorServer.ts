@@ -3,6 +3,7 @@ import uWS, { TemplatedApp } from "uWebSockets.js";
 import { Controller } from "../core/Controller.ts";
 import { JsonMonitor } from "../core/Constants.ts";
 import { getLogger } from "@logtape/logtape";
+import Model from "../simulation/Model.ts";
 import path from 'path';
 const logger = getLogger(["monitor", "MonitorServer"]);
 
@@ -75,11 +76,6 @@ export class MonitorServer {
                         this.controller.resumeExperiment();
                         break;
 
-                    case "try_connection":
-                        logger.trace("Manually trying to connect to GAMA");
-                        this.controller.connectGama();
-                        break;
-
                     case "add_player_headset":
                         logger.trace("Adding a new player headset");
                         if (jsonMonitor.id) {
@@ -120,36 +116,22 @@ export class MonitorServer {
 
                     case "get_simulation_by_index":
                         logger.trace("Requesting and sending back simulation by index");
-                        {
-                            const index = jsonMonitor.simulationIndex;
+                        const index: number|undefined = jsonMonitor.simulationIndex;
 
+                        if (index !== undefined && index >= 0 && index < this.controller.model_manager.getModelList().length) {
+                            // Retrieve the simulation based on the index
+                            this.controller.model_manager.setActiveModelByIndex(index);
+                            logger.debug("set active model to {modelName}", {
+                                modelName: this.controller.model_manager.getActiveModel().toString()
+                            });
 
+                            const selectedSimulation = this.controller.model_manager.getActiveModel();
 
-                            if (
-                                index !== undefined &&
-                                index >= 0 &&
-                                index < this.controller.model_manager.getModelList().length
-                            ) {
-                                // Retrieve the simulation based on the index
-                                this.controller.model_manager.setActiveModelByIndex(index);
-                                logger.debug(
-                                    "set active model to",
-                                    this.controller.model_manager.getActiveModel().toString(),
-                                );
-                                console.log(
-                                    this.controller.model_manager.activeModel?.getExperimentName(),
-                                );
-                                const selectedSimulation =
-                                    this.controller.model_manager.getActiveModel();
-
-                                logger.trace("Sending back");
-                                this.sendMessageByWs(
-                                    {
-                                        type: "get_simulation_by_index",
-                                        simulation: selectedSimulation.getJsonSettings(), // Assuming getJsonSettings returns the relevant data
-                                    },
-                                    ws,
-                                );
+                            logger.trace("Sending back");
+                            this.sendMessageByWs({
+                                type: "get_simulation_by_index",
+                                simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
+                            }, ws);
 
                                 logger.debug("Opening virtual universe {selectedSimulation}", {
                                     selectedSimulation: selectedSimulation.getJsonSettings(),
@@ -301,24 +283,10 @@ export class MonitorServer {
 
                     switch (r) {
                         case 0:
-                            (logger.warn(
-                                `Backpressure is building up. Data will be drain overtime to {client}`,
-                            ),
-                            {
-                                client: Buffer.from(
-                                    client.getRemoteAddressAsText(),
-                                ).toString(),
-                            });
+                            logger.warn(`Backpressure is building up. Data will be drain overtime to {client}`, { client: Buffer.from(client.getRemoteAddressAsText()).toString() });
                             break;
                         case 2:
-                            (logger.error(
-                                `Backpressure detected. Data not sent to client {client}`,
-                            ),
-                            {
-                                client: Buffer.from(
-                                    client.getRemoteAddressAsText(),
-                                ).toString(),
-                            });
+                            logger.error(`Backpressure detected. Data not sent to client {client}`, { client: Buffer.from(client.getRemoteAddressAsText()).toString() });
                             break;
                         default:
                         case 1:

@@ -14,14 +14,13 @@ export class Controller {
     model_manager: ModelManager;
     monitor_server: MonitorServer;
     player_manager: PlayerManager;
-    gama_connector: GamaConnector;
+    gama_connector: GamaConnector | undefined;
 
-    adb_manager: AdbManager;
+    adb_manager: AdbManager | undefined;
     // mDnsService: mDnsService;
 
 
     constructor(useAdb: boolean) {
-
         // this.mDnsService = new mDnsService(process.env.WEB_HOSTNAME);
         this.model_manager = new ModelManager(this);
         this.monitor_server = new MonitorServer(this);
@@ -51,7 +50,7 @@ export class Controller {
         if (ENV_GAMALESS) {
             logger.trace("skipped restarting the gama connector, application in gamaless mode...")
         } else {
-            this.gama_connector.close();
+            this.gama_connector!.close();
         }
         this.monitor_server.close();
 
@@ -107,15 +106,19 @@ export class Controller {
     =============================
      */
 
-    addInGamePlayer(id_player: string) {
-        this.gama_connector.addInGamePlayer(id_player);
+    addInGamePlayer(id_player: string): void {
+        if (!ENV_GAMALESS)
+            this.gama_connector!.addInGamePlayer(id_player);
+        else
+            logger.warn("[addInGamePlayer] Message received to add player in GAMA, but the webplatform is in GAMALESS mode...");
     }
 
-    purgePlayer(id_player: string) {
+    purgePlayer(id_player: string): void {
         logger.debug(`Remove player ${id_player}`);
 
         // Remove from GAMA
-        this.gama_connector.removeInGamePlayer(id_player);
+        if (!ENV_GAMALESS)
+            this.gama_connector!.removeInGamePlayer(id_player);
         // Remove from connected list
         this.player_manager.removePlayer(id_player);
 
@@ -129,54 +132,57 @@ export class Controller {
     }
 
     sendExpression(id_player: string, expr: string) {
-        this.gama_connector.sendExpression(id_player, expr);
+        if (!ENV_GAMALESS)
+            this.gama_connector!.sendExpression(id_player, expr);
+        else
+            logger.warn("[sendExpression] Message received to send to GAMA, but the webplatform is in GAMALESS mode...");
     }
 
     sendAsk(json: JsonPlayerAsk) {
-        this.gama_connector.sendAsk(json);
-    }
-
-    /**
-     * Asks the GAMA server to load an experiment, ready to be started.
-     * @param filepath optionnal string of a path to the model to launch the experiment from. Will default to using the activemodel's value if omitted. 
-     * @param exp_name string of the name of the experiment to launch. Will default to using the activemodel's value if omitted.
-     */
-    loadExperiment(filepath? : string, exp_name? : string){
-        this.gama_connector.jsonLoadExperiment(filepath, exp_name)
+        if (!ENV_GAMALESS)
+            this.gama_connector!.sendAsk(json);
+        else
+            logger.warn("[sendAsk] Message received to send to GAMA, but the webplatform is in GAMALESS mode...");
     }
 
     launchExperiment() {
-        this.gama_connector.launchExperiment();
-        // Try until simulation is ready
-        const interval = setInterval(() => {
-            if (!['NONE', "NOTREADY"].includes(this.gama_connector.jsonGamaState.experiment_state)) {
-                // Stop calling
-                clearInterval(interval);
-                this.player_manager.addEveryPlayer();
-            }
-            this.notifyMonitor();
-        }, 100);
+        if (!ENV_GAMALESS) {
+            this.gama_connector!.launchExperiment();
+            // Try until simulation is ready
+            const interval = setInterval(() => {
+                if (!['NONE', "NOTREADY"].includes(this.gama_connector!.jsonGamaState.experiment_state)) {
+                    // Stop calling
+                    clearInterval(interval);
+                    this.player_manager.addEveryPlayer();
+                }
+                this.notifyMonitor();
+            }, 100);
+        } else
+            logger.warn("[launchExperiment] Message received to load an experiment in GAMA, but the webplatform is in GAMALESS mode...");
     }
 
     stopExperiment() {
-        this.gama_connector.stopExperiment();
-        this.player_manager.removeAllPlayer();
+        if (!ENV_GAMALESS) {
+            this.gama_connector!.stopExperiment();
+            this.player_manager.removeAllPlayer();
 
-        this.notifyMonitor();
+            this.notifyMonitor();
+        } else
+            logger.warn("[stopExperiment] Message received to close current GAMA simulation, but the webplatform is in GAMALESS mode...");
     }
 
     pauseExperiment(callback?: () => void) {
-        this.gama_connector.pauseExperiment(callback);
+        if (!ENV_GAMALESS)
+            this.gama_connector!.pauseExperiment(callback);
+        else
+            logger.warn("[pauseExperiment] Message received to pause current GAMA simulation, but the webplatform is in GAMALESS mode...");
     }
 
     resumeExperiment() {
-        this.gama_connector.resumeExperiment();
-    }
-
-    connectGama() {
-        if(ENV_GAMALESS){    
-            this.gama_connector.connectGama();
-        }
+        if (!ENV_GAMALESS)
+            this.gama_connector!.resumeExperiment();
+        else
+            logger.warn("[resumeExperiment] Message received to resume current GAMA simulation, but the webplatform is in GAMALESS mode...");
     }
 }
 
