@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Simulation } from "../core/Constants.ts"
-import { getLogger, configure, getConsoleSink } from '@logtape/logtape';
+import { getLogger } from '@logtape/logtape';
 
 
 
@@ -95,8 +95,8 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
             }
 
             if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
-                setSimulationList(data.map(sim => sim.jsonSettings));
                 logger.debug('[WebSocketManager] Simulation list:', data);
+                setSimulationList(data.map(sim => sim.jsonSettings));
             } else {
                 switch (data.type) {
                     // this case is launch too much time
@@ -113,7 +113,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
                         break;
                     default:
                         logger.warn('[WebSocketManager] Message not processed, defaulted to setSimulationList. data:{data}', { data });
-                        setSimulationList(data)
+                        setSimulationList(data) 
                     //TODO changer cette mocheté, le message est traité dans certain cas si on appelle une méthode sur le contenu du message, ça limitera le logspam potentiellement
                 }
             }
