@@ -6,22 +6,6 @@ import Model from './Model.ts';
 import Controller from "../core/Controller.ts";
 import {getLogger} from "@logtape/logtape";
 
-/**
- * Inteface to make manipulation of the json file easier 
- * these are incomplete and do not represent the full structure of the json file
- * but contain what is necessary to parse them
- */
-interface Settings {
-    type: "json_settings";
-    model_file_path: string;
-    name: string;
-}
-interface Catalog {
-    type: "catalog";
-    name: string;
-    entries: Settings[] | Catalog[];
-}
-
 // Override the log function
 const logger= getLogger(["simulation", "ModelManager"]);
 
