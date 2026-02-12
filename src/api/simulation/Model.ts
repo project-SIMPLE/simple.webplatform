@@ -1,30 +1,30 @@
 import path from 'path';
-import { JsonSettings } from "../core/Constants.ts";
+import {VU_MODEL_SETTING_JSON} from "../core/Constants.ts";
 import { Logger, getLogger } from '@logtape/logtape';
+import fs from "fs";
 
-const logger: Logger = getLogger(["api", "simulation"]);
+const logger: Logger = getLogger(["simulation", "Model"]);
 
 class Model {
-    readonly #jsonSettings: SETTINGS_FILE_JSON;
-    readonly #modelFilePath: string;
+    readonly #jsonSettings: VU_MODEL_SETTING_JSON;
 
     /**
      * Creates a Model object based on VU founded by the ModelManager
      * @param {string} settingsPath - Path to the settings file
-     * @param {string} jsonSettings - Json content _Stringyfied_ of the settings file
+     * @param {VU_MODEL_SETTING_JSON} jsonSettings - Json content _Stringyfied_ of the settings file
      */
-    constructor(settingsPath: string, jsonSettings: string) {
-        this.#jsonSettings = JSON.parse(jsonSettings);
+    constructor(settingsPath: string, jsonSettings: VU_MODEL_SETTING_JSON) {
+        this.#jsonSettings = jsonSettings;
 
-        logger.debug("Parsing {json}", { json: this.#jsonSettings });
+        logger.debug("Parsing new model {json}", { json: this.#jsonSettings.name });
 
         //if the path is relative, we rebuild it using the path of the settings.json it is found in
-        const modelFilePath = this.#jsonSettings.model_file_path;
-        if (path.isAbsolute(modelFilePath)) {
-            this.#modelFilePath = modelFilePath;
-        } else {
-            this.#modelFilePath = path.join(path.dirname(settingsPath), this.#jsonSettings.model_file_path);
-        }
+        const absoluteModelFilePath = path.isAbsolute(this.#jsonSettings.model_file_path) ? this.#jsonSettings.model_file_path : path.join(path.dirname(settingsPath), this.#jsonSettings.model_file_path);
+
+        if (!fs.existsSync(absoluteModelFilePath))
+            logger.error(`GAML model for VU ${this.#jsonSettings.name} can't be found at ${absoluteModelFilePath}. Please check the path in the settings.json file.`)
+
+        this.#jsonSettings.model_file_path = absoluteModelFilePath;
     }
 
     // Getters
@@ -34,7 +34,7 @@ class Model {
      * @returns {string} - The path to the model file
      */
     getModelFilePath(): string {
-        return this.#modelFilePath;
+        return this.#jsonSettings.model_file_path;
     }
 
     /**
@@ -47,9 +47,9 @@ class Model {
 
     /**
      * Gets the JSON settings
-     * @returns {SETTINGS_FILE_JSON} - The JSON settings
+     * @returns {VU_MODEL_SETTING_JSON} - The JSON settings
      */
-    getJsonSettings(): SETTINGS_FILE_JSON {
+    getJsonSettings(): VU_MODEL_SETTING_JSON {
         return this.#jsonSettings;
     }
 
@@ -63,12 +63,12 @@ class Model {
         return {
             type: "json_simulation_list",
             jsonSettings: this.#jsonSettings,
-            modelFilePath: this.#modelFilePath
+            modelFilePath: this.#jsonSettings.model_file_path
         };
     }
 
     toString() {
-        return this.#modelFilePath;
+        return this.#jsonSettings.model_file_path;
     }
 
 
