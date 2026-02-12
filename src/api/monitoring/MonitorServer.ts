@@ -245,7 +245,7 @@ export class MonitorServer {
      * @param clientWsId (optional) WS to send the message to
      * @return void
      */
-    sendMessageByWs(message: string, clientWsId?: any): void {
+    sendMessageByWs(message: any, clientWsId?: any): void {
         if (this.wsClients !== undefined) {
             this.wsClients.forEach((client) => {
                 if (clientWsId == undefined || clientWsId == client) {
