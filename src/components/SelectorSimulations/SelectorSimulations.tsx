@@ -11,7 +11,6 @@ import arrow_back from "/src/svg_logos/arrow_back.svg";
 import { getLogger } from '@logtape/logtape';
 import { Simulation } from '../../api/core/Constants';
 import visibility from '/src/svg_logos/visibility.svg';
-
 const SelectorSimulations = () => {
   const { ws, isWsConnected, gama, simulationList } = useWebSocket();
   const [loading, setLoading] = useState<boolean>(true);
@@ -20,11 +19,11 @@ const SelectorSimulations = () => {
   const [subProjectsList, setSubProjectsList] = useState<[Simulation]>([]);
   const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
   const [path, setPath] = useState<number[]>([]);
-  const [root, setRoot] = useState<string>("")
+
   const navigate = useNavigate();
 
 
-  const logger = getLogger(["components", "Selector Simulation"]);
+  const logger = getLogger(["components", "VideoStreamManager"]);
 
   useEffect(() => {
     if (isWsConnected && ws !== null) {
@@ -48,7 +47,7 @@ const SelectorSimulations = () => {
     if (path.length > 0) {
       let list = simulationList
       for (const index of path) {
-        logger.debug("index used in the path parsing: {index}", { index })
+        logger.debug("index in the use effect: {index}", { index })
         if (list[index].entries.length > 0) {
           list = list[index].entries
         } else {
@@ -86,12 +85,9 @@ const SelectorSimulations = () => {
     }
 
     if (subProjectsList.length <= 0) { //no subproject is selected, we either enter a folder or load a simulation
-      if (simulationList[index].root) { //the root attribute is only assigned to the lowest level of the JSON tree, not to the child nodes
-        setRoot(simulationList[index].root)
-      }
       if (simulationList[index].type == "catalog") { //?  we additionaly check if the simulation is a catalog, not necessary but allows for adding extra types
         // @ts-expect-error                                                                             ↓ this is a catalog, which means it must have an "entries" attribute
-        logger.debug("name of catalog: {simList}", { simList: simulationList[index].name });
+        logger.debug("catalog detected, subprojectList:{subprojectList}", { subProjectList: JSON.stringify(simulationList[index].entries) });
         try {
           // @ts-expect-error       ↓ this is a list, so assigning it to another list should be fine
           setSubProjectsList(simulationList[index].entries);
@@ -102,27 +98,23 @@ const SelectorSimulations = () => {
           } else {
             logger.warn("No splashscreen could be found for simulation {simulation}", { simulation: simulationList[index].experimentName }) //TODO finir le logger warn
           }
-
-          logger.debug("subProjectsList,", subProjectsList)
+          logger.debug("handlesimulation, simulationList[index].type == catalog, {expName}", { expName: subProjectsList[index].name });
         }
-        catch (e) { logger.error("error when trying to open a list of subprojects, ERROR:{e}", { e }); }
+        catch (e) { logger.error("no subprojects, ERROR:{e}", { e }); }
 
-      } else if (simulationList[index].type == "json_settings") { //we check in simulation list because the subprojectList is empty
-        logger.debug("selected simulation of name", simulationList[index].experiment_name)
+      } else if (simulationList[index].type == "json_settings") {
         ws.send(JSON.stringify({ type: 'send_simulation', simulation: simulationList[index] }));
         setTimeout(() => {
           navigate('/simulationManager');
         }, 100);
       } else if (Array.isArray(simulationList[index])) {
-        logger.debug("selected folder of name", simulationList[index].model_file_path)
+        logger.debug(simulationList[index].model_file_path)
         addToPath(index)
       }
 
       // ---------------------------------------------------------  sub project selected
     } else if (subProjectsList.length > 0) {
       if (subProjectsList[index].type == "json_settings") {
-        subProjectsList[index].root = root
-        logger.debug("selected simulation {selected}:", { selected: subProjectsList[index] })
         ws.send(JSON.stringify({ type: 'send_simulation', simulation: subProjectsList[index] }));
         setTimeout(() => {
           navigate('/simulationManager');
@@ -134,9 +126,7 @@ const SelectorSimulations = () => {
             // @ts-expect-error        ↓ this is a list, so assigning it to another list should be fine
             // setSubProjectsList(subProjectsList[index].entries);
             addToPath(index)
-            logger.debug("catalog detected, subProjectsList:{subProjectsList}", { subProjectsList: JSON.stringify(subProjectsList[index].entries) });
-            logger.debug("name of catalog: {simList}", { simList: subProjectsList[index].name });
-
+            logger.debug("[SELECTOR SIMULATION] handlesimulation, simulationList[index].type == catalog, {name}", { name: subProjectsList[0].name });
           } // in any case, we catch the error and log it if any
           catch (e) {
             logger.error("no subprojects, ERROR: {e}", e);
@@ -146,7 +136,20 @@ const SelectorSimulations = () => {
     }
   };
 
+  // Loop which tries to connect to Gama
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (ws && !gama.connected) {
+      interval = setInterval(() => {
+        ws.send(JSON.stringify({ type: 'try_connection' }));
+        logger.info('Trying to connect to GAMA, connection status: {gamaStatus}', { gamaStatus: gama.connected });
+      }, 3000);
+    }
 
+    return () => {
+      clearInterval(interval);
+    };
+  }, [ws, gama.connected]);
 
   // Display connexion status
   useEffect(() => {
@@ -206,6 +209,7 @@ const SelectorSimulations = () => {
           <div className="flex items-center justify-between">
 
 
+
             <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
               {subProjectsList.length > 0 ?
                 <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
@@ -225,14 +229,14 @@ const SelectorSimulations = () => {
             </span>
 
           </div>
-          <Link to={"../streamPlayerScreen"} className='bg-white rounded-lg' target='_blank'>
-            <Button bgColor='bg-purple-500'
-              text="VR screens"
-              icon={<img src={visibility} />}
-              className='flex w-15'
+            <Link to={"../streamPlayerScreen"} className='bg-white rounded-lg' target='_blank'>
+              <Button bgColor='bg-purple-500'
+                text="VR screens"
+                icon={<img src={visibility} />}
+                className='flex w-15'
 
-            ></Button>
-          </Link>
+              ></Button>
+            </Link>
 
         </div>
 

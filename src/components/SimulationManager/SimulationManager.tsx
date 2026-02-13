@@ -216,7 +216,7 @@ const SimulationManager = () => {
                   gama.experiment_state === 'LAUNCHING' ||
                   gama.experiment_state === 'RUNNING' ? (
                   <>
-                    <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4"> {/* //? div containing the control buttons */}
+                    <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4">
                       <Button
                         onClick={handlePlayPause}
                         customStyle={{ width: '100px', height: '50px' }}

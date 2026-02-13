@@ -74,8 +74,6 @@ class ModelManager {
                         logger.debug(`Append new package to ModelManager: ${folderPath}`);
 
                         const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
-                        settings.root = folderPath;
-                        logger.debug(settings)
                         this.jsonList.push(settings); // add the settings file to the list of json files
 
                         logger.trace(`{jsonList}`, {jsonList: this.jsonList});
@@ -124,30 +122,10 @@ class ModelManager {
     * @returns {Model} sets the active model to the model found 
     */
     setActiveModelByFilePath(filePath: string) {
-        try{
-            let modelFound = undefined
-            logger.debug("trying to set active model using file path: {filepath}",{filepath: filePath})
-            try{
-            modelFound = this.models.find(model => model.getJsonSettings().model_file_path === filePath);
-            if(modelFound == undefined){
-                                        
-                modelFound = this.models.find(model => model.getModelFilePath() === filePath); //fff model
-            }
-            if(modelFound == undefined){
-                throw new Error("Couldn't find model with path: found model is undefined");   
-            }
-            logger.debug("found model: {model}",{model: modelFound.toString()})
-            }catch(error){
-                logger.error("error when trying to set active model:",error)
-            }
-
-            this.activeModel = modelFound
-            logger.debug("active model after set:",this.activeModel?.toString)
-            return this.activeModel = modelFound
-        } catch(error) {
-            logger("setActiveModelByFilePath failed with error {e}",{e: error})
-        }
-
+        logger.debug("trying to set active model using file path: {filepath}",{filepath: filePath})
+        const modelFound = this.models.find(model => model.getJsonSettings().model_file_path === filePath);
+        logger.debug("found model: {model}",{model: modelFound?.toString()})
+        return this.activeModel = modelFound
     }
 
     getActiveModel() {
@@ -190,7 +168,7 @@ class ModelManager {
     parseCatalog(catalog: Catalog, list: Model[], settingsPath: string) {
         for (const entry of catalog.entries) {
             if ('type' in entry) {
-                logger.info(`entry found: {entry}`,entry.name)
+                logger.info(`entry found: ${entry}`)
                 if (entry.type === "json_settings") {
                     logger.info(`${entry.name}`)
 

@@ -137,8 +137,9 @@ export class MonitorServer {
                                     selectedSimulation: selectedSimulation.getJsonSettings(),
                                 });
                             } else {
-                                throw new Error(`Invalid index received or out of bounds. [Index: ${index}]`);
-                                
+                                logger.error(
+                                    `Invalid index received or out of bounds. [Index: ${index}]`,
+                                );
                             }
                             break;
                         }
@@ -148,28 +149,12 @@ export class MonitorServer {
                             const simulationFromStream = JSON.parse(
                                 Buffer.from(message).toString(),
                             );
-                            logger.debug("received simulation {sim} from upstream",{sim : simulationFromStream.simulation })
-                            logger.trace("filepath of sim: {filepath}",{filepath : simulationFromStream.simulation.model_file_path })
-                            const total_path: string = path.join( simulationFromStream.simulation.root, simulationFromStream.simulation.model_file_path)
-                            console.log("total path calculated:",total_path) 
-                            try{
-                                
-                                this.controller.model_manager.setActiveModelByFilePath(     //récupérer aussi le préfixe avant le chemin relatif pour le convertir en chemin absolu avant, ce qui évite les conflits comme deux modèles avec exactement le même nom
-                                         total_path
+
+                            this.controller.model_manager.setActiveModelByFilePath(
+                                simulationFromStream.simulation.model_file_path,
                             );
-                            } catch(e){
-                                logger.error("path is undefined, cancelling",e)
-                            }
-                            try{
-                                if(this.controller.model_manager.getActiveModel() == undefined){
-                                    throw new Error("active model of the controller is undefined");
-                                    
-                                }
-                            
-                            } catch(error){
-                                logger.error("error when fetching active model:",error)
-                            }
-                            const selectedSimulation = this.controller.model_manager.getActiveModel();
+                            const selectedSimulation =
+                                this.controller.model_manager.getActiveModel();
                             logger.debug("Selected simulation sent to gama: {json}", {
                                 json: selectedSimulation.getJsonSettings(),
                             });
