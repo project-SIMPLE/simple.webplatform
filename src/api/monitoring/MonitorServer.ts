@@ -133,39 +133,21 @@ export class MonitorServer {
                                 simulation: selectedSimulation.getJsonSettings() // Assuming getJsonSettings returns the relevant data
                             }, ws);
 
-                                logger.debug("Opening virtual universe {selectedSimulation}", {
-                                    selectedSimulation: selectedSimulation.getJsonSettings(),
-                                });
-                            } else {
-                                logger.error(
-                                    `Invalid index received or out of bounds. [Index: ${index}]`,
-                                );
-                            }
-                            break;
+                            logger.debug("Opening virtual universe {selectedSimulation}", { selectedSimulation: selectedSimulation.getJsonSettings() });
+                        } else {
+                            logger.error(`Invalid index received or out of bounds. [Index: ${index}]`);
                         }
                     case "send_simulation":
-                        {
-                            logger.trace("Sending simulation");
-                            const simulationFromStream = JSON.parse(
-                                Buffer.from(message).toString(),
-                            );
+                        logger.trace("Sending simulation");
+                        const simulationFromStream = JSON.parse(Buffer.from(message).toString());
 
-                            this.controller.model_manager.setActiveModelByFilePath(
-                                simulationFromStream.simulation.model_file_path,
-                            );
-                            const selectedSimulation =
-                                this.controller.model_manager.getActiveModel();
-                            logger.debug("Selected simulation sent to gama: {json}", {
-                                json: selectedSimulation.getJsonSettings(),
-                            });
-                            this.sendMessageByWs(
-                                {
-                                    type: "get_simulation_by_index",
-                                    simulation: selectedSimulation.getJsonSettings(),
-                                },
-                                ws,
-                            );
-                        }
+                        this.controller.model_manager.setActiveModelByIndex(simulationFromStream.simulation.model_index);
+                        const selectedSimulation: Model = this.controller.model_manager.getActiveModel();
+                        logger.debug("Selected simulation sent to gama: {json}", { json: selectedSimulation.getJsonSettings() });
+                        this.sendMessageByWs({
+                            type: "get_simulation_by_index",
+                            simulation: selectedSimulation.getJsonSettings()
+                        }, ws);
                         break;
 
                     default:
@@ -260,7 +242,7 @@ export class MonitorServer {
      * @param clientWsId (optional) WS to send the message to
      * @return void
      */
-    sendMessageByWs(message: string, clientWsId?: any): void {
+    sendMessageByWs(message: any, clientWsId?: any): void {
         if (this.wsClients !== undefined) {
             this.wsClients.forEach((client) => {
                 if (clientWsId == undefined || clientWsId == client) {

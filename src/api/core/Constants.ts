@@ -53,6 +53,47 @@ export interface Simulation {
     selected_monitoring: string
 }
 
+// Learning packages ==============================================
+
+/**
+ * Inteface to make manipulation of the json file easier
+ * these are incomplete and do not represent the full structure of the json file
+ * but contain what is necessary to parse them
+ */
+export interface VU_MODEL_SETTING_JSON {
+    type: "json_settings";
+    name: string;
+    splashscreen: string;
+    model_file_path: string;
+    experiment_name: string;
+    minimal_players: string;
+    maximal_players: string;
+    selected_monitoring?: 'gama_screen';
+}
+
+export interface VU_CATALOG_SETTING_JSON {
+    type: "catalog";
+    name: string;
+    splashscreen?: string;
+    entries: VU_MODEL_SETTING_JSON[] | VU_CATALOG_SETTING_JSON[];
+}
+
+// Simplier version used to send useful information only to Monitor clients
+export interface MIN_VU_MODEL_SETTING_JSON {
+    type: string;
+    name: string;
+    splashscreen: string;
+    model_index: number;
+}
+
+// Simplier version used to send useful information only to Monitor clients
+export interface MIN_VU_CATALOG_SETTING_JSON {
+    type: string;
+    name: string;
+    splashscreen?: string;
+    entries: MIN_VU_MODEL_SETTING_JSON[]|MIN_VU_CATALOG_SETTING_JSON;
+}
+
 // Internal message exchange ==============================================
 
 export interface PlayerState {
