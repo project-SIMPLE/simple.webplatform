@@ -4,7 +4,7 @@ import { Controller } from "../core/Controller.ts";
 import { JsonMonitor } from "../core/Constants.ts";
 import { getLogger } from "@logtape/logtape";
 import Model from "../simulation/Model.ts";
-import path from 'path';
+
 const logger = getLogger(["monitor", "MonitorServer"]);
 
 /**
@@ -137,6 +137,8 @@ export class MonitorServer {
                         } else {
                             logger.error(`Invalid index received or out of bounds. [Index: ${index}]`);
                         }
+                        break;
+
                     case "send_simulation":
                         logger.trace("Sending simulation");
                         const simulationFromStream = JSON.parse(Buffer.from(message).toString());
