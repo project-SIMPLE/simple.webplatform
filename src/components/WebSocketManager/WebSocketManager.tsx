@@ -96,7 +96,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 
             if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
                 setSimulationList(data.map(sim => sim.jsonSettings));
-                logger.debug('[WebSocketManager] Simulation list:', data);
+                logger.debug('[WebSocketManager] Simulation list: {data}',{data : data.toString()});
             } else {
                 switch (data.type) {
                     // this case is launch too much time
