@@ -16,7 +16,7 @@ const SelectorSimulations = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [connectionStatus, setConnectionStatus] = useState<string>('Waiting for connection ...');
   const { t } = useTranslation();
-  const [subProjectsList, setSubProjectsList] = useState<[Simulation]>([]);
+  const [subProjectsList, setSubProjectsList] = useState<[(Simulation | undefined )]>([]);
   const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
   const [path, setPath] = useState<number[]>([]);
 
