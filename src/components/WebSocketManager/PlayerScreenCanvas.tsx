@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { HEADSET_COLOR } from "../../api/core/Constants.ts";
 import visibility_off from "../../svg_logos/visibility_off.svg"
 import x_cross from "../../svg_logos/x_cross.svg";
-
+import { getLogger } from "@logtape/logtape";
 //TODO pour fix le problème du canvas qui est en petit, puis qui devient grand quand tu clique dessus, regarder les hook qui sont trigger quand on clique sur le canvas (surtout le truc qui applique les classes tailwind)
 //TODO et juste nettoyer complètement le css à chaque fois, et le réappliquer pour éviter le problème, quitte à ce que le code soit redondant
 /* eslint react-hooks/rules-of-hooks: 0, curly: 2 */ //? desactive les avertissements sur les hooks qui sont appelés conditionnellement, ce qui n'arrive jamais dans ce cas
@@ -20,6 +20,8 @@ interface PlayerScreenCanvasProps {
 
 
 const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWidth, tailwindCanvasDim, gridDisplay, needsInteractivity }: PlayerScreenCanvasProps) => {
+    const logger = new getLogger(["components", "PlayerScreenCanvas"])
+
     if (!id) {
         return null;
     }
@@ -52,8 +54,14 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
                 }
             } else {
                 if (canvasref.current) {
-                    canvas.classList.add(tailwindCanvasDim[0])
-                    canvas.classList.add(tailwindCanvasDim[1])
+                    if (tailwindCanvasDim) {
+                        canvas.classList.add(tailwindCanvasDim[0])
+                        canvas.classList.add(tailwindCanvasDim[1])
+                    } else {
+                        logger.warn("no dimensions received, using default full screen values")
+                        canvas.classList.add("max-h-[95dvh]")
+                        canvas.classList.add("max-w-[95dvw]")
+                    }
 
 
 
@@ -99,7 +107,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
              flex flex-row align-middle justify-center p-2 rounded-lg
               ${gridDisplay ? null : isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"}`}
                     onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}
-                 >
+                >
 
                 </div>
 
