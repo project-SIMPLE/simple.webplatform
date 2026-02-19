@@ -42,6 +42,7 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
           >{/*The absolute positionning guarantees that the image is the only static child so it takes the whole screen top and left are there to position the down arrow */}
             {simulation.type == "catalog" ? <img src={arrow_down} className='rounded-full bg-slate-500 opacity-90 size-16 absolute top-[18px] left-[18px]' /> : null} {/* //? downward arrow */}
             <img src={` ${simulation.splashscreen}`}
+            //@ts-expect-error target property of image does exist
               onError={(e) => { e.target.src = "/images/simple_logo.png"; logger.warn("couldn't load an image for simulation {index}, using the placeholder", { index }) }}
               className='size-full rounded-2xl'
             />
