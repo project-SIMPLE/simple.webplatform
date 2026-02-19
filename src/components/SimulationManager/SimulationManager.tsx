@@ -28,11 +28,18 @@ const SimulationManager = () => {
   const { t } = useTranslation();
   const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen");
   const [startButtonClicked, setStartButtonClicked] = useState(false);
-  const channel = new BroadcastChannel('simulation-to-stream'); //using the broadcast api to update display type in the streamPlayerScreen
-  const updateDisplay = (screenModeDisplay: string) => {
-    setScreenModeDisplay(screenModeDisplay);
-    channel.postMessage({ screenModeDisplay });
-  };
+
+  //? these variables exist as a setup for the functionnality of changing the display type
+  //? to accomodate for the display of the gama simulation directly in the application.
+  //? This uses a websocket to be able to click on a button on the tablet,
+  //? and have the change reflected on the tv screen instantly without reloading the page
+
+  // const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen");
+  // const channel = new BroadcastChannel('simulation-to-stream'); //using the broadcast api to update display type in the streamPlayerScreen
+  // const updateDisplay = (screenModeDisplay: string) => {
+  //   setScreenModeDisplay(screenModeDisplay);
+  //   channel.postMessage({ screenModeDisplay });
+  // }; 
 
   const startClicked = () => {
     setStartButtonClicked(true);
