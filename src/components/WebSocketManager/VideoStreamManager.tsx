@@ -179,7 +179,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
         // Feed the scrcpy stream to the video decoder
         void stream.pipeTo(decoder.writable).catch((err) => {
-          ogger.error("[Scrcpy] Error piping to decoder writable stream: {err}", { err });
+          logger.error("[Scrcpy] Error piping to decoder writable stream: {err}", { err });
         });
 
         return stream;
