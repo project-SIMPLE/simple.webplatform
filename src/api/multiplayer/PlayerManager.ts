@@ -469,7 +469,8 @@ class PlayerManager {
      * @return Returns 1 for success, 2 for dropped due to backpressure limit, and 0 for built up backpressure that will drain over time.
      * @return -1 if playerWsId missing or not connected
      */
-    sendMessageByWs(playerWsId: string, message: string): number {
+    //message sent is not necessarily a string, see PlayerManager for example
+    sendMessageByWs(playerWsId: string, message: any): number {
         let jsonPlayer!: Player;
         if (this.playerList.has(playerWsId) && this.playerList.get(playerWsId)!.connected )
             jsonPlayer = this.playerList.get(playerWsId)!;
