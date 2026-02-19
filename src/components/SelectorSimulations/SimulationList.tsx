@@ -3,7 +3,7 @@ import { Simulation } from '../../api/core/Constants';
 import { getLogger } from '@logtape/logtape';
 interface SimulationListProps {
   list: Simulation[];
-  handleSimulation: (index) => void;
+  handleSimulation: (index: number) => void;
   gama: {
     connected: boolean;
     loading: "hidden" | "visible";
