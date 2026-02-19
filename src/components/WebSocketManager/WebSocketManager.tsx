@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Simulation } from "../core/Constants.ts"
-import { getLogger, configure, getConsoleSink } from '@logtape/logtape';
+import { Simulation } from "../../api/core/Constants.ts"
+import { getLogger } from '@logtape/logtape';
 
 
 
@@ -114,7 +114,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
                     default:
                         logger.warn('[WebSocketManager] Message not processed, defaulted to setSimulationList. data:{data}', { data });
                         setSimulationList(data)
-                    //TODO changer cette mocheté, le message est traité dans certain cas si on appelle une méthode sur le contenu du message, ça limitera le logspam potentiellement
+                   
                 }
             }
         };

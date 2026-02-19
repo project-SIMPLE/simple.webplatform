@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
 import Header from "../Header/Header";
-import { getLogger, getConsoleSink, configure } from "@logtape/logtape";
+import { getLogger } from "@logtape/logtape";
 const StreamPlayerScreen = () => {
   const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen"); // Get the screen mode display from the context
   const videoContainerRef = useRef<HTMLDivElement>(null); // Add ref for the target div
