@@ -19,14 +19,14 @@ export interface Player {
   in_game: boolean;
 }
 
-const logger= getLogger(["simulationManager", "SimulationManager"]);
 
 const SimulationManager = () => {
+
+  const logger = getLogger(["simulationManager", "SimulationManager"]);
   const { ws, gama, playerList, selectedSimulation } = useWebSocket(); // `removePlayer` is now available
   const navigate = useNavigate();
   const [simulationStarted, setSimulationStarted] = useState(false);
   const { t } = useTranslation();
-  const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen");
   const [startButtonClicked, setStartButtonClicked] = useState(false);
 
   //? these variables exist as a setup for the functionnality of changing the display type
@@ -247,7 +247,7 @@ const SimulationManager = () => {
                           className='flex w-15 h-full'
                         ></Button>
                       </Link>
-                     {/* //! unused code that uses websockets to change the type of display to one with space to accomodate for the gama map of the game, but is not implemented for now
+                      {/* //! unused code that uses websockets to change the type of display to one with space to accomodate for the gama map of the game, but is not implemented for now
                      //! having these buttons that do nothing may confuse the user */}
                     </div>
                     {/* <div className="flex justify-center mt-3 gap-4">
