@@ -56,7 +56,6 @@ const SelectorSimulations = () => {
         setSubProjectsList(list)
       }
     }
-    // @ts-expect-error the logger is not required in the dependency array, updates made to it should not trigger this hook
   }, [path, simulationList])
 
 
@@ -86,10 +85,8 @@ const SelectorSimulations = () => {
 
     if (subProjectsList.length <= 0) { //no subproject is selected, we either enter a folder or load a simulation
       if (simulationList[index].type == "catalog") { //?  we additionaly check if the simulation is a catalog, not necessary but allows for adding extra types
-        // @ts-expect-error                                                                             ↓ this is a catalog, which means it must have an "entries" attribute
         logger.debug("catalog detected, subprojectList:{subprojectList}", { subProjectList: JSON.stringify(simulationList[index].entries) });
         try {
-          // @ts-expect-error       ↓ this is a list, so assigning it to another list should be fine
           setSubProjectsList(simulationList[index].entries);
           addToPath(index)
           if ('splashscreen' in simulationList[index]) {
