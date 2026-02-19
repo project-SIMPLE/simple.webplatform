@@ -200,7 +200,7 @@ class PlayerManager {
                                     logger.error(`Message size: ${message.byteLength} bytes`);
                                 }
                             } catch(error){
-                                logger.error("couldn't display error message",error)
+                                logger.error("couldn't display error message",error.message)
                             }
                         }
                         break;
