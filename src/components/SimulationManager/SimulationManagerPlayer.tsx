@@ -64,9 +64,9 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
 
               <div className='bg-slate-200 p-2 text-left'>
                 <p>Player: {String(playerId)}</p>
-                <p>{t('Status')} : {String(selectedPlayer.connected)}</p>
-                <p>{t('Hour of connection')} : {selectedPlayer.date_connection}</p>
-                <p>{t('In game')} : {String(selectedPlayer.in_game)}</p>
+                <p>{t('Status')} : {selectedPlayer ? String(selectedPlayer.connected) : "no selected player"}</p>
+                <p>{t('Hour of connection')} : {selectedPlayer ? selectedPlayer.date_connection : "no selected player"}</p>
+                <p>{t('In game')} : {selectedPlayer ? String(selectedPlayer.in_game) : "no selected player"}</p>
               </div>
 
               <div className="bg-red-300 pb-3 rounded-b-md">
