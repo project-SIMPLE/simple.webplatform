@@ -199,8 +199,9 @@ class PlayerManager {
                                 if (typeof message.byteLength !== 'undefined') {
                                     logger.error(`Message size: ${message.byteLength} bytes`);
                                 }
-                            } catch(error){
-                                logger.error("couldn't display error message",error.message)
+                            } catch(e){
+                                const error = e as Error;
+                                logger.error("couldn't display error message: {error}",{error : error.message})
                             }
                         }
                         break;
