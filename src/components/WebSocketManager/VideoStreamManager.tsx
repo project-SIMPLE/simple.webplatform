@@ -170,7 +170,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
             isDecoderHasConfig.delete(deviceId);
             try {
               canvasList[deviceId].remove();
-               logger.info("deleted canvas", deviceId)
+               logger.info("deleted canvas", {deviceId})
             } catch (e) {
               logger.error("Can't delete canvas {canvasList}, {e}", { canvasList, e });
             }
@@ -204,7 +204,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       // Check if h264 is supported
       await VideoDecoder.isConfigSupported({ codec: "avc1.4D401E" }).then((r) => {
         supportH264 = r.supported!;
-         logger.info("[SCRCPY] Supports h264", supportH264);
+         logger.info("[SCRCPY] Supports h264", {supportH264});
       })
 
       // Check if h265 is supported
