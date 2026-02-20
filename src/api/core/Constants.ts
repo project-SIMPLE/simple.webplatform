@@ -51,6 +51,7 @@ export interface Simulation {
     maximal_players: string,
     minimal_players: string,
     selected_monitoring: string
+    entries: Simulation[]
 }
 
 // Learning packages ==============================================
