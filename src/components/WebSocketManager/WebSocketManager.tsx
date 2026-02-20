@@ -66,7 +66,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 
             return updatedPlayerList;
         });
-        logger.info(" This player have been removed from playerList : ", id);
+        logger.info(" This player have been removed from playerList : ", {id});
     };
 
 
