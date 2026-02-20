@@ -20,7 +20,7 @@ interface PlayerScreenCanvasProps {
 
 
 const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWidth, tailwindCanvasDim, gridDisplay, needsInteractivity }: PlayerScreenCanvasProps) => {
-    const logger = new getLogger(["components", "PlayerScreenCanvas"])
+    const logger = getLogger(["components", "PlayerScreenCanvas"])
 
     if (!id) {
         return null;
