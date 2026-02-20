@@ -16,7 +16,7 @@ const SelectorSimulations = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [connectionStatus, setConnectionStatus] = useState<string>('Waiting for connection ...');
   const { t } = useTranslation();
-  const [subProjectsList, setSubProjectsList] = useState<[(Simulation | undefined )]>([]);
+  const [subProjectsList, setSubProjectsList] = useState<Simulation[]>(simulationList);
   const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
   const [path, setPath] = useState<number[]>([]);
 
@@ -51,14 +51,17 @@ const SelectorSimulations = () => {
         if (list[index].entries.length > 0) {
           list = list[index].entries
         } else {
-          list = list[index]
+          list = [list[index]]
         }
         setSubProjectsList(list)
       }
     }
   }, [path, simulationList])
 
-
+  /**Function used to add a clicked subfolder to path
+   * path is an ordered array containing the indexes of all clicked subfolders
+   * @param index 
+   */
   const addToPath = (index: number) => {
     setPath([...path, index])
   }
@@ -84,7 +87,6 @@ const SelectorSimulations = () => {
       logger.warn("Websocket not connected \n isWsConnected:{isWsConnected}\n ws:{ws}", { isWsConnected, ws })
       return;
     }
-
     if (subProjectsList.length <= 0) { //no subproject is selected, we either enter a folder or load a simulation
       if (simulationList[index].type == "catalog") { //?  we additionaly check if the simulation is a catalog, not necessary but allows for adding extra types
         logger.debug("catalog detected, subprojectList:{subprojectList}", { subProjectList: JSON.stringify(simulationList[index].entries) });
@@ -94,7 +96,7 @@ const SelectorSimulations = () => {
           if ('splashscreen' in simulationList[index]) {
             setSelectedSplashscreen(simulationList[index].splashscreen);
 
-          } else {
+          } else {        //@ts-expect-error simulationList[index] type is defined as "never" for some reason, but is a Simulation, so this property access is valid
             logger.warn("No splashscreen could be found for simulation {simulation}", { simulation: simulationList[index].experimentName }) //TODO finir le logger warn
           }
           logger.debug("handlesimulation, simulationList[index].type == catalog, {expName}", { expName: subProjectsList[index].name });
@@ -122,13 +124,11 @@ const SelectorSimulations = () => {
       } else {
         if (subProjectsList[index].type == "catalog") {
           try {
-            // @ts-expect-error        ↓ this is a list, so assigning it to another list should be fine
-            // setSubProjectsList(subProjectsList[index].entries);
             addToPath(index)
             logger.debug("[SELECTOR SIMULATION] handlesimulation, simulationList[index].type == catalog, {name}", { name: subProjectsList[0].name });
           } // in any case, we catch the error and log it if any
           catch (e) {
-            logger.error("no subprojects, ERROR: {e}", e);
+            logger.error("no subprojects, ERROR: {e}", { e });
           }
         }
       }
@@ -180,7 +180,7 @@ const SelectorSimulations = () => {
 
           {
             //the content of this bracket is the back button
-            subProjectsList.length > 0 && path.length >= 1 ?
+           subProjectsList ? subProjectsList.length > 0 && path.length >= 1 ?
               <div
                 className={`shadow-lg rounded-xl flex flex-col items-center absolute justify-center size-14 cursor-pointer`}
 
@@ -199,9 +199,9 @@ const SelectorSimulations = () => {
                 <img src={arrow_back} className='rounded-full bg-slate-700 opacity-75 size-8' />
 
               </div>
-              : null}
+              : null : "no subprojects"}
 
-          {subProjectsList.length > 0 ? <h2 className='font-medium'>{t('select_subproject')}</h2> : <h2>{t('select_simulation')} </h2>}
+          {subProjectsList ? subProjectsList.length > 0 ? <h2 className='font-medium'>{t('select_subproject')}</h2> : <h2>{t('select_simulation')} </h2> : null}
 
           {/* //TODO add translation for Thai language */}
 
@@ -210,9 +210,10 @@ const SelectorSimulations = () => {
 
 
             <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
-              {subProjectsList.length > 0 ?
+              {subProjectsList ? subProjectsList.length > 0 ?
                 <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
                 : <SimulationList list={simulationList} handleSimulation={handleSimulation} gama={gama} />
+                : null
               }
 
 
@@ -228,14 +229,14 @@ const SelectorSimulations = () => {
             </span>
 
           </div>
-            <Link to={"../streamPlayerScreen"} className='bg-white rounded-lg' target='_blank'>
-              <Button bgColor='bg-purple-500'
-                text="VR screens"
-                icon={<img src={visibility} />}
-                className='flex w-15'
+          <Link to={"../streamPlayerScreen"} className='bg-white rounded-lg' target='_blank'>
+            <Button bgColor='bg-purple-500'
+              text="VR screens"
+              icon={<img src={visibility} />}
+              className='flex w-15'
 
-              ></Button>
-            </Link>
+            ></Button>
+          </Link>
 
         </div>
 
