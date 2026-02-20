@@ -62,7 +62,9 @@ const SelectorSimulations = () => {
   const addToPath = (index: number) => {
     setPath([...path, index])
   }
-
+  /**Removes the last index used to travel the subproject folder
+   * 
+   */
   const back = () => {
     if (path.length > 1) {
       setPath([...path.slice(0, -1)])
