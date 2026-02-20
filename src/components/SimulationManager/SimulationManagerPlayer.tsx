@@ -17,7 +17,7 @@ interface PlayerProps {
 const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerId }: PlayerProps) => {
   const { t } = useTranslation();
 
-  const { ws, playerList } = useWebSocket(); // `removePlayer` is now available
+  const { ws } = useWebSocket(); // `removePlayer` is now available
 
 
   const [showPopUpManageHeadset, setshowPopUpManageHeadset] = useState(false);
@@ -98,10 +98,10 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
             selectedPlayer={selectedPlayer}
             playerId={Playerkey} />
 
-          <div className={`rounded-b-xl justify-center w-full ${selectedPlayer.connected ? 'bg-green-500' : 'bg-red-500'}`}>
-            {selectedPlayer.connected ?
+          <div className={`rounded-b-xl justify-center w-full ${selectedPlayer ? selectedPlayer.connected ? 'bg-green-500' : 'bg-red-500' : ""}`}>
+            { selectedPlayer ? selectedPlayer.connected ?
               selectedPlayer.in_game ? <p>{t("in_game")}</p> :
-                <p>{t("connected")}</p> : <p>{t("error")}</p>}
+                <p>{t("connected")}</p> : <p>{t("error")}</p> : "player undefined"}
           </div>
         </div>
 
