@@ -82,7 +82,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
                             {hideInfos ?
                                 null
                                 :
-                                <p className="bg-slate-200  rounded-t-md p-1 tailwindCanvasDim-center "> {`Player: ${id}`}</p>
+                                <p className="bg-slate-200 rounded-t-md p-1"> {`Player: ${id}`}</p>
                             }
 
                         </div>
