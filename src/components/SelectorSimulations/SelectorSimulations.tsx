@@ -17,6 +17,12 @@ const SelectorSimulations = () => {
   const [connectionStatus, setConnectionStatus] = useState<string>('Waiting for connection ...');
   const { t } = useTranslation();
   const [subProjectsList, setSubProjectsList] = useState<Simulation[]>(simulationList);
+  useEffect(() => {
+    if (simulationList && simulationList.length > 0) {
+      setSubProjectsList(simulationList);
+    }
+  }, [simulationList]);
+
   const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
   const [path, setPath] = useState<number[]>([]);
 
@@ -210,11 +216,8 @@ const SelectorSimulations = () => {
 
 
             <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
-              {subProjectsList ? subProjectsList.length > 0 ?
+
                 <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
-                : <SimulationList list={simulationList} handleSimulation={handleSimulation} gama={gama} />
-                : null
-              }
 
 
             </div>
