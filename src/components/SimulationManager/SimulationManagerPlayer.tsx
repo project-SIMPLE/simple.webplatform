@@ -17,7 +17,7 @@ interface PlayerProps {
 const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerId }: PlayerProps) => {
   const { t } = useTranslation();
 
-  const { ws } = useWebSocket(); // `removePlayer` is now available
+  const { ws } = useWebSocket();
 
 
   const [showPopUpManageHeadset, setshowPopUpManageHeadset] = useState(false);
@@ -30,7 +30,6 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
     if (ws !== null) {
       logger.info("ID headset: {id}",{id});
       ws.send(JSON.stringify({ "type": "remove_player_headset", id }));
-      // removePlayer(id);  // already did in WebSocketManagers
       toggleShowPopUpManageHeadset();
     } else {
       logger.error("Websocket not connected")
@@ -46,12 +45,7 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
 
     return (
       <>
-
-
         {showPopUpManageHeadset ?
-
-
-
           <div className="fixed inset-0 flex items-center justify-center bg-slate-800 bg-opacity-75 z-10" onClick={toggleShowPopUpManageHeadset}  >
 
             <div className="rounded-md shadow-lg w-72 text-center z-20" onClick={(e) => e.stopPropagation()}  > {/*this prevent event bubbling, so that clicking the child div does not close the popup window*/}
