@@ -29,18 +29,6 @@ const SimulationManager = () => {
   const { t } = useTranslation();
   const [startButtonClicked, setStartButtonClicked] = useState(false);
 
-  //? these variables exist as a setup for the functionnality of changing the display type
-  //? to accomodate for the display of the gama simulation directly in the application.
-  //? This uses a websocket to be able to click on a button on the tablet,
-  //? and have the change reflected on the tv screen instantly without reloading the page
-
-  // const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen");
-  // const channel = new BroadcastChannel('simulation-to-stream'); //using the broadcast api to update display type in the streamPlayerScreen
-  // const updateDisplay = (screenModeDisplay: string) => {
-  //   setScreenModeDisplay(screenModeDisplay);
-  //   channel.postMessage({ screenModeDisplay });
-  // }; 
-
   const startClicked = () => {
     setStartButtonClicked(true);
     handlePlayPause();
@@ -247,27 +235,9 @@ const SimulationManager = () => {
                           className='flex w-15 h-full'
                         ></Button>
                       </Link>
-                      {/* //! unused code that uses websockets to change the type of display to one with space to accomodate for the gama map of the game, but is not implemented for now
-                     //! having these buttons that do nothing may confuse the user */}
                     </div>
-                    {/* <div className="flex justify-center mt-3 gap-4">
-                      <Button
-                        onClick={() => updateDisplay("gama_screen")}
-                        bgColor={"bg-white"}
-                        showText={true}
-                        className={`border-0 hover:border-none hover:bg-white focus:outline-none ${screenModeDisplay === "gama_screen" ? "" : "opacity-50"}`} // No border or color change on hover
-                        icon={<img src="/images/gama_screen.png" alt="Monitoring" className='size-32' />}
-                      />
-                      <Button
-                        onClick={() => updateDisplay("shared_screen")}
-                        bgColor={"bg-white"}
-                        showText={true}
-                        className={`border-0 hover:border-none hover:bg-white focus:outline-none ${screenModeDisplay === "shared_screen" ? "" : "opacity-50"}`}
-                        icon={<img src="/images/shared_screen.png" alt="shared_screen" className='size-32' />}
-                      />
-                    </div> */}
                   </>
-                ) : null}
+                )}
 
               </div>
             </>
