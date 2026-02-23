@@ -25,10 +25,7 @@ const SelectorSimulations = () => {
 
   const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
   const [path, setPath] = useState<number[]>([]);
-
   const navigate = useNavigate();
-
-
   const logger = getLogger(["components", "VideoStreamManager"]);
 
   useEffect(() => {
@@ -46,7 +43,6 @@ const SelectorSimulations = () => {
       }
     }
   }, [simulationList]);
-
 
   useEffect(() => {
     // the path here is a list of nested indexes, which are used to see which catalogs the user clicked
@@ -71,6 +67,7 @@ const SelectorSimulations = () => {
   const addToPath = (index: number) => {
     setPath([...path, index])
   }
+
   /**Removes the last index used to travel the subproject folder
    * 
    */
@@ -83,12 +80,12 @@ const SelectorSimulations = () => {
       setSubProjectsList([])
     }
   }
+
   /**
    * handles either navigating through the list of projects or launch a simulation
    * @param index index of the current selected element
    */
   const handleSimulation = (index: number) => {
-
     if (!isWsConnected || ws === null) {
       logger.warn("Websocket not connected \n isWsConnected:{isWsConnected}\n ws:{ws}", { isWsConnected, ws })
       return;
@@ -108,7 +105,6 @@ const SelectorSimulations = () => {
           logger.debug("handlesimulation, simulationList[index].type == catalog, {expName}", { expName: subProjectsList[index].name });
         }
         catch (e) { logger.error("no subprojects, ERROR:{e}", { e }); }
-
       } else if (simulationList[index].type == "json_settings") {
         ws.send(JSON.stringify({ type: 'send_simulation', simulation: simulationList[index] }));
         setTimeout(() => {
@@ -118,7 +114,6 @@ const SelectorSimulations = () => {
         logger.debug(simulationList[index].model_file_path)
         addToPath(index)
       }
-
       // ---------------------------------------------------------  sub project selected
     } else if (subProjectsList.length > 0) {
       if (subProjectsList[index].type == "json_settings") {
@@ -126,7 +121,6 @@ const SelectorSimulations = () => {
         setTimeout(() => {
           navigate('/simulationManager');
         }, 100);
-
       } else {
         if (subProjectsList[index].type == "catalog") {
           try {
@@ -150,7 +144,6 @@ const SelectorSimulations = () => {
         logger.info('Trying to connect to GAMA, connection status: {gamaStatus}', { gamaStatus: gama.connected });
       }, 3000);
     }
-
     return () => {
       clearInterval(interval);
     };
@@ -174,16 +167,10 @@ const SelectorSimulations = () => {
       {loading ? (
         <div className="text-center">
           <div className="animate-pulse ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4 -z-50"></div>
-
           <h2 className="text-gray-700">{t('loading')}</h2>
-
-
         </div>
       ) : (
-
-        // disable  
         <div className="flex flex-col items-center justify-center w-5/6 h-2/3 rounded-md relative" style={{ "backgroundColor": "#A1D2FF" }}>
-
           {
             //the content of this bracket is the back button
            subProjectsList ? subProjectsList.length > 0 && path.length >= 1 ?
@@ -212,41 +199,25 @@ const SelectorSimulations = () => {
           {/* //TODO add translation for Thai language */}
 
           <div className="flex items-center justify-between">
-
-
-
             <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
-
                 <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
-
-
             </div>
-
           </div>
-
-
           {/* Display the status, ask for the user to connect to Gama if still not */}
           <div className='flex gap-2 mt-6'>
             <span className={gama.connected ? 'text-green-500' : 'text-red-500'}>
               {gama.connected ? '' : connectionStatus}
             </span>
-
           </div>
           <Link to={"../streamPlayerScreen"} className='bg-white rounded-lg' target='_blank'>
             <Button bgColor='bg-purple-500'
               text="VR screens"
               icon={<img src={visibility} />}
               className='flex w-15'
-
             ></Button>
           </Link>
-
         </div>
-
-
       )}
-
-
       <Footer />
     </div>
   );
