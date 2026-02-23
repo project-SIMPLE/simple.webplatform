@@ -24,17 +24,12 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
       {list.map((simulation, index) => (
         <div className='items-center text-center w-24 ' key={index}>
           <div
-            className={`shadow-lg rounded-2xl items-center h-40 cursor-pointer bg-slate-100 relative
+            className={`shadow-lg rounded-2xl items-center  cursor-pointer bg-slate-100 relative w-[100px] h-[100px]
                     ${className} 
                     ${!gama.connected ? 'opacity-50' : null} 
                     ${simulation.type == "catalog"}  
                     `}
 
-            style={{
-              width: '100px',
-              height: '100px',
-              zIndex: 1,
-            }}
 
 
             key={index}
