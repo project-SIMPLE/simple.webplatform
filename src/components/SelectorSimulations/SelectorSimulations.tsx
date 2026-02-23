@@ -177,21 +177,11 @@ const SelectorSimulations = () => {
             //the content of this bracket is the back button
            subProjectsList ? subProjectsList.length > 0 && path.length >= 1 ?
               <div
-                className={`shadow-lg rounded-xl flex flex-col items-center absolute justify-center size-14 cursor-pointer`}
-
-                style={{
-                  backgroundImage: `url(${selectedSplashscreen ? selectedSplashscreen : "/images/simple_logo.png"})`,
-                  backgroundSize: 'cover',
-                  // width: '48px',
-                  // height: '48px',
-                  zIndex: 1,
-                  // position: 'absolute',
-                  top: '10px',
-                  left: '10px',
-                }}
+                className={`shadow-lg rounded-xl flex flex-col items-center justify-center size-14 cursor-pointer bg-white absolute top-10 left-10`}
                 onClick={() => back()}
               >
-                <img src={arrow_back} className='rounded-full bg-slate-700 opacity-75 size-8' />
+                <img src={selectedSplashscreen ? selectedSplashscreen : "/images/simple_logo.png"} alt="background image" className='absolute z-0'/>
+                <img src={arrow_back} className='rounded-full bg-slate-700 size-8 z-10 opacity-70' />
 
               </div>
               : null : "no subprojects"}
