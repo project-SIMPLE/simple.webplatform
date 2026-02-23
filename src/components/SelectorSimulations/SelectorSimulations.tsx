@@ -57,6 +57,8 @@ const SelectorSimulations = () => {
         }
         setSubProjectsList(list)
       }
+    } else {
+      setSubProjectsList(simulationList)
     }
   }, [path, simulationList])
 
