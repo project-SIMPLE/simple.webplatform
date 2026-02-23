@@ -33,6 +33,3 @@ learning-packages/ACROSS-Lab QuangBinhProject MIAT-version Gama/
 bin
 dist
 dist-api
-package-lock.json
-package.json
-eslint.config.ts

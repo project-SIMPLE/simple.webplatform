@@ -50,6 +50,7 @@
     "concurrently": "^8.2.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "eslint-config": "^0.3.0",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.7",
     "evilscan": "^1.9.1",
@@ -72,7 +73,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
+    "@eslint/js": "^9.39.3",
     "@eslint/json": "^1.0.0",
     "@types/express": "^5.0.6",
     "@yao-pkg/pkg": "^6.12.0",
