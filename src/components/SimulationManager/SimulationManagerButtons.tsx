@@ -82,11 +82,6 @@ const SimulationManagerButtons = () => {
         <Button
           onClick={handlePlayPause}
           customStyle={{ width: '100px', height: '50px' }}
-          // text={ 
-          //   gama.experiment_state === 'NONE' ? 'Launch' :
-          //   gama.experiment_state === 'RUNNING' ? 'Pause' :
-          //   gama.experiment_state === 'NOTREADY' ? 'Not Ready' : 'Resume'
-          // }
           bgColor={
             gama.experiment_state === 'RUNNING'
               ? 'bg-orange-500'
