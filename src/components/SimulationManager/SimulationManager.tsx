@@ -209,7 +209,7 @@ const SimulationManager = () => {
                   )
                 ) : gama.experiment_state === 'PAUSED' ||
                   gama.experiment_state === 'LAUNCHING' ||
-                  gama.experiment_state === 'RUNNING' ? (
+                  gama.experiment_state === 'RUNNING' && (
                   <>
                     <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4">
                       <Button
