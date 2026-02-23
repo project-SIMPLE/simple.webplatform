@@ -174,17 +174,16 @@ const SelectorSimulations = () => {
       ) : (
         <div className="flex flex-col items-center justify-center w-5/6 h-2/3 rounded-md relative" style={{ "backgroundColor": "#A1D2FF" }}>
           {
-            //the content of this bracket is the back button
-           subProjectsList ? subProjectsList.length > 0 && path.length >= 1 ?
+            //? Shows the back button if in a nested folder
+            path.length >= 1 &&
               <div
                 className={`shadow-lg rounded-xl flex flex-col items-center justify-center size-14 cursor-pointer bg-white absolute top-10 left-10`}
                 onClick={() => back()}
               >
                 <img src={selectedSplashscreen ? selectedSplashscreen : "/images/simple_logo.png"} alt="background image" className='absolute z-0'/>
                 <img src={arrow_back} className='rounded-full bg-slate-700 size-8 z-10 opacity-70' />
-
               </div>
-              : null : "no subprojects"}
+              }
 
           {subProjectsList ? subProjectsList.length > 0 ? <h2 className='font-medium'>{t('select_subproject')}</h2> : <h2>{t('select_simulation')} </h2> : null}
 
