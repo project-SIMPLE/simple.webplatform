@@ -50,7 +50,7 @@ const SelectorSimulations = () => {
       let list = simulationList
       for (const index of path) {
         logger.debug("index in the use effect: {index}", { index })
-        if (list[index].entries.length > 0) {
+        if (list[index].type === "catalog") {
           list = list[index].entries
         } else {
           list = [list[index]]
