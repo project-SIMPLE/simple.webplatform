@@ -117,7 +117,8 @@ const SelectorSimulations = () => {
       }, 100);
 
       // ---------------------------------------------------------  sub project selected
-    } else if (subProjectsList.length > 0) {
+
+    } 
       if (subProjectsList[index].type == "json_settings") {
         ws.send(JSON.stringify({ type: 'send_simulation', simulation: subProjectsList[index] }));
         setTimeout(() => {
@@ -134,7 +135,7 @@ const SelectorSimulations = () => {
           }
         }
       }
-    }
+    
   };
 
   // Loop which tries to connect to Gama
