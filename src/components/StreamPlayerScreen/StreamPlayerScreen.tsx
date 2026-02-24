@@ -1,6 +1,5 @@
 import { useRef } from "react";
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
-import Header from "../Header/Header";
 const StreamPlayerScreen = () => {
 
 
@@ -12,7 +11,6 @@ const StreamPlayerScreen = () => {
 
       <div className="w-full h-full flex flex-col items-center">
           <div className="flex justify-center items-center h-screen bg-[#a1d2ff]'" ref={videoContainerRef}>
-            <Header needsMiniNav />
             <VideoStreamManager />
             <div className='flex flex-col'>
 
