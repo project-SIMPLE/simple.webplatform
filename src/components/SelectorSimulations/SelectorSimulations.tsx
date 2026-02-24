@@ -9,14 +9,14 @@ import Button from '../Button/Button';
 import SimulationList from './SimulationList';
 import arrow_back from "/src/svg_logos/arrow_back.svg";
 import { getLogger } from '@logtape/logtape';
-import { Simulation } from '../../api/core/Constants';
+import { VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from '../../api/core/Constants';
 import visibility from '/src/svg_logos/visibility.svg';
 const SelectorSimulations = () => {
   const { ws, isWsConnected, gama, simulationList } = useWebSocket();
   const [loading, setLoading] = useState<boolean>(true);
   const [connectionStatus, setConnectionStatus] = useState<string>('Waiting for connection ...');
   const { t } = useTranslation();
-  const [subProjectsList, setSubProjectsList] = useState<Simulation[]>(simulationList);
+  const [subProjectsList, setSubProjectsList] = useState<(VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[]>(simulationList);
   useEffect(() => {
     if (simulationList && simulationList.length > 0) {
       setSubProjectsList(simulationList);
