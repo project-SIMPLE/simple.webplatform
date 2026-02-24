@@ -128,10 +128,10 @@ const SelectorSimulations = () => {
         if (subProjectsList[index].type == "catalog") {
           try {
             addToPath(index)
-            logger.debug("[SELECTOR SIMULATION] handlesimulation, simulationList[index].type == catalog, {name}", { name: subProjectsList[0].name });
+            logger.debug("[SELECTOR SIMULATION] handlesimulation, simulationList[index].type == catalog, {name}", { name: subProjectsList[index].name });
           } // in any case, we catch the error and log it if any
           catch (e) {
-            logger.error("no subprojects, ERROR: {e}", { e });
+            logger.error("no subprojects, ERROR: {e}", { e : (e as Error).message });
           }
         }
       }
