@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Simulation } from "../../api/core/Constants.ts"
+import { VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from '../../api/core/Constants';
 import { getLogger } from '@logtape/logtape';
 
 
@@ -28,8 +28,8 @@ interface WebSocketContextType {
         content_error: string;
     };
     playerList: PlayerList;
-    simulationList: Simulation[];
-    selectedSimulation: Simulation | null;
+    simulationList: (VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[];
+    selectedSimulation: (VU_MODEL_SETTING_JSON) | null;
 
 
     removePlayer: (id: string) => void; // Define removePlayer here
@@ -54,8 +54,8 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
         content_error: '',
     });
     const [playerList, setPlayerList] = useState<PlayerList>({});
-    const [simulationList, setSimulationList] = useState<Simulation[]>([]);
-    const [selectedSimulation, setSelectedSimulation] = useState<Simulation | null>(null);
+    const [simulationList, setSimulationList] = useState<(VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[]>([]);
+    const [selectedSimulation, setSelectedSimulation] = useState<(VU_MODEL_SETTING_JSON) | null>(null);
 
 
     // Function to remove a player from the playerList
