@@ -1,8 +1,9 @@
 import arrow_down from '../../svg_logos/arrow_drop_down.svg';
-import { Simulation } from '../../api/core/Constants';
+import { VU_MODEL_SETTING_JSON, VU_CATALOG_SETTING_JSON } from '../../api/core/Constants';
 import { getLogger } from '@logtape/logtape';
+//TODOsim vérifier l'existence du besoin 
 interface SimulationListProps {
-  list: Simulation[];
+  list: (VU_MODEL_SETTING_JSON | VU_CATALOG_SETTING_JSON)[];
   handleSimulation: (index: number) => void;
   gama: {
     connected: boolean;
@@ -21,7 +22,7 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
   return (
     <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
 
-      {list.map((simulation, index) => (
+      {list.map((simulation : VU_MODEL_SETTING_JSON | VU_CATALOG_SETTING_JSON , index : number) => (
         <div className='items-center text-center w-24 ' key={index}>
           <div
             className={`shadow-lg rounded-2xl items-center  cursor-pointer bg-slate-100 relative w-[100px] h-[100px]
