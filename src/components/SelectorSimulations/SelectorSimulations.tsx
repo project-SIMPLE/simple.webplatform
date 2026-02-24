@@ -92,14 +92,16 @@ const SelectorSimulations = () => {
       logger.warn("Websocket not connected \n isWsConnected:{isWsConnected}\n ws:{ws}", { isWsConnected, ws })
       return;
     }
-    if (subProjectsList.length <= 0) { //no subproject is selected, we either enter a folder or load a simulation
-      if (simulationList[index].type == "catalog") { //?  we additionaly check if the simulation is a catalog, not necessary but allows for adding extra types
-        logger.debug("catalog detected, subprojectList:{subprojectList}", { subProjectList: JSON.stringify(simulationList[index].entries) });
-        try {
-          setSubProjectsList(simulationList[index].entries);
-          addToPath(index)
-          if ('splashscreen' in simulationList[index]) {
-            setSelectedSplashscreen(simulationList[index].splashscreen);
+
+    if (subProjectsList[index].type === "catalog") { //?  we additionaly check if the simulation is a catalog, not necessary but allows for adding extra types
+      const catalog_item = subProjectsList[index];
+      //we define a constant to tell typescript that the type of subProjectsList[index] cannot change and is a VU_CATALOG_SETTING_JSON, meaning that entries is defined
+      logger.debug("catalog detected, subprojectList:{subprojectList}", { subProjectList: JSON.stringify(catalog_item.entries) });
+      try {
+        setSubProjectsList(catalog_item.entries);
+        addToPath(index)
+        if (simulationList[index].splashscreen !== undefined) {
+          setSelectedSplashscreen(simulationList[index].splashscreen);
 
           } else {        //@ts-expect-error simulationList[index] type is defined as "never" for some reason, but is a Simulation, so this property access is valid
             logger.warn("No splashscreen could be found for simulation {simulation}", { simulation: simulationList[index].experimentName }) //TODO finir le logger warn
