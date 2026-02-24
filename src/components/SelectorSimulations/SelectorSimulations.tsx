@@ -103,21 +103,19 @@ const SelectorSimulations = () => {
         if (simulationList[index].splashscreen !== undefined) {
           setSelectedSplashscreen(simulationList[index].splashscreen);
 
-          } else {        //@ts-expect-error simulationList[index] type is defined as "never" for some reason, but is a Simulation, so this property access is valid
-            logger.warn("No splashscreen could be found for simulation {simulation}", { simulation: simulationList[index].experimentName }) //TODO finir le logger warn
-          }
-          logger.debug("handlesimulation, simulationList[index].type == catalog, {expName}", { expName: subProjectsList[index].name });
+        } else {
+          logger.warn("No splashscreen could be found for simulation {simulation}", { simulation: catalog_item.name })
         }
-        catch (e) { logger.error("no subprojects, ERROR:{e}", { e }); }
-      } else if (simulationList[index].type == "json_settings") {
-        ws.send(JSON.stringify({ type: 'send_simulation', simulation: simulationList[index] }));
-        setTimeout(() => {
-          navigate('/simulationManager');
-        }, 100);
-      } else if (Array.isArray(simulationList[index])) {
-        logger.debug(simulationList[index].model_file_path)
-        addToPath(index)
+        logger.debug("called handle simulation, selected item is a catalog of name:{expName}", { expName: subProjectsList[index].name });
       }
+      catch (e) { logger.error("no subprojects, ERROR:{e}", { e }); }
+
+    } else if (simulationList[index].type == "json_settings") {
+      ws.send(JSON.stringify({ type: 'send_simulation', simulation: simulationList[index] }));
+      setTimeout(() => {
+        navigate('/simulationManager');
+      }, 100);
+
       // ---------------------------------------------------------  sub project selected
     } else if (subProjectsList.length > 0) {
       if (subProjectsList[index].type == "json_settings") {
