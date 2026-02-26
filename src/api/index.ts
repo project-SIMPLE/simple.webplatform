@@ -34,7 +34,12 @@ function isCommandAvailable(commandName: string): boolean {
  */
 
 // Load options
-const isPackaged = (process as any).pkg || process.env.PKG_EXECPATH || !process.argv[0].endsWith('node');
+const isPackaged =
+    (process as any).pkg
+    || process.env.PKG_EXECPATH
+    // The runner isn't called `node`, and not starting file from root `/snapshot`
+    || (!path.basename(process.argv[0]).includes('node') && !process.argv[1].startsWith("/snapshot"))
+;
 const exeDir = isPackaged ? path.dirname(process.execPath) : process.cwd();
 dotenv.config({ path: path.join(exeDir, '.env') });
 
