@@ -26,7 +26,7 @@ const SelectorSimulations = () => {
   const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
   const [path, setPath] = useState<number[]>([]);
   const navigate = useNavigate();
-  const logger = getLogger(["components", "VideoStreamManager"]);
+  const logger = getLogger(["components", "SelectorSimulation"]);
 
   useEffect(() => {
     if (isWsConnected && ws !== null) {
@@ -128,7 +128,7 @@ const SelectorSimulations = () => {
         if (subProjectsList[index].type == "catalog") {
           try {
             addToPath(index)
-            logger.debug("[SELECTOR SIMULATION] handlesimulation, simulationList[index].type == catalog, {name}", { name: subProjectsList[index].name });
+            logger.debug("handlesimulation, simulationList[index].type == catalog, {name}", { name: subProjectsList[index].name });
           } // in any case, we catch the error and log it if any
           catch (e) {
             logger.error("no subprojects, ERROR: {e}", { e : (e as Error).message });
