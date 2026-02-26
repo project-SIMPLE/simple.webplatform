@@ -34,13 +34,13 @@ function isCommandAvailable(commandName: string): boolean {
  */
 
 // Load options
-const isPackaged =
+export const IS_PLATFORM_PACKAGED =
     (process as any).pkg
     || process.env.PKG_EXECPATH
     // The runner isn't called `node`, and not starting file from root `/snapshot`
     || (!path.basename(process.argv[0]).includes('node') && !process.argv[1].startsWith("/snapshot"))
 ;
-const exeDir = isPackaged ? path.dirname(process.execPath) : process.cwd();
+const exeDir = IS_PLATFORM_PACKAGED ? path.dirname(process.execPath) : process.cwd();
 dotenv.config({ path: path.join(exeDir, '.env') });
 
 // Fix for some dependencies (like evilscan) that might use undeclared variables
@@ -59,10 +59,6 @@ const ENV_AGGRESSIVE_DISCONNECT: boolean = process.env.AGGRESSIVE_DISCONNECT !==
 // Headsets  =====
 process.env.HEADSET_WS_PORT =               process.env.HEADSET_WS_PORT             || '8080';
 // ! Headsets  =====
-
-// Scrcpy =====
-const ENV_SCRCPY_FORCE_H265: boolean = process.env.SCRCPY_FORCE_H265 !== undefined ? ['true', '1', 'yes'].includes(process.env.SCRCPY_FORCE_H265.toLowerCase()) : false;
-// ! Scrcpy =====
 
 // Website =====
 process.env.WEB_APPLICATION_PORT =          process.env.WEB_APPLICATION_PORT        || '5173';
@@ -145,13 +141,13 @@ async function start() {
     logger.debug(`Module version: ${process.versions.modules}`);
     logger.debug(`Platform: ${process.platform}`);
     logger.debug(`Arch: ${process.arch}`);
-    logger.debug(`Is Packaged: {isPackaged}`, {isPackaged});
+    logger.debug(`Is Packaged: {isPackaged}`, {isPackaged: IS_PLATFORM_PACKAGED});
     logger.debug(`NODE_ENV: ${process.env.NODE_ENV}`);
 
     logger.trace(process.env);
 
     // Start static server to serve the frontend in production/executable mode
-    if (process.env.NODE_ENV === 'production' || isPackaged) {
+    if (process.env.NODE_ENV === 'production' || IS_PLATFORM_PACKAGED) {
         new StaticServer();
     }
 
