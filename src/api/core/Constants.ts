@@ -38,21 +38,6 @@ export interface JsonPlayer {
     heartbeat?: number;
 }
 
-
-export interface Simulation {
-    experiment_name: string;
-    model_file_path: string;
-    name: string;
-    player_html_file: string;
-    player_web_interface: string;
-    splashscreen: string;
-    type: string;
-    type_model_file_path: string;
-    maximal_players: string,
-    minimal_players: string,
-    selected_monitoring: string
-}
-
 // Learning packages ==============================================
 
 /**

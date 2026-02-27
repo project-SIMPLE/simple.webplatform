@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Simulation } from "../core/Constants.ts"
-import { getLogger, configure, getConsoleSink } from '@logtape/logtape';
+import { VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from '../../api/core/Constants';
+import { getLogger } from '@logtape/logtape';
 
 
 
@@ -28,8 +28,8 @@ interface WebSocketContextType {
         content_error: string;
     };
     playerList: PlayerList;
-    simulationList: Simulation[];
-    selectedSimulation: Simulation | null;
+    simulationList: (VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[];
+    selectedSimulation: (VU_MODEL_SETTING_JSON) | null;
 
 
     removePlayer: (id: string) => void; // Define removePlayer here
@@ -54,8 +54,8 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
         content_error: '',
     });
     const [playerList, setPlayerList] = useState<PlayerList>({});
-    const [simulationList, setSimulationList] = useState<Simulation[]>([]);
-    const [selectedSimulation, setSelectedSimulation] = useState<Simulation | null>(null);
+    const [simulationList, setSimulationList] = useState<(VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[]>([]);
+    const [selectedSimulation, setSelectedSimulation] = useState<(VU_MODEL_SETTING_JSON) | null>(null);
 
 
     // Function to remove a player from the playerList
@@ -66,7 +66,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 
             return updatedPlayerList;
         });
-        logger.info(" This player have been removed from playerList : ", id);
+        logger.info(" This player have been removed from playerList : ", {id});
     };
 
 
@@ -96,7 +96,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 
             if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
                 setSimulationList(data.map(sim => sim.jsonSettings));
-                logger.debug('[WebSocketManager] Simulation list:', data);
+                logger.debug('[WebSocketManager] Simulation list: {data}',{data : data.toString()});
             } else {
                 switch (data.type) {
                     // this case is launch too much time
@@ -114,7 +114,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
                     default:
                         logger.warn('[WebSocketManager] Message not processed, defaulted to setSimulationList. data:{data}', { data });
                         setSimulationList(data)
-                    //TODO changer cette mocheté, le message est traité dans certain cas si on appelle une méthode sur le contenu du message, ça limitera le logspam potentiellement
+                   
                 }
             }
         };

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { HEADSET_COLOR } from "../../api/core/Constants.ts";
 import visibility_off from "../../svg_logos/visibility_off.svg"
 import x_cross from "../../svg_logos/x_cross.svg";
-
+import { getLogger } from "@logtape/logtape";
 //TODO pour fix le problème du canvas qui est en petit, puis qui devient grand quand tu clique dessus, regarder les hook qui sont trigger quand on clique sur le canvas (surtout le truc qui applique les classes tailwind)
 //TODO et juste nettoyer complètement le css à chaque fois, et le réappliquer pour éviter le problème, quitte à ce que le code soit redondant
 /* eslint react-hooks/rules-of-hooks: 0, curly: 2 */ //? desactive les avertissements sur les hooks qui sont appelés conditionnellement, ce qui n'arrive jamais dans ce cas
@@ -13,13 +13,15 @@ interface PlayerScreenCanvasProps {
     id?: string;
     setActiveCanvas?: (a: string) => void //function that is passed as a prop by the videostreammanager, this function here returns the canvas and the ip of the headset that need to be displayed in a popup window
     hideInfos?: boolean; // boolean used in case you want to hide player id and identifier, used in case of fullscreen for example
-    tailwindCanvasDim: [string, string]; //tailwind raw dimensions to be passed to the canvas element
+    tailwindCanvasDim?: [string, string]; //tailwind raw dimensions to be passed to the canvas element
     isLimitingWidth?: boolean; //whether the maximum dimension is the width or the height
     gridDisplay?: boolean;
 }
 
 
 const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWidth, tailwindCanvasDim, gridDisplay, needsInteractivity }: PlayerScreenCanvasProps) => {
+    const logger = getLogger(["components", "PlayerScreenCanvas"])
+
     if (!id) {
         return null;
     }
@@ -52,8 +54,14 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
                 }
             } else {
                 if (canvasref.current) {
-                    canvas.classList.add(tailwindCanvasDim[0])
-                    canvas.classList.add(tailwindCanvasDim[1])
+                    if (tailwindCanvasDim) {
+                        canvas.classList.add(tailwindCanvasDim[0])
+                        canvas.classList.add(tailwindCanvasDim[1])
+                    } else {
+                        logger.warn("no dimensions received, using default full screen values")
+                        canvas.classList.add("max-h-[95dvh]")
+                        canvas.classList.add("max-w-[95dvw]")
+                    }
 
 
 
@@ -74,7 +82,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
                             {hideInfos ?
                                 null
                                 :
-                                <p className="bg-slate-200  rounded-t-md p-1 tailwindCanvasDim-center "> {`Player: ${id}`}</p>
+                                <p className="bg-slate-200 rounded-t-md p-1"> {`Player: ${id}`}</p>
                             }
 
                         </div>
@@ -99,7 +107,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
              flex flex-row align-middle justify-center p-2 rounded-lg
               ${gridDisplay ? null : isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"}`}
                     onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}
-                 >
+                >
 
                 </div>
 

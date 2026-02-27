@@ -17,7 +17,7 @@ interface PlayerProps {
 const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerId }: PlayerProps) => {
   const { t } = useTranslation();
 
-  const { ws, playerList } = useWebSocket(); // `removePlayer` is now available
+  const { ws } = useWebSocket();
 
 
   const [showPopUpManageHeadset, setshowPopUpManageHeadset] = useState(false);
@@ -30,7 +30,6 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
     if (ws !== null) {
       logger.info("ID headset: {id}",{id});
       ws.send(JSON.stringify({ "type": "remove_player_headset", id }));
-      // removePlayer(id);  // already did in WebSocketManagers
       toggleShowPopUpManageHeadset();
     } else {
       logger.error("Websocket not connected")
@@ -46,12 +45,7 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
 
     return (
       <>
-
-
         {showPopUpManageHeadset ?
-
-
-
           <div className="fixed inset-0 flex items-center justify-center bg-slate-800 bg-opacity-75 z-10" onClick={toggleShowPopUpManageHeadset}  >
 
             <div className="rounded-md shadow-lg w-72 text-center z-20" onClick={(e) => e.stopPropagation()}  > {/*this prevent event bubbling, so that clicking the child div does not close the popup window*/}
@@ -64,9 +58,9 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
 
               <div className='bg-slate-200 p-2 text-left'>
                 <p>Player: {String(playerId)}</p>
-                <p>{t('Status')} : {String(selectedPlayer.connected)}</p>
-                <p>{t('Hour of connection')} : {selectedPlayer.date_connection}</p>
-                <p>{t('In game')} : {String(selectedPlayer.in_game)}</p>
+                <p>{t('Status')} : {selectedPlayer ? String(selectedPlayer.connected) : "no selected player"}</p>
+                <p>{t('Hour of connection')} : {selectedPlayer ? selectedPlayer.date_connection : "no selected player"}</p>
+                <p>{t('In game')} : {selectedPlayer ? String(selectedPlayer.in_game) : "no selected player"}</p>
               </div>
 
               <div className="bg-red-300 pb-3 rounded-b-md">
@@ -98,10 +92,10 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
             selectedPlayer={selectedPlayer}
             playerId={Playerkey} />
 
-          <div className={`rounded-b-xl justify-center w-full ${selectedPlayer.connected ? 'bg-green-500' : 'bg-red-500'}`}>
-            {selectedPlayer.connected ?
+          <div className={`rounded-b-xl justify-center w-full ${selectedPlayer ? selectedPlayer.connected ? 'bg-green-500' : 'bg-red-500' : ""}`}>
+            { selectedPlayer ? selectedPlayer.connected ?
               selectedPlayer.in_game ? <p>{t("in_game")}</p> :
-                <p>{t("connected")}</p> : <p>{t("error")}</p>}
+                <p>{t("connected")}</p> : <p>{t("error")}</p> : "player undefined"}
           </div>
         </div>
 
