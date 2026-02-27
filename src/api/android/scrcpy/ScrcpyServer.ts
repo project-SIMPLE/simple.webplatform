@@ -36,7 +36,8 @@ export class ScrcpyServer {
 
     // =======================
     // Scrcpy stream
-    private scrcpyStreamConfig!: string;
+    //@ts-expect-error this value is used line 321
+     private scrcpyStreamConfig!: string;
 
     private adbManager!: AdbManager;
 

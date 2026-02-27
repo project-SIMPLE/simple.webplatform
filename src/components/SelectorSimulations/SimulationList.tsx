@@ -1,9 +1,10 @@
 import arrow_down from '../../svg_logos/arrow_drop_down.svg';
-import { Simulation } from '../../api/core/Constants';
+import { VU_MODEL_SETTING_JSON, VU_CATALOG_SETTING_JSON } from '../../api/core/Constants';
 import { getLogger } from '@logtape/logtape';
+//TODOsim vérifier l'existence du besoin 
 interface SimulationListProps {
-  list: Simulation[];
-  handleSimulation: (index) => void;
+  list: (VU_MODEL_SETTING_JSON | VU_CATALOG_SETTING_JSON)[];
+  handleSimulation: (index: number) => void;
   gama: {
     connected: boolean;
     loading: "hidden" | "visible";
@@ -21,20 +22,15 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
   return (
     <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
 
-      {list.map((simulation, index) => (
+      {list.map((simulation : VU_MODEL_SETTING_JSON | VU_CATALOG_SETTING_JSON , index : number) => (
         <div className='items-center text-center w-24 ' key={index}>
           <div
-            className={`shadow-lg rounded-2xl items-center h-40 cursor-pointer bg-slate-100 relative
+            className={`shadow-lg rounded-2xl items-center  cursor-pointer bg-slate-100 relative w-[100px] h-[100px]
                     ${className} 
                     ${!gama.connected ? 'opacity-50' : null} 
                     ${simulation.type == "catalog"}  
                     `}
 
-            style={{
-              width: '100px',
-              height: '100px',
-              zIndex: 1,
-            }}
 
 
             key={index}
@@ -42,6 +38,7 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
           >{/*The absolute positionning guarantees that the image is the only static child so it takes the whole screen top and left are there to position the down arrow */}
             {simulation.type == "catalog" ? <img src={arrow_down} className='rounded-full bg-slate-500 opacity-90 size-16 absolute top-[18px] left-[18px]' /> : null} {/* //? downward arrow */}
             <img src={` ${simulation.splashscreen}`}
+            //@ts-expect-error target property of image does exist
               onError={(e) => { e.target.src = "/images/simple_logo.png"; logger.warn("couldn't load an image for simulation {index}, using the placeholder", { index }) }}
               className='size-full rounded-2xl'
             />

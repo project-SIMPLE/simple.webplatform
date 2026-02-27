@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */ //! The unused var are for potential buttons to be implemented next, that allows changing the display to something that
 //! accomodates the gama server map
 import { useState, useEffect } from 'react';
 import Button from '../Button/Button';
@@ -19,20 +18,15 @@ export interface Player {
   in_game: boolean;
 }
 
-const logger= getLogger(["simulationManager", "SimulationManager"]);
 
 const SimulationManager = () => {
+
+  const logger = getLogger(["simulationManager", "SimulationManager"]);
   const { ws, gama, playerList, selectedSimulation } = useWebSocket(); // `removePlayer` is now available
   const navigate = useNavigate();
   const [simulationStarted, setSimulationStarted] = useState(false);
   const { t } = useTranslation();
-  const [screenModeDisplay, setScreenModeDisplay] = useState("gama_screen");
   const [startButtonClicked, setStartButtonClicked] = useState(false);
-  const channel = new BroadcastChannel('simulation-to-stream'); //using the broadcast api to update display type in the streamPlayerScreen
-  const updateDisplay = (screenModeDisplay: string) => {
-    setScreenModeDisplay(screenModeDisplay);
-    channel.postMessage({ screenModeDisplay });
-  };
 
   const startClicked = () => {
     setStartButtonClicked(true);
@@ -214,7 +208,7 @@ const SimulationManager = () => {
                   )
                 ) : gama.experiment_state === 'PAUSED' ||
                   gama.experiment_state === 'LAUNCHING' ||
-                  gama.experiment_state === 'RUNNING' ? (
+                  gama.experiment_state === 'RUNNING' && (
                   <>
                     <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4">
                       <Button
@@ -240,27 +234,9 @@ const SimulationManager = () => {
                           className='flex w-15 h-full'
                         ></Button>
                       </Link>
-                     {/* //! unused code that uses websockets to change the type of display to one with space to accomodate for the gama map of the game, but is not implemented for now
-                     //! having these buttons that do nothing may confuse the user */}
                     </div>
-                    {/* <div className="flex justify-center mt-3 gap-4">
-                      <Button
-                        onClick={() => updateDisplay("gama_screen")}
-                        bgColor={"bg-white"}
-                        showText={true}
-                        className={`border-0 hover:border-none hover:bg-white focus:outline-none ${screenModeDisplay === "gama_screen" ? "" : "opacity-50"}`} // No border or color change on hover
-                        icon={<img src="/images/gama_screen.png" alt="Monitoring" className='size-32' />}
-                      />
-                      <Button
-                        onClick={() => updateDisplay("shared_screen")}
-                        bgColor={"bg-white"}
-                        showText={true}
-                        className={`border-0 hover:border-none hover:bg-white focus:outline-none ${screenModeDisplay === "shared_screen" ? "" : "opacity-50"}`}
-                        icon={<img src="/images/shared_screen.png" alt="shared_screen" className='size-32' />}
-                      />
-                    </div> */}
                   </>
-                ) : null}
+                )}
 
               </div>
             </>

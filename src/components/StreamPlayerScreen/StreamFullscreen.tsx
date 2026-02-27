@@ -1,9 +1,8 @@
-import PlayerScreenCanvas from "../WebSocketManager/PlayerScreenCanvas"
 import { useSearchParams } from "react-router-dom"
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
 import { HEADSET_COLOR } from "../../api/core/Constants.ts";
 const StreamFullscreen = () => {
-    const [identifier, setIdentifier] = useSearchParams();
+    const [identifier] = useSearchParams();
     identifier.get("")
     const cleanId = identifier.toString().replace(/\D/g, "");
     const bgColor = HEADSET_COLOR[cleanId]
