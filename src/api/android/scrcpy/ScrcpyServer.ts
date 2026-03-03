@@ -21,6 +21,18 @@ let useH265: boolean = true;
 // Switch to true if at least 1 client doesn't h265
 let scrcpyCodecLock: boolean = false;
 
+// Small handy function to catch when a list changes
+// Used to fix initial black screen streaming
+function watchList<T>(list: T[], onChange: () => void): T[] {
+    return new Proxy(list, {
+        set(target, prop, value) {
+            target[prop as any] = value;
+            if (prop !== "length") onChange();
+            return true;
+        },
+    });
+}
+
 export class ScrcpyServer {
     // =======================
     // WebSocket
@@ -28,7 +40,10 @@ export class ScrcpyServer {
     private wsClients: Set<uWS.WebSocket<any>>;
     private maxBackpressure: number = 8 * 1024 * 1024; // 8 MB per socket
 
-    private scrcpyClients: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>[] = [];
+    private scrcpyClients: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>[] = watchList([], () => {
+        logger.debug("Scrcpy clients changed, restarting all video streams");
+        this.resentAllConfigPackage();
+    });//[];
 
     // =======================
     // Scrcpy server
@@ -116,10 +131,14 @@ export class ScrcpyServer {
                             await client.close();
                         }
                         this.scrcpyClients = [];
-                        await this.adbManager.restartStreamingAll();
+                        await this.adbManager.restartStreamingAll()
+                            .then(async () => {
+                                logger.debug("All streams restarted")
+                                // Ensure video stream are well init after long restart
+                                await this.resentAllConfigPackage(true, 500)
+                                    .then(() => logger.trace("Config resent after stream restart"));
+                            });
 
-                        // Ensure video stream are well init after long restart
-                        this.resentAllConfigPackage(true, 500);
                     }
                 } catch (e) {
                     logger.error("Something went wrong on message received...\n{e}", { e });
@@ -295,9 +314,6 @@ export class ScrcpyServer {
 
             if (videoPacketStream != null) {
                 const myself = this;
-
-                // Enforce sending config package
-                this.resentConfigPackage(client);
 
                 videoPacketStream
                     .pipeTo(
