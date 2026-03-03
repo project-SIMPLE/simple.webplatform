@@ -433,17 +433,14 @@ export class ScrcpyServer {
                 return false;
             }
 
-            const result: number = client.send(packetJson, false, true);
-            switch (result) {
-                case 1: // Backpressure built up (but still queued)
-                    customLogger.warn('Backpressure building on video stream websocket...');
-                    break;
-                case 2: // ❌ Dropped — backpressure limit exceeded
-                    customLogger.error('Video stream frame dropped...');
-                    break;
-                default:
-                case 0:
-                    logger.trace("Message sent normally")
+            /*  Possible returned values:
+                0 : OK
+                1 : Backpressure built up (but still queued)
+                2 : Message dropped — backpressure limit exceeded
+                    - The last one is the only interesting one
+             */
+            if (client.send(packetJson, false, true) == 2) {
+                customLogger.error('Video stream frame dropped...');
             }
         });
     }
