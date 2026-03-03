@@ -7,7 +7,7 @@ import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyCodecOptions } from "
 import { AdbScrcpyClient, AdbScrcpyExitedError, AdbScrcpyOptions3_3_3 } from "@yume-chan/adb-scrcpy";
 import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
-import { getLogger } from "@logtape/logtape";
+import {getLogger, Logger} from "@logtape/logtape";
 
 import { AdbManager } from "../adb/AdbManager.ts";
 
@@ -26,7 +26,7 @@ export class ScrcpyServer {
     // WebSocket
     private wsServer!: TemplatedApp;
     private wsClients: Set<uWS.WebSocket<any>>;
-    private maxBackpressure: number = 1 * 1024 * 1024; // 1MB
+    private maxBackpressure: number = 8 * 1024 * 1024; // 8 MB per socket
 
     private scrcpyClients: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>[] = [];
 
@@ -70,10 +70,12 @@ export class ScrcpyServer {
 
         this.wsServer.ws('/*', {
             compression: uWS.SHARED_COMPRESSOR, // Enable compression
-            maxPayloadLength: 20 * 1024, // 20 KB: Adjust based on expected video bitrate
-            // Experimental max < 10KB
+            maxPayloadLength: 256 * 1024, // 256 KB: Adjust based on expected video bitrate & 6 video streams
+            // When backpressure exceeds this, uWS *drops the connection*
             maxBackpressure: this.maxBackpressure,
-            idleTimeout: 30, // 30 seconds timeout
+            idleTimeout: 100, // 100 seconds (<2min) timeout
+            // Send pings to uphold a stable connection
+            sendPingsAutomatically: true,
 
             open: (ws) => {
                 this.wsClients.add(ws);
@@ -84,13 +86,11 @@ export class ScrcpyServer {
             },
 
             drain: (ws) => {
-                // Reset stream to prevent having too much artefacts on stream
-                if (ws.getBufferedAmount() < this.maxBackpressure) {
-                    logger.debug("Backpressure drained, restart stream to prevent visual glitch")
-
-                    this.resentAllConfigPackage();
-                }
+                logger
+                    .getChild("Drain")
+                    .info(`Backpressure drained, streaming should be back to normal, buffered: ${ws.getBufferedAmount()}`);
             },
+
             message: async (_ws, message) => {
                 try {
                     const jsonMessage: { type: string, h264: boolean, h265: boolean, av1: boolean }
@@ -391,7 +391,6 @@ export class ScrcpyServer {
         }
     }
 
-
     async resentConfigPackage(client: AdbScrcpyClient<any>): Promise<boolean> {
         logger.trace("Reset video for client {client}", { client });
 
@@ -426,8 +425,26 @@ export class ScrcpyServer {
     }
 
     broadcastToClients(packetJson: string): void {
+        const customLogger: Logger = logger.getChild("Drain");
         this.wsClients.forEach((client) => {
-            client.send(packetJson, false, true);
+
+            if (client.getBufferedAmount() > 6 * 1024 * 1024) { // 6 MB threshold -> 2MB room
+                customLogger.warn('Dropping frame — client too slow');
+                return false;
+            }
+
+            const result: number = client.send(packetJson, false, true);
+            switch (result) {
+                case 1: // Backpressure built up (but still queued)
+                    customLogger.warn('Backpressure building on video stream websocket...');
+                    break;
+                case 2: // ❌ Dropped — backpressure limit exceeded
+                    customLogger.error('Video stream frame dropped...');
+                    break;
+                default:
+                case 0:
+                    logger.trace("Message sent normally")
+            }
         });
     }
 }
