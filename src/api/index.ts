@@ -112,7 +112,10 @@ const logConfig = configure({
                 maxSize: 0x400 * 0x400 * 100,  // 100 MiB
                 maxFiles: 5,
             }),
-            { triggerLevel: "error" }
+            {
+                triggerLevel: "error",
+                bufferLevel: "debug"  // Buffer debug and below; info/warn pass through immediately
+            }
         )
     },
     loggers: [
@@ -166,6 +169,5 @@ export {
     ENV_EXTRA_VERBOSE,
     useAdb,
     ENV_AGGRESSIVE_DISCONNECT,
-    HEADSETS_IP,
-    ENV_SCRCPY_FORCE_H265
+    HEADSETS_IP
 };

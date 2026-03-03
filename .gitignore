@@ -30,6 +30,6 @@ errorLog.log*
 learning-packages/ACROSS-Lab QuangBinhProject MIAT-version Gama/
 
 # Compilation related
-bin
+/bin*
 dist
 dist-api
