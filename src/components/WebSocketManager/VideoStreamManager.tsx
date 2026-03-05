@@ -196,7 +196,70 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   // -------------------------------------------------------------------------------------------------------------------
 
   useEffect(() => {
-    // Open the WebSocket connection
+    let cleanedUp = false;
+    const deviceSockets = new Map<string, WebSocket>();
+
+    // Opens a dedicated socket for a device at /stream/:deviceIp.
+    // All packets (config then data) arrive here in order — no split-channel ordering issues.
+    // Reconnects automatically after 1 s on unexpected close.
+    function connectDeviceSocket(streamId: string) {
+      if (cleanedUp) return;
+
+      // Prevent the stale socket's onclose from firing a reconnect when we replace it
+      const existing = deviceSockets.get(streamId);
+      if (existing && existing.readyState < WebSocket.CLOSING) {
+        existing.onclose = null;
+        existing.close();
+      }
+
+      const ws = new WebSocket(`ws://${host}:${port}/stream/${streamId}`);
+      deviceSockets.set(streamId, ws);
+
+      ws.onmessage = (event) => {
+        // Deserialize the message and enqueue the data into the readable stream
+        const deserializedData = deserializeData(event.data);
+
+        // Create stream if new stream
+        if (!readableControllers.has(deserializedData!.streamId)) {
+          newVideoStream(deserializedData!.streamId, deserializedData!.useH265);
+        }
+
+        const controller = readableControllers.get(deserializedData!.streamId);
+
+        // Since we set very early the entry before the controller exists,
+        // this catch potential race conditions where controller do not exists
+        if (controller != undefined) {
+          // Enqueue data package to decoder stream
+          if (deserializedData!.packet) {
+            if (
+              isDecoderHasConfig.get(deserializedData!.streamId) &&
+              deserializedData!.packet.type == "data"
+            ) {
+              controller!.enqueue(deserializedData!.packet);
+              // Ensure starting stream with a configuration package holding keyframe
+            } else if (
+              //\!isDecoderHasConfig.get(deserializedData!.streamId) &&
+              deserializedData!.packet.type == "configuration"
+            ) {
+              controller!.enqueue(deserializedData!.packet);
+              isDecoderHasConfig.set(deserializedData!.streamId, true);
+            }
+          } else {
+            logger.warn("[Scrcpy] Error piping to decoder writable stream, closing controller...");
+            controller!.close();
+          }
+        }
+      };
+
+      ws.onclose = () => {
+        if (!cleanedUp) {
+          logger.info(`[Scrcpy-VideoStreamManager] Device socket for ${streamId} closed, reconnecting in 1s...`);
+          setTimeout(() => connectDeviceSocket(streamId), 1000);
+        }
+      };
+    }
+
+    // Control socket: codec negotiation (client→server) + stream_available announcements (server→client)
     const socket = new WebSocket("ws://" + host + ":" + port);
     // Send browser's codecs compatibility
     socket.onopen = async () => {
@@ -204,7 +267,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       // Check if h264 is supported
       await VideoDecoder.isConfigSupported({ codec: "avc1.4D401E" }).then((r) => {
         supportH264 = r.supported!;
-        logger.info("[SCRCPY] Supports h264: {supportsH264}", { supportH264 });
+        logger.info("[SCRCPY] Supports h264: {supportH264}", { supportH264 });
       })
 
       // Check if h265 is supported
@@ -221,54 +284,32 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
       socket.send(JSON.stringify({
         "type": "codecVideo",
-        // @ts-expect-error 
+        // @ts-expect-error
         "h264": supportH264,
-        // @ts-expect-error 
+        // @ts-expect-error
         "h265": supportH265,
-        // @ts-expect-error 
+        // @ts-expect-error
         "av1": supportAv1,
       }));
     }
 
-    // Handle incoming WebSocket messages
+    // Handle stream_available announcements — open a dedicated socket per device
     socket.onmessage = (event) => {
-      // Deserialize the message and enqueue the data into the readable stream
-      const deserializedData = deserializeData(event.data);
-
-      // Create stream if new stream
-      if (!readableControllers.has(deserializedData!.streamId)) {
-        newVideoStream(deserializedData!.streamId, deserializedData!.useH265);
-      }
-
-      const controller = readableControllers.get(deserializedData!.streamId);
-
-      // Since we set very early the entry before the controller exists,
-      // this catch potential race conditions where controller do not exists
-      if (controller != undefined) {
-        // Enqueue data package to decoder stream
-        if (deserializedData!.packet) {
-          if (
-            isDecoderHasConfig.get(deserializedData!.streamId) &&
-            deserializedData!.packet.type == "data"
-          ) {
-            controller!.enqueue(deserializedData!.packet);
-            // Ensure starting stream with a configuration package holding keyframe
-          } else if (
-            //\!isDecoderHasConfig.get(deserializedData!.streamId) &&
-            deserializedData!.packet.type == "configuration"
-          ) {
-            controller!.enqueue(deserializedData!.packet);
-            isDecoderHasConfig.set(deserializedData!.streamId, true);
-          }
-        } else {
-          logger.warn("[Scrcpy] Error piping to decoder writable stream, closing controller...");
-          controller!.close();
-        }
+      const data = JSON.parse(event.data);
+      if (data.type === "stream_available") {
+        logger.info(`[Scrcpy-VideoStreamManager] Stream available: ${data.streamId}`);
+        connectDeviceSocket(data.streamId);
       }
     };
 
     socket.onclose = () => {
-      logger.info("[Scrcpy-VideoStreamManager] Closing readable");
+      logger.info("[Scrcpy-VideoStreamManager] Control socket closed");
+    };
+
+    return () => {
+      cleanedUp = true;
+      socket.close();
+      deviceSockets.forEach(ws => ws.close());
     };
   }, []);
 
