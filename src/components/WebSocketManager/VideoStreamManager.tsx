@@ -89,6 +89,8 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     ReadableStreamDefaultController | undefined
   >();
   const isDecoderHasConfig = new Map<string, boolean>();
+  // Tracks the codec each decoder was created with — used to detect mid-stream codec changes
+  const streamIsH265 = new Map<string, boolean>();
 
 
 
@@ -208,8 +210,13 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       // Prevent the stale socket's onclose from firing a reconnect when we replace it
       const existing = deviceSockets.get(streamId);
       if (existing && existing.readyState < WebSocket.CLOSING) {
+        existing.onmessage = null; // prevent queued messages from old socket being processed after replacement
         existing.onclose = null;
         existing.close();
+        // Reset decoder state: the stream is restarting, possibly with a different codec.
+        // Clearing these forces newVideoStream() to recreate the decoder on the next config packet.
+        readableControllers.delete(streamId);
+        isDecoderHasConfig.delete(streamId);
       }
 
       const ws = new WebSocket(`ws://${host}:${port}/stream/${streamId}`);
@@ -218,6 +225,19 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       ws.onmessage = (event) => {
         // Deserialize the message and enqueue the data into the readable stream
         const deserializedData = deserializeData(event.data);
+
+        // Detect codec change on every configuration packet, regardless of channel ordering.
+        // The server can switch codec (h265↔h264) and restart streams; the new config packet
+        // may arrive on the old device socket before stream_available fires on the control
+        // socket, so we can't rely on connectDeviceSocket having run first.
+        if (deserializedData!.packet.type === "configuration") {
+          const knownCodec = streamIsH265.get(deserializedData!.streamId);
+          if (knownCodec !== undefined && knownCodec !== deserializedData!.useH265) {
+            readableControllers.delete(deserializedData!.streamId);
+            isDecoderHasConfig.delete(deserializedData!.streamId);
+          }
+          streamIsH265.set(deserializedData!.streamId, deserializedData!.useH265);
+        }
 
         // Create stream if new stream
         if (!readableControllers.has(deserializedData!.streamId)) {
