@@ -33,13 +33,13 @@ function watchList<T>(list: T[], onChange: () => void): T[] {
 export class ScrcpyServer {
     // =======================
     // WebSocket
-    private wsServer!: TemplatedApp;
-    private wsClients: Set<uWS.WebSocket<any>>; // control channel: codec negotiation + stream_available announcements
-    private streamClients: Map<string, Set<uWS.WebSocket<{ streamId: string }>>>; // per-device data sockets, keyed by device IP
-    private activeStreams: Set<string>; // device IPs with a live scrcpy session (used to validate /stream/:id upgrades)
-    private scrcpyClientsByIp: Map<string, AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>>; // for triggering config reset on new device socket
+    private readonly wsServer!: TemplatedApp;
+    private readonly wsClients: Set<uWS.WebSocket<any>>; // control channel: codec negotiation + stream_available announcements
+    private readonly streamClients: Map<string, Set<uWS.WebSocket<{ streamId: string }>>>; // per-device data sockets, keyed by device IP
+    private readonly activeStreams: Set<string>; // device IPs with a live scrcpy session (used to validate /stream/:id upgrades)
+    private readonly scrcpyClientsByIp: Map<string, AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>>; // for triggering config reset on new device socket
 
-    private maxBackpressure: number = 8 * 1024 * 1024; // 8 MB
+    private readonly maxBackpressure: number = 8 * 1024 * 1024; // 8 MB
 
     private scrcpyClients: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>[] = watchList([], () => {
         logger.debug("Scrcpy clients changed, restarting all video streams");
@@ -50,7 +50,7 @@ export class ScrcpyServer {
     // Scrcpy server
     declare server: Buffer;
 
-    private adbManager!: AdbManager;
+    private readonly adbManager!: AdbManager;
 
     constructor(adbManager: AdbManager) {
         // Set global variables
