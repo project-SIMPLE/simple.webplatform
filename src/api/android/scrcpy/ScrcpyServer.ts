@@ -3,9 +3,8 @@ import path from "path";
 
 import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
-import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
+import { DefaultServerPath, ScrcpyMediaStreamPacket } from "@yume-chan/scrcpy";
 import { AdbScrcpyClient, AdbScrcpyExitedError, AdbScrcpyOptions3_3_3 } from "@yume-chan/adb-scrcpy";
-import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
 import {getLogger, Logger} from "@logtape/logtape";
 
@@ -13,8 +12,6 @@ import { AdbManager } from "../adb/AdbManager.ts";
 
 // Override the log function
 const logger = getLogger(["android", "ScrcpyServer"]);
-
-const H264Capabilities = TinyH264Decoder.capabilities.h264;
 
 // Starts with optimistic settings
 let useH265: boolean = true;
@@ -134,6 +131,11 @@ export class ScrcpyServer {
                     // Reset video streams if codec changed !
                     if (previousCodec != useH265) {
                         logger.warn(`Restarting streams with new codec (${useH265 ? "h265" : "h264"})`);
+                        // Clear active streams immediately so control clients that reconnect
+                        // during the transition don't receive stale stream_available announcements.
+                        // The exited handlers on old clients will now find no matching entry to delete.
+                        this.activeStreams.clear();
+                        this.scrcpyClientsByIp.clear();
                         for (const client of this.scrcpyClients) {
                             await client.controller!.close();
                             await client.close();
@@ -251,10 +253,9 @@ export class ScrcpyServer {
     async startStreaming(adbConnection: Adb, deviceModel: string, flipWidth: boolean = false): Promise<boolean | undefined> {
         const scrcpyOptions = new AdbScrcpyOptions3_3_3({
             // scrcpy options
-            videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
-                profile: H264Capabilities.maxProfile,
-                level: H264Capabilities.maxLevel,
-            }),
+            // No videoCodecOptions: let the Android encoder choose its own profile/level.
+            // Previously restricted to TinyH264's Baseline caps, but decoding is now done
+            // by WebCodecs in the browser which supports any H264/H265 profile.
             videoCodec: (useH265 ? "h265" : "h264"),
             // Video settings
             video: true,
@@ -322,9 +323,15 @@ export class ScrcpyServer {
             client.exited
                 .then(() => {
                     logger.info(`Scrcpy server exited for ${adbConnection.serial}`);
-                    this.activeStreams.delete(streamIp);
-                    this.scrcpyClientsByIp.delete(streamIp);
-                    // Remove client from array
+                    // Guard: only clean up the IP entry if THIS client is still the registered
+                    // one. During a codec switch a new client may have already taken over the
+                    // same IP, and we must not wipe its registration.
+                    if (this.scrcpyClientsByIp.get(streamIp) === client) {
+                        this.activeStreams.delete(streamIp);
+                        this.scrcpyClientsByIp.delete(streamIp);
+                    }
+                    // Removing from the flat list is always safe (indexOf will simply return -1
+                    // if the list was already cleared during a codec switch).
                     const index = this.scrcpyClients.indexOf(client);
                     if (index > -1) {
                         this.scrcpyClients.splice(index, 1);
@@ -341,9 +348,10 @@ export class ScrcpyServer {
                         logger.error(`Unexpected exit error for ${adbConnection.serial}: {error}`, { error });
                     }
 
-                    this.activeStreams.delete(streamIp);
-                    this.scrcpyClientsByIp.delete(streamIp);
-                    // Remove client from array
+                    if (this.scrcpyClientsByIp.get(streamIp) === client) {
+                        this.activeStreams.delete(streamIp);
+                        this.scrcpyClientsByIp.delete(streamIp);
+                    }
                     const index = this.scrcpyClients.indexOf(client);
                     if (index > -1) {
                         this.scrcpyClients.splice(index, 1);

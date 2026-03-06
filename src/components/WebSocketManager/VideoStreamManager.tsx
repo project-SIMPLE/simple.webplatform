@@ -156,6 +156,10 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         const decoder = new WebCodecsVideoDecoder({
           codec: useH265 ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264,
           renderer: renderer,
+          // Firefox on Linux has no hardware H264 WebCodecs path; "prefer-software" enables
+          // the software decoder (OpenH264) and avoids "encoding not supported" errors.
+          // H265 keeps "no-preference" so hardware acceleration is used when available.
+          hardwareAcceleration: useH265 ? "no-preference" : "prefer-software",
         });
         //TODO fix ce log logger.log("[Scrcpy-VideoStreamManager] Decoder for {useH265} ? \"h265\" : \"h264\", loaded", { useH265: "h265" }); 
         // Create new ReadableStream used for scrcpy decoding
