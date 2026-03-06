@@ -38,21 +38,17 @@ export class ScrcpyServer {
     private streamClients: Map<string, Set<uWS.WebSocket<{ streamId: string }>>>; // per-device data sockets, keyed by device IP
     private activeStreams: Set<string>; // device IPs with a live scrcpy session (used to validate /stream/:id upgrades)
     private scrcpyClientsByIp: Map<string, AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>>; // for triggering config reset on new device socket
-    // Previously: private maxBackpressure = 8 * 1024 * 1024 — now inlined in each ws handler below
+
+    private maxBackpressure: number = 8 * 1024 * 1024; // 8 MB
 
     private scrcpyClients: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>[] = watchList([], () => {
         logger.debug("Scrcpy clients changed, restarting all video streams");
         this.resentAllConfigPackage();
-    });//[];
+    });
 
     // =======================
     // Scrcpy server
-    declare server: Buffer; //ArrayBuffer;
-
-    // =======================
-    // Scrcpy stream
-    //@ts-expect-error this value is used line 321
-     private scrcpyStreamConfig!: string;
+    declare server: Buffer;
 
     private adbManager!: AdbManager;
 
@@ -72,7 +68,7 @@ export class ScrcpyServer {
         const port = parseInt(process.env.VIDEO_WS_PORT || '8082', 10);
 
         try {
-            this.wsServer = uWS.App(); //new WebSocketServer({ host, port });
+            this.wsServer = uWS.App();
             logger.info(`Creating video stream server on: ws://${host}:${port}`);
         } catch (e) {
             logger.error('Failed to create a new websocket {e}', { e });
@@ -90,7 +86,7 @@ export class ScrcpyServer {
             compression: uWS.SHARED_COMPRESSOR, // Enable compression
             maxPayloadLength: 256 * 1024, // 256 KB: Adjust based on expected video bitrate & 6 video streams
             // When backpressure exceeds this, uWS *drops the connection*
-            maxBackpressure: 8 * 1024 * 1024, // 8 MB — previously this.maxBackpressure
+            maxBackpressure: this.maxBackpressure,
             idleTimeout: 100, // 100 seconds (<2min) timeout
             // Send pings to uphold a stable connection
             sendPingsAutomatically: true,
@@ -188,13 +184,13 @@ export class ScrcpyServer {
         this.wsServer.ws<{ streamId: string }>('/stream/:id', {
             compression: uWS.DISABLED,
             maxPayloadLength: 256 * 1024,
-            maxBackpressure: 8 * 1024 * 1024, // 8 MB per stream — previously this.maxBackpressure
+            maxBackpressure: this.maxBackpressure, // 8 MB per stream
             idleTimeout: 100,
             sendPingsAutomatically: true,
 
             upgrade: (res, req, context) => {
                 const ip = req.getParameter(0);
-                if (!this.activeStreams.has(ip)) {
+                if (!ip || !this.activeStreams.has(ip)) {
                     res.writeStatus('404 Not Found').end('Stream not found');
                     return;
                 }
@@ -254,8 +250,7 @@ export class ScrcpyServer {
         const scrcpyOptions = new AdbScrcpyOptions3_3_3({
             // scrcpy options
             // No videoCodecOptions: let the Android encoder choose its own profile/level.
-            // Previously restricted to TinyH264's Baseline caps, but decoding is now done
-            // by WebCodecs in the browser which supports any H264/H265 profile.
+            // Decoding is done by WebCodecs in the browser, which supports any H264/H265 profile.
             videoCodec: (useH265 ? "h265" : "h264"),
             // Video settings
             video: true,
@@ -284,13 +279,11 @@ export class ScrcpyServer {
             logger.debug(`Sync adb with ${adbConnection.serial}`);
             const sync = await adbConnection.sync();
             try {
-                const myself = this;
-
                 await sync.write({
                     filename: DefaultServerPath,
                     file: new ReadableStream({
                         start: (controller) => {
-                            controller.enqueue(new Uint8Array(myself.server));
+                            controller.enqueue(new Uint8Array(this.server));
                             controller.close();
                         },
                     }),
@@ -412,9 +405,6 @@ export class ScrcpyServer {
                                             // Send to all clients on this device's data socket
                                             myself.broadcastToStream(streamIp, newStreamConfig);
                                             logger.trace("Sending configuration frame {newStreamConfig}", { newStreamConfig })
-
-                                            // It is sent only once while opening the video stream and set the renderer
-                                            myself.scrcpyStreamConfig = newStreamConfig;
                                         }
                                         break;
 

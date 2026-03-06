@@ -94,15 +94,6 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
 
 
-  /**
-   * Creates a new ReadableStream for receiving and decoding H.264 video data associated with a specific device.
-   *
-   * This function initializes a ReadableStream that serves as the entry point for raw H.264 video data from a given device.
-   * It also sets up a TinyH264Decoder instance and pipes the ReadableStream's output to the decoder's writable stream.
-   * The decoded video frames are then rendered to an element referenced by `videoContainerRef`.
-   *
-   * @returns A ReadableStream that can be enqueued with data stream
-   */
   async function newVideoStream(deviceId: string, useH265: boolean = false) {
 
     // Avoid having controller creation hell if connection is too fast
@@ -161,7 +152,6 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
           // H265 keeps "no-preference" so hardware acceleration is used when available.
           hardwareAcceleration: useH265 ? "no-preference" : "prefer-software",
         });
-        //TODO fix ce log logger.log("[Scrcpy-VideoStreamManager] Decoder for {useH265} ? \"h265\" : \"h264\", loaded", { useH265: "h265" }); 
         // Create new ReadableStream used for scrcpy decoding
         const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
           start(controller) {
@@ -260,9 +250,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
               deserializedData!.packet.type == "data"
             ) {
               controller!.enqueue(deserializedData!.packet);
-              // Ensure starting stream with a configuration package holding keyframe
             } else if (
-              //\!isDecoderHasConfig.get(deserializedData!.streamId) &&
               deserializedData!.packet.type == "configuration"
             ) {
               controller!.enqueue(deserializedData!.packet);
