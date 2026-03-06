@@ -3,9 +3,8 @@ import path from "path";
 
 import { ReadableStream } from "@yume-chan/stream-extra";
 import { Adb } from "@yume-chan/adb";
-import { DefaultServerPath, ScrcpyMediaStreamPacket, ScrcpyCodecOptions } from "@yume-chan/scrcpy";
+import { DefaultServerPath, ScrcpyMediaStreamPacket } from "@yume-chan/scrcpy";
 import { AdbScrcpyClient, AdbScrcpyExitedError, AdbScrcpyOptions3_3_3 } from "@yume-chan/adb-scrcpy";
-import { TinyH264Decoder } from "@yume-chan/scrcpy-decoder-tinyh264";
 import uWS, { TemplatedApp } from "uWebSockets.js";
 import {getLogger, Logger} from "@logtape/logtape";
 
@@ -13,8 +12,6 @@ import { AdbManager } from "../adb/AdbManager.ts";
 
 // Override the log function
 const logger = getLogger(["android", "ScrcpyServer"]);
-
-const H264Capabilities = TinyH264Decoder.capabilities.h264;
 
 // Starts with optimistic settings
 let useH265: boolean = true;
@@ -36,25 +33,24 @@ function watchList<T>(list: T[], onChange: () => void): T[] {
 export class ScrcpyServer {
     // =======================
     // WebSocket
-    private wsServer!: TemplatedApp;
-    private wsClients: Set<uWS.WebSocket<any>>;
-    private maxBackpressure: number = 8 * 1024 * 1024; // 8 MB per socket
+    private readonly wsServer!: TemplatedApp;
+    private readonly wsClients: Set<uWS.WebSocket<any>>; // control channel: codec negotiation + stream_available announcements
+    private readonly streamClients: Map<string, Set<uWS.WebSocket<{ streamId: string }>>>; // per-device data sockets, keyed by device IP
+    private readonly activeStreams: Set<string>; // device IPs with a live scrcpy session (used to validate /stream/:id upgrades)
+    private readonly scrcpyClientsByIp: Map<string, AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>>; // for triggering config reset on new device socket
+
+    private readonly maxBackpressure: number = 8 * 1024 * 1024; // 8 MB
 
     private scrcpyClients: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>[] = watchList([], () => {
         logger.debug("Scrcpy clients changed, restarting all video streams");
         this.resentAllConfigPackage();
-    });//[];
+    });
 
     // =======================
     // Scrcpy server
-    declare server: Buffer; //ArrayBuffer;
+    declare server: Buffer;
 
-    // =======================
-    // Scrcpy stream
-    //@ts-expect-error this value is used line 321
-     private scrcpyStreamConfig!: string;
-
-    private adbManager!: AdbManager;
+    private readonly adbManager!: AdbManager;
 
     constructor(adbManager: AdbManager) {
         // Set global variables
@@ -64,12 +60,15 @@ export class ScrcpyServer {
         this.adbManager = adbManager;
 
         this.wsClients = new Set<uWS.WebSocket<any>>();
+        this.streamClients = new Map();
+        this.activeStreams = new Set();
+        this.scrcpyClientsByIp = new Map();
 
         const host = process.env.WEB_APPLICATION_HOST || '0.0.0.0';
         const port = parseInt(process.env.VIDEO_WS_PORT || '8082', 10);
 
         try {
-            this.wsServer = uWS.App(); //new WebSocketServer({ host, port });
+            this.wsServer = uWS.App();
             logger.info(`Creating video stream server on: ws://${host}:${port}`);
         } catch (e) {
             logger.error('Failed to create a new websocket {e}', { e });
@@ -94,10 +93,12 @@ export class ScrcpyServer {
 
             open: (ws) => {
                 this.wsClients.add(ws);
-                logger.debug("Web view connected");
+                logger.debug("Control client connected");
 
-                // Restart every video stream on new client to have them all sync
-                this.resentAllConfigPackage(true).then(() => logger.debug("Streams restarted for new client connected"));
+                // Announce all currently active streams so the client can open their per-device data sockets
+                for (const ip of this.activeStreams) {
+                    ws.send(JSON.stringify({ type: "stream_available", streamId: ip }), false, false);
+                }
             },
 
             drain: (ws) => {
@@ -126,6 +127,11 @@ export class ScrcpyServer {
                     // Reset video streams if codec changed !
                     if (previousCodec != useH265) {
                         logger.warn(`Restarting streams with new codec (${useH265 ? "h265" : "h264"})`);
+                        // Clear active streams immediately so control clients that reconnect
+                        // during the transition don't receive stale stream_available announcements.
+                        // The exited handlers on old clients will now find no matching entry to delete.
+                        this.activeStreams.clear();
+                        this.scrcpyClientsByIp.clear();
                         for (const client of this.scrcpyClients) {
                             await client.controller!.close();
                             await client.close();
@@ -172,6 +178,60 @@ export class ScrcpyServer {
                 }
             }
         });
+
+        // Per-device data sockets: all packets (config + data) for a device flow here in order.
+        // Clients open this after receiving a stream_available announcement on the control socket above.
+        this.wsServer.ws<{ streamId: string }>('/stream/:id', {
+            compression: uWS.DISABLED,
+            maxPayloadLength: 256 * 1024,
+            maxBackpressure: this.maxBackpressure, // 8 MB per stream
+            idleTimeout: 100,
+            sendPingsAutomatically: true,
+
+            upgrade: (res, req, context) => {
+                const ip = req.getParameter(0);
+                if (!ip || !this.activeStreams.has(ip)) {
+                    res.writeStatus('404 Not Found').end('Stream not found');
+                    return;
+                }
+                res.upgrade<{ streamId: string }>(
+                    { streamId: ip },
+                    req.getHeader('sec-websocket-key'),
+                    req.getHeader('sec-websocket-protocol'),
+                    req.getHeader('sec-websocket-extensions'),
+                    context
+                );
+            },
+
+            open: (ws) => {
+                const { streamId } = ws.getUserData();
+                if (!this.streamClients.has(streamId)) {
+                    this.streamClients.set(streamId, new Set());
+                }
+                this.streamClients.get(streamId)!.add(ws);
+                logger.debug(`[${streamId}] Device socket connected`);
+
+                // Trigger a config reset so this client receives a fresh config + keyframe
+                const scrcpyClient = this.scrcpyClientsByIp.get(streamId);
+                if (scrcpyClient) {
+                    this.resentConfigPackage(scrcpyClient)
+                        .then(() => logger.debug(`[${streamId}] Config resent for new device socket client`));
+                }
+            },
+
+            drain: (ws) => {
+                const { streamId } = ws.getUserData();
+                logger
+                    .getChild("Drain")
+                    .info(`[${streamId}] Backpressure drained, streaming should be back to normal, buffered: ${ws.getBufferedAmount()}`);
+            },
+
+            close: (ws, code, message) => {
+                const { streamId } = ws.getUserData();
+                this.streamClients.get(streamId)?.delete(ws);
+                logger.info(`[${streamId}] Device socket closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
+            },
+        });
     }
 
     async loadScrcpyServer() {
@@ -189,10 +249,8 @@ export class ScrcpyServer {
     async startStreaming(adbConnection: Adb, deviceModel: string, flipWidth: boolean = false): Promise<boolean | undefined> {
         const scrcpyOptions = new AdbScrcpyOptions3_3_3({
             // scrcpy options
-            videoCodecOptions: new ScrcpyCodecOptions({ // Ensure Meta Quest compatibility
-                profile: H264Capabilities.maxProfile,
-                level: H264Capabilities.maxLevel,
-            }),
+            // No videoCodecOptions: let the Android encoder choose its own profile/level.
+            // Decoding is done by WebCodecs in the browser, which supports any H264/H265 profile.
             videoCodec: (useH265 ? "h265" : "h264"),
             // Video settings
             video: true,
@@ -210,6 +268,8 @@ export class ScrcpyServer {
         logger.debug(`Starting scrcpy stream with ${useH265 ? "h265" : "h264"} codec`)
 
         try {
+            const streamIp = adbConnection.serial.split(':')[0]; // device IP, port stripped — stable across ADB reconnects
+
             if (this.server == null) {
                 await this.loadScrcpyServer();
             }
@@ -219,13 +279,11 @@ export class ScrcpyServer {
             logger.debug(`Sync adb with ${adbConnection.serial}`);
             const sync = await adbConnection.sync();
             try {
-                const myself = this;
-
                 await sync.write({
                     filename: DefaultServerPath,
                     file: new ReadableStream({
                         start: (controller) => {
-                            controller.enqueue(new Uint8Array(myself.server));
+                            controller.enqueue(new Uint8Array(this.server));
                             controller.close();
                         },
                     }),
@@ -258,7 +316,15 @@ export class ScrcpyServer {
             client.exited
                 .then(() => {
                     logger.info(`Scrcpy server exited for ${adbConnection.serial}`);
-                    // Remove client from array
+                    // Guard: only clean up the IP entry if THIS client is still the registered
+                    // one. During a codec switch a new client may have already taken over the
+                    // same IP, and we must not wipe its registration.
+                    if (this.scrcpyClientsByIp.get(streamIp) === client) {
+                        this.activeStreams.delete(streamIp);
+                        this.scrcpyClientsByIp.delete(streamIp);
+                    }
+                    // Removing from the flat list is always safe (indexOf will simply return -1
+                    // if the list was already cleared during a codec switch).
                     const index = this.scrcpyClients.indexOf(client);
                     if (index > -1) {
                         this.scrcpyClients.splice(index, 1);
@@ -275,7 +341,10 @@ export class ScrcpyServer {
                         logger.error(`Unexpected exit error for ${adbConnection.serial}: {error}`, { error });
                     }
 
-                    // Remove client from array
+                    if (this.scrcpyClientsByIp.get(streamIp) === client) {
+                        this.activeStreams.delete(streamIp);
+                        this.scrcpyClientsByIp.delete(streamIp);
+                    }
                     const index = this.scrcpyClients.indexOf(client);
                     if (index > -1) {
                         this.scrcpyClients.splice(index, 1);
@@ -296,9 +365,13 @@ export class ScrcpyServer {
                 );
             }
 
-            // Store the controller of new client
+            // Register stream as active and store the controller
             logger.debug(`Saving new scrcpy client ${adbConnection.serial}`);
+            this.activeStreams.add(streamIp);
+            this.scrcpyClientsByIp.set(streamIp, client);
             this.scrcpyClients.push(client);
+            // Announce to all connected control clients so they open /stream/:streamIp
+            this.broadcastToClients(JSON.stringify({ type: "stream_available", streamId: streamIp }));
 
             // Print output of Scrcpy server
             client.output.pipeTo(
@@ -324,25 +397,23 @@ export class ScrcpyServer {
                                     case "configuration":
                                         {  // Handle configuration packet
                                             const newStreamConfig = JSON.stringify({
-                                                streamId: adbConnection.serial,
+                                                streamId: streamIp,
                                                 h265: useH265,
                                                 type: "configuration",
                                                 data: Buffer.from(packet.data).toString('base64'), // Convert Uint8Array to Base64 string
                                             });
-                                            // Save packet for clients after this first packet emission
-                                            myself.broadcastToClients(newStreamConfig);
+                                            // Send to all clients on this device's data socket
+                                            myself.broadcastToStream(streamIp, newStreamConfig);
                                             logger.trace("Sending configuration frame {newStreamConfig}", { newStreamConfig })
-
-                                            // It is sent only once while opening the video stream and set the renderer
-                                            myself.scrcpyStreamConfig = newStreamConfig;
                                         }
                                         break;
 
                                     case "data":
-                                        // Handle data packet
-                                        myself.broadcastToClients(
+                                        // Handle data packet — sent on the dedicated per-device socket
+                                        myself.broadcastToStream(
+                                            streamIp,
                                             JSON.stringify({
-                                                streamId: adbConnection.serial,
+                                                streamId: streamIp,
                                                 h265: useH265,
                                                 type: "data",
                                                 keyframe: packet.keyframe,
@@ -438,6 +509,32 @@ export class ScrcpyServer {
         }
 
         return gotError;
+    }
+
+    private safeSend(ws: uWS.WebSocket<{ streamId: string }>, packetJson: string): void {
+        const customLogger = logger.getChild("Drain");
+        const { streamId } = ws.getUserData();
+
+        if (ws.getBufferedAmount() > 6 * 1024 * 1024) { // 6 MB threshold → 2 MB room before maxBackpressure
+            customLogger.warn(`[${streamId}] Dropping frame — client too slow`);
+            return;
+        }
+
+        /*  Possible returned values:
+            0 : OK
+            1 : Backpressure built up (but still queued)
+            2 : Message dropped — backpressure limit exceeded
+                - The last one is the only interesting one
+         */
+        if (ws.send(packetJson, false, true) === 2) {
+            customLogger.error(`[${streamId}] Video stream frame dropped...`);
+        }
+    }
+
+    broadcastToStream(ip: string, packetJson: string): void {
+        this.streamClients.get(ip)?.forEach((client) => {
+            this.safeSend(client, packetJson);
+        });
     }
 
     broadcastToClients(packetJson: string): void {
