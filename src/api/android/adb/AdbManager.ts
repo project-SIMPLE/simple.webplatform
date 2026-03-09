@@ -66,32 +66,49 @@ export class AdbManager {
         this.observer.onDeviceAdd((devices) => {
             for (const device of devices) {
                 logger.debug("New device added {device}\nStarting streaming for this new device...", { device });
-                this.startNewStream(device);
-                this.checkAdbParameters(device);
+                this.startNewStream(device).catch(e =>
+                    logger.error(`[${device.serial}] Unexpected error in startNewStream: {e}`, { e })
+                );
+                this.checkAdbParameters(device).catch(e =>
+                    logger.error(`[${device.serial}] Unexpected error in checkAdbParameters: {e}`, { e })
+                );
             }
         });
 
         this.observer.onListChange(async (devices) => {
             // Fallback mechanism as the onRemove isn't catching everything...
-            if (devices.length < this.clientCurrentlyStreaming.length) {
-                logger.debug("A headset has been disconnected, removing it from the list...");
-                for (const device of this.clientCurrentlyStreaming) {
-                    if (!devices.includes(device)) {
-                        logger.warn(`This device has been removed {device}`, {device});
+            // Compare by serial — observer may return different Device instances for the same physical device.
+            const activeSerials = new Set(devices.map(d => d.serial));
+            const disconnected = this.clientCurrentlyStreaming.filter(d => !activeSerials.has(d.serial));
 
-                        const index = this.clientCurrentlyStreaming.indexOf(device);
-                        if (index > -1) {
-                            this.clientCurrentlyStreaming.splice(index, 1);
-                        }
+            if (disconnected.length === 0) return;
 
-                        logger.warn("Trying to reconnect automatically to the device");
-                        let reconnected: boolean = false;
-                        const df: DeviceFinder = new DeviceFinder(this);
-                        while (!reconnected){
-                            reconnected =  await df.scanAndConnectIP(device.serial.split(":")[0]);
-                        }
-                        logger.info("Successfully reconnected to device {serial}", {serial: device.serial.split(":")[0]});
+            logger.debug("A headset has been disconnected, removing it from the list...");
+            for (const device of disconnected) {
+                logger.warn(`[${device.serial}] Device disconnected, removing from streaming list`);
+                const index = this.clientCurrentlyStreaming.findIndex(d => d.serial === device.serial);
+                if (index > -1) this.clientCurrentlyStreaming.splice(index, 1);
+
+                logger.warn(`[${device.serial}] Trying to reconnect automatically...`);
+                const ip = device.serial.split(":")[0];
+                const df = new DeviceFinder(this);
+                let reconnected = false;
+                let attempts = 0;
+                const maxAttempts = 10;
+
+                while (!reconnected && attempts < maxAttempts) {
+                    attempts++;
+                    reconnected = await df.scanAndConnectIP(ip);
+                    if (!reconnected) {
+                        logger.debug(`[${device.serial}] Reconnect attempt ${attempts}/${maxAttempts} failed, retrying in 3s...`);
+                        await new Promise(resolve => setTimeout(resolve, 3000));
                     }
+                }
+
+                if (reconnected) {
+                    logger.info(`[${device.serial}] Successfully reconnected`);
+                } else {
+                    logger.error(`[${device.serial}] Could not reconnect after ${maxAttempts} attempts, giving up`);
                 }
             }
         });
@@ -107,9 +124,9 @@ export class AdbManager {
     }
 
     async startNewStream(device: Device) {
-        // Ensure having only one streaming per device
-        if (this.clientCurrentlyStreaming.includes(device)) {
-            logger.debug(`Device ${device.serial} already streaming. Skipping new stream...`);
+        // Ensure having only one streaming per device — compare by serial, not reference
+        if (this.clientCurrentlyStreaming.some(d => d.serial === device.serial)) {
+            logger.debug(`[${device.serial}] Already streaming. Skipping...`);
             return;
         }
 
@@ -119,11 +136,13 @@ export class AdbManager {
         try {
             const transport = await this.adbServer.createTransport(device);
             const adb = new Adb(transport);
+            const model = device.model ?? 'Unknown';
 
-            if (device.serial.includes(".") || ENV_VERBOSE) {// Only consider wireless devices - Check if serial is an IP address
-                if ( ! await this.videoStreamServer.startStreaming(adb, device.model!) ) {
-                    await this.videoStreamServer.startStreaming(adb, device.model!, true);
-                }
+            // Only consider wireless devices — check if serial is an IP address
+            // startStreaming runs a supervisor loop indefinitely, so we fire-and-forget.
+            // The flipWidth retry is now handled internally by runSession's metadata check.
+            if (device.serial.includes(".") || ENV_VERBOSE) {
+                void this.videoStreamServer.startStreaming(adb, model);
             }
         } catch (e) {
             // Remove device from streaming list — connection failed, allow retry later
@@ -180,10 +199,9 @@ export class AdbManager {
 
         logger.debug(`[${device.serial}] Checking on-device global ADB settings...`);
 
-        let transport, adb: Adb;
+        let adb: Adb;
         try {
-            transport = await this.adbServer.createTransport(device);
-            adb = new Adb(transport);
+            adb = new Adb(await this.adbServer.createTransport(device));
         } catch (e) {
             logger.warn(`[${device.serial}] Could not open ADB transport to check parameters — device may not be authorized yet: {e}`, { e });
             return;
