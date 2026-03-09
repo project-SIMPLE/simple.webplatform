@@ -253,11 +253,35 @@ export class ScrcpyServer {
             return;
         }
 
-        while (true) {
-            const shouldRestart = await this.runSession(adbConnection, streamIp, deviceModel, flipWidth);
-            if (!shouldRestart) break;
-            logger.info(`[${streamIp}] Restarting stream in 1s...`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
+        // Prevent two supervisor loops from running concurrently for the same IP
+        // (would cause two AdbScrcpyClient.start() calls to race on the same ADB
+        // connection → ExactReadableEndedError). Instead of dropping the duplicate,
+        // queue it so it runs as soon as the current session fully exits.
+        // Only the latest pending call is kept — older ones are overwritten.
+        if (this.activeStartStreaming.has(streamIp)) {
+            logger.debug(`[${streamIp}] startStreaming already active, queuing for after current session exits`);
+            this.pendingStartStreaming.set(streamIp, () => {
+                void this.startStreaming(adbConnection, deviceModel, flipWidth);
+            });
+            return;
+        }
+        this.activeStartStreaming.add(streamIp);
+
+        try {
+            while (true) {
+                const shouldRestart = await this.runSession(adbConnection, streamIp, deviceModel, flipWidth);
+                if (!shouldRestart) break;
+                logger.info(`[${streamIp}] Restarting stream in 1s...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        } finally {
+            this.activeStartStreaming.delete(streamIp);
+            // Run the latest pending call now that the session slot is free.
+            const pending = this.pendingStartStreaming.get(streamIp);
+            if (pending) {
+                this.pendingStartStreaming.delete(streamIp);
+                pending();
+            }
         }
     }
 
@@ -265,12 +289,18 @@ export class ScrcpyServer {
     // Returns true  → caller should restart (unexpected crash or natural exit).
     // Returns false → caller should stop (intentional abort, e.g. codec switch).
     private async runSession(adbConnection: Adb, streamIp: string, deviceModel: string, flipWidth: boolean): Promise<boolean> {
+        // Capture the codec once at session start. this.useH265 can change mid-session
+        // (when a new client with different capabilities connects), but the write handler must
+        // always tag packets with the codec this session actually encodes — mixing the flag
+        // with data from a different codec causes h264SearchConfiguration "Invalid data" crashes.
+        const sessionIsH265 = this.useH265; // snapshot: this.useH265 may change during the session
+
         // Build fresh options each session so a codec switch is picked up correctly.
         const scrcpyOptions = new AdbScrcpyOptions3_3_3({
             // scrcpy options
             // No videoCodecOptions: let the Android encoder choose its own profile/level.
             // Decoding is done by WebCodecs in the browser, which supports any H264/H265 profile.
-            videoCodec: (useH265 ? "h265" : "h264"),
+            videoCodec: (sessionIsH265 ? "h265" : "h264"),
             // Video settings
             video: true,
             maxSize: 1570,
@@ -284,7 +314,7 @@ export class ScrcpyServer {
         },
             // Spoofing version, there's only bug-fixing between .3 and .4 so should be safe
             { version: "3.3.4" });
-        logger.debug(`[${streamIp}] Starting scrcpy stream with ${useH265 ? "h265" : "h264"} codec`);
+        logger.debug(`[${streamIp}] Starting scrcpy stream with ${sessionIsH265 ? "h265" : "h264"} codec`);
 
         let client: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>> | undefined;
 
@@ -369,7 +399,7 @@ export class ScrcpyServer {
                                         { // Handle configuration packet
                                             const newStreamConfig = JSON.stringify({
                                                 streamId: streamIp,
-                                                h265: useH265,
+                                                h265: sessionIsH265,
                                                 type: "configuration",
                                                 data: Buffer.from(packet.data).toString('base64'), // Convert Uint8Array to Base64 string
                                             });
@@ -385,7 +415,7 @@ export class ScrcpyServer {
                                             streamIp,
                                             JSON.stringify({
                                                 streamId: streamIp,
-                                                h265: useH265,
+                                                h265: sessionIsH265,
                                                 type: "data",
                                                 keyframe: packet.keyframe,
                                                 // @ts-expect-error
