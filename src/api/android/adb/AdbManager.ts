@@ -50,7 +50,9 @@ export class AdbManager {
         if (this.observer.current.length > 0) {
             for (const device of this.observer.current) {
                 logger.debug(`Devices found on ADB server: {device}`, {device});
-                this.checkAdbParameters(device);
+                this.checkAdbParameters(device).catch(e =>
+                    logger.error(`[${device.serial}] Unexpected error in checkAdbParameters: {e}`, { e })
+                );
             }
 
             await this.restartStreamingAll();
@@ -109,10 +111,12 @@ export class AdbManager {
         if (this.clientCurrentlyStreaming.includes(device)) {
             logger.debug(`Device ${device.serial} already streaming. Skipping new stream...`);
             return;
-        } else {
-            // Add new device streaming
-            this.clientCurrentlyStreaming.push(device);
+        }
 
+        // Add new device streaming
+        this.clientCurrentlyStreaming.push(device);
+
+        try {
             const transport = await this.adbServer.createTransport(device);
             const adb = new Adb(transport);
 
@@ -120,6 +124,17 @@ export class AdbManager {
                 if ( ! await this.videoStreamServer.startStreaming(adb, device.model!) ) {
                     await this.videoStreamServer.startStreaming(adb, device.model!, true);
                 }
+            }
+        } catch (e) {
+            // Remove device from streaming list — connection failed, allow retry later
+            const index = this.clientCurrentlyStreaming.indexOf(device);
+            if (index > -1) this.clientCurrentlyStreaming.splice(index, 1);
+
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            if (errorMsg.toLowerCase().includes('unauthorized')) {
+                logger.error(`[${device.serial}] Device is not authorized for ADB — accept the RSA key prompt on the device then reconnect`);
+            } else {
+                logger.error(`[${device.serial}] Failed to start streaming: {e}`, { e });
             }
         }
     }
@@ -164,8 +179,15 @@ export class AdbManager {
         if (!device.model?.startsWith("Quest_")) return;
 
         logger.debug(`[${device.serial}] Checking on-device global ADB settings...`);
-        const transport = await this.adbServer.createTransport(device);
-        const adb = new Adb(transport);
+
+        let transport, adb: Adb;
+        try {
+            transport = await this.adbServer.createTransport(device);
+            adb = new Adb(transport);
+        } catch (e) {
+            logger.warn(`[${device.serial}] Could not open ADB transport to check parameters — device may not be authorized yet: {e}`, { e });
+            return;
+        }
 
         for (const [globalSetting, globalSettingValue] of Object.entries(ON_DEVICE_ADB_GLOBAL_SETTINGS) as [
                 keyof typeof ON_DEVICE_ADB_GLOBAL_SETTINGS,
