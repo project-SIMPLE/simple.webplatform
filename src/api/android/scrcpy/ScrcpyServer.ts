@@ -13,23 +13,6 @@ import { AdbManager } from "../adb/AdbManager.ts";
 // Override the log function
 const logger = getLogger(["android", "ScrcpyServer"]);
 
-// Starts with optimistic settings
-let useH265: boolean = true;
-// Switch to true if at least 1 client doesn't h265
-let scrcpyCodecLock: boolean = false;
-
-// Small handy function to catch when a list changes
-// Used to fix initial black screen streaming
-function watchList<T>(list: T[], onChange: () => void): T[] {
-    return new Proxy(list, {
-        set(target, prop, value) {
-            target[prop as any] = value;
-            if (prop !== "length") onChange();
-            return true;
-        },
-    });
-}
-
 export class ScrcpyServer {
     // =======================
     // WebSocket
@@ -41,10 +24,16 @@ export class ScrcpyServer {
 
     private readonly maxBackpressure: number = 8 * 1024 * 1024; // 8 MB
 
-    private scrcpyClients: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>[] = watchList([], () => {
-        logger.debug("Scrcpy clients changed, restarting all video streams");
-        this.resentAllConfigPackage();
-    });
+    // Starts optimistic (h265); permanently downgraded to h264 if any client can't decode h265
+    private useH265: boolean = true;
+
+    private scrcpyClients: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>[] = [];
+    // IPs that currently have an active startStreaming supervisor loop running.
+    private readonly activeStartStreaming = new Set<string>();
+    // Latest pending startStreaming call per IP, queued while a session is still running.
+    // Only the most recent call is kept — older ones are overwritten.
+    // When the running session exits, the pending call is executed automatically.
+    private readonly pendingStartStreaming = new Map<string, () => void>();
 
     // =======================
     // Scrcpy server
@@ -54,7 +43,7 @@ export class ScrcpyServer {
 
     constructor(adbManager: AdbManager) {
         // Set global variables
-        logger.info(`Using codec ${useH265 ? "h265" : "h264"}`)
+        logger.info(`Using codec ${this.useH265 ? "h265" : "h264"}`)
 
         // Set local variables
         this.adbManager = adbManager;
@@ -114,19 +103,19 @@ export class ScrcpyServer {
 
                     logger.debug("Received message from streaming client:\n{jsonMessage}", { jsonMessage });
 
-                    const previousCodec = useH265;
-                    if (!scrcpyCodecLock && jsonMessage.h265) {
-                        useH265 = true;
-                    } else if (jsonMessage.h264 && !jsonMessage.h265) {
-                        useH265 = false;
-                        scrcpyCodecLock = true;
-                    } else if (!jsonMessage.h265 && !jsonMessage.h264) {
-                        logger.fatal("Client doesn't supports any compatible codec!");
+                    const previousCodec = this.useH265;
+                    // Codec selection is a one-way downgrade: start optimistic (h265),
+                    // switch to h264 permanently if any client can't decode h265.
+                    // We never upgrade back — that would break already-connected h264-only clients.
+                    if (!jsonMessage.h265 && !jsonMessage.h264) {
+                        logger.fatal("Client doesn't support any compatible codec!");
+                    } else if (!jsonMessage.h265) {
+                        this.useH265 = false;
                     }
 
                     // Reset video streams if codec changed !
-                    if (previousCodec != useH265) {
-                        logger.warn(`Restarting streams with new codec (${useH265 ? "h265" : "h264"})`);
+                    if (previousCodec != this.useH265) {
+                        logger.warn(`Restarting streams with new codec (${this.useH265 ? "h265" : "h264"})`);
                         // Clear active streams immediately so control clients that reconnect
                         // during the transition don't receive stale stream_available announcements.
                         // The exited handlers on old clients will now find no matching entry to delete.
