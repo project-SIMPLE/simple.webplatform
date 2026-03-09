@@ -246,7 +246,37 @@ export class ScrcpyServer {
         logger.trace(`Loading scrcpy server from '${scrcpyServerFullPath}'`);
     }
 
-    async startStreaming(adbConnection: Adb, deviceModel: string, flipWidth: boolean = false): Promise<boolean | undefined> {
+    // Entry point: validate the device IP, then keep the stream alive forever.
+    // Each session is delegated to runSession(); the loop restarts it automatically
+    // after a 1 s cooldown unless the session was stopped intentionally (codec switch).
+    async startStreaming(adbConnection: Adb, deviceModel: string, flipWidth: boolean = false): Promise<void> {
+        const streamIp: string | undefined = (() => {
+            try {
+                return adbConnection.serial.split(':')[0];
+            } catch {
+                return undefined;
+            }
+        })();
+
+        // Stop streaming if not an IP address
+        if (streamIp == undefined || streamIp.split('.').length <= 1) {
+            logger.error(`Couldn't get stream IP from adb connection, stop streaming for ${adbConnection.serial}`);
+            return;
+        }
+
+        while (true) {
+            const shouldRestart = await this.runSession(adbConnection, streamIp, deviceModel, flipWidth);
+            if (!shouldRestart) break;
+            logger.info(`[${streamIp}] Restarting stream in 1s...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+
+    // Runs one scrcpy session from start to finish.
+    // Returns true  → caller should restart (unexpected crash or natural exit).
+    // Returns false → caller should stop (intentional abort, e.g. codec switch).
+    private async runSession(adbConnection: Adb, streamIp: string, deviceModel: string, flipWidth: boolean): Promise<boolean> {
+        // Build fresh options each session so a codec switch is picked up correctly.
         const scrcpyOptions = new AdbScrcpyOptions3_3_3({
             // scrcpy options
             // No videoCodecOptions: let the Android encoder choose its own profile/level.
@@ -264,19 +294,19 @@ export class ScrcpyServer {
             control: true,
         },
             // Spoofing version, there's only bug-fixing between .3 and .4 so should be safe
-            { version: "3.3.4" })
-        logger.debug(`Starting scrcpy stream with ${useH265 ? "h265" : "h264"} codec`)
+            { version: "3.3.4" });
+        logger.debug(`[${streamIp}] Starting scrcpy stream with ${useH265 ? "h265" : "h264"} codec`);
+
+        let client: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>> | undefined;
 
         try {
-            const streamIp = adbConnection.serial.split(':')[0]; // device IP, port stripped — stable across ADB reconnects
-
             if (this.server == null) {
                 await this.loadScrcpyServer();
             }
 
-            logger.info(`Starting scrcpy for ${adbConnection.serial}`)
+            logger.info(`[${streamIp}] Starting scrcpy for ${adbConnection.serial}`);
 
-            logger.debug(`Sync adb with ${adbConnection.serial}`);
+            logger.debug(`[${streamIp}] Sync adb with ${adbConnection.serial}`);
             const sync = await adbConnection.sync();
             try {
                 await sync.write({
@@ -289,9 +319,8 @@ export class ScrcpyServer {
                     }),
                 });
             } catch (error) {
-                logger.fatal(`Error writing scrcpy server to  ${adbConnection.serial}: {error}`, { error });
-            }
-            finally {
+                logger.fatal(`[${streamIp}] Error writing scrcpy server to  ${adbConnection.serial}: {error}`, { error });
+            } finally {
                 await sync.dispose();
             }
 
@@ -302,71 +331,24 @@ export class ScrcpyServer {
                 scrcpyOptions.value.angle = 23;
                 scrcpyOptions.value.crop = flipWidth ? "1570:1482:300:250" : "1482:1570:300:250";
             } else {
-                logger.warn(`Device ${deviceModel} is unknown, so no cropping is applied`);
+                logger.warn(`[${streamIp}] Device ${deviceModel} is unknown, so no cropping is applied`);
             }
 
-            logger.debug(`Pushing & start scrcpy server from ${adbConnection.serial}`);
-            let client: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>> = await AdbScrcpyClient.start(
-                adbConnection,
-                DefaultServerPath,
-                scrcpyOptions
-            );
-
-            // Set up exit handler immediately after client creation
-            client.exited
-                .then(() => {
-                    logger.info(`Scrcpy server exited for ${adbConnection.serial}`);
-                    // Guard: only clean up the IP entry if THIS client is still the registered
-                    // one. During a codec switch a new client may have already taken over the
-                    // same IP, and we must not wipe its registration.
-                    if (this.scrcpyClientsByIp.get(streamIp) === client) {
-                        this.activeStreams.delete(streamIp);
-                        this.scrcpyClientsByIp.delete(streamIp);
-                    }
-                    // Removing from the flat list is always safe (indexOf will simply return -1
-                    // if the list was already cleared during a codec switch).
-                    const index = this.scrcpyClients.indexOf(client);
-                    if (index > -1) {
-                        this.scrcpyClients.splice(index, 1);
-                    }
-                })
-                .catch((error) => {
-                    if (error instanceof AdbScrcpyExitedError) {
-                        if (!error.output[0]?.startsWith("Aborted")) {
-                            logger.error(`Scrcpy exited with error for ${adbConnection.serial}: {error}`, { error });
-                        } else {
-                            logger.debug(`Scrcpy aborted normally for ${adbConnection.serial}`);
-                        }
-                    } else {
-                        logger.error(`Unexpected exit error for ${adbConnection.serial}: {error}`, { error });
-                    }
-
-                    if (this.scrcpyClientsByIp.get(streamIp) === client) {
-                        this.activeStreams.delete(streamIp);
-                        this.scrcpyClientsByIp.delete(streamIp);
-                    }
-                    const index = this.scrcpyClients.indexOf(client);
-                    if (index > -1) {
-                        this.scrcpyClients.splice(index, 1);
-                    }
-                });
+            logger.debug(`[${streamIp}] Pushing & start scrcpy server from ${adbConnection.serial}`);
+            client = await AdbScrcpyClient.start(adbConnection, DefaultServerPath, scrcpyOptions);
 
             const { metadata, stream: videoPacketStream } = await client.videoStream;
-            logger.debug({ metadata });
+            logger.debug(`[${streamIp}] {metadata}`, { metadata });
             // Prevent having stream ratio inverted, happened on some weird device...
             // https://github.com/project-SIMPLE/simple.webplatform/issues/78
             if ((metadata == undefined || metadata.width! < metadata.height!) && deviceModel.startsWith("Quest")) {
-                logger.warn("Something's weird here, headset's stream isn't in the good size ratio, restarting... metadata:{metadata}", { metadata: metadata ? metadata : "the metadata is undefined" });
+                logger.warn(`[${streamIp}] Something's weird here, headset's stream isn't in the good size ratio, restarting... metadata: {metadata}`, { metadata: metadata ? metadata : "the metadata is undefined" });
                 // Make it crash voluntarily to restart stream
-                client = await AdbScrcpyClient.start(
-                    adbConnection,
-                    DefaultServerPath,
-                    scrcpyOptions
-                );
+                client = await AdbScrcpyClient.start(adbConnection, DefaultServerPath, scrcpyOptions);
             }
 
             // Register stream as active and store the controller
-            logger.debug(`Saving new scrcpy client ${adbConnection.serial}`);
+            logger.debug(`[${streamIp}] Saving new scrcpy client ${adbConnection.serial}`);
             this.activeStreams.add(streamIp);
             this.scrcpyClientsByIp.set(streamIp, client);
             this.scrcpyClients.push(client);
@@ -378,11 +360,11 @@ export class ScrcpyServer {
                 // @ts-expect-error
                 new WritableStream<string>({
                     write(chunk: string): void {
-                        logger.trace({ chunk });
+                        logger.trace(`[${streamIp}] {chunk}`, { chunk });
                     },
                 }),
             ).catch(err => {
-                logger.debug("Scrcpy output stream closed: {err}", { err });
+                logger.debug(`[${streamIp}] Scrcpy output stream closed: {err}`, { err });
             });
 
             if (videoPacketStream != null) {
@@ -395,7 +377,7 @@ export class ScrcpyServer {
                             write(packet: ScrcpyMediaStreamPacket) {
                                 switch (packet.type) {
                                     case "configuration":
-                                        {  // Handle configuration packet
+                                        { // Handle configuration packet
                                             const newStreamConfig = JSON.stringify({
                                                 streamId: streamIp,
                                                 h265: useH265,
@@ -404,7 +386,7 @@ export class ScrcpyServer {
                                             });
                                             // Send to all clients on this device's data socket
                                             myself.broadcastToStream(streamIp, newStreamConfig);
-                                            logger.trace("Sending configuration frame {newStreamConfig}", { newStreamConfig })
+                                            logger.trace(`[${streamIp}] Sending configuration frame {newStreamConfig}`, { newStreamConfig });
                                         }
                                         break;
 
@@ -424,26 +406,59 @@ export class ScrcpyServer {
                                         );
                                         break;
                                     default:
-                                        logger.warn("Unkown packet from video pipe: {packet}", { packet });
+                                        logger.warn(`[${streamIp}] Unkown packet from video pipe: {packet}`, { packet });
                                 }
                             },
                         }),
                     ).catch((e) => {
-                        logger.error(`Error while piping video stream of ${adbConnection.serial}\n{e}`, { e });
+                        logger.error(`[${streamIp}] Error while piping video stream of ${adbConnection.serial}\n{e}`, { e });
                     });
             } else {
-                logger.error(`Couldn't find a video stream from ${adbConnection.serial}'s scrcpy server`)
+                logger.error(`[${streamIp}] Couldn't find a video stream from ${adbConnection.serial}'s scrcpy server`);
             }
 
+            // Supervisor: block until this session ends, then let the caller decide whether to restart.
+            await client.exited;
+
+            // If the maps were cleared by a codec switch (activeStreams.clear() runs before
+            // client.close()), restartStreamingAll will start a fresh session — don't restart here.
+            if (this.scrcpyClientsByIp.get(streamIp) !== client) {
+                logger.debug(`[${streamIp}] Session ended due to codec switch, no automatic restart`);
+                return false;
+            }
+            logger.info(`[${streamIp}] Scrcpy session ended for ${adbConnection.serial}`);
+            return true;
+
         } catch (error) {
+            // Same codec-switch guard for the error path: client.close() can cause exited to
+            // reject with various errors depending on how ADB tears down the connection.
+            if (client && this.scrcpyClientsByIp.get(streamIp) !== client) {
+                logger.debug(`[${streamIp}] Stream stopped for codec switch, no automatic restart`);
+                return false;
+            }
             if (error instanceof AdbScrcpyExitedError) {
-                // Do not raise an error if the stream been properly closed while switching codec
-                if (!error.output[0].startsWith("Aborted"))
-                    logger.fatal("Error in startStreaming: {error}", { error });
-                else if (!flipWidth)
+                if (error.output[0]?.startsWith("Aborted")) {
+                    // Secondary check: explicit "Aborted" from scrcpy also signals intentional stop.
+                    logger.debug(`[${streamIp}] Scrcpy stopped intentionally for ${adbConnection.serial}`);
                     return false;
+                }
+                logger.error(`[${streamIp}] Scrcpy exited with error for ${adbConnection.serial}: {error}`, { error });
             } else {
-                logger.fatal("Error in startStreaming: {error}", { error });
+                logger.fatal(`[${streamIp}] Unexpected error in stream session for ${adbConnection.serial}: {error}`, { error });
+            }
+            return true; // restart on any unexpected error
+
+        } finally {
+            // Always clean up, but guard against wiping a newer session's registration.
+            // During a codec switch a new client may have already taken over this IP.
+            if (client) {
+                if (this.scrcpyClientsByIp.get(streamIp) === client) {
+                    this.activeStreams.delete(streamIp);
+                    this.scrcpyClientsByIp.delete(streamIp);
+                }
+                // Removing from the flat list is always safe (indexOf returns -1 if already cleared).
+                const index = this.scrcpyClients.indexOf(client);
+                if (index > -1) this.scrcpyClients.splice(index, 1);
             }
         }
     }
