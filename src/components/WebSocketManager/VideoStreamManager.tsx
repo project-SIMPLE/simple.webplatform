@@ -133,6 +133,35 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       }
     }
 
+    // Create the ReadableStream BEFORE the async codec check.
+    // new ReadableStream() calls start() synchronously, so the real controller is placed
+    // in readableControllers before this function ever suspends at the first await.
+    // Without this, the first config packet arriving in onmessage would see controller=undefined
+    // and be silently dropped, leaving the decoder permanently uninitialised.
+    const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
+      start(controller) {
+        readableControllers.set(deviceId, controller);
+
+        // Create new entry for keyframe's initialisation
+        isDecoderHasConfig.set(deviceId, false);
+      },
+      // Clean up when the stream is canceled
+      cancel() {
+        readableControllers.delete(deviceId);
+        isDecoderHasConfig.delete(deviceId);
+        // Use the canvas already in scope — canvasList captures a stale closure
+        // (React state at render time) so canvasList[deviceId] is always undefined here.
+        canvas.remove();
+        // Remove from React state so a retry can add a fresh canvas entry.
+        setCanvasList(prev => {
+          const next = { ...prev };
+          delete next[deviceId];
+          return next;
+        });
+        logger.info("deleted canvas", { deviceId });
+      },
+    });
+
     await VideoDecoder.isConfigSupported({
       // Check if h265 is supported
       codec: "hev1.1.60.L153.B0.0.0.0.0.0",
@@ -149,36 +178,15 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
           renderer: renderer,
           // Firefox on Linux has no hardware H264 WebCodecs path; "prefer-software" enables
           // the software decoder (OpenH264) and avoids "encoding not supported" errors.
-          // H265 keeps "no-preference" so hardware acceleration is used when available.
+          // H265 keeps "no-preference": Chrome only supports H265 via hardware, so forcing
+          // software would cause "OperationError: Unsupported configuration".
           hardwareAcceleration: useH265 ? "no-preference" : "prefer-software",
-        });
-        // Create new ReadableStream used for scrcpy decoding
-        const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
-          start(controller) {
-            readableControllers.set(deviceId, controller);
-
-            // Create new entry for keyframe's initialisation
-            isDecoderHasConfig.set(deviceId, false);
-          },
-          // Clean up when the stream is canceled
-          cancel() {
-            readableControllers.delete(deviceId);
-            isDecoderHasConfig.delete(deviceId);
-            try {
-              canvasList[deviceId].remove();
-              logger.info("deleted canvas", { deviceId })
-            } catch (e) {
-              logger.error("Can't delete canvas {canvasList}, {e}", { canvasList, e });
-            }
-          },
         });
 
         // Feed the scrcpy stream to the video decoder
         void stream.pipeTo(decoder.writable).catch((err) => {
           logger.error("[Scrcpy] Error piping to decoder writable stream: {err}", { err });
         });
-
-        return stream;
       } else {
         logger.error("[Scrcpy] Error piping to decoder writable stream");
       }
