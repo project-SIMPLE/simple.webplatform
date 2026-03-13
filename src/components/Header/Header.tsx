@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const Header = ({ hideTranslation = false }) => {
 
     return (
-        <div className="flex w-full justify-between px-6 align-middle" >
+        <div className="flex w-full justify-between py-8 px-16 align-middle" >
 
 
             <Link to="/" className="text-white hover:text-gray-400">
