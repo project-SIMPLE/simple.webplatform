@@ -12,26 +12,37 @@ interface SimulationListProps {
     experiment_name: string;
     content_error: string;
   }
+
   className?: string;
 }
 const logger = getLogger(["components", "SimulationList"]);
 
 const SimulationList = ({ list, handleSimulation, gama, className }: SimulationListProps) => {
 
+  const frame = [
+    `public/images/${folder}/Game_selection/Game_selection_Aquadefender.png`,
+    `public/images/${folder}/Game_selection/Game_selection_Lulut.png`,
+    `public/images/${folder}/Game_selection/Game_selection_Cambodia.png`,
+    `public/images/${folder}/Game_selection/Game_selection_Biodivrestorer.png`,
+    `public/images/${folder}/Game_selection/Game_selection_OZD.png`,
+    `public/images/${folder}/Game_selection/Game_selection_Lao.png`,
+  ]
+
 
   return (
-    <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
+    <div className="flex flex-row w-full justify-evenly">
       {list.map((simulation: VU_MODEL_SETTING_JSON | VU_CATALOG_SETTING_JSON, index: number) => (
-        <div className='items-center text-center w-24 ' key={index}>
+        <div className='items-center text-center w-fit ' key={index}>
 
           <div
-            className={`shadow-lg rounded-2xl items-center  cursor-pointer bg-slate-100 relative w-[100px] h-[100px] ${className}  ${!gama.connected ? 'opacity-50' : null}  ${simulation.type == "catalog"} `}
+            className={`shadow-lg rounded-2xl items-center  cursor-pointer bg-slate-100 relative size-[30dvh] ${className}  ${!gama.connected ? 'opacity-50' : null}  ${simulation.type == "catalog"} `}
             key={index} onClick={gama.connected ? () => handleSimulation(index) : () => { }}>
-            {simulation.type == "catalog" ? <img src={arrow_down} className='rounded-full bg-slate-500 opacity-90 size-16 absolute top-[18px] left-[18px] z-20' /> : null} {/* //? downward arrow */}
+            {simulation.type == "catalog" ? <img src={arrow_down} className='rounded-full bg-slate-500 opacity-90 size-16 absolute top-[40%] left-[40%] z-20' /> : null} {/* //? downward arrow */}
             <div className='relative size-full'>
-              <img src={`public/images/${folder}/Headset/headset_frame.png`} alt="frame" className='absolute scale-110' />
+              <img src={frame[Math.floor(Math.random()*5)]} alt="frame" className='absolute scale-110' /> 
+              {/* //TODO the src of the image is a placeholder */}
               <img src={` ${simulation.splashscreen}`}
-                className='size-[95%] -z-10'
+                className='h-[85%] -z-10'
                 //@ts-expect-error target property of image does exist
                 onError={(e) => { e.target.src = "/images/simple_logo.png"; logger.warn("couldn't load an image for simulation {index}, using the placeholder", { index }) }}
               />
