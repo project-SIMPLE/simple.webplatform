@@ -29,7 +29,8 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env.MONITOR_WS_PORT': JSON.stringify(env.MONITOR_WS_PORT),
       'process.env.HEADSETS_IP' : JSON.stringify(env.HEADSETS_IP),
-      'process.env.ENV_MAX_ELEMENTS' : JSON.stringify(env.ENV_MAX_ELEMENTS)
+      'process.env.ENV_MAX_ELEMENTS' : JSON.stringify(env.ENV_MAX_ELEMENTS),
+      'process.env.IMAGE_SOURCE_FOLDER' : JSON.stringify(env.IMAGE_SOURCE_FOLDER)
     }
   };
 })
