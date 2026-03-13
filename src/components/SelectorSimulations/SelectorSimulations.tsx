@@ -5,12 +5,12 @@ import { useTranslation } from 'react-i18next';
 import Footer from '../Footer/Footer';
 import Header from '../Header/Header';
 import { Link } from 'react-router-dom';
-import Button from '../Button/Button';
 import SimulationList from './SimulationList';
 import arrow_back from "/src/svg_logos/arrow_back.svg";
 import { getLogger } from '@logtape/logtape';
 import { VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from '../../api/core/Constants';
-import visibility from '/src/svg_logos/visibility.svg';
+
+const folder = process.env.IMAGE_SOURCE_FOLDER;
 const SelectorSimulations = () => {
   const { ws, isWsConnected, gama, simulationList } = useWebSocket();
   const [loading, setLoading] = useState<boolean>(true);
@@ -118,24 +118,24 @@ const SelectorSimulations = () => {
 
       // ---------------------------------------------------------  sub project selected
 
-    } 
-      if (subProjectsList[index].type == "json_settings") {
-        ws.send(JSON.stringify({ type: 'send_simulation', simulation: subProjectsList[index] }));
-        setTimeout(() => {
-          navigate('/simulationManager');
-        }, 100);
-      } else {
-        if (subProjectsList[index].type == "catalog") {
-          try {
-            addToPath(index)
-            logger.debug("handlesimulation, simulationList[index].type == catalog, {name}", { name: subProjectsList[index].name });
-          } // in any case, we catch the error and log it if any
-          catch (e) {
-            logger.error("no subprojects, ERROR: {e}", { e : (e as Error).message });
-          }
+    }
+    if (subProjectsList[index].type == "json_settings") {
+      ws.send(JSON.stringify({ type: 'send_simulation', simulation: subProjectsList[index] }));
+      setTimeout(() => {
+        navigate('/simulationManager');
+      }, 100);
+    } else {
+      if (subProjectsList[index].type == "catalog") {
+        try {
+          addToPath(index)
+          logger.debug("handlesimulation, simulationList[index].type == catalog, {name}", { name: subProjectsList[index].name });
+        } // in any case, we catch the error and log it if any
+        catch (e) {
+          logger.error("no subprojects, ERROR: {e}", { e: (e as Error).message });
         }
       }
-    
+    }
+
   };
 
   // Loop which tries to connect to Gama
@@ -164,7 +164,7 @@ const SelectorSimulations = () => {
   return (
     <div className="flex flex-col items-center justify-between h-full">
 
-      <Header needsMiniNav />
+      <Header />
       {/* ↑ prop to specify whether it should use the small version of the navigation bar */}
 
       {loading ? (
@@ -173,27 +173,27 @@ const SelectorSimulations = () => {
           <h2 className="text-gray-700">{t('loading')}</h2>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center w-5/6 h-2/3 rounded-md relative" style={{ "backgroundColor": "#A1D2FF" }}>
+        <div className="flex flex-col items-center justify-center size-full rounded-md relative">
+
           {
             //? Shows the back button if in a nested folder
             path.length >= 1 &&
-              <div
-                className={`shadow-lg rounded-xl flex flex-col items-center justify-center size-14 cursor-pointer bg-white absolute top-10 left-10`}
-                onClick={() => back()}
-              >
-                <img src={selectedSplashscreen ? selectedSplashscreen : "/images/simple_logo.png"} alt="background image" className='absolute z-0'/>
-                <img src={arrow_back} className='rounded-full bg-slate-700 size-8 z-10 opacity-70' />
-              </div>
-              }
+            <div
+              className={`shadow-lg rounded-xl flex flex-col items-center justify-center size-14 cursor-pointer bg-white absolute top-10 left-10`}
+              onClick={() => back()}
+            >
+              <img src={selectedSplashscreen ? selectedSplashscreen : "/images/simple_logo.png"} alt="background image" className='absolute z-0' />
+              <img src={arrow_back} className='rounded-full bg-slate-700 size-8 z-10 opacity-70' />
+            </div>
+          }
 
-          {subProjectsList ? subProjectsList.length > 0 ? <h2 className='font-medium'>{t('select_subproject')}</h2> : <h2>{t('select_simulation')} </h2> : null}
+          {/* {subProjectsList ? subProjectsList.length > 0 ? <h2 className='font-medium'>{t('select_subproject')}</h2> : <h2>{t('select_simulation')} </h2> : null} */}
 
           {/* //TODO add translation for Thai language */}
 
-          <div className="flex items-center justify-between">
-            <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
-                <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
-            </div>
+          <div className="flex items-center justify-between size-full">
+
+            <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
           </div>
           {/* Display the status, ask for the user to connect to Gama if still not */}
           <div className='flex gap-2 mt-6'>
@@ -201,12 +201,8 @@ const SelectorSimulations = () => {
               {gama.connected ? '' : connectionStatus}
             </span>
           </div>
-          <Link to={"../streamPlayerScreen"} className='bg-white rounded-lg' target='_blank'>
-            <Button bgColor='bg-purple-500'
-              text="VR screens"
-              icon={<img src={visibility} />}
-              className='flex w-15'
-            ></Button>
+          <Link to={"../streamPlayerScreen"} className='rounded-lg' target='_blank'>
+            <img src={`public/images/${folder}/Buttons/button_Display_V2.png`} alt="" />
           </Link>
         </div>
       )}

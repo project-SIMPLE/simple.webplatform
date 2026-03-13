@@ -10,16 +10,11 @@ const StreamPlayerScreen = () => {
     <div className="w-full h-full flex flex-col items-center justify-around">
 
       <div className="w-full h-full flex flex-col items-center">
-          <div className="flex justify-center items-center h-screen bg-[#a1d2ff]'" ref={videoContainerRef}>
+          <div className="flex justify-center items-center h-screen" ref={videoContainerRef}>
             <VideoStreamManager />
             <div className='flex flex-col'>
-
             </div>
           </div>
-
-
-        
-
       </div>
 
 

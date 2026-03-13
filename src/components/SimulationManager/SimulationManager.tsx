@@ -99,9 +99,9 @@ const SimulationManager = () => {
 
 
   return (
-    <div className="flex flex-col h-full bg-slate-100 justify-between">
+    <div className="flex flex-col h-full justify-between">
       <Header />
-      <div className="flex flex-col items-center justify-center rounded-lg text-center h-2/3 mx-16 " style={{ backgroundColor: "#A1D2FF" }}>
+      <div className="flex flex-col items-center justify-center rounded-lg text-center h-2/3 mx-16">
 
 
         {selectedSimulation ? (
@@ -118,14 +118,14 @@ const SimulationManager = () => {
                 const player = playerList[key];
                 return (
 
-                  <div key={key} className="flex flex-col items-center" >
+
 
                     <SimulationManagerPlayer
                       Playerkey={key}
                       selectedPlayer={player}
                       playerId={key}
                     />
-                  </div>
+          
 
 
 
@@ -189,7 +189,7 @@ const SimulationManager = () => {
                           } />
 
 
-                        <Link to={"../streamPlayerScreen"} className='bg-white rounded-lg' target='_blank'>
+                        <Link to={"../streamPlayerScreen"} className=' rounded-lg' target='_blank'>
                           <Button bgColor='bg-purple-500'
                             text="VR screens"
                             icon={<img src={visibility} />}
