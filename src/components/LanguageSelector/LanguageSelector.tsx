@@ -18,33 +18,28 @@ const LanguageSelector = () => {
 
     <div className='flex flex-col  h-full justify-center'>
       {/* Button to open the popup */}
-        <img src={`public/images/${folder}/Language_selection/Language_selection_Button_00.png`} alt="language selection" className='size-14 cursor-pointer' onClick={()=>{setShowPopup(true)}}/>
+        <img src={`/images/${folder}/Language_selection/Language_selection_Button_00.png`} alt="language selection" className='size-14 cursor-pointer' onClick={()=>{setShowPopup(true)}}/>
 
 
       {/* Pop-up */}
       {showPopup && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-30" onClick={() => setShowPopup(false)}>
+        <div className="fixed inset-0 flex items-center justify-center bg-opacity-50 z-40 bg-black" onClick={() => setShowPopup(false)}>
 
-          <div className=" p-6 rounded-lg w-80" onClick={(e) => e.stopPropagation()}
-            style={{ position: 'relative', top: '0', right: '0' }}
-          >
-            <button
-              onClick={() => setShowPopup(false)}
-              className=' rounded-full p-1 size-fit bg-none z-10'
-              style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}
-            >
-              <img src={`public/images/${folder}/Language_selection/Language_selection_close.png`} alt="" className='mix-blend-difference size-8' />
-            </button>
+          <div className=" p-6 rounded-lg w-80 relative top-0 right-0" onClick={(e) => e.stopPropagation()}>
+     
+              <img src={` images/${folder}/Language_selection/Language_selection_close.png`} alt="" className='size-8 absolute top-0 right-0 z-10' 
+               onClick={() => setShowPopup(false)}/>
+
             <h3 className="text-lg font-semibold mb-4">{t('select_language')}</h3>
 
 
-            <img src={`public/images/${folder}/Language_selection/Language_selection_tab.png`} className="absolute size-full inset-0 objec-cover" alt="" />
+            <img src={`images/${folder}/Language_selection/Language_selection_tab.png`} className="absolute size-full inset-0" alt="" />
 
             <div className="flex flex-col space-y-2 relative">
 
               <div className='relative flex items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-105'>
                 <img
-                  src={`public/images/${folder}/Language_selection/Language_selection_Button_01.png`}
+                  src={`images/${folder}/Language_selection/Language_selection_Button_01.png`}
                   alt="English"
                   onClick={() => changeLanguage('en')}
                 />
@@ -52,7 +47,7 @@ const LanguageSelector = () => {
               </div>
               <div className='relative flex items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-105'>
                 <img
-                  src={`public/images/${folder}/Language_selection/Language_selection_Button_02.png`}
+                  src={`images/${folder}/Language_selection/Language_selection_Button_02.png`}
                   alt="Français"
                   onClick={() => changeLanguage('fr')}
                 />
@@ -60,7 +55,7 @@ const LanguageSelector = () => {
               </div>
               <div className='relative flex items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-105'>
                 <img
-                  src={`public/images/${folder}/Language_selection/Language_selection_Button_01.png`}
+                  src={`images/${folder}/Language_selection/Language_selection_Button_03.png`}
                   alt="English"
                   onClick={() => changeLanguage('vn')}
                 />
@@ -68,7 +63,7 @@ const LanguageSelector = () => {
               </div>
               <div className='relative flex items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-105'>
                 <img
-                  src={`public/images/${folder}/Language_selection/Language_selection_Button_01.png`}
+                  src={`images/${folder}/Language_selection/Language_selection_Button_04.png`}
                   alt="English"
                   onClick={() => changeLanguage('th')}
                 />
