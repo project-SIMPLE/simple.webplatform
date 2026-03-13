@@ -342,7 +342,7 @@ export class ScrcpyServer {
                     filename: DefaultServerPath,
                     file: new ReadableStream({
                         start: (controller) => {
-                            controller.enqueue(new Uint8Array(this.server));
+                            controller.enqueue(new Uint8Array(this.server!));
                             controller.close();
                         },
                     }),
