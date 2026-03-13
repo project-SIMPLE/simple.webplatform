@@ -20,12 +20,12 @@ const logger = getLogger(["components", "SimulationList"]);
 const SimulationList = ({ list, handleSimulation, gama, className }: SimulationListProps) => {
 
   const frame = [
-    `public/images/${folder}/Game_selection/Game_selection_Aquadefender.png`,
-    `public/images/${folder}/Game_selection/Game_selection_Lulut.png`,
-    `public/images/${folder}/Game_selection/Game_selection_Cambodia.png`,
-    `public/images/${folder}/Game_selection/Game_selection_Biodivrestorer.png`,
-    `public/images/${folder}/Game_selection/Game_selection_OZD.png`,
-    `public/images/${folder}/Game_selection/Game_selection_Lao.png`,
+    `/images/${folder}/Game_selection/Game_selection_Aquadefender.png`,
+    `/images/${folder}/Game_selection/Game_selection_Lulut.png`,
+    `/images/${folder}/Game_selection/Game_selection_Cambodia.png`,
+    `/images/${folder}/Game_selection/Game_selection_Biodivrestorer.png`,
+    `/images/${folder}/Game_selection/Game_selection_OZD.png`,
+    `/images/${folder}/Game_selection/Game_selection_Lao.png`,
   ]
 
 
