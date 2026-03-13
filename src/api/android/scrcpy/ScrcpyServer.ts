@@ -34,6 +34,9 @@ export class ScrcpyServer {
     // Only the most recent call is kept — older ones are overwritten.
     // When the running session exits, the pending call is executed automatically.
     private readonly pendingStartStreaming = new Map<string, () => void>();
+    // Set when a session detects an inverted aspect ratio — signals the supervisor loop
+    // to flip the crop on the next restart. Cleared when startStreaming exits.
+    private readonly flipWidthForIp = new Map<string, boolean>();
 
     // =======================
     // Scrcpy server
@@ -269,12 +272,15 @@ export class ScrcpyServer {
 
         try {
             while (true) {
-                const shouldRestart = await this.runSession(adbConnection, streamIp, deviceModel, flipWidth);
+                // Use the flip override if a previous session detected an inverted ratio.
+                const effectiveFlip = this.flipWidthForIp.get(streamIp) ?? flipWidth;
+                const shouldRestart = await this.runSession(adbConnection, streamIp, deviceModel, effectiveFlip);
                 if (!shouldRestart) break;
                 logger.info(`[${streamIp}] Restarting stream in 1s...`);
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
         } finally {
+            this.flipWidthForIp.delete(streamIp);
             this.activeStartStreaming.delete(streamIp);
             // Run the latest pending call now that the session slot is free.
             const pending = this.pendingStartStreaming.get(streamIp);
@@ -317,6 +323,10 @@ export class ScrcpyServer {
         logger.debug(`[${streamIp}] Starting scrcpy stream with ${sessionIsH265 ? "h265" : "h264"} codec`);
 
         let client: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>> | undefined;
+        // True once the client is registered in activeStreams/scrcpyClientsByIp.
+        // Guards the codec-switch check in catch: a setup-phase failure (e.g. bad
+        // metadata) must not be mistaken for a codec switch and suppress restart.
+        let registered = false;
 
         try {
             if (this.server == null) {
@@ -343,7 +353,8 @@ export class ScrcpyServer {
                 await sync.dispose();
             }
 
-            // Apply different crop values to work with every devices
+            // Apply device-specific crop. flipWidth swaps width↔height to handle devices that
+            // report an inverted aspect ratio on the first connection.
             if (deviceModel == "Quest_3S") {
                 scrcpyOptions.value.crop = flipWidth ? "1570:1482:170:150" : "1482:1570:170:150";
             } else if (deviceModel == "Quest_3") {
@@ -361,9 +372,13 @@ export class ScrcpyServer {
             // Prevent having stream ratio inverted, happened on some weird device...
             // https://github.com/project-SIMPLE/simple.webplatform/issues/78
             if ((metadata == undefined || metadata.width! < metadata.height!) && deviceModel.startsWith("Quest")) {
-                logger.warn(`[${streamIp}] Something's weird here, headset's stream isn't in the good size ratio, restarting... metadata: {metadata}`, { metadata: metadata ? metadata : "the metadata is undefined" });
-                // Make it crash voluntarily to restart stream
-                client = await AdbScrcpyClient.start(adbConnection, DefaultServerPath, scrcpyOptions);
+                logger.warn(`[${streamIp}] Inverted aspect ratio (${metadata?.width}×${metadata?.height}), closing and retrying with flipped crop after cooldown...`);
+                // Close gracefully so the device releases the scrcpy server, then let the
+                // supervisor loop restart with the flipped crop after its 1s cooldown.
+                await client.close().catch(() => {});
+                client = undefined;
+                this.flipWidthForIp.set(streamIp, !flipWidth);
+                return true;
             }
 
             // Register stream as active and store the controller
@@ -371,6 +386,7 @@ export class ScrcpyServer {
             this.activeStreams.add(streamIp);
             this.scrcpyClientsByIp.set(streamIp, client);
             this.scrcpyClients.push(client);
+            registered = true;
             // Announce to all connected control clients so they open /stream/:streamIp
             this.broadcastToClients(JSON.stringify({ type: "stream_available", streamId: streamIp }));
 
@@ -451,7 +467,9 @@ export class ScrcpyServer {
         } catch (error) {
             // Same codec-switch guard for the error path: client.close() can cause exited to
             // reject with various errors depending on how ADB tears down the connection.
-            if (client && this.scrcpyClientsByIp.get(streamIp) !== client) {
+            // Only apply when registered — a setup-phase failure (bad metadata, flip retry
+            // throwing) must not look like a codec switch and suppress the restart.
+            if (registered && client && this.scrcpyClientsByIp.get(streamIp) !== client) {
                 logger.debug(`[${streamIp}] Stream stopped for codec switch, no automatic restart`);
                 return false;
             }

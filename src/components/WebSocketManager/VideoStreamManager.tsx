@@ -274,7 +274,14 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       ws.onclose = () => {
         if (!cleanedUp) {
           logger.info(`[Scrcpy-VideoStreamManager] Device socket for ${streamId} closed, reconnecting in 1s...`);
-          setTimeout(() => connectDeviceSocket(streamId), 1000);
+          setTimeout(() => {
+            // Only reconnect if this socket is still the current one for this stream.
+            // If stream_available already opened a replacement socket, skip — that socket
+            // is healthy and reconnecting here would tear it down unnecessarily.
+            if (!cleanedUp && deviceSockets.get(streamId) === ws) {
+              connectDeviceSocket(streamId);
+            }
+          }, 1000);
         }
       };
     }
