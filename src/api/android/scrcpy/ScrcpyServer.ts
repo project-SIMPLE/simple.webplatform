@@ -22,12 +22,12 @@ export class ScrcpyServer {
     private readonly activeStreams: Set<string>; // device IPs with a live scrcpy session (used to validate /stream/:id upgrades)
     private readonly scrcpyClientsByIp: Map<string, AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>>; // for triggering config reset on new device socket
 
-    private readonly maxBackpressure: number = 8 * 1024 * 1024; // 8 MB
+    private readonly maxBackpressure: number = 8 * 1024 * 1024; // 8 MB total
+    private readonly dropThreshold: number = 6 * 1024 * 1024; // 2 MB headroom before maxBackpressure
 
     // Starts optimistic (h265); permanently downgraded to h264 if any client can't decode h265
     private useH265: boolean = true;
 
-    private scrcpyClients: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>[] = [];
     // IPs that currently have an active startStreaming supervisor loop running.
     private readonly activeStartStreaming = new Set<string>();
     // Latest pending startStreaming call per IP, queued while a session is still running.
@@ -40,7 +40,7 @@ export class ScrcpyServer {
 
     // =======================
     // Scrcpy server
-    declare server: Buffer;
+    private server: Buffer | null = null;
 
     private readonly adbManager!: AdbManager;
 
@@ -122,13 +122,13 @@ export class ScrcpyServer {
                         // Clear active streams immediately so control clients that reconnect
                         // during the transition don't receive stale stream_available announcements.
                         // The exited handlers on old clients will now find no matching entry to delete.
+                        const clientsToStop = [...this.scrcpyClientsByIp.values()];
                         this.activeStreams.clear();
                         this.scrcpyClientsByIp.clear();
-                        for (const client of this.scrcpyClients) {
+                        for (const client of clientsToStop) {
                             await client.controller!.close();
                             await client.close();
                         }
-                        this.scrcpyClients = [];
                         await this.adbManager.restartStreamingAll()
                             .then(async () => {
                                 logger.debug("All streams restarted")
@@ -385,7 +385,6 @@ export class ScrcpyServer {
             logger.debug(`[${streamIp}] Saving new scrcpy client ${adbConnection.serial}`);
             this.activeStreams.add(streamIp);
             this.scrcpyClientsByIp.set(streamIp, client);
-            this.scrcpyClients.push(client);
             registered = true;
             // Announce to all connected control clients so they open /stream/:streamIp
             this.broadcastToClients(JSON.stringify({ type: "stream_available", streamId: streamIp }));
@@ -403,13 +402,11 @@ export class ScrcpyServer {
             });
 
             if (videoPacketStream != null) {
-                const myself = this;
-
                 videoPacketStream
                     .pipeTo(
                         // @ts-expect-error
                         new WritableStream({
-                            write(packet: ScrcpyMediaStreamPacket) {
+                            write: (packet: ScrcpyMediaStreamPacket) => {
                                 switch (packet.type) {
                                     case "configuration":
                                         { // Handle configuration packet
@@ -420,14 +417,14 @@ export class ScrcpyServer {
                                                 data: Buffer.from(packet.data).toString('base64'), // Convert Uint8Array to Base64 string
                                             });
                                             // Send to all clients on this device's data socket
-                                            myself.broadcastToStream(streamIp, newStreamConfig);
+                                            this.broadcastToStream(streamIp, newStreamConfig);
                                             logger.trace(`[${streamIp}] Sending configuration frame {newStreamConfig}`, { newStreamConfig });
                                         }
                                         break;
 
                                     case "data":
                                         // Handle data packet — sent on the dedicated per-device socket
-                                        myself.broadcastToStream(
+                                        this.broadcastToStream(
                                             streamIp,
                                             JSON.stringify({
                                                 streamId: streamIp,
@@ -493,9 +490,6 @@ export class ScrcpyServer {
                     this.activeStreams.delete(streamIp);
                     this.scrcpyClientsByIp.delete(streamIp);
                 }
-                // Removing from the flat list is always safe (indexOf returns -1 if already cleared).
-                const index = this.scrcpyClients.indexOf(client);
-                if (index > -1) this.scrcpyClients.splice(index, 1);
             }
         }
     }
@@ -504,70 +498,43 @@ export class ScrcpyServer {
         logger.debug("Force reset video");
         let anyFailed = false;
 
-        for (const c of this.scrcpyClients) {
-            // Check if client has already exited (non-blocking check)
-            const hasExited = await Promise.race([
-                c.exited.then(() => true),
-                Promise.resolve(false)
-            ]);
+        if (timeoutDelay > 0) {
+            await new Promise(resolve => setTimeout(resolve, timeoutDelay));
+        }
 
-            if (hasExited) {
-                logger.warn("Client already exited, skipping reset");
-                continue;
-            }
-
-            setTimeout(() => {
-                this.resentConfigPackage(c).then(failed => {
-                    anyFailed = anyFailed || failed;
-                });
-            }, timeoutDelay);
+        for (const c of this.scrcpyClientsByIp.values()) {
+            const failed = await this.resentConfigPackage(c);
+            anyFailed = anyFailed || failed;
         }
 
         if (anyFailed && retry) {
             logger.debug("Some failed, restarting now...");
-            await new Promise(resolve => setTimeout(resolve, timeoutDelay + 100));
-            this.resentAllConfigPackage();
+            await this.resentAllConfigPackage(false); // retry once, no further recursion
         }
     }
 
     async resentConfigPackage(client: AdbScrcpyClient<any>): Promise<boolean> {
         logger.trace("Reset video for client {client}", { client });
-
-        let gotError: boolean = true;
-
         try {
-            const promiseResult = client.controller?.resetVideo();
-
-            if (promiseResult){
-                promiseResult
-                    .then((res) => {
-                        logger.trace("Properly reset video stream {res}", { res });
-
-                        // No problem happened
-                        gotError = false;
-                    })
-                    .catch(err => {
-                        const textError = err && (typeof err === 'string' ? err : err.message || String(err));
-
-                        // Hide from non verbose since it's an _expected_ error
-                        if (textError.includes("WritableStream is closed"))
-                            logger.error("ResetVideo failed, probably leftover timeout from previous video stream { err }", { err });
-                        else
-                            logger.error("Error while reseting video stream { err }", { err });
-                    });
+            const result = await client.controller?.resetVideo();
+            logger.trace("Properly reset video stream {result}", { result });
+            return false; // false = no error
+        } catch (err) {
+            const textError = err && (typeof err === 'string' ? err : (err as any).message || String(err));
+            if (textError?.includes("WritableStream is closed")) {
+                logger.error("ResetVideo failed, probably leftover timeout from previous video stream { err }", { err });
+            } else {
+                logger.error("Error while reseting video stream { err }", { err });
             }
-        } catch (e) {
-            logger.error("Something horrible !! {e}", {e});
+            return true; // true = error
         }
-
-        return gotError;
     }
 
     private safeSend(ws: uWS.WebSocket<{ streamId: string }>, packetJson: string): void {
         const customLogger = logger.getChild("Drain");
         const { streamId } = ws.getUserData();
 
-        if (ws.getBufferedAmount() > 6 * 1024 * 1024) { // 6 MB threshold → 2 MB room before maxBackpressure
+        if (ws.getBufferedAmount() > this.dropThreshold) {
             customLogger.warn(`[${streamId}] Dropping frame — client too slow`);
             return;
         }
@@ -593,7 +560,7 @@ export class ScrcpyServer {
         const customLogger: Logger = logger.getChild("Drain");
         this.wsClients.forEach((client) => {
 
-            if (client.getBufferedAmount() > 6 * 1024 * 1024) { // 6 MB threshold -> 2MB room
+            if (client.getBufferedAmount() > this.dropThreshold) {
                 customLogger.warn('Dropping frame — client too slow');
                 return false;
             }
