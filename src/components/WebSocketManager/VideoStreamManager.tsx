@@ -1,11 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import PlayerScreenCanvas from "./PlayerScreenCanvas.tsx";
-import {
-  VideoFrameRenderer,
-  WebGLVideoFrameRenderer,
-  BitmapVideoFrameRenderer,
-  WebCodecsVideoDecoder,
-} from "@yume-chan/scrcpy-decoder-webcodecs";
 import { getLogger } from "@logtape/logtape";
 import { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 const host: string = window.location.hostname;
@@ -40,19 +34,6 @@ const deserializeData = (serializedData: string) => {
       };
   }
 };
-
-function createVideoFrameRenderer(): VideoFrameRenderer {
-
-  if (WebGLVideoFrameRenderer.isSupported) {
-    logger.debug("[SCRCPY] Using WebGLVideoFrameRenderer");
-    return new WebGLVideoFrameRenderer();
-  } else {
-    logger.warn("[SCRCPY] WebGL isn't supported... ");
-  }
-
-  logger.debug("[SCRCPY] Using fallback BitmapVideoFrameRenderer");
-  return new BitmapVideoFrameRenderer();
-}
 
 interface VideoStreamManagerProps {
   needsInteractivity?: boolean;
@@ -92,6 +73,8 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   const isDecoderHasConfig = new Map<string, boolean>();
   // Tracks the codec each decoder was created with — used to detect mid-stream codec changes
   const streamIsH265 = new Map<string, boolean>();
+  // Map of worker instances for each stream
+  const decoderWorkers = useRef<Map<string, Worker>>(new Map());
 
 
 
@@ -111,10 +94,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     }
     // Prepare video stream =======================
 
-    const renderer: VideoFrameRenderer = createVideoFrameRenderer();
-
-    // get the canvas from the renderer (renderer as any is used to ensure ts knows that canvas is a property of the renderer)
-    const canvas = (renderer as any).canvas as HTMLCanvasElement
+    const canvas = document.createElement("canvas");
 
     // Catch cases with non IP devices (USB
     const canvasId: string =
@@ -136,6 +116,24 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       }
     }
 
+    const offscreenCanvas = canvas.transferControlToOffscreen();
+
+    // Clean up any existing worker
+    if (decoderWorkers.current.has(deviceId)) {
+      decoderWorkers.current.get(deviceId)?.terminate();
+      decoderWorkers.current.delete(deviceId);
+    }
+
+    // Create a new web worker to handle the stream
+    const worker = new Worker(new URL("../../workers/scrcpyDecoder.ts", import.meta.url), { type: "module" });
+    decoderWorkers.current.set(deviceId, worker);
+
+    worker.addEventListener("message", (e) => {
+      if (e.data.type === 'sizeChanged') {
+        logger.debug(`[Scrcpy] Size changed for ${deviceId}: ${e.data.width}x${e.data.height}`);
+      }
+    });
+
     // Create the ReadableStream BEFORE the async codec check.
     // new ReadableStream() calls start() synchronously, so the real controller is placed
     // in readableControllers before this function ever suspends at the first await.
@@ -152,6 +150,13 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       cancel() {
         readableControllers.delete(deviceId);
         isDecoderHasConfig.delete(deviceId);
+
+        // Terminate the worker
+        if (decoderWorkers.current.has(deviceId)) {
+          decoderWorkers.current.get(deviceId)?.terminate();
+          decoderWorkers.current.delete(deviceId);
+        }
+
         // Use the canvas already in scope — canvasList captures a stale closure
         // (React state at render time) so canvasList[deviceId] is always undefined here.
         canvas.remove();
@@ -173,24 +178,24 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       if (useH265 && !supported.supported) {
         logger.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
         readableControllers.delete(deviceId);
+        worker.terminate();
+        decoderWorkers.current.delete(deviceId);
         return;
       }
 
       if (supported.supported || !useH265) {
-        const decoder = new WebCodecsVideoDecoder({
-          codec: useH265 ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264,
-          renderer: renderer,
-          // Firefox on Linux has no hardware H264 WebCodecs path; "prefer-software" enables
-          // the software decoder (OpenH264) and avoids "encoding not supported" errors.
-          // H265 keeps "no-preference": Chrome only supports H265 via hardware, so forcing
-          // software would cause "OperationError: Unsupported configuration".
-          hardwareAcceleration: useH265 ? "no-preference" : "prefer-software",
-        });
+        const codec = useH265 ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264;
 
-        // Feed the scrcpy stream to the video decoder
-        void stream.pipeTo(decoder.writable).catch((err) => {
-          logger.error("[Scrcpy] Error piping to decoder writable stream: {err}", { err });
-        });
+        // Pass objects and stream to worker
+        worker.postMessage(
+          {
+            codec,
+            canvas: offscreenCanvas,
+            stream,
+            useH265
+          },
+          [offscreenCanvas, stream]
+        );
       } else {
         logger.error("[Scrcpy] Error piping to decoder writable stream");
       }
@@ -223,6 +228,12 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         // Clearing these forces newVideoStream() to recreate the decoder on the next config packet.
         readableControllers.delete(streamId);
         isDecoderHasConfig.delete(streamId);
+
+        // Terminate the worker
+        if (decoderWorkers.current.has(streamId)) {
+          decoderWorkers.current.get(streamId)?.terminate();
+          decoderWorkers.current.delete(streamId);
+        }
       }
 
       const ws = new WebSocket(`ws://${host}:${port}/stream/${streamId}`);
@@ -303,6 +314,13 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       readableControllers.delete(streamId);
       isDecoderHasConfig.delete(streamId);
       streamIsH265.delete(streamId);
+
+      // Terminate the worker
+      if (decoderWorkers.current.has(streamId)) {
+        decoderWorkers.current.get(streamId)?.terminate();
+        decoderWorkers.current.delete(streamId);
+      }
+
       // Remove canvas from DOM and React state
       const canvas = canvasRefs.current.get(streamId);
       if (canvas) {
@@ -396,6 +414,8 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       cleanedUp = true;
       controlSocket?.close();
       deviceSockets.forEach(ws => ws.close());
+      decoderWorkers.current.forEach(worker => worker.terminate());
+      decoderWorkers.current.clear();
     };
   }, []);
 
