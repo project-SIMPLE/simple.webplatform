@@ -10,6 +10,7 @@ import WebSocketManager from './components/WebSocketManager/WebSocketManager';
 import StreamPlayerScreen from './components/StreamPlayerScreen/StreamPlayerScreen';
 import StreamFullscreen from './components/StreamPlayerScreen/StreamFullscreen';
 
+const folder = process.env.IMAGE_SOURCE_FOLDER
 await configure({
   sinks: {
     console: getConsoleSink({
@@ -31,16 +32,24 @@ const App = () => {
 
   return (
     <BrowserRouter>
-      <WebSocketManager>
-        <ScreenModeProvider>
-          <Routes>
-            <Route index element={<SelectorSimulations />} />
-            <Route path="simulationManager" element={<SimulationManager />} />
-            <Route path="streamPlayerScreen" element={<StreamPlayerScreen />} />
-            <Route path="streamFullscreen" element={<StreamFullscreen />}></Route>
-          </Routes>
-        </ScreenModeProvider>
-      </WebSocketManager>
+      <div
+        className="h-full w-full bg-no-repeat bg-center bg-cover relative"
+        style={{ backgroundImage: `url(public/images/${folder}/Background.png)` }}
+      >
+
+
+
+        <WebSocketManager>
+          <ScreenModeProvider>
+            <Routes>
+              <Route index element={<SelectorSimulations />} />
+              <Route path="simulationManager" element={<SimulationManager />} />
+              <Route path="streamPlayerScreen" element={<StreamPlayerScreen />} />
+              <Route path="streamFullscreen" element={<StreamFullscreen />}></Route>
+            </Routes>
+          </ScreenModeProvider>
+        </WebSocketManager>
+      </div>
     </BrowserRouter>
   );
 };

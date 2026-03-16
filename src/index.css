@@ -48,12 +48,7 @@ button:focus-visible {
   }
 }
 
-body {
-  background-image: url("/images/V2/Background.png");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
-}
+
 
 canvas {
   max-width: 100%;
