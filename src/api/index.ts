@@ -56,6 +56,12 @@ process.env.EXTRA_LEARNING_PACKAGE_PATH =   process.env.EXTRA_LEARNING_PACKAGE_P
 const ENV_AGGRESSIVE_DISCONNECT: boolean = process.env.AGGRESSIVE_DISCONNECT !== undefined ? ['true', '1', 'yes'].includes(process.env.AGGRESSIVE_DISCONNECT.toLowerCase()) : false;
 // ! GAMA =====
 
+// NUT (Network UPS Tools) =====
+process.env.NUT_HOST =                      process.env.NUT_HOST                    || 'localhost';
+process.env.NUT_PORT =                      process.env.NUT_PORT                    || '3493';
+process.env.NUT_UPS_NAME =                  process.env.NUT_UPS_NAME                || 'myUps';
+// ! NUT =====
+
 // Headsets  =====
 process.env.HEADSET_WS_PORT =               process.env.HEADSET_WS_PORT             || '8080';
 // ! Headsets  =====

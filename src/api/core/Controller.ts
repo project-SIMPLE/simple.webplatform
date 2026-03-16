@@ -6,6 +6,7 @@ import { AdbManager } from "../android/adb/AdbManager.ts";
 import { useAdb, ENV_GAMALESS } from "../index.ts";
 import { JsonPlayerAsk, JsonOutput } from "./Constants.ts";
 // import {mDnsService} from "../infra/mDnsService.ts";
+import { NutManager } from "../infra/nut/NutManager.ts";
 import { getLogger } from "@logtape/logtape";
 
 const logger = getLogger(["core", "Controller"]);
@@ -18,6 +19,7 @@ export class Controller {
 
     adb_manager: AdbManager | undefined;
     // mDnsService: mDnsService;
+    nut_manager: NutManager;
 
 
     constructor(useAdb: boolean) {
@@ -36,12 +38,16 @@ export class Controller {
         } else {
             logger.warn("Couldn't find ADB working or started, cancelling ADB management")
         }
+
+        this.nut_manager = new NutManager();
     }
 
     // Allow running init functions for some components needing it
     async initialize() {
         if (this.adb_manager)
             await this.adb_manager.init();
+
+        await this.nut_manager.init();
     }
 
     async restart() {
@@ -66,6 +72,9 @@ export class Controller {
         }
 
         if (useAdb) this.adb_manager = new AdbManager(this);
+
+        this.nut_manager.close();
+        this.nut_manager = new NutManager();
 
         await this.initialize();
     }
