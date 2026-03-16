@@ -480,6 +480,11 @@ export class ScrcpyServer {
                     void this.adbManager.disconnectDevice(adbConnection.serial);
                     return false; // stop restart loop; onListChange will handle reconnect
                 }
+                if (error instanceof Error && error.message.includes('no device with transport id')) {
+                    logger.warn(`[${streamIp}] Device transport gone (adb disconnect?), stopping stream`);
+                    void this.adbManager.disconnectDevice(adbConnection.serial);
+                    return false; // stop restart loop; device is no longer in ADB
+                }
                 logger.fatal(`[${streamIp}] Unexpected error in stream session for ${adbConnection.serial}: {error}`, { error });
             }
             return true; // restart on any unexpected error
