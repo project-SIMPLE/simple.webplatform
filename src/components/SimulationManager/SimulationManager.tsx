@@ -12,6 +12,8 @@ import visibility from '/src/svg_logos/visibility.svg'
 import Header from '../Header/Header';
 import { Link } from 'react-router-dom';
 import { getLogger } from '@logtape/logtape';
+
+const folder = process.env.IMAGE_SOURCE_FOLDER
 export interface Player {
   connected: boolean;
   date_connection: string;
@@ -67,23 +69,6 @@ const SimulationManager = () => {
     }
   };
 
-  // Choice for the ICON :
-  const icon = gama.experiment_state === 'LAUNCHING' ? (
-    <svg className="size-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 9v6m4-6v6" /> {/*  Verticals bars for "pause" */}
-    </svg>
-
-  ) : gama.experiment_state === 'NONE' || gama.experiment_state === 'NOTREADY' || gama.experiment_state === 'PAUSED' ? (
-    <svg className="size-7 " fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3l14 9-14 9V3z"></path>  {/* triangle for "play" */}
-    </svg>
-  ) : (
-    <svg className="size-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 9v6m4-6v6" />
-    </svg>
-  );
-
-
 
 
 
@@ -120,12 +105,12 @@ const SimulationManager = () => {
 
 
 
-                    <SimulationManagerPlayer
-                      Playerkey={key}
-                      selectedPlayer={player}
-                      playerId={key}
-                    />
-          
+                  <SimulationManagerPlayer
+                    Playerkey={key}
+                    selectedPlayer={player}
+                    playerId={key}
+                  />
+
 
 
 
@@ -134,9 +119,9 @@ const SimulationManager = () => {
               })}
 
 
-              {/* //!       Display remaining headsets in gray if the number of detected players is less than the maximum number of players */}
+              {/* //!       Display remaining headsets in transparent orange if the number of detected players is less than the maximum number of players */}
               {Array.from({ length: Number(maxPlayers) - Object.keys(playerList).length }).map((_, index) => (
-                <div key={`placeholder-${index}`} className="flex flex-col items-center opacity-50 cursor-not-allowed">
+                <div key={`placeholder-${index}`} className="flex flex-col items-center cursor-not-allowed">
                   <VRHeadset />
                 </div>
               ))}
@@ -169,33 +154,17 @@ const SimulationManager = () => {
                     <>
                       <p className="flex items-center align-center" style={{ marginLeft: '90px' }}>
                         {t('wait_minim_players_1')} {Number(maxPlayers) - Object.keys(playerList).length} {t('wait_maximum_players_1')}
-                        <svg className="animate-spin ml-2 h-5 w-5 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                        </svg>
+                        <img src={`public/images/${folder}/Buttons/Headset_condition_connecting_01.png`} alt="" />
                       </p>
 
                       <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4 ">
-                        <Button
-                          onClick={startClicked} //set the maximum height to be twice the size of the font size
-                          customStyle={{ maxWidth: '150', maxHeight: '2.4em', wordWrap: "break-word" }}
-                          bgColor={startButtonClicked ? "bg-yellow-300" : "bg-green-500"}
-                          showText={true}
-                          text={startButtonClicked ? t('simulation_loading') : t('button_begin_anyway')}
-                          icon={startButtonClicked ? <svg className="animate-spin ml-2 h-5 w-5 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                          </svg> : null
-                          } />
+
+                        <img src={`public/images/${folder}/Buttons/Button_play.png`} className='cursor-pointer' onClick={startClicked} alt="" />
+
 
 
                         <Link to={"../streamPlayerScreen"} className=' rounded-lg' target='_blank'>
-                          <Button bgColor='bg-purple-500'
-                            text="VR screens"
-                            icon={<img src={visibility} />}
-                            className='flex w-15'
-
-                          ></Button>
+                          <img src={`public/images/${folder}/Buttons/button_Display_V2.png`} alt="" />
                         </Link>
                       </div>
                     </>
@@ -206,37 +175,24 @@ const SimulationManager = () => {
                       }
                     </>
                   )
-                ) : gama.experiment_state === 'PAUSED' ||
-                  gama.experiment_state === 'LAUNCHING' ||
-                  gama.experiment_state === 'RUNNING' && (
-                  <>
+                ) :
+
+                  (
+
                     <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4">
-                      <Button
-                        onClick={handlePlayPause}
-                        customStyle={{ width: '100px', height: '50px' }}
-                        bgColor={gama.experiment_state === 'RUNNING' ? 'bg-orange-500' : 'bg-green-500'}
-                        icon={icon}
-                        showText={true}
-                      />
-                      <Button
-                        onClick={handleEnd}
-                        className="w-20"
-                        customStyle={{ width: '100px', height: '50px' }}
-                        bgColor="bg-red-500"
-                        icon={<img src={x_cross}
-                          style={{ width: "50px", height: "50px" }} />}
-                        showText={true}
-                      />
+                      {gama.experiment_state === 'PAUSED' &&
+                        <img src={`public/images/${folder}/Buttons/Button_play.png`} alt="play button" onClick={handlePlayPause} className='cursor-pointer'/>
+                      }
+                      {(gama.experiment_state === 'RUNNING' || gama.experiment_state === 'LAUNCHING' ) &&
+                      <img src={`public/images/${folder}/Buttons/Button_pause.png`} alt="play button" onClick={handlePlayPause} className='cursor-pointer'/>      
+                      }
+                      <img src={`public/images/${folder}/Buttons/button_stop.png`} alt="" onClick={handleEnd} className='cursor-pointer'/>
                       <Link to={"../streamPlayerScreen"} className=' rounded-lg'>
-                        <Button bgColor='bg-purple-500 h-full'
-                          text="VR displays"
-                          icon={<img src={visibility} />}
-                          className='flex w-15 h-full'
-                        ></Button>
+                        <img src={`public/images/${folder}/Buttons/button_Display_V2.png`} alt="" />
                       </Link>
                     </div>
-                  </>
-                )}
+
+                  )}
 
               </div>
             </>

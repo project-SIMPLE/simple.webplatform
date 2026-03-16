@@ -6,6 +6,8 @@ import cross from '/src/svg_logos/x_cross.svg';
 import { getLogger } from "@logtape/logtape";
 import { Player } from "./SimulationManager";
 const logger = getLogger(["components", "SimulationManagerPlayer"]);
+const folder = process.env.IMAGE_SOURCE_FOLDER
+
 interface PlayerProps {
   Playerkey: string
   selectedPlayer?: Player;
@@ -28,7 +30,7 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
 
   const handleRemove = (id: string) => {
     if (ws !== null) {
-      logger.info("ID headset: {id}",{id});
+      logger.info("ID headset: {id}", { id });
       ws.send(JSON.stringify({ "type": "remove_player_headset", id }));
       toggleShowPopUpManageHeadset();
     } else {
@@ -84,19 +86,27 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
           </div>
           : null}
 
-        <div className='flex flex-col bg-slate-200 shadow-sm rounded-xl hover:scale-105 items-center' onClick={toggleShowPopUpManageHeadset}>
-          <div className='bg-slate-400 w-full rounded-t-xl cursor-pointer'  >
-            <p> {Playerkey} </p></div>
+        <div className='flex flex-col rounded-xl hover:scale-105 items-center relative' onClick={toggleShowPopUpManageHeadset}>
+
           <VRHeadset
             key={Playerkey}
             selectedPlayer={selectedPlayer}
             playerId={Playerkey} />
+          {selectedPlayer ? selectedPlayer.connected ?
 
-          <div className={`rounded-b-xl justify-center w-full ${selectedPlayer ? selectedPlayer.connected ? 'bg-green-500' : 'bg-red-500' : ""}`}>
-            { selectedPlayer ? selectedPlayer.connected ?
-              selectedPlayer.in_game ? <p>{t("in_game")}</p> :
-                <p>{t("connected")}</p> : <p>{t("error")}</p> : "player undefined"}
-          </div>
+            <img src={`public/images/${folder}/Headset_condition/Headset_condition_connected.png`} alt="headset connected" className="absolute size-8 right-0 bottom-0"/>
+            :
+            <img src={`public/images/${folder}/Headset_condition/Headset_condition_connecting.png`} className="absolute size-8 right-0 bottom-0 animate-spin" alt="headset connecting" />
+            :
+            <img src={`public/images/${folder}/Headset_condition/Headset_condition_not_connected.png`} className="absolute size-8 right-0 bottom-0" alt="headset disconnected" />
+            
+            
+            }
+
+
+          {/* <div className={`rounded-b-xl justify-center w-full ${selectedPlayer ? selectedPlayer.connected ? 'bg-green-500' : 'bg-red-500' : ""}`}>
+
+          </div> */}
         </div>
 
 
