@@ -169,6 +169,16 @@ export class AdbManager {
         }
     }
 
+    async disconnectDevice(serial: string): Promise<void> {
+        const index = this.clientCurrentlyStreaming.findIndex(d => d.serial === serial);
+        if (index > -1) this.clientCurrentlyStreaming.splice(index, 1);
+        try {
+            await this.adbServer.wireless.disconnect(serial);
+        } catch (e) {
+            logger.warn(`[${serial}] Failed to wireless-disconnect: {e}`, { e });
+        }
+    }
+
     async connectNewDevice(ip: string, port: string): Promise<boolean> {
         let success: boolean = false;
 

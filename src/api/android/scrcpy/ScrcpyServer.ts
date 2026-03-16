@@ -478,6 +478,11 @@ export class ScrcpyServer {
                 }
                 logger.error(`[${streamIp}] Scrcpy exited with error for ${adbConnection.serial}: {error}`, { error });
             } else {
+                if (error instanceof Error && error.message.includes('device offline')) {
+                    logger.warn(`[${streamIp}] Device went offline, disconnecting for clean reconnect`);
+                    void this.adbManager.disconnectDevice(adbConnection.serial);
+                    return false; // stop restart loop; onListChange will handle reconnect
+                }
                 logger.fatal(`[${streamIp}] Unexpected error in stream session for ${adbConnection.serial}: {error}`, { error });
             }
             return true; // restart on any unexpected error
