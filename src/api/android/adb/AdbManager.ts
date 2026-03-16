@@ -47,12 +47,20 @@ export class AdbManager {
         // Init watching ADB clients
         this.observer = await this.adbServer.trackDevices();
 
-        if (this.observer.current.length > 0) {
-            for (const device of this.observer.current) {
+        const initDeviceList = await this.adbServer.getDevices(["device", "unauthorized", "offline"]);
+
+        if (initDeviceList.length > 0) {
+            for (const device of initDeviceList) {
                 logger.debug(`Devices found on ADB server: {device}`, {device});
-                this.checkAdbParameters(device).catch(e =>
-                    logger.error(`[${device.serial}] Unexpected error in checkAdbParameters: {e}`, { e })
-                );
+                
+                // Sanitize stale ADB entries on startup (side-effect: disconnects offline ones)
+                if (this.isDeviceReady(device)) {
+                    // Apply M2L2 headset settings only if the device is ready
+                    this.checkAdbParameters(device).catch(e =>
+                        logger.error(`[${device.serial}] Unexpected error in checkAdbParameters: {e}`, { e })
+                    );
+                }
+
             }
 
             await this.restartStreamingAll();
@@ -60,7 +68,6 @@ export class AdbManager {
         } else {
             logger.debug('No devices found on ADB server...');
         }
-
 
         // Set trigger listener for when moving devices
         this.observer.onDeviceAdd((devices) => {
@@ -124,6 +131,8 @@ export class AdbManager {
     }
 
     async startNewStream(device: Device) {
+        if (!this.isDeviceReady(device)) return;
+
         // Ensure having only one streaming per device — compare by serial, not reference
         if (this.clientCurrentlyStreaming.some(d => d.serial === device.serial)) {
             logger.debug(`[${device.serial}] Already streaming. Skipping...`);
@@ -164,9 +173,34 @@ export class AdbManager {
 
         // Start everyone
         for (const device of this.observer.current) {
+            if (!this.isDeviceReady(device)) continue;
+
             await this.startNewStream(device);
             await new Promise(resolve => setTimeout(resolve, 2000));
         }
+    }
+
+    isDeviceReady(device: Device): boolean {
+        let isReady = false;
+
+        switch (device.state) {
+            case "device":
+                isReady = true;
+                break;
+
+            case "offline":
+                logger.warn(`[${device.serial}] Device is offline, disconnecting stale entry...`);
+                void this.disconnectDevice(device.serial);
+                break;
+
+            case "unauthorized":
+                logger.error(`[${device.serial}] Device is not authorized — You need to manually pair the headset with this computer (accept the RSA key prompt on the device)`);
+                break;
+
+            default:
+                logger.warn(`[${device.serial}] Device is not ready with an unknown state (${device.state}), skipping`);
+        }
+        return isReady;
     }
 
     async disconnectDevice(serial: string): Promise<void> {
@@ -204,6 +238,8 @@ export class AdbManager {
     }
 
     async checkAdbParameters(device: Device) {
+        if (!this.isDeviceReady(device)) return;
+
         // Only modify headsets, don't jam phone's parameters
         if (!device.model?.startsWith("Quest_")) return;
 
