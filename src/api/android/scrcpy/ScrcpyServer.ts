@@ -86,11 +86,8 @@ export class ScrcpyServer {
             open: (ws) => {
                 this.wsClients.add(ws);
                 logger.debug("Control client connected");
-
-                // Announce all currently active streams so the client can open their per-device data sockets
-                for (const ip of this.activeStreams) {
-                    ws.send(JSON.stringify({ type: "stream_available", streamId: ip }), false, false);
-                }
+                // Send authoritative list of currently active streams so the client can sync
+                ws.send(JSON.stringify({ type: "stream_list", streamIds: [...this.activeStreams] }), false, false);
             },
 
             drain: (ws) => {
@@ -494,6 +491,8 @@ export class ScrcpyServer {
                 if (this.scrcpyClientsByIp.get(streamIp) === client) {
                     this.activeStreams.delete(streamIp);
                     this.scrcpyClientsByIp.delete(streamIp);
+                    // Notify all control clients so they can tear down the stream UI
+                    this.broadcastToClients(JSON.stringify({ type: "stream_ended", streamId: streamIp }));
                 }
             }
         }

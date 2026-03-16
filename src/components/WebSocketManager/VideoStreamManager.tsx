@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import PlayerScreenCanvas from "./PlayerScreenCanvas.tsx";
 import {
   VideoFrameRenderer,
@@ -64,6 +64,7 @@ interface VideoStreamManagerProps {
 // The React component
 const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
   const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
+  const canvasRefs = useRef<Map<string, HTMLCanvasElement>>(new Map());
   const maxElements: number = 1 //! dictates the amount of placeholders and streams displayed on screen
   const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
   const placeholders = Array.from({ length: placeholdersNeeded });
@@ -121,6 +122,8 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         deviceId.split(":")[0].split(".")[deviceId.split(".").length - 1]
         : deviceId;
 
+    canvasRefs.current.set(deviceId, canvas);
+
     if (selectedCanvas && selectedCanvas === canvasId) {
       setCanvasList({ [deviceId]: canvas })
     } else if (!selectedCanvas) {
@@ -152,6 +155,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
         // Use the canvas already in scope — canvasList captures a stale closure
         // (React state at render time) so canvasList[deviceId] is always undefined here.
         canvas.remove();
+        canvasRefs.current.delete(deviceId);
         // Remove from React state so a retry can add a fresh canvas entry.
         setCanvasList(prev => {
           const next = { ...prev };
@@ -286,56 +290,111 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       };
     }
 
-    // Control socket: codec negotiation (client→server) + stream_available announcements (server→client)
-    const socket = new WebSocket("ws://" + host + ":" + port);
-    // Send browser's codecs compatibility
-    socket.onopen = async () => {
-      let supportH264: boolean, supportH265: boolean, supportAv1: boolean;
-      // Check if h264 is supported
-      await VideoDecoder.isConfigSupported({ codec: "avc1.4D401E" }).then((r) => {
-        supportH264 = r.supported!;
-        logger.info("[SCRCPY] Supports h264: {supportH264}", { supportH264 });
-      })
-
-      // Check if h265 is supported
-      await VideoDecoder.isConfigSupported({ codec: "hev1.1.60.L153.B0.0.0.0.0.0" }).then((r) => {
-        supportH265 = r.supported!;
-        logger.info("[SCRCPY] Supports h265 {supportH265}", { supportH265 });
-      })
-
-      // Check if AV1 is supported
-      await VideoDecoder.isConfigSupported({ codec: "av01.0.05M.08" }).then((r) => {
-        supportAv1 = r.supported!;
-        logger.info("[SCRCPY] Supports AV1 {supportAv1}", { supportAv1 });
-      })
-
-      socket.send(JSON.stringify({
-        "type": "codecVideo",
-        // @ts-expect-error
-        "h264": supportH264,
-        // @ts-expect-error
-        "h265": supportH265,
-        // @ts-expect-error
-        "av1": supportAv1,
-      }));
+    function tearDownStream(streamId: string) {
+      // Stop the device socket and suppress the auto-reconnect
+      const ws = deviceSockets.get(streamId);
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+        deviceSockets.delete(streamId);
+      }
+      // Signal end-of-stream to the decoder pipeline
+      readableControllers.get(streamId)?.close();
+      readableControllers.delete(streamId);
+      isDecoderHasConfig.delete(streamId);
+      streamIsH265.delete(streamId);
+      // Remove canvas from DOM and React state
+      const canvas = canvasRefs.current.get(streamId);
+      if (canvas) {
+        canvas.remove();
+        canvasRefs.current.delete(streamId);
+        setCanvasList(prev => {
+          const next = { ...prev };
+          delete next[streamId];
+          return next;
+        });
+      }
     }
 
-    // Handle stream_available announcements — open a dedicated socket per device
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === "stream_available") {
-        logger.info(`[Scrcpy-VideoStreamManager] Stream available: ${data.streamId}`);
-        connectDeviceSocket(data.streamId);
-      }
-    };
+    // Control socket: codec negotiation (client→server) + stream announcements (server→client)
+    let controlSocket: WebSocket | null = null;
 
-    socket.onclose = () => {
-      logger.info("[Scrcpy-VideoStreamManager] Control socket closed");
-    };
+    function connectControlSocket() {
+      if (cleanedUp) return;
+
+      const socket = new WebSocket("ws://" + host + ":" + port);
+      controlSocket = socket;
+
+      // Send browser's codecs compatibility
+      socket.onopen = async () => {
+        let supportH264: boolean, supportH265: boolean, supportAv1: boolean;
+        // Check if h264 is supported
+        await VideoDecoder.isConfigSupported({ codec: "avc1.4D401E" }).then((r) => {
+          supportH264 = r.supported!;
+          logger.info("[SCRCPY] Supports h264: {supportH264}", { supportH264 });
+        })
+
+        // Check if h265 is supported
+        await VideoDecoder.isConfigSupported({ codec: "hev1.1.60.L153.B0.0.0.0.0.0" }).then((r) => {
+          supportH265 = r.supported!;
+          logger.info("[SCRCPY] Supports h265 {supportH265}", { supportH265 });
+        })
+
+        // Check if AV1 is supported
+        await VideoDecoder.isConfigSupported({ codec: "av01.0.05M.08" }).then((r) => {
+          supportAv1 = r.supported!;
+          logger.info("[SCRCPY] Supports AV1 {supportAv1}", { supportAv1 });
+        })
+
+        socket.send(JSON.stringify({
+          "type": "codecVideo",
+          // @ts-expect-error
+          "h264": supportH264,
+          // @ts-expect-error
+          "h265": supportH265,
+          // @ts-expect-error
+          "av1": supportAv1,
+        }));
+      }
+
+      // Handle stream announcements — open/close dedicated sockets per device
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === "stream_available") {
+          logger.info(`[Scrcpy-VideoStreamManager] Stream available: ${data.streamId}`);
+          connectDeviceSocket(data.streamId);
+        } else if (data.type === "stream_ended") {
+          logger.info(`[Scrcpy-VideoStreamManager] Stream ended: ${data.streamId}`);
+          tearDownStream(data.streamId);
+        } else if (data.type === "stream_list") {
+          logger.info(`[Scrcpy-VideoStreamManager] Stream list received: ${data.streamIds}`);
+          const activeIds = new Set<string>(data.streamIds);
+          // Reconnect device sockets for all live streams (idempotent — connectDeviceSocket skips healthy sockets)
+          for (const id of activeIds) {
+            connectDeviceSocket(id);
+          }
+          // Tear down any canvases for streams that are no longer active
+          for (const id of canvasRefs.current.keys()) {
+            if (!activeIds.has(id)) {
+              tearDownStream(id);
+            }
+          }
+        }
+      };
+
+      socket.onclose = () => {
+        logger.info("[Scrcpy-VideoStreamManager] Control socket closed, reconnecting in 2s...");
+        if (!cleanedUp) {
+          setTimeout(connectControlSocket, 2000);
+        }
+      };
+    }
+
+    connectControlSocket();
 
     return () => {
       cleanedUp = true;
-      socket.close();
+      controlSocket?.close();
       deviceSockets.forEach(ws => ws.close());
     };
   }, []);
