@@ -4,6 +4,7 @@ import { Controller } from "../core/Controller.ts";
 import { JsonMonitor } from "../core/Constants.ts";
 import { getLogger } from "@logtape/logtape";
 import Model from "../simulation/Model.ts";
+import { ENV_GAMALESS } from "../index.ts";
 
 const logger = getLogger(["monitor", "MonitorServer"]);
 
@@ -52,8 +53,7 @@ export class MonitorServer {
                     Buffer.from(message).toString(),
                 );
                 const type = jsonMonitor.type;
-                (logger.trace("Received message on monitor server : {jsonMonitor}"),
-                    { jsonMonitor });
+                logger.trace("Received message on monitor server : {jsonMonitor}", { jsonMonitor });
 
                 switch (type) {
                     case "launch_experiment":
@@ -108,6 +108,10 @@ export class MonitorServer {
 
                     case "get_simulation_informations":
                         logger.trace("Requesting and sending back simulation information");
+                        if (ENV_GAMALESS) {
+                            logger.debug("[get_simulation_informations] model_manager unavailable in GAMALESS mode");
+                            break;
+                        }
                         this.sendMessageByWs(
                             this.controller.getSimulationInformations(),
                             ws,
@@ -116,16 +120,20 @@ export class MonitorServer {
 
                     case "get_simulation_by_index":
                         logger.trace("Requesting and sending back simulation by index");
+                        if (ENV_GAMALESS) {
+                            logger.debug("[get_simulation_by_index] model_manager unavailable in GAMALESS mode");
+                            break;
+                        }
                         const index: number|undefined = jsonMonitor.simulationIndex;
 
-                        if (index !== undefined && index >= 0 && index < this.controller.model_manager.getModelList().length) {
+                        if (index !== undefined && index >= 0 && index < this.controller.model_manager!.getModelList().length) {
                             // Retrieve the simulation based on the index
-                            this.controller.model_manager.setActiveModelByIndex(index);
+                            this.controller.model_manager!.setActiveModelByIndex(index);
                             logger.debug("set active model to {modelName}", {
-                                modelName: this.controller.model_manager.getActiveModel().toString()
+                                modelName: this.controller.model_manager!.getActiveModel().toString()
                             });
 
-                            const selectedSimulation = this.controller.model_manager.getActiveModel();
+                            const selectedSimulation = this.controller.model_manager!.getActiveModel();
 
                             logger.trace("Sending back");
                             this.sendMessageByWs({
@@ -141,15 +149,26 @@ export class MonitorServer {
 
                     case "send_simulation":
                         logger.trace("Sending simulation");
+                        if (ENV_GAMALESS) {
+                            logger.debug("[send_simulation] model_manager unavailable in GAMALESS mode");
+                            break;
+                        }
                         const simulationFromStream = JSON.parse(Buffer.from(message).toString());
 
-                        this.controller.model_manager.setActiveModelByIndex(simulationFromStream.simulation.model_index);
-                        const selectedSimulation: Model = this.controller.model_manager.getActiveModel();
+                        this.controller.model_manager!.setActiveModelByIndex(simulationFromStream.simulation.model_index);
+                        const selectedSimulation: Model = this.controller.model_manager!.getActiveModel();
                         logger.debug("Selected simulation sent to gama: {json}", { json: selectedSimulation.getJsonSettings() });
                         this.sendMessageByWs({
                             type: "get_simulation_by_index",
                             simulation: selectedSimulation.getJsonSettings()
                         }, ws);
+                        break;
+
+                    case "try_connection":
+                        if (ENV_GAMALESS) {
+                            logger.debug("[try_connection] GAMA is not active (GAMALESS mode) — ignoring connection attempt");
+                        }
+                        // In normal mode: silently ignore, GamaConnector manages its own connection
                         break;
 
                     default:
@@ -163,9 +182,7 @@ export class MonitorServer {
             close: (ws, code: number, message) => {
                 try {
                     this.wsClients.delete(ws);
-                    logger.debug(
-                        `Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`,
-                    );
+                    logger.debug(`Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
 
                     // Handle specific close codes
                     switch (code) {
@@ -207,8 +224,19 @@ export class MonitorServer {
      * Sends the json_state to the monitor
      */
     sendMonitorGamaState(): void {
+        if (ENV_GAMALESS) {
+            const messageToSend = {
+                type: "json_state",
+                gama: {},
+                player: this.controller.player_manager.getArrayPlayerList(),
+            };
+            logger.trace("Sending monitor gama state (GAMALESS):\n{messageToSend}", { messageToSend });
+            this.sendMessageByWs(messageToSend);
+            return;
+        }
+
         if (
-            this.controller.model_manager.getActiveModel() !== undefined &&
+            this.controller.model_manager?.getActiveModel() !== undefined &&
             this.controller.gama_connector !== undefined
         ) {
             const messageToSend = {
@@ -228,7 +256,7 @@ export class MonitorServer {
      * Send the json_setting to the monitor
      */
     sendMonitorJsonSettings(): void {
-        if (this.controller.model_manager.getActiveModel() !== undefined) {
+        if (this.controller.model_manager?.getActiveModel() !== undefined) {
             logger.trace("Sending monitor json settings:\n{json}", {
                 json: this.controller.model_manager.getActiveModel().getJsonSettings(),
             });
