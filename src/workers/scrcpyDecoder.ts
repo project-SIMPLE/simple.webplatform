@@ -6,6 +6,11 @@ import {
 } from "@yume-chan/scrcpy-decoder-webcodecs";
 
 self.addEventListener("message", (e) => {
+  // Ensure the message originates from the same origin to mitigate security risks
+  if (e.origin !== self.location.origin) {
+    return;
+  }
+
   const { codec, canvas, stream, useH265 } = e.data as {
     codec: ScrcpyVideoCodecId;
     canvas: OffscreenCanvas;
