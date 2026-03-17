@@ -128,12 +128,6 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     const worker = new Worker(new URL("../../workers/scrcpyDecoder.ts", import.meta.url), { type: "module" });
     decoderWorkers.current.set(deviceId, worker);
 
-    worker.addEventListener("message", (e) => {
-      if (e.data.type === 'sizeChanged') {
-        logger.debug(`[Scrcpy] Size changed for ${deviceId}: ${e.data.width}x${e.data.height}`);
-      }
-    });
-
     // Create the ReadableStream BEFORE the async codec check.
     // new ReadableStream() calls start() synchronously, so the real controller is placed
     // in readableControllers before this function ever suspends at the first await.
