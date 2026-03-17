@@ -18,7 +18,7 @@ const LanguageSelector = () => {
 
     <div className='flex flex-col  h-full justify-center'>
       {/* Button to open the popup */}
-        <img src={`/images/${folder}/Language_selection/Language_selection_Button_00.png`} alt="language selection" className='size-14 cursor-pointer' onClick={()=>{setShowPopup(true)}}/>
+        <img src={`/images/${folder}/Language_selection/Language_selection_Button_00.png`} alt="language selection" className='size-20 cursor-pointer' onClick={()=>{setShowPopup(true)}}/>
 
 
       {/* Pop-up */}
@@ -27,7 +27,7 @@ const LanguageSelector = () => {
 
           <div className=" p-6 rounded-lg w-80 relative top-0 right-0" onClick={(e) => e.stopPropagation()}>
      
-              <img src={` images/${folder}/Language_selection/Language_selection_close.png`} alt="" className='size-8 absolute top-0 right-0 z-10' 
+              <img src={` images/${folder}/Language_selection/Language_selection_close.png`} alt="" className='size-8 absolute top-5 right-5 cursor-pointer z-10' 
                onClick={() => setShowPopup(false)}/>
 
             <h3 className="text-lg font-semibold mb-4">{t('select_language')}</h3>
