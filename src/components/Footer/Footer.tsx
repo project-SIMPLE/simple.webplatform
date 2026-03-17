@@ -1,5 +1,4 @@
 
-const folder = process.env.IMAGE_SOURCE_FOLDER;
 const Footer = () => {
     return (
 
