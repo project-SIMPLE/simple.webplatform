@@ -3,16 +3,16 @@ const Footer = () => {
     return (
 
 
-        <footer className="flex justify-between items-center p-4 border-t border-gray-300  w-full">
-        <div className='flex'>
-          <img src={`images/${folder}/Logos/Logo_Global_gateway.png`} alt="GlobalGateway" className="h-12" />
-          <img src={`images/${folder}/Logos/Logo_UE.png`} alt="UE" className="h-12" />
+        <footer className="flex justify-between items-center p-4 w-full">
+        <div className='flex gap-3'>
+          <img src={`images/global-gateway-euro.png`} alt="GlobalGateway" className="h-12" />
+          <img src={`images/funded-by-ue.png`} alt="UE" className="h-12" />
         </div>
 
-        <div className='flex gap-3' >
-          <img src={`images/${folder}/Logos/Logo_IRD.png`} alt="IRD" className="h-12" />
-          <img src={`images/${folder}/Logos/Logo_NSTDA.png`} alt="NSTDA" className="h-12" />
-          <img src={`images/${folder}/Logos/Logo_Can_Tho.png`} alt="CTU" className="h-12" />
+        <div className='flex gap-[50px]' >
+          <img src={`images/IRD-logo.png`} alt="IRD" className="h-12" />
+          <img src={`images/nstda-logo.png`} alt="NSTDA" className="h-12" />
+          <img src={`images/ctu-logo.png`} alt="CTU" className="h-12" />
         </div>
       </footer>
 
