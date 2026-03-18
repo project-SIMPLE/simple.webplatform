@@ -16,9 +16,9 @@ const LanguageSelector = () => {
 
   return (
 
-    <div className='flex flex-col  h-full justify-center'>
+    <div className='flex flex-col  h-full justify-center z-10 mr-[95px] mt-[23px]'>
       {/* Button to open the popup */}
-        <img src={`/images/${folder}/Language_selection/Language_selection_Button_00.png`} alt="language selection" className='size-20 cursor-pointer' onClick={()=>{setShowPopup(true)}}/>
+        <img src={`/images/${folder}/Language_selection/Language_selection_Button_00.png`} alt="language selection" className='size-[100px] cursor-pointer' onClick={()=>{setShowPopup(true)}}/>
 
 
       {/* Pop-up */}
