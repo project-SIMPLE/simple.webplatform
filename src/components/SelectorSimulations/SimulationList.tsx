@@ -1,4 +1,4 @@
-import arrow_down from '../../svg_logos/arrow_drop_down.svg';
+
 import { VU_MODEL_SETTING_JSON, VU_CATALOG_SETTING_JSON } from '../../api/core/Constants';
 import { getLogger } from '@logtape/logtape';
 const folder = process.env.IMAGE_SOURCE_FOLDER
@@ -35,14 +35,18 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
         <div className='items-center text-center w-fit ' key={index}>
 
           <div
-            className={`shadow-lg rounded-2xl items-center  cursor-pointer bg-slate-100 relative size-[30dvh] ${className}  ${!gama.connected ? 'opacity-50' : null}  ${simulation.type == "catalog"} `}
+            className={`rounded-2xl items-center  cursor-pointer relative size-[20dvh]  ${className}  ${!gama.connected ? 'opacity-50' : null}  ${simulation.type == "catalog"} `}
             key={index} onClick={gama.connected ? () => handleSimulation(index) : () => { }}>
-            {simulation.type == "catalog" ? <img src={arrow_down} className='rounded-full bg-slate-500 opacity-90 size-16 absolute top-[40%] left-[40%] z-20' /> : null} {/* //? downward arrow */}
-            <div className='relative size-full'>
-              <img src={frame[Math.floor(Math.random()*5)]} alt="frame" className='absolute scale-110' /> 
-              {/* //TODO the src of the image is a placeholder */}
+            {/* {simulation.type == "catalog" ? <img src={`/images/${folder}/Headset/Headset_04_orange.png`} className='rounded-full bg-slate-500 opacity-90 size-16 absolute top-[40%] left-[40%] z-20' /> : null} //? downward arrow */}
+            <div className='relative size-full bg-[#fcf7ec]V2'>
+              {simulation.type === "catalog" ?
+                <img src={`/images/${folder}/Game_selection/Game_selection_Folder.png`} className='absolute scale-110 top-[-40px]' alt="" />
+                :
+                <img src={frame[Math.floor(Math.random() * 5)]} alt="frame" className='absolute scale-110' />
+              }
+              {/* //TODO the src of the image is a placeholder, selects one of the 5 frames at random */}
               <img src={` ${simulation.splashscreen}`}
-                className='h-[85%] -z-10'
+                className='h-full -z-10 bg-[#fcf7ec]'
                 //@ts-expect-error target property of image does exist
                 onError={(e) => { e.target.src = "/images/simple_logo.png"; logger.warn("couldn't load an image for simulation {index}, using the placeholder", { index }) }}
               />
@@ -53,7 +57,7 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
           </div>
 
           <h2
-            className="text-gray-500 text-sm text-center mt-4"
+            className="text-gray-500 text-sm text-center mt-7"
           >
             {/*                                                                                                                     ↓ added one for folders to start at 1 instead of 0 */}
             {simulation.type == "json_settings" ? simulation.name : simulation.name ? simulation.name : `subprojects folder n°${index + 1}`}
