@@ -173,37 +173,32 @@ const SelectorSimulations = () => {
           <h2 className="text-gray-700">{t('loading')}</h2>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center size-full rounded-md relative">
+        <div className="flex flex-col justify-center items-center size-full rounded-md relative">
 
           {
             //? Shows the back button if in a nested folder
             path.length >= 1 &&
-            <div
-              className={`shadow-lg rounded-xl flex flex-col items-center justify-center size-14 cursor-pointer bg-white absolute top-10 left-10`}
-              onClick={() => back()}
-            >
-              <img src={selectedSplashscreen ? selectedSplashscreen : "/images/simple_logo.png"} alt="background image" className='absolute z-0' />
-              <img src={arrow_back} className='rounded-full bg-slate-700 size-8 z-10 opacity-70' />
+            <div className='w-full pl-10'>
+              <img src={`public/images/${folder}/Buttons/Button_home.png`} alt="back button" onClick={() => back()} className='cursor-pointer' />
             </div>
+
           }
 
-          {/* {subProjectsList ? subProjectsList.length > 0 ? <h2 className='font-medium'>{t('select_subproject')}</h2> : <h2>{t('select_simulation')} </h2> : null} */}
-
-          {/* //TODO add translation for Thai language */}
-
-          <div className="flex items-center justify-between size-full">
+          <div className="flex flex-col items-center justify-around h-fit w-full relative">
 
             <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
           </div>
+          <Link to={"../streamPlayerScreen"} className='rounded-lg absolute bottom-[50px]' target='_blank'>
+            <img src={`public/images/${folder}/Buttons/button_Display_V2.png`} alt="" className='pt-20'/>
+          </Link>
           {/* Display the status, ask for the user to connect to Gama if still not */}
           <div className='flex gap-2 mt-6'>
-            <span className={gama.connected ? 'text-green-500' : 'text-red-500'}>
+            <div className={gama.connected ? 'text-green-500' : 'text-red-500'}>
               {gama.connected ? '' : connectionStatus}
-            </span>
+            </div>
           </div>
-          <Link to={"../streamPlayerScreen"} className='rounded-lg' target='_blank'>
-            <img src={`public/images/${folder}/Buttons/button_Display_V2.png`} alt="" />
-          </Link>
+
+
         </div>
       )}
       <Footer />
