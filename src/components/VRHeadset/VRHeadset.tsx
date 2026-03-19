@@ -1,5 +1,5 @@
 
-import {HEADSET_COLOR} from "../../api/core/Constants.ts";
+import { HEADSET_COLOR } from "../../api/core/Constants.ts";
 const folder = process.env.IMAGE_SOURCE_FOLDER;
 interface VRHeadsetProps {
   selectedPlayer?: any;  
@@ -29,7 +29,7 @@ const VRHeadset= ({ selectedPlayer, className, playerId }: VRHeadsetProps) => {
   return (
     <>
       <div
-        className={`flex flex-col items-center  ${className} ${isAvailable ? 'grayscale-0' : 'opacity-80 cursor-not-allowed'}`}
+        className={`flex flex-col items-center relative ${className} ${isAvailable ? 'grayscale-0' : 'opacity-80 cursor-not-allowed size-52'}`}
         style={{ transition: 'all 0.3s ease', cursor: isAvailable ? 'pointer' : 'not-allowed' }}
       >
         <img 
