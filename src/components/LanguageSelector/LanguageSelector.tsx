@@ -35,7 +35,7 @@ const LanguageSelector = () => {
 
             <img src={`images/${folder}/Language_selection/Language_selection_tab.png`} className="absolute size-full inset-0" alt="" />
 
-            <div className="flex flex-col space-y-2 relative">
+            <div className="flex flex-col space-y-2 relative p-4">
 
               <div className='relative flex items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-105'>
                 <img
