@@ -1,6 +1,5 @@
 //! accomodates the gama server map
 import { useState, useEffect } from 'react';
-import Button from '../Button/Button';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import { useNavigate } from 'react-router-dom';
