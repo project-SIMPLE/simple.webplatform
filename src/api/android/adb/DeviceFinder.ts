@@ -1,6 +1,7 @@
 // @ts-expect-error
 import Evilscan from "evilscan";
 import {networkInterfaces} from "os";
+import {exec} from "child_process";
 
 import {HEADSETS_IP, ENV_EXTRA_VERBOSE, ENV_VERBOSE} from "../../index.ts";
 import {getLogger} from "@logtape/logtape";
@@ -88,9 +89,21 @@ class DeviceFinder {
         }
     }
 
+    private isDeviceReachable(ipAddress: string): Promise<boolean> {
+        return new Promise((resolve) => {
+            exec(`ping -c 1 -W 1 ${ipAddress}`, (error) => resolve(!error));
+        });
+    }
+
     public async scanAndConnectIP(ipAddress: string): Promise<boolean> {
         let alreadyConnected: boolean = false;
         let finishedScanning: boolean = false;
+
+        const isUp = await this.isDeviceReachable(ipAddress);
+        if (!isUp) {
+            logger.debug(`Device at ${ipAddress} is not reachable, skipping port scan`);
+            return false;
+        }
 
         new Evilscan({
                 target: ipAddress,

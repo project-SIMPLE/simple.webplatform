@@ -12,7 +12,7 @@ import { getLogger } from '@logtape/logtape';
 import { VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from '../../api/core/Constants';
 import visibility from '/src/svg_logos/visibility.svg';
 const SelectorSimulations = () => {
-  const { ws, isWsConnected, gama, simulationList } = useWebSocket();
+  const { ws, isWsConnected, gamaless, gama, simulationList } = useWebSocket();
   const [loading, setLoading] = useState<boolean>(true);
   const [connectionStatus, setConnectionStatus] = useState<string>('Waiting for connection ...');
   const { t } = useTranslation();
@@ -138,8 +138,9 @@ const SelectorSimulations = () => {
     
   };
 
-  // Loop which tries to connect to Gama
+  // Loop which tries to connect to Gama (skipped in GAMALESS mode)
   useEffect(() => {
+    if (gamaless) return;
     let interval: NodeJS.Timeout;
     if (ws && !gama.connected) {
       interval = setInterval(() => {
@@ -150,7 +151,7 @@ const SelectorSimulations = () => {
     return () => {
       clearInterval(interval);
     };
-  }, [ws, gama.connected]);
+  }, [ws, gama.connected, gamaless]);
 
   // Display connexion status
   useEffect(() => {
@@ -167,7 +168,22 @@ const SelectorSimulations = () => {
       <Header needsMiniNav />
       {/* ↑ prop to specify whether it should use the small version of the navigation bar */}
 
-      {loading ? (
+      {gamaless ? (
+        <div className="flex flex-col items-center justify-center w-5/6 h-2/3 rounded-md" style={{ backgroundColor: "#A1D2FF" }}>
+          <div className="bg-yellow-100 border-4 border-yellow-500 rounded-xl px-8 py-6 text-center max-w-lg">
+            <h2 className="text-2xl font-bold text-yellow-700 mb-2">GAMALESS Mode</h2>
+            <p className="text-yellow-800">Simulation features are disabled. No GAMA server is connected.</p>
+            <p className="text-yellow-700 mt-2 text-sm">Headset management is still operational.</p>
+          </div>
+          <Link to={"../streamPlayerScreen"} className='bg-white rounded-lg mt-4' target='_blank'>
+            <Button bgColor='bg-purple-500'
+              text="VR screens"
+              icon={<img src={visibility} />}
+              className='flex w-15'
+            ></Button>
+          </Link>
+        </div>
+      ) : loading ? (
         <div className="text-center">
           <div className="animate-pulse ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4 -z-50"></div>
           <h2 className="text-gray-700">{t('loading')}</h2>

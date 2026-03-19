@@ -20,6 +20,7 @@ interface PlayerList {
 interface WebSocketContextType {
     ws: WebSocket | null;
     isWsConnected: boolean;
+    gamaless: boolean;
     gama: {
         connected: boolean;
         loading: 'hidden' | 'visible';
@@ -46,6 +47,7 @@ interface WebSocketManagerProps {
 const WebSocketManager = ({ children }: WebSocketManagerProps) => {
     const [ws, setWs] = useState<WebSocket | null>(null);
     const [isWsConnected, setIsWsConnected] = useState<boolean>(false);
+    const [gamaless, setGamaless] = useState<boolean>(false);
     const [gama, setGama] = useState({
         connected: false,
         loading: 'hidden' as 'hidden' | 'visible',
@@ -101,7 +103,11 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
                 switch (data.type) {
                     // this case is launch too much time
                     case 'json_state':
-                        setGama(data.gama);
+                        const isGamaless = Object.keys(data.gama).length === 0;
+                        setGamaless(isGamaless);
+                        if (!isGamaless) {
+                            setGama(data.gama);
+                        }
                         setPlayerList(data.player);
                         break;
                     //Sets the selected simulation for the websocketManager's context
@@ -137,7 +143,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 
 
     return (
-        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList, selectedSimulation, removePlayer }}>
+        <WebSocketContext.Provider value={{ ws, isWsConnected, gamaless, gama, playerList, simulationList, selectedSimulation, removePlayer }}>
             {children}
         </WebSocketContext.Provider>
     );
