@@ -47,6 +47,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
 
             if (showPopup) {
                 if (popupref.current) {
+                    popupref.current.querySelector('canvas')?.remove();
                     popupref.current.appendChild(canvas);
                     canvas.classList.add("max-h-[95dvh]")
                     canvas.classList.add("max-w-[95dvw]")
@@ -63,8 +64,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
                         canvas.classList.add("max-w-[95dvw]")
                     }
 
-
-
+                    canvasref.current.querySelector('canvas')?.remove();
                     canvasref.current.appendChild(canvas);
                 }
             }

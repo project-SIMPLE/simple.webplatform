@@ -11,7 +11,7 @@ import { getLogger } from "@logtape/logtape";
 const logger = getLogger(["core", "Controller"]);
 
 export class Controller {
-    model_manager: ModelManager;
+    model_manager: ModelManager | undefined;
     monitor_server: MonitorServer;
     player_manager: PlayerManager;
     gama_connector: GamaConnector | undefined;
@@ -22,12 +22,19 @@ export class Controller {
 
     constructor(useAdb: boolean) {
         // this.mDnsService = new mDnsService(process.env.WEB_HOSTNAME);
-        this.model_manager = new ModelManager(this);
         this.monitor_server = new MonitorServer(this);
         this.player_manager = new PlayerManager(this);
         if (ENV_GAMALESS) {
-            logger.info("Web platform launched in 'Gamaless' mode")
+            const border = "=".repeat(58);
+            logger.warn(border);
+            logger.warn("=                                                        =");
+            logger.warn("=   !! GAMALESS MODE ACTIVE — NO GAMA, NO MODEL MANAGER  =");
+            logger.warn("=   Simulation features are fully disabled.              =");
+            logger.warn("=   Only headset/player management is operational.       =");
+            logger.warn("=                                                        =");
+            logger.warn(border);
         } else {
+            this.model_manager = new ModelManager(this);
             this.gama_connector = new GamaConnector(this);
         }
 
@@ -58,10 +65,10 @@ export class Controller {
         this.player_manager = new PlayerManager(this);
         this.monitor_server = new MonitorServer(this);
 
-        
         if (ENV_GAMALESS) {
-            logger.trace("skipped restarting the gama connector, application in gamaless mode...")
+            logger.trace("Skipped restarting the gama connector and model manager, application in gamaless mode...")
         } else {
+            this.model_manager = new ModelManager(this);
             this.gama_connector = new GamaConnector(this);
         }
 
@@ -77,7 +84,12 @@ export class Controller {
      */
 
     getSimulationInformations(): string {
-        return this.model_manager.getCatalogListJSON();
+        if (!ENV_GAMALESS) {
+            return this.model_manager!.getCatalogListJSON();
+        } else {
+            logger.debug("[getSimulationInformations] model_manager is not available in GAMALESS mode");
+            return JSON.stringify([]);
+        }
     }
 
     /*
@@ -110,7 +122,7 @@ export class Controller {
         if (!ENV_GAMALESS)
             this.gama_connector!.addInGamePlayer(id_player);
         else
-            logger.warn("[addInGamePlayer] Message received to add player in GAMA, but the webplatform is in GAMALESS mode...");
+            logger.debug("[addInGamePlayer] Message received to add player in GAMA, but the webplatform is in GAMALESS mode...");
     }
 
     purgePlayer(id_player: string): void {
@@ -119,6 +131,7 @@ export class Controller {
         // Remove from GAMA
         if (!ENV_GAMALESS)
             this.gama_connector!.removeInGamePlayer(id_player);
+
         // Remove from connected list
         this.player_manager.removePlayer(id_player);
 
@@ -135,14 +148,14 @@ export class Controller {
         if (!ENV_GAMALESS)
             this.gama_connector!.sendExpression(id_player, expr);
         else
-            logger.warn("[sendExpression] Message received to send to GAMA, but the webplatform is in GAMALESS mode...");
+            logger.debug("[sendExpression] Message received to send to GAMA, but the webplatform is in GAMALESS mode...");
     }
 
     sendAsk(json: JsonPlayerAsk) {
         if (!ENV_GAMALESS)
             this.gama_connector!.sendAsk(json);
         else
-            logger.warn("[sendAsk] Message received to send to GAMA, but the webplatform is in GAMALESS mode...");
+            logger.debug("[sendAsk] Message received to send to GAMA, but the webplatform is in GAMALESS mode...");
     }
 
     launchExperiment() {
@@ -158,7 +171,7 @@ export class Controller {
                 this.notifyMonitor();
             }, 100);
         } else
-            logger.warn("[launchExperiment] Message received to load an experiment in GAMA, but the webplatform is in GAMALESS mode...");
+            logger.debug("[launchExperiment] Message received to load an experiment in GAMA, but the webplatform is in GAMALESS mode...");
     }
 
     stopExperiment() {
@@ -168,21 +181,21 @@ export class Controller {
 
             this.notifyMonitor();
         } else
-            logger.warn("[stopExperiment] Message received to close current GAMA simulation, but the webplatform is in GAMALESS mode...");
+            logger.debug("[stopExperiment] Message received to close current GAMA simulation, but the webplatform is in GAMALESS mode...");
     }
 
     pauseExperiment(callback?: () => void) {
         if (!ENV_GAMALESS)
             this.gama_connector!.pauseExperiment(callback);
         else
-            logger.warn("[pauseExperiment] Message received to pause current GAMA simulation, but the webplatform is in GAMALESS mode...");
+            logger.debug("[pauseExperiment] Message received to pause current GAMA simulation, but the webplatform is in GAMALESS mode...");
     }
 
     resumeExperiment() {
         if (!ENV_GAMALESS)
             this.gama_connector!.resumeExperiment();
         else
-            logger.warn("[resumeExperiment] Message received to resume current GAMA simulation, but the webplatform is in GAMALESS mode...");
+            logger.debug("[resumeExperiment] Message received to resume current GAMA simulation, but the webplatform is in GAMALESS mode...");
     }
 }
 

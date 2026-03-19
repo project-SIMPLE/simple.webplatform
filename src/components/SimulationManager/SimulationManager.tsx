@@ -21,7 +21,7 @@ export interface Player {
 const SimulationManager = () => {
 
   const logger = getLogger(["simulationManager", "SimulationManager"]);
-  const { ws, gama, playerList, selectedSimulation } = useWebSocket(); // `removePlayer` is now available
+  const { ws, gamaless, gama, playerList, selectedSimulation } = useWebSocket(); // `removePlayer` is now available
   const navigate = useNavigate();
   const [simulationStarted, setSimulationStarted] = useState(false);
   const { t } = useTranslation();
@@ -70,10 +70,10 @@ const SimulationManager = () => {
 
 
   useEffect(() => {
-    if (!selectedSimulation) {
+    if (!gamaless && !selectedSimulation) {
       navigate('/');
     }
-  }, [selectedSimulation, navigate]);
+  }, [gamaless, selectedSimulation, navigate]);
 
   // Handler for removing players
 
@@ -131,6 +131,11 @@ const SimulationManager = () => {
 
             {/* Buttons Simulations : Play Button, Pause Button, Stop Button  */}
 
+            {gamaless ? (
+              <div className="mt-4 px-4 py-2 bg-yellow-100 border-2 border-yellow-400 rounded-lg text-yellow-800 text-sm text-center">
+                GAMALESS — simulation controls disabled
+              </div>
+            ) : (
             <>
               <div className='relative'>
                 {gama.experiment_state === 'NONE' || gama.experiment_state === 'NOTREADY' ? (
@@ -193,8 +198,9 @@ const SimulationManager = () => {
 
                   )}
 
-            </div>
-          </>
+              </div>
+            </>
+            )}
 
 
 
