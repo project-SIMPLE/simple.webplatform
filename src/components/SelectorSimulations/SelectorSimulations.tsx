@@ -6,10 +6,8 @@ import Footer from '../Footer/Footer';
 import Header from '../Header/Header';
 import { Link } from 'react-router-dom';
 import SimulationList from './SimulationList';
-import arrow_back from "/src/svg_logos/arrow_back.svg";
 import { getLogger } from '@logtape/logtape';
 import { VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from '../../api/core/Constants';
-
 const folder = process.env.IMAGE_SOURCE_FOLDER;
 const SelectorSimulations = () => {
   const { ws, isWsConnected, gama, simulationList } = useWebSocket();
