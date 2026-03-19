@@ -4,7 +4,7 @@ const Footer = () => {
 
 
     <footer className="flex justify-between items-center w-full relative m-[50px]">
-      <img src={`public/images/${folder}/Frames/footer.svg`} alt="" className="absolute"/>
+      <img src={`/images/${folder}/Frames/footer.svg`} alt="" className="absolute"/>
       <div className='flex gap-3 z-10 ml-[10px]'>
         <img src={`images/global-gateway-euro.png`} alt="GlobalGateway" className="h-12" />
         <img src={`images/funded-by-ue.png`} alt="UE" className="h-12" />

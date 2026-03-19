@@ -179,7 +179,7 @@ const SelectorSimulations = () => {
             //? Shows the back button if in a nested folder
             path.length >= 1 &&
             <div className='w-full pl-10'>
-              <img src={`public/images/${folder}/Buttons/Button_home.png`} alt="back button" onClick={() => back()} className='cursor-pointer' />
+              <img src={`/images/${folder}/Buttons/Button_home.png`} alt="back button" onClick={() => back()} className='cursor-pointer' />
             </div>
 
           }
@@ -189,7 +189,7 @@ const SelectorSimulations = () => {
             <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
           </div>
           <Link to={"../streamPlayerScreen"} className='rounded-lg absolute bottom-[50px]' target='_blank'>
-            <img src={`public/images/${folder}/Buttons/button_Display_V2.png`} alt="" className='pt-20'/>
+            <img src={`/images/${folder}/Buttons/button_Display_V2.png`} alt="" className='pt-20'/>
           </Link>
           {/* Display the status, ask for the user to connect to Gama if still not */}
           <div className='flex gap-2 mt-6'>

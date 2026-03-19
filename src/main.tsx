@@ -34,7 +34,7 @@ const App = () => {
     <BrowserRouter>
       <div
         className="h-full w-full bg-no-repeat bg-center bg-cover relative overflow-hidden"
-        style={{ backgroundImage: `url(public/images/${folder}/Background.png)` }}
+        style={{ backgroundImage: `url(/images/${folder}/Background.png)` }}
       >
 
 

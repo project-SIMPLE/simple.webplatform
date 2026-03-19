@@ -151,11 +151,11 @@ const SimulationManager = () => {
 
 
                   ) : Object.keys(playerList).length >= Number(minPlayers) && Object.keys(playerList).length < Number(maxPlayers) ? (
-                    <>
-                      <p className="flex items-center align-center" style={{ marginLeft: '90px' }}>
-                        {t('wait_minim_players_1')} {Number(maxPlayers) - Object.keys(playerList).length} {t('wait_maximum_players_1')}
-                        <img src={`public/images/${folder}/Buttons/Headset_condition_connecting_01.png`} alt="" />
-                      </p>
+              <>
+                <p className="flex items-center align-center ml-[90px]">
+                  {t('wait_minim_players_1')} {Number(maxPlayers) - Object.keys(playerList).length} {t('wait_maximum_players_1')}
+                  <img src={`/images/${folder}/Headset_condition/Headset_condition_connecting.png`} alt="" className='size-5 ml-2 animate-spin'/>
+                </p>
 
                       <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4 ">
 
@@ -163,19 +163,19 @@ const SimulationManager = () => {
 
 
 
-                        <Link to={"../streamPlayerScreen"} className=' rounded-lg' target='_blank'>
-                          <img src={`public/images/${folder}/Buttons/button_Display_V2.png`} alt="" />
-                        </Link>
-                      </div>
-                    </>
-                  ) : ( // Autostart simulation
-                    <>
-                      {
-                        Object.keys(playerList).length >= Number(maxPlayers) && handlePlayPause() // Call handlePlayPause function here
-                      }
-                    </>
-                  )
-                ) :
+                  <Link to={"../streamPlayerScreen"} className='rounded-lg' target='_blank'>
+                    <img src={`/images/${folder}/Buttons/Button_Display.png`} alt="display button" />
+                  </Link>
+                </div>
+              </>
+              ) : ( // Autostart simulation
+              <>
+                {
+                  Object.keys(playerList).length >= Number(maxPlayers) && handlePlayPause() // Call handlePlayPause function here
+                }
+              </>
+              )
+              ) :
 
                   (
 
