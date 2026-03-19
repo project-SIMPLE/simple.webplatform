@@ -3,6 +3,7 @@ import { HEADSET_COLOR } from "../../api/core/Constants.ts";
 import visibility_off from "../../svg_logos/visibility_off.svg"
 import x_cross from "../../svg_logos/x_cross.svg";
 import { getLogger } from "@logtape/logtape";
+const folder = process.env.IMAGE_SOURCE_FOLDER
 //TODO pour fix le problème du canvas qui est en petit, puis qui devient grand quand tu clique dessus, regarder les hook qui sont trigger quand on clique sur le canvas (surtout le truc qui applique les classes tailwind)
 //TODO et juste nettoyer complètement le css à chaque fois, et le réappliquer pour éviter le problème, quitte à ce que le code soit redondant
 /* eslint react-hooks/rules-of-hooks: 0, curly: 2 */ //? desactive les avertissements sur les hooks qui sont appelés conditionnellement, ce qui n'arrive jamais dans ce cas
@@ -103,17 +104,17 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
             {!isPlaceholder ?
 
 
-                <div ref={canvasref} className={`${isColoredHeadset ? bgColor : "bg-slate-300"}
-             flex flex-row align-middle justify-center p-2 rounded-lg
+                <div ref={canvasref} className={`flex flex-row align-middle justify-center p-2 rounded-lg relative scale-95
               ${gridDisplay ? null : isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"}`}
                     onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}
                 >
-
+                    <img src={`/images/${folder}/Frames/Frame_${HEADSET_COLOR[ipIdentifier]}.svg`} className="absolute h-full w-auto z-10 top-[-16px] scale-[102%]" alt="" />
                 </div>
-
                 :
                 //  placeholder, with an eye icon
-                <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"} aspect-square m-2`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
+                <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"} aspect-square m-4 scale-95`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
+                    <img src={`/images/${folder}/Frames/Frame_blue.svg`} className="absolute h-full w-auto scale-[103%]" alt="" />
+
                     <img src={visibility_off} alt="" className="mix-blend-difference size-full" />
                 </div >
 
