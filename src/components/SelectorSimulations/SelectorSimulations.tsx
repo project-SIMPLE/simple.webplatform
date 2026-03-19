@@ -167,7 +167,7 @@ const SelectorSimulations = () => {
       {/* ↑ prop to specify whether it should use the small version of the navigation bar */}
 
       {gamaless ? (
-        <div className="flex flex-col items-center justify-center w-5/6 h-2/3 rounded-md" style={{ backgroundColor: "#A1D2FF" }}>
+<>
           <div className="bg-yellow-100 border-4 border-yellow-500 rounded-xl px-8 py-6 text-center max-w-lg">
             <h2 className="text-2xl font-bold text-yellow-700 mb-2">GAMALESS Mode</h2>
             <p className="text-yellow-800">Simulation features are disabled. No GAMA server is connected.</p>
@@ -176,7 +176,7 @@ const SelectorSimulations = () => {
           <Link to={"../streamPlayerScreen"} className='rounded-lg' target='_blank'>
             <img src={`/images/${folder}/Buttons/Button_Display.png`} alt="display button" />
           </Link>
-        </div>
+</>
       ) : loading ? (
         <div className="text-center">
           <div className="animate-pulse ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4 -z-50"></div>
