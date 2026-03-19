@@ -192,7 +192,7 @@ const SimulationManager = () => {
                 }
                 <img src={`/images/${folder}/Buttons/button_stop.png`} alt="" onClick={handleEnd} className='cursor-pointer' />
                 <Link to={"../streamPlayerScreen"} className=' rounded-lg'>
-                  <img src={`/images/${folder}/Buttons/button_Display_V2.png`} alt="streaming displays button" />
+                  <img src={`/images/${folder}/Buttons/Button_Display.png`} alt="streaming displays button" />
                 </Link>
               </div>
 
