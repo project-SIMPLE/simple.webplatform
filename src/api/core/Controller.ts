@@ -22,6 +22,8 @@ export class Controller {
 
     constructor(useAdb: boolean) {
         // this.mDnsService = new mDnsService(process.env.WEB_HOSTNAME);
+        this.monitor_server = new MonitorServer(this);
+        this.player_manager = new PlayerManager(this);
         if (ENV_GAMALESS) {
             const border = "=".repeat(58);
             logger.warn(border);
@@ -35,8 +37,6 @@ export class Controller {
             this.model_manager = new ModelManager(this);
             this.gama_connector = new GamaConnector(this);
         }
-        this.monitor_server = new MonitorServer(this);
-        this.player_manager = new PlayerManager(this);
 
         if (useAdb) {
             this.adb_manager = new AdbManager(this);
