@@ -3,7 +3,7 @@ const Footer = () => {
   return (
 
 
-    <footer className="flex justify-between items-center w-full relative m-[50px]">
+    <footer className="flex justify-between items-center w-full relative  mb-[3 0px]">
       {folder === "V2" &&
       <img src={`/images/${folder}/Frames/footer.svg`} alt="" className="absolute"/>
       }
