@@ -18,7 +18,7 @@ const VRHeadset= ({ selectedPlayer, className, playerId }: VRHeadsetProps) => {
         } else {
             const ipIdentifier: string = playerId!.split("_")[1];
             if (ipIdentifier in HEADSET_COLOR) {
-                return `/images/${folder}/Headset/Headset_${HEADSET_COLOR[ipIdentifier].split('-')[1]}.png`;
+                return `/images/${folder}/Headset/Headset_${HEADSET_COLOR[ipIdentifier]}.png`;
             } else {
                 return `/images/${folder}/Headset/Headset_orange.png`;
             }
