@@ -1,5 +1,6 @@
 import { NUTClient, Monitor } from 'nut-client';
 import { getLogger } from '@logtape/logtape';
+import { isCommandAvailable } from '../../index.ts';
 
 const logger = getLogger(["infra", "nut", "NutManager"]);
 
@@ -7,19 +8,32 @@ export class NutManager {
     private client: NUTClient;
     private monitor: Monitor | null = null;
     private upsName: string;
+    private host: string;
+    private port: number;
 
     constructor() {
-        const host = process.env.NUT_HOST || 'localhost';
-        const port = parseInt(process.env.NUT_PORT || '3493', 10);
+        this.host = process.env.NUT_HOST || 'localhost';
+        this.port = parseInt(process.env.NUT_PORT || '3493', 10);
         this.upsName = process.env.NUT_UPS_NAME || 'myUps';
 
-        logger.info(`Initializing NUT Manager for UPS '${this.upsName}' at ${host}:${port}`);
+        logger.info(`Initializing NUT Manager for UPS '${this.upsName}' at ${this.host}:${this.port}`);
 
-        this.client = new NUTClient(host, port);
+        this.client = new NUTClient(this.host, this.port);
     }
 
     public async init(): Promise<void> {
         try {
+            // If connecting to localhost, check if NUT tools are installed
+            if (this.host === 'localhost' || this.host === '127.0.0.1') {
+                if (!isCommandAvailable('upsd') && !isCommandAvailable('upsc')) {
+                    logger.warn('NUT (Network UPS Tools) does not appear to be installed on this machine.');
+                    logger.warn('To use this feature on macOS, please install it via homebrew: `brew install nut`');
+                    logger.warn('Disabling NUT integration and cleaning up.');
+                    this.close();
+                    return;
+                }
+            }
+
             // First check if UPS is available
             const upses = await this.client.listUPS();
             logger.debug(`Available UPSes: {upses}`, {upses});

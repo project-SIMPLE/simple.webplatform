@@ -170,6 +170,7 @@ start().catch(err => {
 });
 
 export {
+    isCommandAvailable,
     ENV_GAMALESS,
     ENV_VERBOSE,
     ENV_EXTRA_VERBOSE,
