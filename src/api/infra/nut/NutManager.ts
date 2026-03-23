@@ -122,6 +122,24 @@ export class NutManager {
         //   - For each connected device, execute `adb shell reboot -p` to turn off the headset.
         // - Turn off the main server (Mac Mini):
         //   - Execute system `shutdown` command (e.g., `sudo shutdown -h now` on macOS/Linux).
+        //
+        // - Tell the UPS itself to turn off after a delay (e.g., 5 minutes = 300 seconds):
+        //   Example:
+        //   try {
+        //       // Ensure we're authenticated if required by your UPS setup
+        //       await this.client.connect('username', 'password');
+        //
+        //       // Try to set the shutdown delay variable (ups.delay.shutdown) to 300 seconds
+        //       await this.client.setVariable(this.upsName, 'ups.delay.shutdown', 300);
+        //
+        //       // Send the command to turn off the UPS load after the delay
+        //       await this.client.send(['INSTCMD', this.upsName, 'load.off.delay']);
+        //
+        //       logger.info(`Told UPS '${this.upsName}' to turn off its load in 5 minutes.`);
+        //   } catch (err) {
+        //       logger.error(`Failed to send shutdown command to UPS: {err}`, { err });
+        //   }
+        //
         // - Log all actions meticulously.
     }
 
