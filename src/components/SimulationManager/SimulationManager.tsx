@@ -190,7 +190,7 @@ const SimulationManager = () => {
                 {(gama.experiment_state === 'RUNNING' || gama.experiment_state === 'LAUNCHING') &&
                   <img src={`/images/${folder}/Buttons/Button_pause.png`} alt="play button" onClick={handlePlayPause} className='cursor-pointer' />
                 }
-                <img src={`/images/${folder}/Buttons/button_stop.png`} alt="" onClick={handleEnd} className='cursor-pointer' />
+                <img src={`/images/${folder}/Buttons/Button_stop.png`} alt="" onClick={handleEnd} className='cursor-pointer' />
                 <Link to={"../streamPlayerScreen"} className=' rounded-lg'>
                   <img src={`/images/${folder}/Buttons/Button_Display.png`} alt="streaming displays button" />
                 </Link>
