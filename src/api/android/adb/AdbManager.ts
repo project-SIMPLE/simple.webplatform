@@ -203,6 +203,20 @@ export class AdbManager {
         return isReady;
     }
 
+    /** Send reboot -p to every currently streaming ADB-connected headset */
+    async shutdownAllHeadsets(): Promise<void> {
+        for (const device of this.clientCurrentlyStreaming) {
+            try {
+                const transport = await this.adbServer.createTransport(device);
+                const adb = new Adb(transport);
+                await adb.subprocess.noneProtocol.spawn('reboot -p');
+                logger.info(`[${device.serial}] Power-off command sent`);
+            } catch (e) {
+                logger.warn(`[${device.serial}] Failed to send power-off command: {e}`, { e });
+            }
+        }
+    }
+
     async disconnectDevice(serial: string): Promise<void> {
         const index = this.clientCurrentlyStreaming.findIndex(d => d.serial === serial);
         if (index > -1) this.clientCurrentlyStreaming.splice(index, 1);
