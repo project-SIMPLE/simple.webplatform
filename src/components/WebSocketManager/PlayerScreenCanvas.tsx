@@ -104,16 +104,28 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
             {!isPlaceholder ?
 
 
-                <div ref={canvasref} className={`flex flex-row align-middle justify-center p-2 rounded-lg relative scale-95
-              ${gridDisplay ? null : isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"}`}
+                <div
+                    className={`flex flex-row items-center justify-center p-2 rounded-lg relative scale-95
+                    ${gridDisplay ? '' : isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"}`}
                     onClick={needsInteractivity ? () => { setShowPopup(true) } : undefined}
                 >
-                    <img src={`/images/${folder}/Frames/Frame_${HEADSET_COLOR[ipIdentifier]}.svg`} className="absolute h-full w-auto z-10 top-[-16px] scale-[102%]" alt="" />
+                    <div ref={canvasref} className="w-fit h-fit relative">
+                        <img
+                            src={`/images/${folder}/Frames/Frame_${HEADSET_COLOR[ipIdentifier]}.png`}
+                            className="absolute inset-0 h-full w-full] scale-105"/>
+                    </div>
+                    {/* The Background Image */}
+
+
+                    {/* Your Canvas or other content goes here */}
+                    <div className="relative z-20">
+                        {/* Canvas element would live here */}
+                    </div>
                 </div>
                 :
                 //  placeholder, with an eye icon
                 <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"} aspect-square m-4 scale-95`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
-                    <img src={`/images/${folder}/Frames/Frame_blue.svg`} className="absolute h-full w-auto scale-[103%]" alt="" />
+                    <img src={`/images/${folder}/Frames/Frame_blue.png`} className="absolute h-full w-auto scale-[103%]" alt="" />
 
                     <img src={visibility_off} alt="" className="mix-blend-difference size-full" />
                 </div >
