@@ -112,7 +112,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
                     <div ref={canvasref} className="w-fit h-fit relative">
                         <img
                             src={`/images/${folder}/Frames/Frame_${HEADSET_COLOR[ipIdentifier]}.png`}
-                            className="absolute inset-0 h-full w-full] scale-105"/>
+                            className="absolute inset-0 h-full w-full scale-105"/>
                     </div>
                     {/* The Background Image */}
 
