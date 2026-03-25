@@ -286,6 +286,62 @@ export class AdbManager {
             }
         }
         logger.debug(`[${device.serial}] All on-device global ADB settings are good`);
+
+        await this.checkRequiredApps(adb, device.serial);
+    }
+
+    async checkRequiredApps(adb: Adb, serial: string) {
+        const REQUIRED_APP = "com.tpn.adbautoenable";
+        const REQUIRED_PERMISSION = "android.permission.WRITE_SECURE_SETTINGS";
+
+        logger.debug(`[${serial}] Checking required app '${REQUIRED_APP}'...`);
+
+        // Check if app is installed
+        const pmProcess = await adb.subprocess.noneProtocol.spawn(`pm list packages ${REQUIRED_APP}`);
+        let pmOutput = "";
+        // @ts-expect-error
+        for await (const chunk of pmProcess.output.pipeThrough(new TextDecoderStream())) {
+            pmOutput += chunk;
+        }
+
+        if (!pmOutput.includes(`package:${REQUIRED_APP}`)) {
+            logger.warn(`[${serial}] Required app '${REQUIRED_APP}' is not installed — installing it...`);
+            const installed = await this.installApk(adb, serial, resolve("toolkit", `${REQUIRED_APP}.apk`));
+            if (!installed) return;
+        }
+        logger.debug(`[${serial}] '${REQUIRED_APP}' is installed`);
+
+        // Check if WRITE_SECURE_SETTINGS is already granted
+        const dumpsysProcess = await adb.subprocess.noneProtocol.spawn(`dumpsys package ${REQUIRED_APP}`);
+        let dumpsysOutput = "";
+        // @ts-expect-error
+        for await (const chunk of dumpsysProcess.output.pipeThrough(new TextDecoderStream())) {
+            dumpsysOutput += chunk;
+        }
+
+        // The permission line looks like: "android.permission.WRITE_SECURE_SETTINGS: granted=true"
+        const permissionGranted = dumpsysOutput.includes(`${REQUIRED_PERMISSION}: granted=true`);
+
+        if (permissionGranted) {
+            logger.debug(`[${serial}] '${REQUIRED_APP}' already has ${REQUIRED_PERMISSION}`);
+            return;
+        }
+
+        logger.debug(`[${serial}] Granting ${REQUIRED_PERMISSION} to '${REQUIRED_APP}'...`);
+        const grantProcess = await adb.subprocess.noneProtocol.spawn(`pm grant ${REQUIRED_APP} ${REQUIRED_PERMISSION}`);
+        let grantOutput = "";
+        // @ts-expect-error
+        for await (const chunk of grantProcess.output.pipeThrough(new TextDecoderStream())) {
+            grantOutput += chunk;
+        }
+
+        if (grantOutput.trim()) {
+            logger.error(`[${serial}] Failed to grant ${REQUIRED_PERMISSION} to '${REQUIRED_APP}': ${grantOutput.trim()}`);
+        } else {
+            logger.info(`[${serial}] Successfully granted ${REQUIRED_PERMISSION} to '${REQUIRED_APP}'`);
+        }
+    }
+
     async installApk(adb: Adb, serial: string, apkPath: string): Promise<boolean> {
         let apkBytes: Uint8Array;
         let apkSize: number;
