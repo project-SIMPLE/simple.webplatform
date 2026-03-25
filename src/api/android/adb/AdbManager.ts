@@ -9,19 +9,14 @@
 
 import { Adb, AdbServerClient } from "@yume-chan/adb";
 import { AdbServerNodeTcpConnector } from "@yume-chan/adb-server-node-tcp";
-import { ReadableStream } from "@yume-chan/stream-extra";
-import { PackageManager } from "@yume-chan/android-bin";
 import Device = AdbServerClient.Device;
-
-import { readFile, stat } from "node:fs/promises";
-import { resolve } from "node:path";
 
 import Controller from "../../core/Controller.ts";
 import { ENV_EXTRA_VERBOSE, ENV_VERBOSE } from "../../index.ts";
 import { ScrcpyServer } from "../scrcpy/ScrcpyServer.ts";
 import { getLogger } from "@logtape/logtape";
 import DeviceFinder from "./DeviceFinder.ts";
-import {ON_DEVICE_ADB_GLOBAL_SETTINGS} from "../../core/Constants.ts";
+import { HeadsetSetup } from "./HeadsetSetup.ts";
 
 // Override the log function
 const logger = getLogger(["android", "AdbManager"]);
@@ -30,6 +25,7 @@ export class AdbManager {
     controller: Controller;
     adbServer!: AdbServerClient;
     videoStreamServer: ScrcpyServer;
+    headsetSetup!: HeadsetSetup;
     // Keep list of serial of devices with a stream already starting
     clientCurrentlyStreaming: Device[] = [];
     observer!: AdbServerClient.DeviceObserver;//!: AdbServerClient;
@@ -46,6 +42,7 @@ export class AdbManager {
         logger.info("Connect to device's ADB server");
 
         this.videoStreamServer = new ScrcpyServer(this);
+        this.headsetSetup = new HeadsetSetup(this.adbServer);
     }
 
     async init() {
@@ -61,8 +58,8 @@ export class AdbManager {
                 // Sanitize stale ADB entries on startup (side-effect: disconnects offline ones)
                 if (this.isDeviceReady(device)) {
                     // Apply M2L2 headset settings only if the device is ready
-                    this.checkAdbParameters(device).catch(e =>
-                        logger.error(`[${device.serial}] Unexpected error in checkAdbParameters: {e}`, { e })
+                    this.headsetSetup.setupHeadset(device).catch(e =>
+                        logger.error(`[${device.serial}] Unexpected error in setupHeadset: {e}`, { e })
                     );
                 }
 
@@ -81,8 +78,8 @@ export class AdbManager {
                 this.startNewStream(device).catch(e =>
                     logger.error(`[${device.serial}] Unexpected error in startNewStream: {e}`, { e })
                 );
-                this.checkAdbParameters(device).catch(e =>
-                    logger.error(`[${device.serial}] Unexpected error in checkAdbParameters: {e}`, { e })
+                this.headsetSetup.setupHeadset(device).catch(e =>
+                    logger.error(`[${device.serial}] Unexpected error in setupHeadset: {e}`, { e })
                 );
             }
         });
@@ -254,152 +251,6 @@ export class AdbManager {
         }
 
         return success
-    }
-
-    async checkAdbParameters(device: Device) {
-        if (!this.isDeviceReady(device)) return;
-
-        // Only modify headsets, don't jam phone's parameters
-        if (!device.model?.startsWith("Quest_")) return;
-
-        logger.debug(`[${device.serial}] Checking on-device global ADB settings...`);
-
-        let adb: Adb;
-        try {
-            adb = new Adb(await this.adbServer.createTransport(device));
-        } catch (e) {
-            logger.warn(`[${device.serial}] Could not open ADB transport to check parameters — device may not be authorized yet: {e}`, { e });
-            return;
-        }
-
-        for (const [globalSetting, globalSettingValue] of Object.entries(ON_DEVICE_ADB_GLOBAL_SETTINGS) as [
-                keyof typeof ON_DEVICE_ADB_GLOBAL_SETTINGS,
-                typeof ON_DEVICE_ADB_GLOBAL_SETTINGS[keyof typeof ON_DEVICE_ADB_GLOBAL_SETTINGS]
-            ][])
-        {
-            if ( ! await this.checkAdbParameter(adb, globalSetting, globalSettingValue)){
-                logger.debug(`[${device.serial}] ADB parameters for '${globalSetting}' isn't correct, fixing it...`);
-                await this.setAdbParameter(adb, globalSetting, globalSettingValue);
-                if (! await this.checkAdbParameter(adb, globalSetting, globalSettingValue)) {
-                    logger.warn(`[${device.serial}] Couldn't properly set setting ${globalSetting}, skipping it...`);
-                }
-            }
-        }
-        logger.debug(`[${device.serial}] All on-device global ADB settings are good`);
-
-        await this.checkRequiredApps(adb, device.serial);
-    }
-
-    async checkRequiredApps(adb: Adb, serial: string) {
-        const REQUIRED_APP = "com.tpn.adbautoenable";
-        const REQUIRED_PERMISSION = "android.permission.WRITE_SECURE_SETTINGS";
-
-        logger.debug(`[${serial}] Checking required app '${REQUIRED_APP}'...`);
-
-        // Check if app is installed
-        const pmProcess = await adb.subprocess.noneProtocol.spawn(`pm list packages ${REQUIRED_APP}`);
-        let pmOutput = "";
-        // @ts-expect-error
-        for await (const chunk of pmProcess.output.pipeThrough(new TextDecoderStream())) {
-            pmOutput += chunk;
-        }
-
-        if (!pmOutput.includes(`package:${REQUIRED_APP}`)) {
-            logger.warn(`[${serial}] Required app '${REQUIRED_APP}' is not installed — installing it...`);
-            const installed = await this.installApk(adb, serial, resolve("toolkit", `${REQUIRED_APP}.apk`));
-            if (!installed) return;
-        }
-        logger.debug(`[${serial}] '${REQUIRED_APP}' is installed`);
-
-        // Check if WRITE_SECURE_SETTINGS is already granted
-        const dumpsysProcess = await adb.subprocess.noneProtocol.spawn(`dumpsys package ${REQUIRED_APP}`);
-        let dumpsysOutput = "";
-        // @ts-expect-error
-        for await (const chunk of dumpsysProcess.output.pipeThrough(new TextDecoderStream())) {
-            dumpsysOutput += chunk;
-        }
-
-        // The permission line looks like: "android.permission.WRITE_SECURE_SETTINGS: granted=true"
-        const permissionGranted = dumpsysOutput.includes(`${REQUIRED_PERMISSION}: granted=true`);
-
-        if (permissionGranted) {
-            logger.debug(`[${serial}] '${REQUIRED_APP}' already has ${REQUIRED_PERMISSION}`);
-            return;
-        }
-
-        logger.debug(`[${serial}] Granting ${REQUIRED_PERMISSION} to '${REQUIRED_APP}'...`);
-        const grantProcess = await adb.subprocess.noneProtocol.spawn(`pm grant ${REQUIRED_APP} ${REQUIRED_PERMISSION}`);
-        let grantOutput = "";
-        // @ts-expect-error
-        for await (const chunk of grantProcess.output.pipeThrough(new TextDecoderStream())) {
-            grantOutput += chunk;
-        }
-
-        if (grantOutput.trim()) {
-            logger.error(`[${serial}] Failed to grant ${REQUIRED_PERMISSION} to '${REQUIRED_APP}': ${grantOutput.trim()}`);
-        } else {
-            logger.info(`[${serial}] Successfully granted ${REQUIRED_PERMISSION} to '${REQUIRED_APP}'`);
-        }
-    }
-
-    async installApk(adb: Adb, serial: string, apkPath: string): Promise<boolean> {
-        let apkBytes: Uint8Array;
-        let apkSize: number;
-        try {
-            apkBytes = new Uint8Array(await readFile(apkPath));
-            apkSize = (await stat(apkPath)).size;
-        } catch (e) {
-            logger.error(`[${serial}] Could not read APK at '${apkPath}': {e}`, { e });
-            return false;
-        }
-
-        try {
-            const pm = new PackageManager(adb);
-            await pm.installStream(apkSize, new ReadableStream({
-                start: (controller) => {
-                    controller.enqueue(apkBytes);
-                    controller.close();
-                },
-            }));
-            logger.info(`[${serial}] Successfully installed APK '${apkPath}'`);
-            return true;
-        } catch (e) {
-            logger.error(`[${serial}] Failed to install APK '${apkPath}': {e}`, { e });
-            return false;
-        }
-    }
-
-    async checkAdbParameter(adb: Adb, globalParam: string, expectedValue: any): Promise<boolean> {
-        let result: any;
-
-        const process = await adb.subprocess.noneProtocol.spawn("settings get global " + globalParam);
-        // @ts-expect-error
-        for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
-            result = chunk;
-        }
-        // Cleaning trailing '\n' from chunk reading
-        result = result.trim();
-
-        logger.trace(`[${adb.serial}] Checking ADB parameters '${globalParam}' = ${result} and should be ${expectedValue} (${result == expectedValue})`);
-
-        return result == expectedValue;
-    }
-
-    async setAdbParameter(adb: Adb, globalParam: string, expectedValue: any) {
-        let result: any;
-
-        const process = await adb.subprocess.noneProtocol.spawn(["settings put global ", globalParam, expectedValue]);
-        // @ts-expect-error
-        for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
-            result = chunk;
-        }
-
-        logger.trace(`[${adb.serial}] Setting ADB parameters '${globalParam}' = ${expectedValue} and it ${result == undefined ? "worked" : "failed"}`);
-
-        if (result != undefined) {
-            logger.error(`[${adb.serial}] Something happened while setting the ADB setting '${globalParam}'`);
-            logger.error(result.toString());
-        }
     }
 
 }
