@@ -9,7 +9,12 @@
 
 import { Adb, AdbServerClient } from "@yume-chan/adb";
 import { AdbServerNodeTcpConnector } from "@yume-chan/adb-server-node-tcp";
+import { ReadableStream } from "@yume-chan/stream-extra";
+import { PackageManager } from "@yume-chan/android-bin";
 import Device = AdbServerClient.Device;
+
+import { readFile, stat } from "node:fs/promises";
+import { resolve } from "node:path";
 
 import Controller from "../../core/Controller.ts";
 import { ENV_EXTRA_VERBOSE, ENV_VERBOSE } from "../../index.ts";
@@ -281,6 +286,31 @@ export class AdbManager {
             }
         }
         logger.debug(`[${device.serial}] All on-device global ADB settings are good`);
+    async installApk(adb: Adb, serial: string, apkPath: string): Promise<boolean> {
+        let apkBytes: Uint8Array;
+        let apkSize: number;
+        try {
+            apkBytes = new Uint8Array(await readFile(apkPath));
+            apkSize = (await stat(apkPath)).size;
+        } catch (e) {
+            logger.error(`[${serial}] Could not read APK at '${apkPath}': {e}`, { e });
+            return false;
+        }
+
+        try {
+            const pm = new PackageManager(adb);
+            await pm.installStream(apkSize, new ReadableStream({
+                start: (controller) => {
+                    controller.enqueue(apkBytes);
+                    controller.close();
+                },
+            }));
+            logger.info(`[${serial}] Successfully installed APK '${apkPath}'`);
+            return true;
+        } catch (e) {
+            logger.error(`[${serial}] Failed to install APK '${apkPath}': {e}`, { e });
+            return false;
+        }
     }
 
     async checkAdbParameter(adb: Adb, globalParam: string, expectedValue: any): Promise<boolean> {
