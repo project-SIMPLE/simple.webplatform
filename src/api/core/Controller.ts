@@ -7,6 +7,8 @@ import { useAdb, ENV_GAMALESS } from "../index.ts";
 import { JsonPlayerAsk, JsonOutput } from "./Constants.ts";
 // import {mDnsService} from "../infra/mDnsService.ts";
 import { getLogger } from "@logtape/logtape";
+import { spawnSync } from 'child_process';
+import { UpsManager } from '../infra/ups/UpsManager.ts';
 
 const logger = getLogger(["core", "Controller"]);
 
@@ -17,6 +19,7 @@ export class Controller {
     gama_connector: GamaConnector | undefined;
 
     adb_manager: AdbManager | undefined;
+    ups_service: UpsManager;
     // mDnsService: mDnsService;
 
 
@@ -43,12 +46,45 @@ export class Controller {
         } else {
             logger.warn("Couldn't find ADB working or started, cancelling ADB management")
         }
+
+        this.ups_service = new UpsManager();
     }
 
     // Allow running init functions for some components needing it
     async initialize() {
         if (this.adb_manager)
             await this.adb_manager.init();
+
+        await this.ups_service.connect();
+
+        const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+        setTimeout(() => void this.handleSessionTimeout(), THREE_HOURS_MS);
+        logger.info('Session timer started — shutdown sequence armed for 3h if on battery');
+    }
+
+    /** Called after 3 hours. Shuts down headsets, UPS, and host if UPS is on battery. */
+    private async handleSessionTimeout(): Promise<void> {
+        logger.warn('3-hour session timer fired');
+
+        if (this.ups_service.isConnected() && this.ups_service.isOnAC()) {
+            logger.info('UPS is on AC power — no shutdown needed');
+            return;
+        }
+
+        logger.warn('UPS is on battery or not connected — initiating shutdown sequence');
+
+        // (1) Power off all headsets
+        if (this.adb_manager)
+            await this.adb_manager.shutdownAllHeadsets();
+
+        // (2) Arm UPS output cut in 2 minutes (only executes when on battery)
+        this.ups_service.armShutdown(120);
+
+        // (3) Shutdown host computer after 30s to allow headsets and UPS time to process
+        setTimeout(() => {
+            logger.warn('Shutting down host computer now');
+            spawnSync('shutdown', ['-h', 'now']);
+        }, 30_000);
     }
 
     async restart() {
