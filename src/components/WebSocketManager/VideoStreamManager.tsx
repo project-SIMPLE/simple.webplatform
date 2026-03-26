@@ -165,6 +165,14 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       },
     });
 
+    if (typeof VideoDecoder === 'undefined') {
+      logger.warn("[Scrcpy-VideoStreamManager] WebCodecs API (VideoDecoder) is not available in this browser, aborting stream");
+      readableControllers.delete(deviceId);
+      worker.terminate();
+      decoderWorkers.current.delete(deviceId);
+      return;
+    }
+
     await VideoDecoder.isConfigSupported({
       // Check if h265 is supported
       codec: "hev1.1.60.L153.B0.0.0.0.0.0",
@@ -180,16 +188,64 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       if (supported.supported || !useH265) {
         const codec = useH265 ? ScrcpyVideoCodecId.H265 : ScrcpyVideoCodecId.H264;
 
-        // Pass objects and stream to worker
-        worker.postMessage(
-          {
-            codec,
-            canvas: offscreenCanvas,
-            stream,
-            useH265
-          },
-          [offscreenCanvas, stream]
-        );
+        // Check if browser supports transferring ReadableStream
+        let canTransferStream = false;
+        try {
+          const { port1 } = new MessageChannel();
+          const testStream = new ReadableStream();
+          port1.postMessage(testStream, [testStream]);
+          canTransferStream = true;
+        } catch (e) {
+          canTransferStream = false;
+        }
+
+        if (canTransferStream) {
+          // Pass objects and stream to worker directly
+          worker.postMessage(
+            {
+              codec,
+              canvas: offscreenCanvas,
+              stream,
+              useH265,
+              type: 'direct'
+            },
+            [offscreenCanvas, stream]
+          );
+        } else {
+          // Fallback for browsers that don't support transferring ReadableStream (like Safari)
+          logger.info("[Scrcpy-VideoStreamManager] ReadableStream transfer not supported, using MessageChannel fallback");
+          const { port1, port2 } = new MessageChannel();
+          worker.postMessage(
+            { codec, canvas: offscreenCanvas, port: port2, useH265, type: 'port' },
+            [offscreenCanvas, port2]
+          );
+
+          const reader = stream.getReader();
+          (async () => {
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                  port1.postMessage({ done: true });
+                  break;
+                }
+                const transferables: Transferable[] = [];
+                // Clone the buffer to avoid detaching it if it's needed elsewhere,
+                // or just send the value. In Firefox, detaching was causing issues.
+                // However, since we fallback to MessageChannel ONLY when ReadableStream transfer fails,
+                // Firefox (which supports stream transfer) will use the direct path above.
+                if (value?.data instanceof Uint8Array) {
+                  transferables.push(value.data.buffer);
+                }
+                port1.postMessage({ done: false, value }, transferables);
+              }
+            } catch {
+              port1.postMessage({ done: true });
+            } finally {
+              port1.close();
+            }
+          })();
+        }
       } else {
         logger.error("[Scrcpy] Error piping to decoder writable stream");
       }
@@ -211,6 +267,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     // Reconnects automatically after 1 s on unexpected close.
     function connectDeviceSocket(streamId: string) {
       if (cleanedUp) return;
+      if (typeof VideoDecoder === 'undefined') return;
 
       // Prevent the stale socket's onclose from firing a reconnect when we replace it
       const existing = deviceSockets.get(streamId);
@@ -339,32 +396,34 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
       // Send browser's codecs compatibility
       socket.onopen = async () => {
-        let supportH264: boolean, supportH265: boolean, supportAv1: boolean;
-        // Check if h264 is supported
-        await VideoDecoder.isConfigSupported({ codec: "avc1.4D401E" }).then((r) => {
-          supportH264 = r.supported!;
-          logger.info("[SCRCPY] Supports h264: {supportH264}", { supportH264 });
-        })
+        let supportH264 = false, supportH265 = false, supportAv1 = false;
 
-        // Check if h265 is supported
-        await VideoDecoder.isConfigSupported({ codec: "hev1.1.60.L153.B0.0.0.0.0.0" }).then((r) => {
-          supportH265 = r.supported!;
-          logger.info("[SCRCPY] Supports h265 {supportH265}", { supportH265 });
-        })
+        if (typeof VideoDecoder === 'undefined') {
+          logger.warn("[SCRCPY] WebCodecs API not available, reporting no codec support");
+        } else {
+          // Check if h264 is supported
+          await VideoDecoder.isConfigSupported({ codec: "avc1.4D401E" }).then((r) => {
+            supportH264 = r.supported!;
+            logger.info("[SCRCPY] Supports h264: {supportH264}", { supportH264 });
+          })
 
-        // Check if AV1 is supported
-        await VideoDecoder.isConfigSupported({ codec: "av01.0.05M.08" }).then((r) => {
-          supportAv1 = r.supported!;
-          logger.info("[SCRCPY] Supports AV1 {supportAv1}", { supportAv1 });
-        })
+          // Check if h265 is supported
+          await VideoDecoder.isConfigSupported({ codec: "hev1.1.60.L153.B0.0.0.0.0.0" }).then((r) => {
+            supportH265 = r.supported!;
+            logger.info("[SCRCPY] Supports h265 {supportH265}", { supportH265 });
+          })
+
+          // Check if AV1 is supported
+          await VideoDecoder.isConfigSupported({ codec: "av01.0.05M.08" }).then((r) => {
+            supportAv1 = r.supported!;
+            logger.info("[SCRCPY] Supports AV1 {supportAv1}", { supportAv1 });
+          })
+        }
 
         socket.send(JSON.stringify({
           "type": "codecVideo",
-          // @ts-expect-error
           "h264": supportH264,
-          // @ts-expect-error
           "h265": supportH265,
-          // @ts-expect-error
           "av1": supportAv1,
         }));
       }
