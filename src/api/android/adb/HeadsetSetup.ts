@@ -18,7 +18,7 @@ import { readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { getLogger } from "@logtape/logtape";
-import { ON_DEVICE_ADB_GLOBAL_SETTINGS } from "../../core/Constants.ts";
+import { ON_DEVICE_ADB_GLOBAL_SETTINGS, ON_DEVICE_ADB_SHELL_SETTINGS } from "../../core/Constants.ts";
 
 const logger = getLogger(["android", "HeadsetSetup"]);
 
@@ -42,6 +42,7 @@ export class HeadsetSetup {
         }
 
         await this.applyGlobalSettings(adb, device.serial);
+        await this.applyShellSettings(adb, device.serial);
         await this.checkRequiredApps(adb, device.serial);
     }
 
@@ -63,6 +64,48 @@ export class HeadsetSetup {
         }
 
         logger.debug(`[${serial}] All on-device global ADB settings are good`);
+    }
+
+    private async applyShellSettings(adb: Adb, serial: string) {
+        logger.debug(`[${serial}] Checking on-device shell settings...`);
+
+        for (const args of ON_DEVICE_ADB_SHELL_SETTINGS) {
+            const verbIndex = args.findIndex(a => a.startsWith("et"));
+            if (verbIndex === -1) {
+                logger.warn(`[${serial}] Shell setting entry has no 'et'-prefixed verb, skipping: ${args.join(" ")}`);
+                continue;
+            }
+
+            const checkValue  = args[args.length - 1];
+
+            // Get command: verb → "g"+verb, drop the last 2 elements (set_value + check_value)
+            const getArgs = args.slice(0, -2).map((a, i) => i === verbIndex ? "g" + a : a);
+            const getProcess = await adb.subprocess.noneProtocol.spawn(getArgs.join(" "));
+            let getOutput = "";
+            // @ts-expect-error
+            for await (const chunk of getProcess.output.pipeThrough(new TextDecoderStream())) {
+                getOutput += chunk;
+            }
+
+            logger.trace(`[${serial}] Shell check '${getArgs.join(" ")}' = '${getOutput.trim()}', expected '${checkValue}'`);
+
+            if (getOutput.trim().includes(checkValue)) continue;
+
+            // Set command: verb → "s"+verb, drop only the last element (check_value)
+            const setArgs = args.slice(0, -1).map((a, i) => i === verbIndex ? "s" + a : a);
+            logger.debug(`[${serial}] Shell setting '${setArgs.join(" ")}' isn't correct, fixing it...`);
+            const setProcess = await adb.subprocess.noneProtocol.spawn(setArgs.join(" "));
+            let setOutput = "";
+            // @ts-expect-error
+            for await (const chunk of setProcess.output.pipeThrough(new TextDecoderStream())) {
+                setOutput += chunk;
+            }
+            if (setOutput.trim()) {
+                logger.warn(`[${serial}] Shell setting command returned unexpected output: ${setOutput.trim()}`);
+            }
+        }
+
+        logger.debug(`[${serial}] All on-device shell settings are good`);
     }
 
     private async checkGlobalSetting(adb: Adb, globalParam: string, expectedValue: any): Promise<boolean> {
@@ -99,54 +142,106 @@ export class HeadsetSetup {
 
     private async checkRequiredApps(adb: Adb, serial: string) {
         const REQUIRED_APPS: { packageName: string; apkFile: string; permission: string }[] = [
-            { packageName: "com.tpn.adbautoenable",  apkFile: "com.tpn.adbautoenable.apk",  permission: "android.permission.WRITE_SECURE_SETTINGS" },
-            { packageName: "tdg.oculuswirelessadb",  apkFile: "tdg.oculuswirelessadb.apk",  permission: "android.permission.WRITE_SECURE_SETTINGS" },
+            { packageName: "com.tpn.adbautoenable", apkFile: "com.tpn.adbautoenable.apk", permission: "android.permission.WRITE_SECURE_SETTINGS" },
+            { packageName: "tdg.oculuswirelessadb", apkFile: "tdg.oculuswirelessadb.apk", permission: "android.permission.WRITE_SECURE_SETTINGS" },
         ];
 
         for (const { packageName, apkFile, permission } of REQUIRED_APPS) {
-            logger.debug(`[${serial}] Checking required app '${packageName}'...`);
+            const targetVersion = this.parseApkVersion(apkFile);
+            logger.debug(`[${serial}] Checking '${packageName}'${targetVersion ? ` (target: v${targetVersion})` : ''}...`);
 
-            // Check if app is installed
-            const pmProcess = await adb.subprocess.noneProtocol.spawn(`pm list packages ${packageName}`);
-            let pmOutput = "";
-            // @ts-expect-error
-            for await (const chunk of pmProcess.output.pipeThrough(new TextDecoderStream())) {
-                pmOutput += chunk;
+            const isInstalled = await this.isPackageInstalled(adb, packageName);
+
+            if (!isInstalled) {
+                logger.warn(`[${serial}] '${packageName}' is not installed — installing...`);
+                if (!await this.installApk(adb, serial, resolve("toolkit", apkFile))) continue;
+            } else if (targetVersion) {
+                const installedVersion = await this.getInstalledVersion(adb, packageName);
+                if (!installedVersion || this.compareVersions(installedVersion, targetVersion) < 0) {
+                    logger.info(`[${serial}] '${packageName}' v${installedVersion ?? '?'} → v${targetVersion} — uninstalling first (signature may differ)...`);
+                    await this.uninstallPackage(adb, serial, packageName);
+                    if (!await this.installApk(adb, serial, resolve("toolkit", apkFile))) continue;
+                } else {
+                    logger.debug(`[${serial}] '${packageName}' is up to date (v${installedVersion})`);
+                }
             }
 
-            if (!pmOutput.includes(`package:${packageName}`)) {
-                logger.warn(`[${serial}] Required app '${packageName}' is not installed — installing it...`);
-                const installed = await this.installApk(adb, serial, resolve("toolkit", apkFile));
-                if (!installed) continue;
-            }
-            logger.debug(`[${serial}] '${packageName}' is installed`);
+            await this.ensurePermission(adb, serial, packageName, permission);
+        }
+    }
 
-            // Check if permission is already granted
-            const dumpsysProcess = await adb.subprocess.noneProtocol.spawn(`dumpsys package ${packageName}`);
-            let dumpsysOutput = "";
-            // @ts-expect-error
-            for await (const chunk of dumpsysProcess.output.pipeThrough(new TextDecoderStream())) {
-                dumpsysOutput += chunk;
-            }
+    private parseApkVersion(apkFile: string): string | null {
+        const match = apkFile.match(/-(\d+(?:\.\d+)+)\.apk$/);
+        return match ? match[1] : null;
+    }
 
-            if (dumpsysOutput.includes(`${permission}: granted=true`)) {
-                logger.debug(`[${serial}] '${packageName}' already has ${permission}`);
-                continue;
-            }
+    private compareVersions(a: string, b: string): number {
+        const pa = a.split('.').map(Number);
+        const pb = b.split('.').map(Number);
+        for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+            const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
+            if (diff !== 0) return diff;
+        }
+        return 0;
+    }
 
-            logger.debug(`[${serial}] Granting ${permission} to '${packageName}'...`);
-            const grantProcess = await adb.subprocess.noneProtocol.spawn(`pm grant ${packageName} ${permission}`);
-            let grantOutput = "";
-            // @ts-expect-error
-            for await (const chunk of grantProcess.output.pipeThrough(new TextDecoderStream())) {
-                grantOutput += chunk;
-            }
+    private async isPackageInstalled(adb: Adb, packageName: string): Promise<boolean> {
+        const process = await adb.subprocess.noneProtocol.spawn(`pm list packages ${packageName}`);
+        let output = "";
+        // @ts-expect-error
+        for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
+            output += chunk;
+        }
+        return output.includes(`package:${packageName}`);
+    }
 
-            if (grantOutput.trim()) {
-                logger.error(`[${serial}] Failed to grant ${permission} to '${packageName}': ${grantOutput.trim()}`);
-            } else {
-                logger.info(`[${serial}] Successfully granted ${permission} to '${packageName}'`);
-            }
+    private async getInstalledVersion(adb: Adb, packageName: string): Promise<string | null> {
+        const process = await adb.subprocess.noneProtocol.spawn(`dumpsys package ${packageName}`);
+        let output = "";
+        // @ts-expect-error
+        for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
+            output += chunk;
+        }
+        return output.match(/versionName=(\S+)/)?.[1] ?? null;
+    }
+
+    private async uninstallPackage(adb: Adb, serial: string, packageName: string): Promise<void> {
+        const process = await adb.subprocess.noneProtocol.spawn(`pm uninstall ${packageName}`);
+        let output = "";
+        // @ts-expect-error
+        for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
+            output += chunk;
+        }
+        if (!output.trim().includes("Success")) {
+            logger.warn(`[${serial}] Uninstall of '${packageName}' returned: ${output.trim()}`);
+        }
+    }
+
+    private async ensurePermission(adb: Adb, serial: string, packageName: string, permission: string): Promise<void> {
+        const process = await adb.subprocess.noneProtocol.spawn(`dumpsys package ${packageName}`);
+        let output = "";
+        // @ts-expect-error
+        for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
+            output += chunk;
+        }
+
+        if (output.includes(`${permission}: granted=true`)) {
+            logger.debug(`[${serial}] '${packageName}' already has ${permission}`);
+            return;
+        }
+
+        logger.debug(`[${serial}] Granting ${permission} to '${packageName}'...`);
+        const grantProcess = await adb.subprocess.noneProtocol.spawn(`pm grant ${packageName} ${permission}`);
+        let grantOutput = "";
+        // @ts-expect-error
+        for await (const chunk of grantProcess.output.pipeThrough(new TextDecoderStream())) {
+            grantOutput += chunk;
+        }
+
+        if (grantOutput.trim()) {
+            logger.error(`[${serial}] Failed to grant ${permission} to '${packageName}': ${grantOutput.trim()}`);
+        } else {
+            logger.info(`[${serial}] Successfully granted ${permission} to '${packageName}'`);
         }
     }
 
