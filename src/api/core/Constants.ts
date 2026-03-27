@@ -169,6 +169,7 @@ export const ON_DEVICE_ADB_GLOBAL_SETTINGS: Record<string,number|string> = {
     "captive_portal_server": "localhost",
     "captive_portal_https_url": "https://localhost",
     "captive_portal_http_url": "http://localhost",
+    "private_dns_mode": "off",
     // WiFi
     "wifi_watchdog_on": 0,
     "wifi_watchdog_poor_network_test_enabled": 0,
@@ -178,8 +179,11 @@ export const ON_DEVICE_ADB_GLOBAL_SETTINGS: Record<string,number|string> = {
     "wifi_sleep_policy": 2,
     "stay_on_while_plugged_in": 15, // Keep on AC + USB + wireless + docked
     "wifi_enhance_network_while_sleeping": 0,
+    // ADB
+    "adb_allowed_connection_time": Number.MAX_SAFE_INTEGER, // ~285 years — effectively never expires
     // Misc
     "ota_disable_automatic_update": 1,
     "wifi_networks_available_notification_on": 0,
-    "netstats_enabled": 0
+    "netstats_enabled": 0,
+    "assisted_gps_enabled": 1,
 }
