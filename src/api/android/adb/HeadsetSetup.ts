@@ -18,7 +18,7 @@ import { readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { getLogger } from "@logtape/logtape";
-import { ON_DEVICE_ADB_GLOBAL_SETTINGS, ON_DEVICE_ADB_SHELL_SETTINGS } from "../../core/Constants.ts";
+import { ON_DEVICE_ADB_GLOBAL_SETTINGS, ON_DEVICE_ADB_SHELL_SETTINGS, ON_DEVICE_OVR_PREFS } from "../../core/Constants.ts";
 
 const logger = getLogger(["android", "HeadsetSetup"]);
 
@@ -43,6 +43,7 @@ export class HeadsetSetup {
 
         await this.applyGlobalSettings(adb, device.serial);
         await this.applyShellSettings(adb, device.serial);
+        await this.applyOvrPrefs(adb, device.serial);
         await this.checkRequiredApps(adb, device.serial);
     }
 
@@ -106,6 +107,32 @@ export class HeadsetSetup {
         }
 
         logger.debug(`[${serial}] All on-device shell settings are good`);
+    }
+
+    private async applyOvrPrefs(adb: Adb, serial: string) {
+        logger.debug(`[${serial}] Checking on-device OVR preference overrides...`);
+
+        for (const [key, expectedValue] of Object.entries(ON_DEVICE_OVR_PREFS)) {
+            const getPropProcess = await adb.subprocess.noneProtocol.spawn(`getprop persist.ovr.prefs_overrides.${key}`);
+            let current = "";
+            // @ts-expect-error
+            for await (const chunk of getPropProcess.output.pipeThrough(new TextDecoderStream())) {
+                current += chunk;
+            }
+
+            logger.trace(`[${serial}] OVR pref '${key}' = '${current.trim()}', expected '${expectedValue}'`);
+
+            if (current.trim() === String(expectedValue)) continue;
+
+            logger.debug(`[${serial}] OVR pref '${key}' isn't correct, fixing it...`);
+            const setProcess = await adb.subprocess.noneProtocol.spawn(
+                `service call PreferencesService 1 s16 "${key}" i32 ${expectedValue}`
+            );
+            // @ts-expect-error
+            for await (const _ of setProcess.output.pipeThrough(new TextDecoderStream())) {}
+        }
+
+        logger.debug(`[${serial}] All on-device OVR preference overrides are good`);
     }
 
     private async checkGlobalSetting(adb: Adb, globalParam: string, expectedValue: any): Promise<boolean> {

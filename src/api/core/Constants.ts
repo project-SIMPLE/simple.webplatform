@@ -201,3 +201,11 @@ export const ON_DEVICE_ADB_SHELL_SETTINGS: string[][] = [
     ["cmd", "appops", "et", "com.oculus.updater", "RUN_ANY_IN_BACKGROUND", "deny", "deny"],
     ["cmd", "appops", "et", "com.oculus.nux.ota", "RUN_ANY_IN_BACKGROUND", "deny", "deny"],
 ]
+
+// Oculus PreferencesService overrides (persist.ovr.prefs_overrides.*).
+// Checked via `getprop persist.ovr.prefs_overrides.<key>` (returns seconds as string).
+// Set via `service call PreferencesService 1 s16 "<key>" i32 <value>`.
+export const ON_DEVICE_OVR_PREFS: Record<string, number> = {
+    "idle_time_threshold": 14400, // Display Off — 4 hours
+    "autosleep_time":      14400, // Sleep Mode  — 4 hours
+}
