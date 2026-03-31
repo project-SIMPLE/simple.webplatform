@@ -187,3 +187,17 @@ export const ON_DEVICE_ADB_GLOBAL_SETTINGS: Record<string,number|string> = {
     "netstats_enabled": 0,
     "assisted_gps_enabled": 1,
 }
+
+// Shell settings applied via `adb shell`.
+// Each entry uses an "et"-prefixed verb so both get (prepend "g") and set (prepend "s")
+// can be derived from it.
+// Format: [...shared_args_with_et_verb, set_value, check_value]
+//   - get cmd  = args[0..-3] with verb prefixed by "g" (check_value = args[-1])
+//   - set cmd  = args[0..-2] with verb prefixed by "s" (set_value  = args[-2])
+// check_value and set_value can differ (e.g. get returns "5" but set takes "restricted").
+export const ON_DEVICE_ADB_SHELL_SETTINGS: string[][] = [
+    ["am", "et-standby-bucket", "com.oculus.updater", "restricted", "5"],
+    ["am", "et-standby-bucket", "com.oculus.nux.ota", "restricted", "5"],
+    ["cmd", "appops", "et", "com.oculus.updater", "RUN_ANY_IN_BACKGROUND", "deny", "deny"],
+    ["cmd", "appops", "et", "com.oculus.nux.ota", "RUN_ANY_IN_BACKGROUND", "deny", "deny"],
+]
