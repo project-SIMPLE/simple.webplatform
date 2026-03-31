@@ -174,7 +174,7 @@ const SelectorSimulations = () => {
             <p className="text-yellow-700 mt-2 text-sm">Headset management is still operational.</p>
           </div>
           <Link to={"../streamPlayerScreen"} className='rounded-lg' target='_blank'>
-            <img src={`/images/${folder}/Buttons/Button_Display.png`} alt="display button" />
+            <img src={`/images/${folder}/Buttons/Button_Display.png`} alt="display button" className='size-16'/>
           </Link>
 </>
       ) : loading ? (
