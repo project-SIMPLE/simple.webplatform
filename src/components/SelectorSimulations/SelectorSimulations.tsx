@@ -198,8 +198,8 @@ const SelectorSimulations = () => {
 
             <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
           </div>
-          <Link to={"../streamPlayerScreen"} className='rounded-lg absolute bottom-[50px] z-20' target='_blank'>
-            <img src={`/images/${folder}/Buttons/Button_Display.png`} alt="" className='pt-20' />
+          <Link to={"../streamPlayerScreen"} className='rounded-lg absolute bottom-[10dvh]' target='_blank'>
+            <img src={`/images/${folder}/Buttons/Button_Display.png`} alt="" className='size-[10dvh] hover:scale-110 transition-transform duration-200' />
           </Link>
           {/* Display the status, ask for the user to connect to Gama if still not */}
           <div className='flex gap-2 mt-6'>

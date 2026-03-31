@@ -159,7 +159,7 @@ const SimulationManager = () => {
 
                 <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4 ">
                     <div>
-                   <img src={`/images/${folder}/Buttons/Button_play.png`} className='cursor-pointer relative' onClick={startClicked} alt="" /> 
+                   <img src={`/images/${folder}/Buttons/Button_play.png`} className='cursor-pointer size-[10dvh] hover:scale-110 transition-transform duration-200' onClick={startClicked} alt="" /> 
                   {/* <img src={`/images/${folder}/Headset_condition/Headset_condition_connecting.png`} alt="" className='size-[65px] ml-2 animate-spin absolute bottom-[5px] right-[280px] '/> */}
 
                     </div>
@@ -168,7 +168,7 @@ const SimulationManager = () => {
 
 
                   <Link to={"../streamPlayerScreen"} className='rounded-lg' target='_blank'>
-                    <img src={`/images/${folder}/Buttons/Button_Display.png`} alt="display button" />
+                    <img src={`/images/${folder}/Buttons/Button_Display.png`} alt="display button" className='size-[10dvh] hover:scale-110 transition-transform duration-200' />
                   </Link>
                 </div>
               </>

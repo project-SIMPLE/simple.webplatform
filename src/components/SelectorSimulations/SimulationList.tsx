@@ -38,7 +38,7 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
             className={`rounded-2xl items-center  cursor-pointer relative size-[20dvh]  ${className}  ${!gama.connected ? 'opacity-50' : null}  ${simulation.type == "catalog"} `}
             key={index} onClick={gama.connected ? () => handleSimulation(index) : () => { }}>
             {/* {simulation.type == "catalog" ? <img src={`/images/${folder}/Headset/Headset_04_orange.png`} className='rounded-full bg-slate-500 opacity-90 size-16 absolute top-[40%] left-[40%] z-20' /> : null} //? downward arrow */}
-            <div className='relative size-full bg-[#fcf7ec]V2'>
+            <div className='relative size-full bg-[#fcf7ec] hover:scale-110 transition-transform duration-200'>
               {simulation.type === "catalog" ?
                 <img src={`/images/${folder}/Game_selection/Game_selection_Folder.png`} className='absolute scale-110 top-[-40px]' alt="" />
                 :
