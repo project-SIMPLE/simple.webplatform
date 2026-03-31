@@ -35,12 +35,12 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
         <div className='items-center text-center w-fit ' key={index}>
 
           <div
-            className={`rounded-2xl items-center  cursor-pointer relative size-[20dvh]  ${className}  ${!gama.connected ? 'opacity-50' : null}  ${simulation.type == "catalog"} `}
+            className={`rounded-2xl items-center  cursor-pointer relative size-[13dvw]  ${className && className}  ${!gama.connected && 'opacity-50' }`}
             key={index} onClick={gama.connected ? () => handleSimulation(index) : () => { }}>
             {/* {simulation.type == "catalog" ? <img src={`/images/${folder}/Headset/Headset_04_orange.png`} className='rounded-full bg-slate-500 opacity-90 size-16 absolute top-[40%] left-[40%] z-20' /> : null} //? downward arrow */}
             <div className='relative size-full bg-[#fcf7ec] hover:scale-110 transition-transform duration-200'>
               {simulation.type === "catalog" ?
-                <img src={`/images/${folder}/Game_selection/Game_selection_Folder.png`} className='absolute scale-110 top-[-40px]' alt="" />
+                <img src={`/images/${folder}/Game_selection/Game_selection_Folder.png`} className='absolute scale-110 top-[-10%]' alt="" />
                 :
                 <img src={frame[Math.floor(Math.random() * 5)]} alt="frame" className='absolute scale-110' />
               }
@@ -57,7 +57,7 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
           </div>
 
           <h2
-            className="text-gray-500 text-sm text-center mt-7"
+            className="text-sm text-center mt-7 text-[#0B374D]"
           >
             {/*                                                                                                                     ↓ added one for folders to start at 1 instead of 0 */}
             {simulation.type == "json_settings" ? simulation.name : simulation.name ? simulation.name : `subprojects folder n°${index + 1}`}
