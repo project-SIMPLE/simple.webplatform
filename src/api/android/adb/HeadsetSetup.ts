@@ -18,7 +18,7 @@ import { readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { getLogger } from "@logtape/logtape";
-import { ON_DEVICE_ADB_GLOBAL_SETTINGS, ON_DEVICE_ADB_SHELL_SETTINGS, ON_DEVICE_OVR_PREFS } from "../../core/Constants.ts";
+import { ON_DEVICE_ADB_GLOBAL_SETTINGS, ON_DEVICE_ADB_SYSTEM_SETTINGS, ON_DEVICE_ADB_SECURE_SETTINGS, ON_DEVICE_ADB_SHELL_SETTINGS, ON_DEVICE_OVR_PREFS, ON_DEVICE_ADB_BROADCASTS } from "../../core/Constants.ts";
 
 const logger = getLogger(["android", "HeadsetSetup"]);
 
@@ -42,24 +42,23 @@ export class HeadsetSetup {
         }
 
         await this.applyGlobalSettings(adb, device.serial);
+        await this.applySystemSettings(adb, device.serial);
+        await this.applySecureSettings(adb, device.serial);
         await this.applyShellSettings(adb, device.serial);
         await this.applyOvrPrefs(adb, device.serial);
+        await this.applyBroadcasts(adb, device.serial);
         await this.checkRequiredApps(adb, device.serial);
     }
 
     private async applyGlobalSettings(adb: Adb, serial: string) {
         logger.debug(`[${serial}] Checking on-device global ADB settings...`);
 
-        for (const [globalSetting, globalSettingValue] of Object.entries(ON_DEVICE_ADB_GLOBAL_SETTINGS) as [
-                keyof typeof ON_DEVICE_ADB_GLOBAL_SETTINGS,
-                typeof ON_DEVICE_ADB_GLOBAL_SETTINGS[keyof typeof ON_DEVICE_ADB_GLOBAL_SETTINGS]
-            ][])
-        {
-            if (!await this.checkGlobalSetting(adb, globalSetting, globalSettingValue)) {
-                logger.debug(`[${serial}] ADB parameters for '${globalSetting}' isn't correct, fixing it...`);
-                await this.setGlobalSetting(adb, globalSetting, globalSettingValue);
-                if (!await this.checkGlobalSetting(adb, globalSetting, globalSettingValue)) {
-                    logger.warn(`[${serial}] Couldn't properly set setting ${globalSetting}, skipping it...`);
+        for (const [key, value] of Object.entries(ON_DEVICE_ADB_GLOBAL_SETTINGS)) {
+            if (!await this.checkSetting(adb, "global", key, value)) {
+                logger.debug(`[${serial}] Global setting '${key}' isn't correct, fixing it...`);
+                await this.setSetting(adb, "global", key, value);
+                if (!await this.checkSetting(adb, "global", key, value)) {
+                    logger.warn(`[${serial}] Couldn't properly set global setting '${key}', skipping it...`);
                 }
             }
         }
@@ -135,34 +134,64 @@ export class HeadsetSetup {
         logger.debug(`[${serial}] All on-device OVR preference overrides are good`);
     }
 
-    private async checkGlobalSetting(adb: Adb, globalParam: string, expectedValue: any): Promise<boolean> {
+    private async applySystemSettings(adb: Adb, serial: string) {
+        logger.debug(`[${serial}] Checking on-device system settings...`);
+        for (const [key, value] of Object.entries(ON_DEVICE_ADB_SYSTEM_SETTINGS)) {
+            if (!await this.checkSetting(adb, "system", key, value)) {
+                logger.debug(`[${serial}] System setting '${key}' isn't correct, fixing it...`);
+                await this.setSetting(adb, "system", key, value);
+            }
+        }
+        logger.debug(`[${serial}] All on-device system settings are good`);
+    }
+
+    private async applySecureSettings(adb: Adb, serial: string) {
+        logger.debug(`[${serial}] Checking on-device secure settings...`);
+        for (const [key, value] of Object.entries(ON_DEVICE_ADB_SECURE_SETTINGS)) {
+            if (!await this.checkSetting(adb, "secure", key, value)) {
+                logger.debug(`[${serial}] Secure setting '${key}' isn't correct, fixing it...`);
+                await this.setSetting(adb, "secure", key, value);
+            }
+        }
+        logger.debug(`[${serial}] All on-device secure settings are good`);
+    }
+
+    private async applyBroadcasts(adb: Adb, serial: string) {
+        logger.debug(`[${serial}] Sending on-device broadcasts...`);
+        for (const action of ON_DEVICE_ADB_BROADCASTS) {
+            await adb.subprocess.noneProtocol.spawn(`am broadcast -a ${action}`);
+        }
+        logger.debug(`[${serial}] All on-device broadcasts sent`);
+    }
+
+    private async checkSetting(adb: Adb, namespace: string, param: string, expectedValue: any): Promise<boolean> {
         let result: any;
 
-        const process = await adb.subprocess.noneProtocol.spawn("settings get global " + globalParam);
+        const process = await adb.subprocess.noneProtocol.spawn(`settings get ${namespace} ${param}`);
         // @ts-expect-error
         for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
             result = chunk;
         }
         result = result.trim();
 
-        logger.trace(`[${adb.serial}] Checking ADB parameters '${globalParam}' = ${result} and should be ${expectedValue} (${result == expectedValue})`);
+        logger.trace(`[${adb.serial}] Checking ${namespace} setting '${param}' = ${result}, should be ${expectedValue} (${result == expectedValue})`);
 
         return result == expectedValue;
     }
 
-    private async setGlobalSetting(adb: Adb, globalParam: string, expectedValue: any) {
+    private async setSetting(adb: Adb, namespace: string, param: string, value: any) {
         let result: any;
 
-        const process = await adb.subprocess.noneProtocol.spawn(["settings put global ", globalParam, expectedValue]);
+        const process = await adb.subprocess.noneProtocol.spawn(`settings put ${namespace} ${param} ${value}`);
         // @ts-expect-error
         for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
             result = chunk;
         }
 
-        logger.trace(`[${adb.serial}] Setting ADB parameters '${globalParam}' = ${expectedValue} and it ${result == undefined ? "worked" : "failed"}`);
+        logger.trace(`[${adb.serial}] Set ${namespace} setting '${param}' = ${value}: ${result == undefined ? "ok" : "failed"}`);
 
         if (result != undefined) {
-            logger.error(`[${adb.serial}] Something happened while setting the ADB setting '${globalParam}'`);
+            logger.error(`[${adb.serial}] Something happened while setting ${namespace} setting '${param}'`);
             logger.error(result.toString());
         }
     }

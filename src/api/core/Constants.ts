@@ -202,6 +202,16 @@ export const ON_DEVICE_ADB_SHELL_SETTINGS: string[][] = [
     ["cmd", "appops", "et", "com.oculus.nux.ota", "RUN_ANY_IN_BACKGROUND", "deny", "deny"],
 ]
 
+// Android system settings (settings put/get system).
+export const ON_DEVICE_ADB_SYSTEM_SETTINGS: Record<string, number|string> = {
+    "screen_off_timeout": 86400000, // 24h — let OVR prefs control the actual display-off
+}
+
+// Android secure settings (settings put/get secure).
+export const ON_DEVICE_ADB_SECURE_SETTINGS: Record<string, number|string> = {
+    "sleep_timeout": -1, // Disabled at Android level — OVR prefs control sleep instead
+}
+
 // Oculus PreferencesService overrides (persist.ovr.prefs_overrides.*).
 // Checked via `getprop persist.ovr.prefs_overrides.<key>` (returns seconds as string).
 // Set via `service call PreferencesService 1 s16 "<key>" i32 <value>`.
@@ -209,3 +219,8 @@ export const ON_DEVICE_OVR_PREFS: Record<string, number> = {
     "idle_time_threshold": 14400, // Display Off — 4 hours
     "autosleep_time":      14400, // Sleep Mode  — 4 hours
 }
+
+// Broadcasts sent unconditionally on every connection (fire-and-forget, no check needed).
+export const ON_DEVICE_ADB_BROADCASTS: string[] = [
+    "com.oculus.vrpowermanager.prox_close", // Force proximity to "worn" — prevents screen blackout on headset removal
+]
