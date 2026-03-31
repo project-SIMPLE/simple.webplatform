@@ -16,6 +16,18 @@ h1 {
   line-height: 1.1;
 }
 
+@font-face {
+  font-family: 'MyriadPro';
+  src: url('../public/fonts/Myriad\ Pro\ Bold.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  font-family: 'MyriadPro', sans-serif;
+}
+
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;
