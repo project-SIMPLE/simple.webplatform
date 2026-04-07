@@ -1,6 +1,6 @@
 
 import { HEADSET_COLOR } from "../../api/core/Constants.ts";
-const folder = process.env.IMAGE_SOURCE_FOLDER;
+ 
 interface VRHeadsetProps {
   selectedPlayer?: any;  
   className?: string;
@@ -14,13 +14,13 @@ const VRHeadset= ({ selectedPlayer, className, playerId }: VRHeadsetProps) => {
 
     const getHeadsetColor = () => {
         if (!isAvailable || playerId === undefined) {
-            return `/images/${folder}/Headset/Headset_orange.png`;
+            return ` /images/V1/Headset/Headset_orange.png`;
         } else {
             const ipIdentifier: string = playerId!.split("_")[1];
             if (ipIdentifier in HEADSET_COLOR) {
-                return `/images/${folder}/Headset/Headset_${HEADSET_COLOR[ipIdentifier]}.png`;
+                return ` /images/V1/Headset/Headset_${HEADSET_COLOR[ipIdentifier]}.png`;
             } else {
-                return `/images/${folder}/Headset/Headset_orange.png`;
+                return ` /images/V1/Headset/Headset_orange.png`;
             }
         }
     };

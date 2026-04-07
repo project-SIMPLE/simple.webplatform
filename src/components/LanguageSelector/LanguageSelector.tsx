@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-const folder = process.env.IMAGE_SOURCE_FOLDER;
+ 
 const LanguageSelector = () => {
   const { t, i18n } = useTranslation();
   const [showPopup, setShowPopup] = useState(false);
@@ -18,7 +18,7 @@ const LanguageSelector = () => {
 
     <div className='flex flex-col  h-full justify-center z-10 mr-[95px] mt-[23px]'>
       {/* Button to open the popup */}
-        <img src={`/images/${folder}/Language_selection/Language_selection_Button_00.png`} alt="language selection" className='size-[6dvh] cursor-pointer hover:scale-110 transition-transform duration-200' onClick={()=>{setShowPopup(true)}}/>
+        <img src={` /images/V1/Language_selection/Language_selection_Button_00.png`} alt="language selection" className='size-[6dvh] cursor-pointer hover:scale-110 transition-transform duration-200' onClick={()=>{setShowPopup(true)}}/>
 
 
       {/* Pop-up */}

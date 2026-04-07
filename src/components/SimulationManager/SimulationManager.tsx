@@ -10,7 +10,7 @@ import Header from '../Header/Header';
 import { Link } from 'react-router-dom';
 import { getLogger } from '@logtape/logtape';
 
-const folder = process.env.IMAGE_SOURCE_FOLDER
+ 
 export interface Player {
   connected: boolean;
   date_connection: string;
@@ -144,7 +144,7 @@ const SimulationManager = () => {
 
                     <p className="flex items-center align-center" style={{ marginLeft: '90px' }}>
                       {t('wait_minim_players_1')} {Number(minPlayers) - Object.keys(playerList).length} {t('wait_minim_players_2')}
-                      <img src={`/images/${folder}/Headset_condition/Headset_condition_connecting.png`} className="size-8 right-0 bottom-0 animate-spin" alt="headset connecting" />
+                      <img src={` /images/V1/Headset_condition/Headset_condition_connecting.png`} className="size-8 right-0 bottom-0 animate-spin" alt="headset connecting" />
          
 
                     </p>
@@ -154,13 +154,13 @@ const SimulationManager = () => {
               <>
                 <p className="flex items-center align-center ml-[90px]">
                   {t('wait_minim_players_1')} {Number(maxPlayers) - Object.keys(playerList).length} {t('wait_maximum_players_1')}
-                  <img src={`/images/${folder}/Headset_condition/Headset_condition_connecting.png`} alt="" className='size-5 ml-2 animate-spin'/>
+                  <img src={` /images/V1/Headset_condition/Headset_condition_connecting.png`} alt="" className='size-5 ml-2 animate-spin'/>
                 </p>
 
                 <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4 ">
                     <div>
-                   <img src={`/images/${folder}/Buttons/Button_play.png`} className='cursor-pointer size-[10dvh] hover:scale-110 transition-transform duration-200' onClick={startClicked} alt="" /> 
-                  {/* <img src={`/images/${folder}/Headset_condition/Headset_condition_connecting.png`} alt="" className='size-[65px] ml-2 animate-spin absolute bottom-[5px] right-[280px] '/> */}
+                   <img src={` /images/V1/Buttons/Button_play.png`} className='cursor-pointer size-[10dvh] hover:scale-110 transition-transform duration-200' onClick={startClicked} alt="" /> 
+                  {/* <img src={` /images/V1/Headset_condition/Headset_condition_connecting.png`} alt="" className='size-[65px] ml-2 animate-spin absolute bottom-[5px] right-[280px] '/> */}
 
                     </div>
                       
@@ -168,7 +168,7 @@ const SimulationManager = () => {
 
 
                   <Link to={"../streamPlayerScreen"} className='rounded-lg' target='_blank'>
-                    <img src={`/images/${folder}/Buttons/Button_Display.png`} alt="display button" className='size-[10dvh] hover:scale-110 transition-transform duration-200' />
+                    <img src={` /images/V1/Buttons/Button_Display.png`} alt="display button" className='size-[10dvh] hover:scale-110 transition-transform duration-200' />
                   </Link>
                 </div>
               </>
@@ -185,14 +185,14 @@ const SimulationManager = () => {
 
               <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4">
                 {gama.experiment_state === 'PAUSED' &&
-                  <img src={`/images/${folder}/Buttons/Button_play.png`} alt="play button" onClick={handlePlayPause} className='cursor-pointer' />
+                  <img src={` /images/V1/Buttons/Button_play.png`} alt="play button" onClick={handlePlayPause} className='cursor-pointer' />
                 }
                 {(gama.experiment_state === 'RUNNING' || gama.experiment_state === 'LAUNCHING') &&
-                  <img src={`/images/${folder}/Buttons/Button_pause.png`} alt="play button" onClick={handlePlayPause} className='cursor-pointer' />
+                  <img src={` /images/V1/Buttons/Button_pause.png`} alt="play button" onClick={handlePlayPause} className='cursor-pointer' />
                 }
-                <img src={`/images/${folder}/Buttons/Button_stop.png`} alt="" onClick={handleEnd} className='cursor-pointer' />
+                <img src={` /images/V1/Buttons/Button_stop.png`} alt="" onClick={handleEnd} className='cursor-pointer' />
                 <Link to={"../streamPlayerScreen"} className=' rounded-lg'>
-                  <img src={`/images/${folder}/Buttons/Button_Display.png`} alt="streaming displays button" />
+                  <img src={` /images/V1/Buttons/Button_Display.png`} alt="streaming displays button" />
                 </Link>
               </div>
 

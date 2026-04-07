@@ -10,7 +10,7 @@ import WebSocketManager from './components/WebSocketManager/WebSocketManager';
 import StreamPlayerScreen from './components/StreamPlayerScreen/StreamPlayerScreen';
 import StreamFullscreen from './components/StreamPlayerScreen/StreamFullscreen';
 
-const folder = process.env.IMAGE_SOURCE_FOLDER
+ 
 await configure({
   sinks: {
     console: getConsoleSink({
@@ -34,7 +34,7 @@ const App = () => {
     <BrowserRouter>
       <div
         className="h-full w-full bg-no-repeat bg-center bg-cover relative overflow-hidden"
-        style={{ backgroundImage: `url(/images/${folder}/Background.png)` }}
+        style={{ backgroundImage: `url( /images/V1/Background.png)` }}
       >
 
 

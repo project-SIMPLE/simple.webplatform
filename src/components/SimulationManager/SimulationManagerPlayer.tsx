@@ -6,7 +6,7 @@ import cross from '/src/svg_logos/x_cross.svg';
 import { getLogger } from "@logtape/logtape";
 import { Player } from "./SimulationManager";
 const logger = getLogger(["components", "SimulationManagerPlayer"]);
-const folder = process.env.IMAGE_SOURCE_FOLDER
+ 
 
 interface PlayerProps {
   Playerkey: string
@@ -94,11 +94,11 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
             playerId={Playerkey} />
           {selectedPlayer ? selectedPlayer.connected ?
 
-            <img src={`/images/${folder}/Headset_condition/Headset_condition_connected.png`} alt="headset connected" className="absolute size-8 right-0 bottom-0"/>
+            <img src={` /images/V1/Headset_condition/Headset_condition_connected.png`} alt="headset connected" className="absolute size-8 right-0 bottom-0"/>
             :
-            <img src={`/images/${folder}/Headset_condition/Headset_condition_connecting.png`} className="absolute size-8 right-0 bottom-0 animate-spin" alt="headset connecting" />
+            <img src={` /images/V1/Headset_condition/Headset_condition_connecting.png`} className="absolute size-8 right-0 bottom-0 animate-spin" alt="headset connecting" />
             :
-            <img src={`/images/${folder}/Headset_condition/Headset_condition_not_connected.png`} className="absolute size-8 right-0 bottom-0" alt="headset disconnected" />
+            <img src={` /images/V1/Headset_condition/Headset_condition_not_connected.png`} className="absolute size-8 right-0 bottom-0" alt="headset disconnected" />
             
             
             }
