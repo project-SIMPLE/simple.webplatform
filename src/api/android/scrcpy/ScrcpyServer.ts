@@ -76,7 +76,7 @@ export class ScrcpyServer {
 
         this.wsServer.ws('/*', {
             compression: uWS.SHARED_COMPRESSOR, // Enable compression
-            maxPayloadLength: 256 * 1024, // 256 KB: Adjust based on expected video bitrate & 6 video streams
+            maxPayloadLength: 1024 * 1024, // 1 MB: Adjust based on expected video bitrate & 6 video streams
             // When backpressure exceeds this, uWS *drops the connection*
             maxBackpressure: this.maxBackpressure,
             idleTimeout: 100, // 100 seconds (<2min) timeout
@@ -308,7 +308,7 @@ export class ScrcpyServer {
             video: true,
             maxSize: 1570,
             maxFps: 30,
-            videoBitRate: 200,
+            videoBitRate: 8000000, // 8Mbps - Default value
             // Android soft settings
             stayAwake: true,
             // Clean feed

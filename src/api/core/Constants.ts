@@ -169,6 +169,7 @@ export const ON_DEVICE_ADB_GLOBAL_SETTINGS: Record<string,number|string> = {
     "captive_portal_server": "localhost",
     "captive_portal_https_url": "https://localhost",
     "captive_portal_http_url": "http://localhost",
+    "private_dns_mode": "off",
     // WiFi
     "wifi_watchdog_on": 0,
     "wifi_watchdog_poor_network_test_enabled": 0,
@@ -178,8 +179,48 @@ export const ON_DEVICE_ADB_GLOBAL_SETTINGS: Record<string,number|string> = {
     "wifi_sleep_policy": 2,
     "stay_on_while_plugged_in": 15, // Keep on AC + USB + wireless + docked
     "wifi_enhance_network_while_sleeping": 0,
+    // ADB
+    "adb_allowed_connection_time": Number.MAX_SAFE_INTEGER, // ~285 years — effectively never expires
     // Misc
     "ota_disable_automatic_update": 1,
     "wifi_networks_available_notification_on": 0,
-    "netstats_enabled": 0
+    "netstats_enabled": 0,
+    "assisted_gps_enabled": 1,
 }
+
+// Shell settings applied via `adb shell`.
+// Each entry uses an "et"-prefixed verb so both get (prepend "g") and set (prepend "s")
+// can be derived from it.
+// Format: [...shared_args_with_et_verb, set_value, check_value]
+//   - get cmd  = args[0..-3] with verb prefixed by "g" (check_value = args[-1])
+//   - set cmd  = args[0..-2] with verb prefixed by "s" (set_value  = args[-2])
+// check_value and set_value can differ (e.g. get returns "5" but set takes "restricted").
+export const ON_DEVICE_ADB_SHELL_SETTINGS: string[][] = [
+    ["am", "et-standby-bucket", "com.oculus.updater", "restricted", "5"],
+    ["am", "et-standby-bucket", "com.oculus.nux.ota", "restricted", "5"],
+    ["cmd", "appops", "et", "com.oculus.updater", "RUN_ANY_IN_BACKGROUND", "deny", "deny"],
+    ["cmd", "appops", "et", "com.oculus.nux.ota", "RUN_ANY_IN_BACKGROUND", "deny", "deny"],
+]
+
+// Android system settings (settings put/get system).
+export const ON_DEVICE_ADB_SYSTEM_SETTINGS: Record<string, number|string> = {
+    "screen_off_timeout": 86400000, // 24h — let OVR prefs control the actual display-off
+}
+
+// Android secure settings (settings put/get secure).
+export const ON_DEVICE_ADB_SECURE_SETTINGS: Record<string, number|string> = {
+    "sleep_timeout": -1, // Disabled at Android level — OVR prefs control sleep instead
+}
+
+// Oculus PreferencesService overrides (persist.ovr.prefs_overrides.*).
+// Checked via `getprop persist.ovr.prefs_overrides.<key>` (returns seconds as string).
+// Set via `service call PreferencesService 1 s16 "<key>" i32 <value>`.
+export const ON_DEVICE_OVR_PREFS: Record<string, number> = {
+    "idle_time_threshold": 14400, // Display Off — 4 hours
+    "autosleep_time":      14400, // Sleep Mode  — 4 hours
+}
+
+// Broadcasts sent unconditionally on every connection (fire-and-forget, no check needed).
+export const ON_DEVICE_ADB_BROADCASTS: string[] = [
+    "com.oculus.vrpowermanager.prox_close", // Force proximity to "worn" — prevents screen blackout on headset removal
+]

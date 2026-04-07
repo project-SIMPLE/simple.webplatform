@@ -19,6 +19,15 @@ import path from 'path';
     TOOLBOX ================================
  */
 
+// Extracts the first valid IPv4 address found in a string, or returns null.
+// Used to sanitize HEADSETS_IP entries that may carry stray characters (e.g. trailing quotes).
+const _extractIPv4 = (raw: string): string | null => {
+    const match = raw.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
+    if (!match) return null;
+    const ip = match[1];
+    return ip.split('.').every(octet => Number(octet) >= 0 && Number(octet) <= 255) ? ip : null;
+};
+
 function isCommandAvailable(commandName: string): boolean {
     if (process.platform === "win32") {
         const checkAdbProcess = spawnSync("where", [commandName]);
@@ -64,7 +73,6 @@ process.env.HEADSET_WS_PORT =               process.env.HEADSET_WS_PORT         
 process.env.WEB_APPLICATION_PORT =          process.env.WEB_APPLICATION_PORT        || '5173';
 process.env.MONITOR_WS_PORT =               process.env.MONITOR_WS_PORT             || '8001';
 
-const HEADSETS_IP: string[] =               process.env.HEADSETS_IP ? process.env.HEADSETS_IP.split(';').filter((value) => value.trim() !== '') : [];
 // ! Website  =====
 
 // Debug  =====
@@ -77,7 +85,7 @@ const ENV_VERBOSE: boolean = ENV_EXTRA_VERBOSE ?
         ['true', '1', 'yes'].includes(process.env.VERBOSE.toLowerCase())
         : false;
 
-        
+
 const ENV_GAMALESS: boolean = process.env.ENV_GAMALESS !== undefined ? ['true', '1', 'yes'].includes(process.env.ENV_GAMALESS.toLowerCase()) : false;
 
 const useAdb: boolean = isCommandAvailable("adb") && (() => {
@@ -131,6 +139,17 @@ const logConfig = configure({
 });
 
 const logger = getLogger(["core", "index"]);
+
+// HEADSETS_IP entries from .env may contain stray characters (e.g. `192.168.1.1"`) due to
+// shell quoting or copy-paste artifacts. We extract the first valid IPv4 from each token and
+// warn when the raw value had to be fixed, so misconfigured IPs are never silently ignored.
+const HEADSETS_IP: string[] =               (process.env.HEADSETS_IP ? process.env.HEADSETS_IP.split(';').filter((value) => value.trim() !== '') : [])
+    .flatMap(raw => {
+        const ip = _extractIPv4(raw);
+        if (!ip) { logger.warn`[HEADSETS_IP] Could not extract a valid IP from: "${raw.trim()}"`; return []; }
+        if (ip !== raw.trim()) logger.warn`[HEADSETS_IP] Sanitized "${raw.trim()}" → "${ip}"`;
+        return [ip];
+    });
 
 /*
     APPLICATION ENTRY POINT ================================
