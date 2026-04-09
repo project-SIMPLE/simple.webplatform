@@ -174,7 +174,7 @@ const SelectorSimulations = () => {
             <p className="text-yellow-700 mt-2 text-sm">Headset management is still operational.</p>
           </div>
           <Link to={"../streamPlayerScreen"} className='rounded-lg' target='_blank'>
-            <img src={` /images/V1/Buttons/Button_Display.png`} alt="display button" className='size-16'/>
+            <img src={` /images/V1/Buttons/Button_Display.png`} alt="display button" className='size-[6dvh]'/>
           </Link>
 </>
       ) : loading ? (
@@ -188,10 +188,10 @@ const SelectorSimulations = () => {
           {
             //? Shows the back button if in a nested folder
             path.length >= 1 &&
-            <div className='w-full pl-10'>
-              <img src={` /images/V1/Buttons/Button_home.png`} alt="back button" onClick={() => back()} className='cursor-pointer' />
-            </div>
 
+              <img src={` /images/V1/Buttons/Button_back.png`} alt="back button" onClick={() => back()} 
+              className='cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200 absolute left-[3.1dvw] top-10 ' />
+            
           }
 
           <div className="flex flex-col items-center justify-around h-fit w-full relative">
@@ -199,7 +199,7 @@ const SelectorSimulations = () => {
             <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
           </div>
           <Link to={"../streamPlayerScreen"} className='rounded-lg absolute bottom-[10dvh]' target='_blank'>
-            <img src={` /images/V1/Buttons/Button_Display.png`} alt="" className='size-[10dvh] hover:scale-110 transition-transform duration-200' />
+            <img src={` /images/V1/Buttons/Button_Display.png`} alt="" className='size-[6dvh] hover:scale-110 transition-transform duration-200' />
           </Link>
           {/* Display the status, ask for the user to connect to Gama if still not */}
           <div className='flex gap-2 mt-6'>
