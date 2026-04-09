@@ -18,7 +18,7 @@ h1 {
 
 @font-face {
   font-family: 'MyriadPro';
-  src: url('../public/fonts/Myriad\ Pro\ Bold.ttf') format('truetype');
+  src: url('/fonts/Myriad\ Pro\ Bold.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
