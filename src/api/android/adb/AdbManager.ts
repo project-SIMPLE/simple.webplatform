@@ -29,6 +29,7 @@ export class AdbManager {
     // Keep list of serial of devices with a stream already starting
     clientCurrentlyStreaming: Device[] = [];
     observer!: AdbServerClient.DeviceObserver;//!: AdbServerClient;
+    deviceStatuses: Map<string, string> = new Map();
 
     constructor(controller: Controller) {
         this.controller = controller;
@@ -85,9 +86,26 @@ export class AdbManager {
         });
 
         this.observer.onListChange(async (devices) => {
+            // Detect "device" → "offline" transitions and disconnect stale entries early
+            for (const device of devices) {
+                const previousStatus = this.deviceStatuses.get(device.serial);
+                if (previousStatus === 'device' && device.state === 'offline') {
+                    logger.warn(`[${device.serial}] Device switched to offline`);
+                    const index = this.clientCurrentlyStreaming.findIndex(d => d.serial === device.serial);
+                    if (index > -1) this.clientCurrentlyStreaming.splice(index, 1);
+                    await this.adbServer.wireless.disconnect(device.serial);
+                }
+                this.deviceStatuses.set(device.serial, device.state);
+            }
+            // Clean up statuses for removed devices
+            const currentSerials = new Set(devices.map(d => d.serial));
+            for (const serial of this.deviceStatuses.keys()) {
+                if (!currentSerials.has(serial)) this.deviceStatuses.delete(serial);
+            }
+
             // Fallback mechanism as the onRemove isn't catching everything...
             // Compare by serial — observer may return different Device instances for the same physical device.
-            const activeSerials = new Set(devices.map(d => d.serial));
+            const activeSerials = new Set(devices.filter(d => d.state === 'device').map(d => d.serial));
             const disconnected = this.clientCurrentlyStreaming.filter(d => !activeSerials.has(d.serial));
 
             if (disconnected.length === 0) return;
