@@ -4,23 +4,27 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Footer from '../Footer/Footer';
 import Header from '../Header/Header';
+import { Link } from 'react-router-dom';
 import SimulationList from './SimulationList';
-import arrow_back from "/src/svg_logos/arrow_back.svg";
 import { getLogger } from '@logtape/logtape';
-import { Simulation } from '../../api/core/Constants';
+import { VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from '../../api/core/Constants';
+ 
 const SelectorSimulations = () => {
-  const { ws, isWsConnected, gama, simulationList } = useWebSocket();
+  const { ws, isWsConnected, gamaless, gama, simulationList } = useWebSocket();
   const [loading, setLoading] = useState<boolean>(true);
   const [connectionStatus, setConnectionStatus] = useState<string>('Waiting for connection ...');
   const { t } = useTranslation();
-  const [subProjectsList, setSubProjectsList] = useState<[Simulation]>([]);
+  const [subProjectsList, setSubProjectsList] = useState<(VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[]>(simulationList);
+  useEffect(() => {
+    if (simulationList && simulationList.length > 0) {
+      setSubProjectsList(simulationList);
+    }
+  }, [simulationList]);
+
   const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
   const [path, setPath] = useState<number[]>([]);
-
   const navigate = useNavigate();
-
-
-  const logger = getLogger(["components", "VideoStreamManager"]);
+  const logger = getLogger(["components", "SelectorSimulation"]);
 
   useEffect(() => {
     if (isWsConnected && ws !== null) {
@@ -38,31 +42,35 @@ const SelectorSimulations = () => {
     }
   }, [simulationList]);
 
-
   useEffect(() => {
     // the path here is a list of nested indexes, which are used to see which catalogs the user clicked
     if (path.length > 0) {
       let list = simulationList
       for (const index of path) {
         logger.debug("index in the use effect: {index}", { index })
-        // @ts-expect-error
-        if (list[index].entries.length > 0) {
-          // @ts-expect-error
+        if (list[index].type === "catalog") {
           list = list[index].entries
         } else {
-          // @ts-expect-error
-          list = list[index]
+          list = [list[index]]
         }
         setSubProjectsList(list)
       }
+    } else {
+      setSubProjectsList(simulationList)
     }
-  })
+  }, [path, simulationList])
 
-
+  /**Function used to add a clicked subfolder to path
+   * path is an ordered array containing the indexes of all clicked subfolders
+   * @param index 
+   */
   const addToPath = (index: number) => {
     setPath([...path, index])
   }
 
+  /**Removes the last index used to travel the subproject folder
+   * 
+   */
   const back = () => {
     if (path.length > 1) {
       setPath([...path.slice(0, -1)])
@@ -72,71 +80,65 @@ const SelectorSimulations = () => {
       setSubProjectsList([])
     }
   }
+
   /**
    * handles either navigating through the list of projects or launch a simulation
    * @param index index of the current selected element
    */
   const handleSimulation = (index: number) => {
-
     if (!isWsConnected || ws === null) {
       logger.warn("Websocket not connected \n isWsConnected:{isWsConnected}\n ws:{ws}", { isWsConnected, ws })
       return;
     }
 
-    if (subProjectsList.length <= 0) { //no subproject is selected, we either enter a folder or load a simulation
-      if (simulationList[index].type == "catalog") { //?  we additionaly check if the simulation is a catalog, not necessary but allows for adding extra types
-        // @ts-expect-error                                                                             ↓ this is a catalog, which means it must have an "entries" attribute
-        logger.debug("catalog detected, subprojectList:{subprojectList}", { subProjectList: JSON.stringify(simulationList[index].entries) });
-        try {
-          // @ts-expect-error       ↓ this is a list, so assigning it to another list should be fine
-          setSubProjectsList(simulationList[index].entries);
-          addToPath(index)
-          if ('splashscreen' in simulationList[index]) {
-            setSelectedSplashscreen(simulationList[index].splashscreen);
-
-          } else {
-            logger.warn("No splashscreen could be found for simulation {simulation}", { simulation: simulationList[index].experimentName }) //TODO finir le logger warn
-          }
-          logger.debug("handlesimulation, simulationList[index].type == catalog, {expName}", { expName: subProjectsList[index].name });
-        }
-        catch (e) { logger.error("no subprojects, ERROR:{e}", { e }); }
-
-      } else if (simulationList[index].type == "json_settings") {
-        ws.send(JSON.stringify({ type: 'send_simulation', simulation: simulationList[index] }));
-        setTimeout(() => {
-          navigate('/simulationManager');
-        }, 100);
-      } else if (Array.isArray(simulationList[index])) {
-        logger.debug(simulationList[index].model_file_path)
+    if (subProjectsList[index].type === "catalog") { //?  we additionaly check if the simulation is a catalog, not necessary but allows for adding extra types
+      const catalog_item = subProjectsList[index];
+      //we define a constant to tell typescript that the type of subProjectsList[index] cannot change and is a VU_CATALOG_SETTING_JSON, meaning that entries is defined
+      logger.debug("catalog detected, subprojectList:{subprojectList}", { subProjectList: JSON.stringify(catalog_item.entries) });
+      try {
+        setSubProjectsList(catalog_item.entries);
         addToPath(index)
+        if (simulationList[index].splashscreen !== undefined) {
+          setSelectedSplashscreen(simulationList[index].splashscreen);
+
+        } else {
+          logger.warn("No splashscreen could be found for simulation {simulation}", { simulation: catalog_item.name })
+        }
+        logger.debug("called handle simulation, selected item is a catalog of name:{expName}", { expName: subProjectsList[index].name });
       }
+      catch (e) { logger.error("no subprojects, ERROR:{e}", { e }); }
+
+    } else if (simulationList[index].type == "json_settings") {
+      ws.send(JSON.stringify({ type: 'send_simulation', simulation: simulationList[index] }));
+      setTimeout(() => {
+        navigate('/simulationManager');
+      }, 100);
 
       // ---------------------------------------------------------  sub project selected
-    } else if (subProjectsList.length > 0) {
-      if (subProjectsList[index].type == "json_settings") {
-        ws.send(JSON.stringify({ type: 'send_simulation', simulation: subProjectsList[index] }));
-        setTimeout(() => {
-          navigate('/simulationManager');
-        }, 100);
 
-      } else {
-        if (subProjectsList[index].type == "catalog") {
-          try {
-            // @ts-expect-error        ↓ this is a list, so assigning it to another list should be fine
-            // setSubProjectsList(subProjectsList[index].entries);
-            addToPath(index)
-            logger.debug("[SELECTOR SIMULATION] handlesimulation, simulationList[index].type == catalog, {name}", { name: subProjectsList[0].name });
-          } // in any case, we catch the error and log it if any
-          catch (e) {
-            logger.error("no subprojects, ERROR: {e}", e);
-          }
+    }
+    if (subProjectsList[index].type == "json_settings") {
+      ws.send(JSON.stringify({ type: 'send_simulation', simulation: subProjectsList[index] }));
+      setTimeout(() => {
+        navigate('/simulationManager');
+      }, 100);
+    } else {
+      if (subProjectsList[index].type == "catalog") {
+        try {
+          addToPath(index)
+          logger.debug("handlesimulation, simulationList[index].type == catalog, {name}", { name: subProjectsList[index].name });
+        } // in any case, we catch the error and log it if any
+        catch (e) {
+          logger.error("no subprojects, ERROR: {e}", { e: (e as Error).message });
         }
       }
     }
+
   };
 
-  // Loop which tries to connect to Gama
+  // Loop which tries to connect to Gama (skipped in GAMALESS mode)
   useEffect(() => {
+    if (gamaless) return;
     let interval: NodeJS.Timeout;
     if (ws && !gama.connected) {
       interval = setInterval(() => {
@@ -144,11 +146,10 @@ const SelectorSimulations = () => {
         logger.info('Trying to connect to GAMA, connection status: {gamaStatus}', { gamaStatus: gama.connected });
       }, 3000);
     }
-
     return () => {
       clearInterval(interval);
     };
-  }, [ws, gama.connected]);
+  }, [ws, gama.connected, gamaless]);
 
   // Display connexion status
   useEffect(() => {
@@ -162,79 +163,54 @@ const SelectorSimulations = () => {
   return (
     <div className="flex flex-col items-center justify-between h-full">
 
-      <Header needsMiniNav />
+      <Header />
       {/* ↑ prop to specify whether it should use the small version of the navigation bar */}
 
-      {loading ? (
+      {gamaless ? (
+<>
+          <div className="bg-yellow-100 border-4 border-yellow-500 rounded-xl px-8 py-6 text-center max-w-lg">
+            <h2 className="text-2xl font-bold text-yellow-700 mb-2">GAMALESS Mode</h2>
+            <p className="text-yellow-800">Simulation features are disabled. No GAMA server is connected.</p>
+            <p className="text-yellow-700 mt-2 text-sm">Headset management is still operational.</p>
+          </div>
+          <Link to={"../streamPlayerScreen"} className='rounded-lg' target='_blank'>
+            <img src={` /images/Buttons/Button_Display.png`} alt="display button" className='size-[6dvh]'/>
+          </Link>
+</>
+      ) : loading ? (
         <div className="text-center">
           <div className="animate-pulse ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4 -z-50"></div>
-
           <h2 className="text-gray-700">{t('loading')}</h2>
-
-
         </div>
       ) : (
-
-        // disable  
-        <div className="flex flex-col items-center justify-center w-5/6 h-2/3 rounded-md relative" style={{ "backgroundColor": "#A1D2FF" }}>
+        <div className="flex flex-col justify-center items-center size-full rounded-md relative">
 
           {
-            //the content of this bracket is the back button
-            subProjectsList.length > 0 && path.length >= 1 ?
-              <div
-                className={`shadow-lg rounded-xl flex flex-col items-center absolute justify-center size-14 cursor-pointer`}
+            //? Shows the back button if in a nested folder
+            path.length >= 1 &&
 
-                style={{
-                  backgroundImage: `url(${selectedSplashscreen ? selectedSplashscreen : "/images/simple_logo.png"})`,
-                  backgroundSize: 'cover',
-                  // width: '48px',
-                  // height: '48px',
-                  zIndex: 1,
-                  // position: 'absolute',
-                  top: '10px',
-                  left: '10px',
-                }}
-                onClick={() => back()}
-              >
-                <img src={arrow_back} className='rounded-full bg-slate-700 opacity-75 size-8' />
+              <img src={` /images/Buttons/Button_back.png`} alt="back button" onClick={() => back()}
+              className='cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200 absolute left-[3.1dvw] top-10 ' />
+            
+          }
 
-              </div>
-              : null}
+          <div className="flex flex-col items-center justify-around h-fit w-full relative">
 
-          {subProjectsList.length > 0 ? <h2 className='font-medium'>{t('select_subproject')}</h2> : <h2>{t('select_simulation')} </h2>}
-
-          {/* //TODO add translation for Thai language */}
-
-          <div className="flex items-center justify-between">
-
-
-
-            <div className="flex mt-5 mb-8" style={{ gap: '55px' }}>
-              {subProjectsList.length > 0 ?
-                <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
-                : <SimulationList list={simulationList} handleSimulation={handleSimulation} gama={gama} />
-              }
-
-            </div>
-
-
+            <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
           </div>
-
-
+          <Link to={"../streamPlayerScreen"} className='rounded-lg absolute bottom-[10dvh]' target='_blank'>
+            <img src={` /images/Buttons/Button_Display.png`} alt="" className='size-[6dvh] hover:scale-110 transition-transform duration-200' />
+          </Link>
           {/* Display the status, ask for the user to connect to Gama if still not */}
           <div className='flex gap-2 mt-6'>
-            <span className={gama.connected ? 'text-green-500' : 'text-red-500'}>
+            <div className={gama.connected ? 'text-green-500' : 'text-red-500'}>
               {gama.connected ? '' : connectionStatus}
-            </span>
-
+            </div>
           </div>
 
+
         </div>
-
-
       )}
-
-
       <Footer />
     </div>
   );

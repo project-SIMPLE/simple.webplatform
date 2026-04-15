@@ -4,11 +4,11 @@ import {ENV_EXTRA_VERBOSE, ENV_AGGRESSIVE_DISCONNECT} from '../index.ts';
 import {JsonPlayer, JsonOutput, PlayerState, Player, JsonPlayerAsk} from "../core/Constants.ts";
 import Controller from "../core/Controller.ts";
 import {clearInterval} from "node:timers";
-import {getLogger} from "@logtape/logtape";
+import {getLogger, Logger} from "@logtape/logtape";
 
 
 // Override the log function
-const logger= getLogger(["multi", "PlayerManager"]);
+const logger: Logger = getLogger(["multi", "PlayerManager"]);
 
 /**
  * Creates a websocket server to handle player connections
@@ -132,9 +132,9 @@ class PlayerManager {
                         break;
 
                     case "ask":
-                        const askJsonPlayer: JsonPlayerAsk = JSON.parse(Buffer.from(message).toString());
+                     {   const askJsonPlayer: JsonPlayerAsk = JSON.parse(Buffer.from(message).toString());
                         logger.trace(`[PLAYER ${this.playerList.get(playerIP)!.id}] Sent expression: {json}`, {json: askJsonPlayer });
-                        this.controller.sendAsk(askJsonPlayer);
+                        this.controller.sendAsk(askJsonPlayer);}
                         break;
 
                     case "disconnect_properly":
@@ -199,7 +199,10 @@ class PlayerManager {
                                 if (typeof message.byteLength !== 'undefined') {
                                     logger.error(`Message size: ${message.byteLength} bytes`);
                                 }
-                            } catch {}
+                            } catch(e){
+                                const error = e as Error;
+                                logger.error("couldn't display error message: {error}",{error : error.message})
+                            }
                         }
                         break;
 
@@ -297,7 +300,7 @@ class PlayerManager {
         this.playerList.get(playerWsId)!.connected = connected;
         this.playerList.get(playerWsId)!.date_connection = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
 
-        if ( !['NONE', "NOTREADY"].includes(this.controller.gama_connector.jsonGamaState.experiment_state) ) {
+        if ( this.controller.gama_connector !== undefined && !['NONE', "NOTREADY"].includes(this.controller.gama_connector.jsonGamaState.experiment_state) ) {
             logger.debug(`Adding player ${this.playerList.get(playerWsId)!.id} to GAMA simulation...`);
             this.controller.addInGamePlayer(playerWsId);
             this.togglePlayerInGame(playerWsId, true);
@@ -383,7 +386,7 @@ class PlayerManager {
 
         for (const [playerWsId, player] of this.playerList) {
 
-            if (!player.in_game){
+            if (this.controller.gama_connector !== undefined && !player.in_game){
                 this.controller.gama_connector.addInGamePlayer(playerWsId);
                 this.togglePlayerInGame(playerWsId, true);
             }
@@ -467,6 +470,7 @@ class PlayerManager {
      * @return Returns 1 for success, 2 for dropped due to backpressure limit, and 0 for built up backpressure that will drain over time.
      * @return -1 if playerWsId missing or not connected
      */
+    //message sent is not necessarily a string, see PlayerManager for example
     sendMessageByWs(playerWsId: string, message: any): number {
         let jsonPlayer!: Player;
         if (this.playerList.has(playerWsId) && this.playerList.get(playerWsId)!.connected )

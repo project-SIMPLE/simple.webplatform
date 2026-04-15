@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Simulation } from "../core/Constants.ts"
-import { getLogger, configure, getConsoleSink } from '@logtape/logtape';
+import { VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from '../../api/core/Constants';
+import { getLogger } from '@logtape/logtape';
 
 
 
@@ -20,6 +20,7 @@ interface PlayerList {
 interface WebSocketContextType {
     ws: WebSocket | null;
     isWsConnected: boolean;
+    gamaless: boolean;
     gama: {
         connected: boolean;
         loading: 'hidden' | 'visible';
@@ -28,8 +29,8 @@ interface WebSocketContextType {
         content_error: string;
     };
     playerList: PlayerList;
-    simulationList: Simulation[];
-    selectedSimulation: Simulation | null;
+    simulationList: (VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[];
+    selectedSimulation: (VU_MODEL_SETTING_JSON) | null;
 
 
     removePlayer: (id: string) => void; // Define removePlayer here
@@ -46,6 +47,7 @@ interface WebSocketManagerProps {
 const WebSocketManager = ({ children }: WebSocketManagerProps) => {
     const [ws, setWs] = useState<WebSocket | null>(null);
     const [isWsConnected, setIsWsConnected] = useState<boolean>(false);
+    const [gamaless, setGamaless] = useState<boolean>(false);
     const [gama, setGama] = useState({
         connected: false,
         loading: 'hidden' as 'hidden' | 'visible',
@@ -54,8 +56,8 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
         content_error: '',
     });
     const [playerList, setPlayerList] = useState<PlayerList>({});
-    const [simulationList, setSimulationList] = useState<Simulation[]>([]);
-    const [selectedSimulation, setSelectedSimulation] = useState<Simulation | null>(null);
+    const [simulationList, setSimulationList] = useState<(VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[]>([]);
+    const [selectedSimulation, setSelectedSimulation] = useState<(VU_MODEL_SETTING_JSON) | null>(null);
 
 
     // Function to remove a player from the playerList
@@ -66,7 +68,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 
             return updatedPlayerList;
         });
-        logger.info(" This player have been removed from playerList : ", id);
+        logger.info(" This player have been removed from playerList : ", {id});
     };
 
 
@@ -96,12 +98,16 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 
             if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
                 setSimulationList(data.map(sim => sim.jsonSettings));
-                logger.debug('[WebSocketManager] Simulation list:', data);
+                logger.debug('[WebSocketManager] Simulation list: {data}',{data : data.toString()});
             } else {
                 switch (data.type) {
                     // this case is launch too much time
                     case 'json_state':
-                        setGama(data.gama);
+                        const isGamaless = Object.keys(data.gama).length === 0;
+                        setGamaless(isGamaless);
+                        if (!isGamaless) {
+                            setGama(data.gama);
+                        }
                         setPlayerList(data.player);
                         break;
                     //Sets the selected simulation for the websocketManager's context
@@ -114,7 +120,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
                     default:
                         logger.warn('[WebSocketManager] Message not processed, defaulted to setSimulationList. data:{data}', { data });
                         setSimulationList(data)
-                    //TODO changer cette mocheté, le message est traité dans certain cas si on appelle une méthode sur le contenu du message, ça limitera le logspam potentiellement
+                   
                 }
             }
         };
@@ -137,7 +143,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 
 
     return (
-        <WebSocketContext.Provider value={{ ws, isWsConnected, gama, playerList, simulationList, selectedSimulation, removePlayer }}>
+        <WebSocketContext.Provider value={{ ws, isWsConnected, gamaless, gama, playerList, simulationList, selectedSimulation, removePlayer }}>
             {children}
         </WebSocketContext.Provider>
     );

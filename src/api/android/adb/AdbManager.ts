@@ -16,7 +16,7 @@ import { ENV_EXTRA_VERBOSE, ENV_VERBOSE } from "../../index.ts";
 import { ScrcpyServer } from "../scrcpy/ScrcpyServer.ts";
 import { getLogger } from "@logtape/logtape";
 import DeviceFinder from "./DeviceFinder.ts";
-import {ON_DEVICE_ADB_GLOBAL_SETTINGS} from "../../core/Constants.ts";
+import { HeadsetSetup } from "./HeadsetSetup.ts";
 
 // Override the log function
 const logger = getLogger(["android", "AdbManager"]);
@@ -25,9 +25,11 @@ export class AdbManager {
     controller: Controller;
     adbServer!: AdbServerClient;
     videoStreamServer: ScrcpyServer;
+    headsetSetup!: HeadsetSetup;
     // Keep list of serial of devices with a stream already starting
     clientCurrentlyStreaming: Device[] = [];
     observer!: AdbServerClient.DeviceObserver;//!: AdbServerClient;
+    deviceStatuses: Map<string, string> = new Map();
 
     constructor(controller: Controller) {
         this.controller = controller;
@@ -41,16 +43,27 @@ export class AdbManager {
         logger.info("Connect to device's ADB server");
 
         this.videoStreamServer = new ScrcpyServer(this);
+        this.headsetSetup = new HeadsetSetup(this.adbServer);
     }
 
     async init() {
         // Init watching ADB clients
         this.observer = await this.adbServer.trackDevices();
 
-        if (this.observer.current.length > 0) {
-            for (const device of this.observer.current) {
+        const initDeviceList = await this.adbServer.getDevices(["device", "unauthorized", "offline"]);
+
+        if (initDeviceList.length > 0) {
+            for (const device of initDeviceList) {
                 logger.debug(`Devices found on ADB server: {device}`, {device});
-                this.checkAdbParameters(device);
+                
+                // Sanitize stale ADB entries on startup (side-effect: disconnects offline ones)
+                if (this.isDeviceReady(device)) {
+                    // Apply M2L2 headset settings only if the device is ready
+                    this.headsetSetup.setupHeadset(device).catch(e =>
+                        logger.error(`[${device.serial}] Unexpected error in setupHeadset: {e}`, { e })
+                    );
+                }
+
             }
 
             await this.restartStreamingAll();
@@ -59,29 +72,70 @@ export class AdbManager {
             logger.debug('No devices found on ADB server...');
         }
 
-
         // Set trigger listener for when moving devices
         this.observer.onDeviceAdd((devices) => {
             for (const device of devices) {
                 logger.debug("New device added {device}\nStarting streaming for this new device...", { device });
-                this.startNewStream(device);
-                this.checkAdbParameters(device);
+                this.startNewStream(device).catch(e =>
+                    logger.error(`[${device.serial}] Unexpected error in startNewStream: {e}`, { e })
+                );
+                this.headsetSetup.setupHeadset(device).catch(e =>
+                    logger.error(`[${device.serial}] Unexpected error in setupHeadset: {e}`, { e })
+                );
             }
         });
 
-        this.observer.onListChange((devices) => {
-            // Fallback mechanism as the onRemove isn't catching everything...
-            if (devices.length < this.clientCurrentlyStreaming.length) {
-                logger.debug("A headset has been disconnected, removing it from the list...");
-                for (const device of this.clientCurrentlyStreaming) {
-                    if (!devices.includes(device)) {
-                        logger.warn(`This device has been removed {device}`, {device});
+        this.observer.onListChange(async (devices) => {
+            // Detect "device" → "offline" transitions and disconnect stale entries early
+            for (const device of devices) {
+                const previousStatus = this.deviceStatuses.get(device.serial);
+                if (previousStatus === 'device' && device.state === 'offline') {
+                    logger.warn(`[${device.serial}] Device switched to offline`);
+                    const index = this.clientCurrentlyStreaming.findIndex(d => d.serial === device.serial);
+                    if (index > -1) this.clientCurrentlyStreaming.splice(index, 1);
+                    await this.adbServer.wireless.disconnect(device.serial);
+                }
+                this.deviceStatuses.set(device.serial, device.state);
+            }
+            // Clean up statuses for removed devices
+            const currentSerials = new Set(devices.map(d => d.serial));
+            for (const serial of this.deviceStatuses.keys()) {
+                if (!currentSerials.has(serial)) this.deviceStatuses.delete(serial);
+            }
 
-                        const index = this.clientCurrentlyStreaming.indexOf(device);
-                        if (index > -1) {
-                            this.clientCurrentlyStreaming.splice(index, 1);
-                        }
+            // Fallback mechanism as the onRemove isn't catching everything...
+            // Compare by serial — observer may return different Device instances for the same physical device.
+            const activeSerials = new Set(devices.filter(d => d.state === 'device').map(d => d.serial));
+            const disconnected = this.clientCurrentlyStreaming.filter(d => !activeSerials.has(d.serial));
+
+            if (disconnected.length === 0) return;
+
+            logger.debug("A headset has been disconnected, removing it from the list...");
+            for (const device of disconnected) {
+                logger.warn(`[${device.serial}] Device disconnected, removing from streaming list`);
+                const index = this.clientCurrentlyStreaming.findIndex(d => d.serial === device.serial);
+                if (index > -1) this.clientCurrentlyStreaming.splice(index, 1);
+
+                logger.warn(`[${device.serial}] Trying to reconnect automatically...`);
+                const ip = device.serial.split(":")[0];
+                const df = new DeviceFinder(this);
+                let reconnected = false;
+                let attempts = 0;
+                const maxAttempts = 10;
+
+                while (!reconnected && attempts < maxAttempts) {
+                    attempts++;
+                    reconnected = await df.scanAndConnectIP(ip);
+                    if (!reconnected) {
+                        logger.debug(`[${device.serial}] Reconnect attempt ${attempts}/${maxAttempts} failed, retrying in 3s...`);
+                        await new Promise(resolve => setTimeout(resolve, 3000));
                     }
+                }
+
+                if (reconnected) {
+                    logger.info(`[${device.serial}] Successfully reconnected`);
+                } else {
+                    logger.error(`[${device.serial}] Could not reconnect after ${maxAttempts} attempts, giving up`);
                 }
             }
         });
@@ -97,21 +151,38 @@ export class AdbManager {
     }
 
     async startNewStream(device: Device) {
-        // Ensure having only one streaming per device
-        if (this.clientCurrentlyStreaming.includes(device)) {
-            logger.debug(`Device ${device.serial} already streaming. Skipping new stream...`);
-            return;
-        } else {
-            // Add new device streaming
-            this.clientCurrentlyStreaming.push(device);
+        if (!this.isDeviceReady(device)) return;
 
+        // Ensure having only one streaming per device — compare by serial, not reference
+        if (this.clientCurrentlyStreaming.some(d => d.serial === device.serial)) {
+            logger.debug(`[${device.serial}] Already streaming. Skipping...`);
+            return;
+        }
+
+        // Add new device streaming
+        this.clientCurrentlyStreaming.push(device);
+
+        try {
             const transport = await this.adbServer.createTransport(device);
             const adb = new Adb(transport);
+            const model = device.model ?? 'Unknown';
 
-            if (device.serial.includes(".") || ENV_VERBOSE) {// Only consider wireless devices - Check if serial is an IP address
-                if ( ! await this.videoStreamServer.startStreaming(adb, device.model!) ) {
-                    await this.videoStreamServer.startStreaming(adb, device.model!, true);
-                }
+            // Only consider wireless devices — check if serial is an IP address
+            // startStreaming runs a supervisor loop indefinitely, so we fire-and-forget.
+            // The flipWidth retry is now handled internally by runSession's metadata check.
+            if (device.serial.includes(".") || ENV_VERBOSE) {
+                void this.videoStreamServer.startStreaming(adb, model);
+            }
+        } catch (e) {
+            // Remove device from streaming list — connection failed, allow retry later
+            const index = this.clientCurrentlyStreaming.indexOf(device);
+            if (index > -1) this.clientCurrentlyStreaming.splice(index, 1);
+
+            const errorMsg = e instanceof Error ? e.message : String(e);
+            if (errorMsg.toLowerCase().includes('unauthorized')) {
+                logger.error(`[${device.serial}] Device is not authorized for ADB — accept the RSA key prompt on the device then reconnect`);
+            } else {
+                logger.error(`[${device.serial}] Failed to start streaming: {e}`, { e });
             }
         }
     }
@@ -122,8 +193,57 @@ export class AdbManager {
 
         // Start everyone
         for (const device of this.observer.current) {
+            if (!this.isDeviceReady(device)) continue;
+
             await this.startNewStream(device);
             await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+    }
+
+    isDeviceReady(device: Device): boolean {
+        let isReady = false;
+
+        switch (device.state) {
+            case "device":
+                isReady = true;
+                break;
+
+            case "offline":
+                logger.warn(`[${device.serial}] Device is offline, disconnecting stale entry...`);
+                void this.disconnectDevice(device.serial);
+                break;
+
+            case "unauthorized":
+                logger.error(`[${device.serial}] Device is not authorized — You need to manually pair the headset with this computer (accept the RSA key prompt on the device)`);
+                break;
+
+            default:
+                logger.warn(`[${device.serial}] Device is not ready with an unknown state (${device.state}), skipping`);
+        }
+        return isReady;
+    }
+
+    /** Send reboot -p to every currently streaming ADB-connected headset */
+    async shutdownAllHeadsets(): Promise<void> {
+        for (const device of this.clientCurrentlyStreaming) {
+            try {
+                const transport = await this.adbServer.createTransport(device);
+                const adb = new Adb(transport);
+                await adb.subprocess.noneProtocol.spawn('reboot -p');
+                logger.info(`[${device.serial}] Power-off command sent`);
+            } catch (e) {
+                logger.warn(`[${device.serial}] Failed to send power-off command: {e}`, { e });
+            }
+        }
+    }
+
+    async disconnectDevice(serial: string): Promise<void> {
+        const index = this.clientCurrentlyStreaming.findIndex(d => d.serial === serial);
+        if (index > -1) this.clientCurrentlyStreaming.splice(index, 1);
+        try {
+            await this.adbServer.wireless.disconnect(serial);
+        } catch (e) {
+            logger.warn(`[${serial}] Failed to wireless-disconnect: {e}`, { e });
         }
     }
 
@@ -149,63 +269,6 @@ export class AdbManager {
         }
 
         return success
-    }
-
-    async checkAdbParameters(device: Device) {
-        // Only modify headsets, don't jam phone's parameters
-        if (!device.model?.startsWith("Quest_")) return;
-
-        logger.debug(`[${device.serial}] Checking on-device global ADB settings...`);
-        const transport = await this.adbServer.createTransport(device);
-        const adb = new Adb(transport);
-
-        for (const [globalSetting, globalSettingValue] of Object.entries(ON_DEVICE_ADB_GLOBAL_SETTINGS) as [
-                keyof typeof ON_DEVICE_ADB_GLOBAL_SETTINGS,
-                typeof ON_DEVICE_ADB_GLOBAL_SETTINGS[keyof typeof ON_DEVICE_ADB_GLOBAL_SETTINGS]
-            ][])
-        {
-            if ( ! await this.checkAdbParameter(adb, globalSetting, globalSettingValue)){
-                logger.debug(`[${device.serial}] ADB parameters for '${globalSetting}' isn't correct, fixing it...`);
-                await this.setAdbParameter(adb, globalSetting, globalSettingValue);
-                if (! await this.checkAdbParameter(adb, globalSetting, globalSettingValue)) {
-                    logger.warn(`[${device.serial}] Couldn't properly set setting ${globalSetting}, skipping it...`);
-                }
-            }
-        }
-        logger.debug(`[${device.serial}] All on-device global ADB settings are good`);
-    }
-
-    async checkAdbParameter(adb: Adb, globalParam: string, expectedValue: any): Promise<boolean> {
-        let result: any;
-
-        const process = await adb.subprocess.noneProtocol.spawn("settings get global " + globalParam);
-        // @ts-expect-error
-        for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
-            result = chunk;
-        }
-        // Cleaning trailing '\n' from chunk reading
-        result = result.trim();
-
-        logger.trace(`[${adb.serial}] Checking ADB parameters '${globalParam}' = ${result} and should be ${expectedValue} (${result == expectedValue})`);
-
-        return result == expectedValue;
-    }
-
-    async setAdbParameter(adb: Adb, globalParam: string, expectedValue: any) {
-        let result: any;
-
-        const process = await adb.subprocess.noneProtocol.spawn(["settings put global ", globalParam, expectedValue]);
-        // @ts-expect-error
-        for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
-            result = chunk;
-        }
-
-        logger.trace(`[${adb.serial}] Setting ADB parameters '${globalParam}' = ${expectedValue} and it ${result == undefined ? "worked" : "failed"}`);
-
-        if (result != undefined) {
-            logger.error(`[${adb.serial}] Something happened while setting the ADB setting '${globalParam}'`);
-            logger.error(result.toString());
-        }
     }
 
 }

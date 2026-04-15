@@ -23,13 +23,13 @@ export default defineConfig(({ mode }) => {
     preview: serverConfig,
     server: serverConfig,
     optimizeDeps: {
-      exclude: ["@yume-chan/adb-scrcpy", "@yume-chan/stream-extra", "@yume-chan/scrcpy-decoder-tinyh264"],
-      include: ['@yume-chan/scrcpy-decoder-tinyh264 > yuv-buffer', '@yume-chan/scrcpy-decoder-tinyh264 > yuv-canvas']
+      exclude: ["@yume-chan/adb-scrcpy", "@yume-chan/stream-extra"],
     },
     define: {
       'process.env.MONITOR_WS_PORT': JSON.stringify(env.MONITOR_WS_PORT),
       'process.env.HEADSETS_IP' : JSON.stringify(env.HEADSETS_IP),
-      'process.env.ENV_MAX_ELEMENTS' : JSON.stringify(env.ENV_MAX_ELEMENTS)
+      'process.env.ENV_MAX_ELEMENTS' : JSON.stringify(env.ENV_MAX_ELEMENTS),
+      'process.env.IMAGE_SOURCE_FOLDER' : JSON.stringify(env.IMAGE_SOURCE_FOLDER)
     }
   };
 })

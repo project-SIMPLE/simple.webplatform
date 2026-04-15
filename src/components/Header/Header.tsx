@@ -1,31 +1,25 @@
-import Navigation from "../Navigation/Navigation";
-import MiniNavigation from "../Navigation/MiniNavigation";
 import LanguageSelector from "../LanguageSelector/LanguageSelector";
-import headerBackground from "/src/svg_logos/header_background.svg";
+import logoSimple from '/images/Logos/SIMPLE_Logo_Complet_Sticker.png';
+import { Link } from 'react-router-dom';
+ 
+const Header = () => {
 
 
-const Header = ({ needsMiniNav = false, hideTranslation = false }) => {
 
     return (
-        <div className="flex w-full">
-            <img src={headerBackground} className="h-12" />
-            <header className="flex w-full h-20 justify-around items-center" style={{ borderBottomLeftRadius: "40px", borderBottomRightRadius: "40px", backgroundColor: "#58FFCA" }}>
+        <div className="flex w-full justify-between align-middle relative" >
 
-                {needsMiniNav ? <MiniNavigation /> : <Navigation />}
-
-                {/* ↓ this div is the white vertical separator on screen */}
-                {hideTranslation ?
-                    null
-
-                    :
-                    <><div className="w-1 h-4/5 border-l border-white"></div>
-                        <LanguageSelector />
-                    </>
-                }
+            <Link to="/" className="text-white hover:text-gray-400 z-10">
+                <img src={logoSimple} alt="Logo" className=" ml-10 h-[6dvh]  mt-12 pl-4 hover:scale-110 transition-transform duration-200" />
+            </Link>
 
 
-            </header>
-            <img src={headerBackground} alt="" className="-rotate-90 h-12" />
+            {/* ↓ this div is the white vertical separator on screen */}
+
+            <LanguageSelector />
+
+
+
         </div>
 
 

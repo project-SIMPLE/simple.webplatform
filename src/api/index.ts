@@ -1,5 +1,5 @@
 // Import des modules nécessaires
-import { spawn } from "child_process";
+import { spawnSync } from "child_process";
 import dotenv from 'dotenv';
 import {
     configure,
@@ -12,27 +12,29 @@ import { getRotatingFileSink } from "@logtape/file";
 import { getPrettyFormatter } from "@logtape/pretty";
 
 import Controller from './core/Controller.ts';
+import { StaticServer } from './infra/StaticServer.ts';
+import path from 'path';
 
 /*
     TOOLBOX ================================
  */
 
-async function isCommandAvailable(commandName: string): Promise<boolean> {
-    if (process.platform === "win32") {
-        const checkAdbProcess = spawn("where", [commandName]);
-        return new Promise((resolve) => {
-            checkAdbProcess.on("close", (code) => {
-                resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
-            });
-        });
-    } else {
-        return new Promise((resolve) => {
-            const checkAdbProcess = spawn("which", [commandName]);
+// Extracts the first valid IPv4 address found in a string, or returns null.
+// Used to sanitize HEADSETS_IP entries that may carry stray characters (e.g. trailing quotes).
+const _extractIPv4 = (raw: string): string | null => {
+    const match = raw.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
+    if (!match) return null;
+    const ip = match[1];
+    return ip.split('.').every(octet => Number(octet) >= 0 && Number(octet) <= 255) ? ip : null;
+};
 
-            checkAdbProcess.on("close", (code) => {
-                resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
-            });
-        });
+function isCommandAvailable(commandName: string): boolean {
+    if (process.platform === "win32") {
+        const checkAdbProcess = spawnSync("where", [commandName]);
+        return checkAdbProcess.status === 0;
+    } else {
+        const checkAdbProcess = spawnSync("which", [commandName]);
+        return checkAdbProcess.status === 0;
     }
 }
 
@@ -41,7 +43,17 @@ async function isCommandAvailable(commandName: string): Promise<boolean> {
  */
 
 // Load options
-dotenv.config();
+export const IS_PLATFORM_PACKAGED =
+    (process as any).pkg
+    || process.env.PKG_EXECPATH
+    // The runner isn't called `node`, and not starting file from root `/snapshot`
+    || (!path.basename(process.argv[0]).includes('node') && !process.argv[1].startsWith("/snapshot"))
+;
+const exeDir = IS_PLATFORM_PACKAGED ? path.dirname(process.execPath) : process.cwd();
+dotenv.config({ path: path.join(exeDir, '.env') });
+
+// Fix for some dependencies (like evilscan) that might use undeclared variables
+(global as any).targetMatch = undefined;
 
 // Default value for every option value
 // GAMA =====
@@ -57,15 +69,10 @@ const ENV_AGGRESSIVE_DISCONNECT: boolean = process.env.AGGRESSIVE_DISCONNECT !==
 process.env.HEADSET_WS_PORT =               process.env.HEADSET_WS_PORT             || '8080';
 // ! Headsets  =====
 
-// Scrcpy =====
-const ENV_SCRCPY_FORCE_H265: boolean = process.env.SCRCPY_FORCE_H265 !== undefined ? ['true', '1', 'yes'].includes(process.env.SCRCPY_FORCE_H265.toLowerCase()) : false;
-// ! Scrcpy =====
-
 // Website =====
 process.env.WEB_APPLICATION_PORT =          process.env.WEB_APPLICATION_PORT        || '5173';
 process.env.MONITOR_WS_PORT =               process.env.MONITOR_WS_PORT             || '8001';
 
-const HEADSETS_IP: string[] =               process.env.HEADSETS_IP ? process.env.HEADSETS_IP.split(';').filter((value) => value.trim() !== '') : [];
 // ! Website  =====
 
 // Debug  =====
@@ -78,14 +85,19 @@ const ENV_VERBOSE: boolean = ENV_EXTRA_VERBOSE ?
         ['true', '1', 'yes'].includes(process.env.VERBOSE.toLowerCase())
         : false;
 
-        
+
 const ENV_GAMALESS: boolean = process.env.ENV_GAMALESS !== undefined ? ['true', '1', 'yes'].includes(process.env.ENV_GAMALESS.toLowerCase()) : false;
+
+const useAdb: boolean = isCommandAvailable("adb") && (() => {
+    const checkAdb = spawnSync("adb", ["devices"]);
+    return checkAdb.status === 0;
+})();
 
 /*
     SETUP LOGGING SYSTEM ================================
  */
 
-await configure({
+const logConfig = configure({
     sinks: {
         // Simple non-blocking mode with default settings
         console: withFilter(
@@ -108,7 +120,10 @@ await configure({
                 maxSize: 0x400 * 0x400 * 100,  // 100 MiB
                 maxFiles: 5,
             }),
-            { triggerLevel: "error" }
+            {
+                triggerLevel: "error",
+                bufferLevel: "debug"  // Buffer debug and below; info/warn pass through immediately
+            }
         )
     },
     loggers: [
@@ -122,29 +137,50 @@ await configure({
         }
     ]
 });
+
 const logger = getLogger(["core", "index"]);
+
+// HEADSETS_IP entries from .env may contain stray characters (e.g. `192.168.1.1"`) due to
+// shell quoting or copy-paste artifacts. We extract the first valid IPv4 from each token and
+// warn when the raw value had to be fixed, so misconfigured IPs are never silently ignored.
+const HEADSETS_IP: string[] =               (process.env.HEADSETS_IP ? process.env.HEADSETS_IP.split(';').filter((value) => value.trim() !== '') : [])
+    .flatMap(raw => {
+        const ip = _extractIPv4(raw);
+        if (!ip) { logger.warn`[HEADSETS_IP] Could not extract a valid IP from: "${raw.trim()}"`; return []; }
+        if (ip !== raw.trim()) logger.warn`[HEADSETS_IP] Sanitized "${raw.trim()}" → "${ip}"`;
+        return [ip];
+    });
 
 /*
     APPLICATION ENTRY POINT ================================
  */
 
-logger.info(`Starting the SIMPLE Webplatform !`);
+async function start() {
+    await logConfig;
+    logger.info(`Starting the SIMPLE Webplatform !`);
 
-logger.trace(process.env);
+    logger.debug(`Node version: ${process.version}`);
+    logger.debug(`Module version: ${process.versions.modules}`);
+    logger.debug(`Platform: ${process.platform}`);
+    logger.debug(`Arch: ${process.arch}`);
+    logger.debug(`Is Packaged: {isPackaged}`, {isPackaged: IS_PLATFORM_PACKAGED});
+    logger.debug(`NODE_ENV: ${process.env.NODE_ENV}`);
 
-const useAdb: boolean =
-    (await isCommandAvailable("adb"))
-        ? await new Promise((resolve) => {
-            logger.debug("Waking up ADB...");
-            const checkAdb = spawn("adb", ["devices"]);
-            checkAdb.on('close', (code) => {
-                resolve(code === 0); // Resolve true if exit code is 0 (adb found), false otherwise
-            });
-        })
-        : false;
+    logger.trace(process.env);
 
-const c = new Controller(useAdb);
-await c.initialize();
+    // Start static server to serve the frontend in production/executable mode
+    if (process.env.NODE_ENV === 'production' || IS_PLATFORM_PACKAGED) {
+        new StaticServer();
+    }
+
+    const c = new Controller(useAdb);
+    await c.initialize();
+}
+
+start().catch(err => {
+    console.error("Failed to start application:", err);
+    process.exit(1);
+});
 
 export {
     ENV_GAMALESS,
@@ -152,6 +188,5 @@ export {
     ENV_EXTRA_VERBOSE,
     useAdb,
     ENV_AGGRESSIVE_DISCONNECT,
-    HEADSETS_IP,
-    ENV_SCRCPY_FORCE_H265
+    HEADSETS_IP
 };
