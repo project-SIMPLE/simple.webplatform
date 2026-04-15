@@ -94,11 +94,11 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
             playerId={Playerkey} />
           {selectedPlayer ? selectedPlayer.connected ?
 
-            <img src={` /images/V1/Headset_condition/Headset_condition_connected.png`} alt="headset connected" className="absolute size-8 right-0 bottom-0"/>
+            <img src={` /images/Headset_condition/Headset_condition_connected.png`} alt="headset connected" className="absolute size-8 right-0 bottom-0"/>
             :
-            <img src={` /images/V1/Headset_condition/Headset_condition_connecting.png`} className="absolute size-8 right-0 bottom-0 animate-spin" alt="headset connecting" />
+            <img src={` /images/Headset_condition/Headset_condition_connecting.png`} className="absolute size-8 right-0 bottom-0 animate-spin" alt="headset connecting" />
             :
-            <img src={` /images/V1/Headset_condition/Headset_condition_not_connected.png`} className="absolute size-8 right-0 bottom-0" alt="headset disconnected" />
+            <img src={` /images/Headset_condition/Headset_condition_not_connected.png`} className="absolute size-8 right-0 bottom-0" alt="headset disconnected" />
             
             
             }

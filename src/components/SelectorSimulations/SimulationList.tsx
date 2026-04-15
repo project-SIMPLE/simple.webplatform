@@ -20,12 +20,12 @@ const logger = getLogger(["components", "SimulationList"]);
 const SimulationList = ({ list, handleSimulation, gama, className }: SimulationListProps) => {
 
   const frame = [
-    ` /images/V1/Game_selection/Game_selection_Aquadefender.png`,
-    ` /images/V1/Game_selection/Game_selection_Lulut.png`,
-    ` /images/V1/Game_selection/Game_selection_Cambodia.png`,
-    ` /images/V1/Game_selection/Game_selection_Biodivrestorer.png`,
-    ` /images/V1/Game_selection/Game_selection_OZD.png`,
-    ` /images/V1/Game_selection/Game_selection_Lao.png`,
+    ` /images/Game_selection/Game_selection_Aquadefender.png`,
+    ` /images/Game_selection/Game_selection_Lulut.png`,
+    ` /images/Game_selection/Game_selection_Cambodia.png`,
+    ` /images/Game_selection/Game_selection_Biodivrestorer.png`,
+    ` /images/Game_selection/Game_selection_OZD.png`,
+    ` /images/Game_selection/Game_selection_Lao.png`,
   ]
 
 
@@ -37,10 +37,10 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
           <div
             className={`rounded-2xl items-center  cursor-pointer relative size-[13dvw]  ${className && className}  ${!gama.connected && 'opacity-50' }`}
             key={index} onClick={gama.connected ? () => handleSimulation(index) : () => { }}>
-            {/* {simulation.type == "catalog" ? <img src={` /images/V1/Headset/Headset_04_orange.png`} className='rounded-full bg-slate-500 opacity-90 size-16 absolute top-[40%] left-[40%] z-20' /> : null} //? downward arrow */}
+            {/* {simulation.type == "catalog" ? <img src={` /images/Headset/Headset_04_orange.png`} className='rounded-full bg-slate-500 opacity-90 size-16 absolute top-[40%] left-[40%] z-20' /> : null} //? downward arrow */}
             <div className='relative size-full bg-[#fcf7ec] hover:scale-110 transition-transform duration-200'>
               {simulation.type === "catalog" ?
-                <img src={` /images/V1/Game_selection/Game_selection_Folder.png`} className='absolute scale-110 top-[-10%]' alt="" />
+                <img src={` /images/Game_selection/Game_selection_Folder.png`} className='absolute scale-110 top-[-10%]' alt="" />
                 :
                 <img src={frame[Math.floor(Math.random() * 5)]} alt="frame" className='absolute scale-110' />
               }

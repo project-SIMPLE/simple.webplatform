@@ -18,7 +18,7 @@ const LanguageSelector = () => {
 
     <div className='flex flex-col  h-full justify-center z-10 mr-[95px] mt-[23px]'>
       {/* Button to open the popup */}
-      <img src={` /images/V1/Language_selection/Language_selection_Button_00.png`} alt="language selection" className='size-[6dvh] cursor-pointer hover:scale-110 transition-transform duration-200' onClick={() => { setShowPopup(true) }} />
+      <img src={` /images/Language_selection/Language_selection_Button_00.png`} alt="language selection" className='size-[6dvh] cursor-pointer hover:scale-110 transition-transform duration-200' onClick={() => { setShowPopup(true) }} />
 
 
       {/* Pop-up */}
@@ -27,19 +27,19 @@ const LanguageSelector = () => {
 
           <div className=" p-6 rounded-lg w-80 relative top-0 right-0" onClick={(e) => e.stopPropagation()}>
 
-            <img src={` images/V1/Language_selection/Language_selection_close.png`} alt="" className='size-[5dvh] absolute top-[8%] right-[11.5%] mr-1 cursor-pointer z-10 hover:scale-110 transition-transform duration-200'
+            <img src={` images/Language_selection/Language_selection_close.png`} alt="" className='size-[5dvh] absolute top-[8%] right-[11.5%] mr-1 cursor-pointer z-10 hover:scale-110 transition-transform duration-200'
               onClick={() => setShowPopup(false)} />
 
             <h3 className="text-lg font-semibold mb-4">{t('select_language')}</h3>
 
 
-            <img src={`images/V1/Language_selection/Language_selection_tab.png`} className="absolute size-full inset-0" alt="" />
+            <img src={`images/Language_selection/Language_selection_tab.png`} className="absolute size-full inset-0" alt="" />
 
             <div className="flex flex-col space-y-2 relative p-4 z-40">
 
               <div className= {buttonStyle}>
                 <img
-                  src={`images/V1/Language_selection/Language_selection_Button_01.png`}
+                  src={`images/Language_selection/Language_selection_Button_01.png`}
                   alt="English"
                   onClick={() => changeLanguage('en')}
                 />
@@ -47,7 +47,7 @@ const LanguageSelector = () => {
               </div>
               <div className= {buttonStyle}>
                 <img
-                  src={`images/V1/Language_selection/Language_selection_Button_02.png`}
+                  src={`images/Language_selection/Language_selection_Button_02.png`}
                   alt="Français"
                   onClick={() => changeLanguage('fr')}
                 />
@@ -55,7 +55,7 @@ const LanguageSelector = () => {
               </div>
               <div className= {buttonStyle}>
                 <img
-                  src={`images/V1/Language_selection/Language_selection_Button_03.png`}
+                  src={`images/Language_selection/Language_selection_Button_03.png`}
                   alt="English"
                   onClick={() => changeLanguage('vn')}
                 />
@@ -63,7 +63,7 @@ const LanguageSelector = () => {
               </div>
               <div className= {buttonStyle}>
                 <img
-                  src={`images/V1/Language_selection/Language_selection_Button_04.png`}
+                  src={`images/Language_selection/Language_selection_Button_04.png`}
                   alt="English"
                   onClick={() => changeLanguage('th')}
                 />

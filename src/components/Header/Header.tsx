@@ -1,5 +1,5 @@
 import LanguageSelector from "../LanguageSelector/LanguageSelector";
-import logoSimple from '/images/SIMPLE_Logo_Complet_Sticker.png';
+import logoSimple from '/images/Logos/SIMPLE_Logo_Complet_Sticker.png';
 import { Link } from 'react-router-dom';
  
 const Header = () => {
