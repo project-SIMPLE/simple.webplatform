@@ -111,7 +111,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
                 >
                     <div ref={canvasref} className="w-fit h-fit relative">
                         <img
-                            src={` /images/V1/Frames/Frame_${HEADSET_COLOR[ipIdentifier]}.png`}
+                            src={` /images/Frames/Frame_${HEADSET_COLOR[ipIdentifier]}.png`}
                             className="absolute inset-0 h-full w-full scale-105"/>
                     </div>
                     {/* The Background Image */}
@@ -125,7 +125,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
                 :
                 //  placeholder, with an eye icon
                 <div className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"} aspect-square m-4 scale-95`}> {/*this only works under the assumption that the width is bigger than the height of the screen*/}
-                    <img src={` /images/V1/Frames/Frame_blue.png`} className="absolute h-full w-auto scale-[103%]" alt="" />
+                    <img src={` /images/Frames/Frame_blue.png`} className="absolute h-full w-auto scale-[103%]" alt="" />
 
                     <img src={visibility_off} alt="" className="mix-blend-difference size-full" />
                 </div >

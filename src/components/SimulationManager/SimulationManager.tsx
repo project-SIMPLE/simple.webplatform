@@ -130,7 +130,7 @@ const SimulationManager = () => {
 
                     <p className="flex items-center align-center" style={{ marginLeft: '90px' }}>
                       {t('wait_minim_players_1')} {Number(minPlayers) - Object.keys(playerList).length} {t('wait_minim_players_2')}
-                      <img src={` /images/V1/Headset_condition/Headset_condition_connecting.png`} className="size-8 right-0 bottom-0 animate-spin" alt="headset connecting" />
+                      <img src={` /images/Headset_condition/Headset_condition_connecting.png`} className="size-8 right-0 bottom-0 animate-spin" alt="headset connecting" />
                     </p>
 
 
@@ -138,13 +138,13 @@ const SimulationManager = () => {
               <>
                 <p className="flex items-center w-fit">
                   {t('wait_minim_players_1')} {Number(maxPlayers) - Object.keys(playerList).length} {t('wait_maximum_players_1')}
-                  <img src={` /images/V1/Headset_condition/Headset_condition_connecting.png`} alt="" className='size-5 ml-2 animate-spin'/>
+                  <img src={` /images/Headset_condition/Headset_condition_connecting.png`} alt="" className='size-5 ml-2 animate-spin'/>
                 </p>
 
                 <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4 ">
                     <div>
-                   <img src={` /images/V1/Buttons/Button_play.png`} className='cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200' onClick={startClicked} alt="" /> 
-                  {/* <img src={` /images/V1/Headset_condition/Headset_condition_connecting.png`} alt="" className='size-[65px] ml-2 animate-spin absolute bottom-[5px] right-[280px] '/> */}
+                   <img src={` /images/Buttons/Button_play.png`} className='cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200' onClick={startClicked} alt="" />
+                  {/* <img src={` /images/Headset_condition/Headset_condition_connecting.png`} alt="" className='size-[65px] ml-2 animate-spin absolute bottom-[5px] right-[280px] '/> */}
 
                     </div>
                       
@@ -152,7 +152,7 @@ const SimulationManager = () => {
 
 
                   <Link to={"../streamPlayerScreen"} className='rounded-lg' target='_blank'>
-                    <img src={` /images/V1/Buttons/Button_Display.png`} alt="display button" className='size-[6dvh] hover:scale-110 transition-transform duration-200' />
+                    <img src={` /images/Buttons/Button_Display.png`} alt="display button" className='size-[6dvh] hover:scale-110 transition-transform duration-200' />
                   </Link>
                 </div>
               </>
@@ -169,14 +169,14 @@ const SimulationManager = () => {
 
               <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4">
                 {gama.experiment_state === 'PAUSED' &&
-                  <img src={` /images/V1/Buttons/Button_play.png`} alt="play button" onClick={handlePlayPause} className='cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200' />
+                  <img src={` /images/Buttons/Button_play.png`} alt="play button" onClick={handlePlayPause} className='cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200' />
                 }
                 {(gama.experiment_state === 'RUNNING' || gama.experiment_state === 'LAUNCHING') &&
-                  <img src={` /images/V1/Buttons/Button_pause.png`} alt="play button" onClick={handlePlayPause} className='cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200' />
+                  <img src={` /images/Buttons/Button_pause.png`} alt="play button" onClick={handlePlayPause} className='cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200' />
                 }
-                <img src={` /images/V1/Buttons/Button_stop.png`} alt="" onClick={handleEnd} className='cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200' />
+                <img src={` /images/Buttons/Button_stop.png`} alt="" onClick={handleEnd} className='cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200' />
                 <Link to={"../streamPlayerScreen"} className=' rounded-lg'>
-                  <img src={` /images/V1/Buttons/Button_Display.png`} alt="streaming displays button" className='cursor-pointer hover:scale-110 transition-transform duration-200 size-[6dvh]' />
+                  <img src={` /images/Buttons/Button_Display.png`} alt="streaming displays button" className='cursor-pointer hover:scale-110 transition-transform duration-200 size-[6dvh]' />
                 </Link>
               </div>
 

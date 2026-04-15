@@ -14,13 +14,13 @@ const VRHeadset= ({ selectedPlayer, className, playerId }: VRHeadsetProps) => {
 
     const getHeadsetColor = () => {
         if (!isAvailable || playerId === undefined) {
-            return ` /images/V1/Headset/Headset_orange.png`;
+            return ` /images/Headset/Headset_orange.png`;
         } else {
             const ipIdentifier: string = playerId!.split("_")[1];
             if (ipIdentifier in HEADSET_COLOR) {
-                return ` /images/V1/Headset/Headset_${HEADSET_COLOR[ipIdentifier]}.png`;
+                return ` /images/Headset/Headset_${HEADSET_COLOR[ipIdentifier]}.png`;
             } else {
-                return ` /images/V1/Headset/Headset_orange.png`;
+                return ` /images/Headset/Headset_orange.png`;
             }
         }
     };
