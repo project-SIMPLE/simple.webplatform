@@ -117,26 +117,21 @@ export class AdbManager {
                 if (index > -1) this.clientCurrentlyStreaming.splice(index, 1);
 
                 logger.warn(`[${device.serial}] Trying to reconnect automatically...`);
-                const ip = device.serial.split(":")[0];
+                const ip: string = device.serial.split(":")[0];
                 const df = new DeviceFinder(this);
                 let reconnected = false;
                 let attempts = 0;
-                const maxAttempts = 10;
 
-                while (!reconnected && attempts < maxAttempts) {
+                while (!reconnected) {
                     attempts++;
                     reconnected = await df.scanAndConnectIP(ip);
                     if (!reconnected) {
-                        logger.debug(`[${device.serial}] Reconnect attempt ${attempts}/${maxAttempts} failed, retrying in 3s...`);
+                        logger.debug(`[${ip}] Reconnect attempt ${attempts} failed, retrying in 3s...`);
                         await new Promise(resolve => setTimeout(resolve, 3000));
                     }
                 }
 
-                if (reconnected) {
-                    logger.info(`[${device.serial}] Successfully reconnected`);
-                } else {
-                    logger.error(`[${device.serial}] Could not reconnect after ${maxAttempts} attempts, giving up`);
-                }
+                logger.info(`[${device.serial}] Successfully reconnected`);
             }
         });
 
