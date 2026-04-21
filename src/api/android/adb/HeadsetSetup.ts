@@ -47,6 +47,7 @@ export class HeadsetSetup {
         await this.applyShellSettings(adb, device.serial);
         await this.applyOvrPrefs(adb, device.serial);
         await this.applyBroadcasts(adb, device.serial);
+        await this.checkAvoidingApps(adb, device.serial);
         await this.checkRequiredApps(adb, device.serial);
     }
 
@@ -196,13 +197,26 @@ export class HeadsetSetup {
         }
     }
 
+    //Apps which should not be installed as can create conflict with other things
+    private async checkAvoidingApps(adb: Adb, serial: string) {
+        const APPS_TO_REMOVE: string[] = ["com.tpn.adbautoenable"];
+
+        for (const packageName of APPS_TO_REMOVE) {
+            const isInstalled = await this.isPackageInstalled(adb, packageName);
+            if (isInstalled) {
+                logger.warn(`[${serial}] '${packageName}' is installed — removing...`);
+                await this.uninstallPackage(adb, serial, packageName);
+            }
+        }
+    }
+
     private async checkRequiredApps(adb: Adb, serial: string) {
-        const REQUIRED_APPS: { packageName: string; apkFile: string; permission: string }[] = [
-            { packageName: "com.tpn.adbautoenable", apkFile: "com.tpn.adbautoenable.apk", permission: "android.permission.WRITE_SECURE_SETTINGS" },
-            { packageName: "tdg.oculuswirelessadb", apkFile: "tdg.oculuswirelessadb.apk", permission: "android.permission.WRITE_SECURE_SETTINGS" },
+        const REQUIRED_APPS: { packageName: string; apkFile: string; permission: string; needsToStart: boolean}[] = [
+            { packageName: "tdg.oculuswirelessadb", apkFile: "tdg.oculuswirelessadb.apk", permission: "android.permission.WRITE_SECURE_SETTINGS", needsToStart: false },
+            { packageName: "eu.project_simple.adbautoenable", apkFile: "eu.project_simple.adbautoenable.apk", permission: "android.permission.WRITE_SECURE_SETTINGS", needsToStart: true },
         ];
 
-        for (const { packageName, apkFile, permission } of REQUIRED_APPS) {
+        for (const { packageName, apkFile, permission, needsToStart } of REQUIRED_APPS) {
             const targetVersion = this.parseApkVersion(apkFile);
             logger.debug(`[${serial}] Checking '${packageName}'${targetVersion ? ` (target: v${targetVersion})` : ''}...`);
 
@@ -223,6 +237,15 @@ export class HeadsetSetup {
             }
 
             await this.ensurePermission(adb, serial, packageName, permission);
+
+            if (needsToStart) {
+                logger.debug(`[${serial}] First time installing '${packageName}', needs to start the application once...`);
+                await adb.subprocess.noneProtocol
+                    .spawnWaitText(
+                        ["monkey", "-p", packageName, "-c", "android.intent.category.LAUNCHER", "1"]
+                    );
+            }
+            logger.info(`[${serial}] All good updating '${packageName}' application :)`);
         }
     }
 
