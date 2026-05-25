@@ -105,21 +105,24 @@ class DeviceFinder {
             return false;
         }
 
-        new Evilscan({
+        const scanner = new Evilscan({
                 target: ipAddress,
                 port: '5555,30000-49999',   // your custom range
                 status: 'O',                // 'TROU' : Timeout, Refused, Open, Unreachable
                 concurrency: 500,           // how many ports to test in parallel
                 timeout: 250,               // maximum number of milliseconds before closing the connection
                 banner:false
-            })
-            .on('result', async (data:any) => {
+            });
+
+        scanner.on('result', async (data:any) => {
                 loggerES.trace(`Scan of ${ipAddress} find this: {data}`, {data});
                 if (!alreadyConnected){
                     loggerES.trace(`Trying to ADB connect to ${data.ip}:${data.port}`);
 
                     try {
                         alreadyConnected = await this.adbManager.connectNewDevice(data.ip, data.port);
+                        if (alreadyConnected)
+                            scanner.abort();
                     } catch (e) {
                         if (ENV_EXTRA_VERBOSE) loggerES.error("Couldn't connect with this error message: {e}", {e})
                     }
