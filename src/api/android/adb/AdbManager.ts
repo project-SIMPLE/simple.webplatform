@@ -35,7 +35,7 @@ export class AdbManager {
         this.controller = controller;
         try {
             this.adbServer = new AdbServerClient(
-                new AdbServerNodeTcpConnector({ host: '127.0.0.1', port: 5037 })
+                new AdbServerNodeTcpConnector({ host: 'localhost', port: 5037 })
             );
         } catch (e) {
             logger.error(`Can't connect to device's ADB server ${e}`);
