@@ -2,9 +2,9 @@ import { useSearchParams } from "react-router-dom"
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
 import { HEADSET_COLOR } from "../../api/core/Constants.ts";
 const StreamFullscreen = () => {
-    const [identifier] = useSearchParams();
-    identifier.get("")
-    const cleanId = identifier.toString().replace(/\D/g, "");
+    const [searchParams] = useSearchParams();
+    const idParam = searchParams.get("id") ?? "";
+    const cleanId = idParam.replace(/\D/g, "");
     const bgColor = HEADSET_COLOR[cleanId]
     //removes all non numerical values in the string, be careful when using this
 

@@ -25,19 +25,25 @@ const SimulationManager = () => {
   const navigate = useNavigate();
   const [simulationStarted, setSimulationStarted] = useState(false);
   const { t } = useTranslation();
-  const [startButtonClicked, setStartButtonClicked] = useState(false);
-
-  const startClicked = () => {
-    setStartButtonClicked(true);
-    handlePlayPause();
-
-  }
-
-
   // Comparaison between players from the simulationList and the maximal/minimal players
   const detectedPlayers = Object.keys(playerList); // List Detected Players
   const maxPlayers = selectedSimulation?.maximal_players || 0;
   const minPlayers = selectedSimulation?.minimal_players || 0;
+
+  // Auto-start simulation when max players reached and experiment hasn't started
+  useEffect(() => {
+    if (
+      !gamaless &&
+      gama.experiment_state === 'NONE' &&
+      detectedPlayers.length >= Number(maxPlayers) &&
+      Number(maxPlayers) > 0 &&
+      ws !== null
+    ) {
+      setSimulationStarted(true);
+      logger.debug("sent message {type: launch experiment}");
+      ws.send(JSON.stringify({ type: "launch_experiment" }));
+    }
+  }, [gamaless, gama.experiment_state, detectedPlayers.length, maxPlayers, ws]);
 
 
 
@@ -100,6 +106,7 @@ const SimulationManager = () => {
                 const player = playerList[key];
                 return (
                   <SimulationManagerPlayer
+                    key={key}
                     Playerkey={key}
                     selectedPlayer={player}
                     playerId={key}
@@ -143,7 +150,7 @@ const SimulationManager = () => {
 
                 <div className="flex justify-center space-x-2 gap-10 mb-4 mt-4 ">
                     <div>
-                   <img src={` /images/Buttons/Button_play.png`} className='cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200' onClick={startClicked} alt="" />
+                   <img src={` /images/Buttons/Button_play.png`} className='cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200' onClick={handlePlayPause} alt="" />
                   {/* <img src={` /images/Headset_condition/Headset_condition_connecting.png`} alt="" className='size-[65px] ml-2 animate-spin absolute bottom-[5px] right-[280px] '/> */}
 
                     </div>
@@ -156,11 +163,12 @@ const SimulationManager = () => {
                   </Link>
                 </div>
               </>
-              ) : ( // Autostart simulation
+              ) : ( // Autostart simulation — handled by useEffect above
               <>
-                {
-                  Object.keys(playerList).length >= Number(maxPlayers) && handlePlayPause() // Call handlePlayPause function here
-                }
+                <p className="flex items-center w-fit">
+                  {t('all_players_connected')}
+                  <img src={`/images/Headset_condition/Headset_condition_connected.png`} alt="" className='size-5 ml-2'/>
+                </p>
               </>
               )
               ) :
