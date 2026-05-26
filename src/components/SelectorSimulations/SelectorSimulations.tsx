@@ -153,7 +153,11 @@ const SelectorSimulations = () => {
   return (
     <div className="flex flex-col items-center justify-between h-full">
 
-      <Header />
+      <Header onLogoClick={() => {
+        setPath([]);
+        setSubProjectsList(simulationList);
+        setSelectedSplashscreen('');
+      }} />
       {/* ↑ prop to specify whether it should use the small version of the navigation bar */}
 
       {gamaless ? (
