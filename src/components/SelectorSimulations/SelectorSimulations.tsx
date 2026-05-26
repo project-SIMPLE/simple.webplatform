@@ -36,29 +36,39 @@ const SelectorSimulations = () => {
   useEffect(() => {
     if (simulationList.length > 0) {
       setLoading(false);
-      if (simulationList.length === 1) {
-        simulationList
-      }
     }
   }, [simulationList]);
 
   useEffect(() => {
     // the path here is a list of nested indexes, which are used to see which catalogs the user clicked
-    if (path.length > 0) {
-      let list = simulationList
-      for (const index of path) {
-        logger.debug("index in the use effect: {index}", { index })
-        if (list[index].type === "catalog") {
-          list = list[index].entries
-        } else {
-          list = [list[index]]
-        }
-        setSubProjectsList(list)
-      }
-    } else {
-      setSubProjectsList(simulationList)
+    if (!Array.isArray(simulationList)) {
+      logger.warn("simulationList is not an array, resetting subProjectsList");
+      setSubProjectsList([]);
+      return;
     }
-  }, [path, simulationList])
+    if (path.length > 0) {
+      let list: (VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[] = simulationList;
+      for (const index of path) {
+        logger.debug("index in the use effect: {index}", { index });
+        if (!Array.isArray(list)) {
+          logger.error("Expected list to be an array during path traversal");
+          break;
+        }
+        const entry = list[index];
+        if (entry?.type === "catalog" && Array.isArray((entry as VU_CATALOG_SETTING_JSON).entries)) {
+          list = (entry as VU_CATALOG_SETTING_JSON).entries;
+        } else if (entry) {
+          list = [entry];
+        } else {
+          logger.error("Invalid path index {index}", { index });
+          break;
+        }
+      }
+      setSubProjectsList(list);
+    } else {
+      setSubProjectsList(simulationList);
+    }
+  }, [path, simulationList]);
 
   /**Function used to add a clicked subfolder to path
    * path is an ordered array containing the indexes of all clicked subfolders
@@ -91,49 +101,29 @@ const SelectorSimulations = () => {
       return;
     }
 
-    if (subProjectsList[index].type === "catalog") { //?  we additionaly check if the simulation is a catalog, not necessary but allows for adding extra types
-      const catalog_item = subProjectsList[index];
-      //we define a constant to tell typescript that the type of subProjectsList[index] cannot change and is a VU_CATALOG_SETTING_JSON, meaning that entries is defined
+    const item = subProjectsList[index];
+
+    if (item.type === "catalog") {
+      const catalog_item = item as VU_CATALOG_SETTING_JSON;
       logger.debug("catalog detected, subprojectList:{subprojectList}", { subProjectList: JSON.stringify(catalog_item.entries) });
       try {
         setSubProjectsList(catalog_item.entries);
-        addToPath(index)
-        if (simulationList[index].splashscreen !== undefined) {
-          setSelectedSplashscreen(simulationList[index].splashscreen);
-
+        addToPath(index);
+        if (catalog_item.splashscreen) {
+          setSelectedSplashscreen(catalog_item.splashscreen);
         } else {
           logger.warn("No splashscreen could be found for simulation {simulation}", { simulation: catalog_item.name })
         }
-        logger.debug("called handle simulation, selected item is a catalog of name:{expName}", { expName: subProjectsList[index].name });
+        logger.debug("called handle simulation, selected item is a catalog of name:{expName}", { expName: catalog_item.name });
+      } catch (e) {
+        logger.error("no subprojects, ERROR:{e}", { e });
       }
-      catch (e) { logger.error("no subprojects, ERROR:{e}", { e }); }
-
-    } else if (simulationList[index].type == "json_settings") {
-      ws.send(JSON.stringify({ type: 'send_simulation', simulation: simulationList[index] }));
+    } else if (item.type === "json_settings") {
+      ws.send(JSON.stringify({ type: 'send_simulation', simulation: item }));
       setTimeout(() => {
         navigate('/simulationManager');
       }, 100);
-
-      // ---------------------------------------------------------  sub project selected
-
     }
-    if (subProjectsList[index].type == "json_settings") {
-      ws.send(JSON.stringify({ type: 'send_simulation', simulation: subProjectsList[index] }));
-      setTimeout(() => {
-        navigate('/simulationManager');
-      }, 100);
-    } else {
-      if (subProjectsList[index].type == "catalog") {
-        try {
-          addToPath(index)
-          logger.debug("handlesimulation, simulationList[index].type == catalog, {name}", { name: subProjectsList[index].name });
-        } // in any case, we catch the error and log it if any
-        catch (e) {
-          logger.error("no subprojects, ERROR: {e}", { e: (e as Error).message });
-        }
-      }
-    }
-
   };
 
   // Loop which tries to connect to Gama (skipped in GAMALESS mode)

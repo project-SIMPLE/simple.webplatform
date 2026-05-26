@@ -117,9 +117,15 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
                     case 'screen_control':
                         //TODO voir si on a toujours besoin de ça ?
                         break;
+                    case 'json_settings':
+                        // Single simulation metadata — should not replace the list
+                        logger.debug('[WebSocketManager] Single json_settings received, ignoring for simulationList');
+                        break;
                     default:
-                        logger.warn('[WebSocketManager] Message not processed, defaulted to setSimulationList. data:{data}', { data });
-                        setSimulationList(data)
+                        logger.warn('[WebSocketManager] Message not processed. data:{data}', { data });
+                        if (Array.isArray(data)) {
+                            setSimulationList(data);
+                        }
                    
                 }
             }

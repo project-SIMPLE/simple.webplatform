@@ -18,6 +18,10 @@ interface SimulationListProps {
 const logger = getLogger(["components", "SimulationList"]);
 
 const SimulationList = ({ list, handleSimulation, gama, className }: SimulationListProps) => {
+  if (!Array.isArray(list)) {
+    logger.error("SimulationList received non-array list: {list}", { list });
+    return null;
+  }
 
   const frame = [
     ` /images/Game_selection/Game_selection_Aquadefender.png`,
@@ -45,10 +49,17 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
                 <img src={frame[Math.floor(Math.random() * 5)]} alt="frame" className='absolute scale-110' />
               }
               {/* //TODO the src of the image is a placeholder, selects one of the 5 frames at random */}
-              <img src={` ${simulation.splashscreen}`}
-                className='h-full -z-10 bg-[#fcf7ec]'
-                //@ts-expect-error target property of image does exist
-                onError={(e) => { e.target.src = "/images/simple_logo.png"; logger.warn("couldn't load an image for simulation {index}, using the placeholder", { index }) }}
+              <img
+                  src={simulation.splashscreen?.trim() ? simulation.splashscreen.trim() : "/images/simple_logo.png"}
+                  className="h-full -z-10 bg-[#fcf7ec]"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    // Prevent infinite loop if the fallback is also broken
+                    if (target.src.includes("simple_logo.png")) return;
+
+                    target.src = "/images/Logos/simple_logo.png";
+                    logger.warn("couldn't load an image for simulation {index}, using the placeholder", { index });
+                  }}
               />
             </div>
 
