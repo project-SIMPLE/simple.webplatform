@@ -1,7 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import { isAbsolute } from 'path';
-import { VU_MODEL_SETTING_JSON, VU_CATALOG_SETTING_JSON, MIN_VU_MODEL_SETTING_JSON, MIN_VU_CATALOG_SETTING_JSON } from '../core/Constants.ts';
+import type {
+  VU_MODEL_SETTING_JSON,
+  VU_CATALOG_SETTING_JSON,
+  MIN_VU_MODEL_SETTING_JSON,
+  MIN_VU_CATALOG_SETTING_JSON,
+} from '../../common/types.ts';
 import Model from './Model.ts';
 import Controller from "../core/Controller.ts";
 import {getLogger} from "@logtape/logtape";

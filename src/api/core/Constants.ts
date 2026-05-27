@@ -1,5 +1,7 @@
 /*
-    INTERFACES  ========================================
+    BACKEND-ONLY INTERFACES & CONSTANTS  ============================
+    For shared frontend/backend types see src/common/types.ts
+    For shared constants see src/common/constants.ts
  */
 
 import uWS from "uWebSockets.js";
@@ -38,63 +40,7 @@ export interface JsonPlayer {
     heartbeat?: number;
 }
 
-// Learning packages ==============================================
-
-/**
- * Inteface to make manipulation of the json file easier
- * these are incomplete and do not represent the full structure of the json file
- * but contain what is necessary to parse them
- */
-export interface VU_MODEL_SETTING_JSON {
-    type: "json_settings";
-    name: string;
-    splashscreen: string;
-    model_file_path: string;
-    experiment_name: string;
-    minimal_players: string;
-    maximal_players: string;
-    selected_monitoring?: 'gama_screen';
-}
-
-export interface VU_CATALOG_SETTING_JSON {
-    type: "catalog";
-    name: string;
-    splashscreen?: string;
-    entries: VU_MODEL_SETTING_JSON[] | VU_CATALOG_SETTING_JSON[];
-}
-
-// Simplier version used to send useful information only to Monitor clients
-export interface MIN_VU_MODEL_SETTING_JSON {
-    type: string;
-    name: string;
-    splashscreen: string;
-    model_index: number;
-}
-
-// Simplier version used to send useful information only to Monitor clients
-export interface MIN_VU_CATALOG_SETTING_JSON {
-    type: string;
-    name: string;
-    splashscreen?: string;
-    entries: MIN_VU_MODEL_SETTING_JSON[]|MIN_VU_CATALOG_SETTING_JSON;
-}
-
 // Internal message exchange ==============================================
-
-export interface PlayerState {
-    connected: boolean;
-    in_game: boolean;
-    date_connection: string;
-}
-
-export interface GamaState {
-    connected: boolean;
-    experiment_state: string;
-    loading: boolean;
-    content_error: string;
-    experiment_id: string;
-    experiment_name: string;
-}
 
 export interface Player {
     id: string,
@@ -131,19 +77,6 @@ export const GAMA_ERROR_MESSAGES: string[] = [
     "MalformedRequest",
     "UnableToExecuteRequest"
 ];
-
-export const HEADSET_COLOR: Record<string,string> = {
-    "101": "blue",
-    "102": "green",
-    "103": "orange",
-    "104": "purple", 
-    "105": "yellow",  
-    "106": "black",
-    "110":"bg-green-300",
-    "190": "red",
-    "21": "bg-blue-500",
-    "15":"bg-blue-600"
-};
 
 /**
  * ANSI colors for console output
@@ -223,4 +156,4 @@ export const ON_DEVICE_OVR_PREFS: Record<string, number> = {
 // Broadcasts sent unconditionally on every connection (fire-and-forget, no check needed).
 export const ON_DEVICE_ADB_BROADCASTS: string[] = [
     "com.oculus.vrpowermanager.prox_close", // Force proximity to "worn" — prevents screen blackout on headset removal
-]
+];

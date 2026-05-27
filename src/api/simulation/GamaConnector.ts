@@ -1,6 +1,7 @@
 import WebSocket from 'ws';
 import { ENV_VERBOSE, ENV_EXTRA_VERBOSE } from '../index.ts';
-import {GamaState, GAMA_ERROR_MESSAGES, JsonPlayerAsk, GAMA_JSON_LOAD_EXPERIMENT} from "../core/Constants.ts";
+import {GAMA_ERROR_MESSAGES, JsonPlayerAsk, GAMA_JSON_LOAD_EXPERIMENT} from "../core/Constants.ts";
+import type { GamaState } from "../../common/types.ts";
 import Model from "./Model.ts";
 import Controller from "../core/Controller.ts";
 import {getLogger, Logger} from "@logtape/logtape";

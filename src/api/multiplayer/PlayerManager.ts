@@ -1,7 +1,8 @@
 import uWS, {TemplatedApp} from 'uWebSockets.js';
 
 import {ENV_EXTRA_VERBOSE, ENV_AGGRESSIVE_DISCONNECT} from '../index.ts';
-import {JsonPlayer, JsonOutput, PlayerState, Player, JsonPlayerAsk} from "../core/Constants.ts";
+import {JsonPlayer, JsonOutput, Player, JsonPlayerAsk} from "../core/Constants.ts";
+import type { PlayerState } from "../../common/types.ts";
 import Controller from "../core/Controller.ts";
 import {clearInterval} from "node:timers";
 import {getLogger, Logger} from "@logtape/logtape";

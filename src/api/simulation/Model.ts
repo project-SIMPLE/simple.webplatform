@@ -1,5 +1,5 @@
 import path from 'path';
-import {VU_MODEL_SETTING_JSON} from "../core/Constants.ts";
+import type {VU_MODEL_SETTING_JSON} from "../../common/types.ts";
 import { Logger, getLogger } from '@logtape/logtape';
 import fs from "fs";
 
