@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { HEADSET_COLOR } from "../../api/core/Constants.ts";
+import { HEADSET_COLOR } from "../../common/constants";
 import visibility_off from "../../svg_logos/visibility_off.svg"
 import x_cross from "../../svg_logos/x_cross.svg";
 import { getLogger } from "@logtape/logtape";

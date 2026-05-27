@@ -7,7 +7,10 @@ import Header from '../Header/Header';
 import { Link } from 'react-router-dom';
 import SimulationList from './SimulationList';
 import { getLogger } from '@logtape/logtape';
-import { VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from '../../api/core/Constants';
+import type {
+  VU_CATALOG_SETTING_JSON,
+  VU_MODEL_SETTING_JSON,
+} from '../../common/types';
  
 const SelectorSimulations = () => {
   const { ws, isWsConnected, gamaless, gama, simulationList } = useWebSocket();

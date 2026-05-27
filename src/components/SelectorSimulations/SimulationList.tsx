@@ -1,18 +1,14 @@
-
-import { VU_MODEL_SETTING_JSON, VU_CATALOG_SETTING_JSON } from '../../api/core/Constants';
 import { getLogger } from '@logtape/logtape';
- 
+import type {
+  VU_MODEL_SETTING_JSON,
+  VU_CATALOG_SETTING_JSON,
+  GamaState,
+} from '../../common/types';
+
 interface SimulationListProps {
   list: (VU_MODEL_SETTING_JSON | VU_CATALOG_SETTING_JSON)[];
   handleSimulation: (index: number) => void;
-  gama: {
-    connected: boolean;
-    loading: "hidden" | "visible";
-    experiment_state: string;
-    experiment_name: string;
-    content_error: string;
-  }
-
+  gama: GamaState;
   className?: string;
 }
 const logger = getLogger(["components", "SimulationList"]);

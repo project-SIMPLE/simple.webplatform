@@ -10,14 +10,6 @@ import Header from '../Header/Header';
 import { Link } from 'react-router-dom';
 import { getLogger } from '@logtape/logtape';
 
- 
-export interface Player {
-  connected: boolean;
-  date_connection: string;
-  in_game: boolean;
-}
-
-
 const SimulationManager = () => {
 
   const logger = getLogger(["simulationManager", "SimulationManager"]);

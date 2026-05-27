@@ -1,8 +1,9 @@
 
-import { HEADSET_COLOR } from "../../api/core/Constants.ts";
- 
+import { HEADSET_COLOR } from "../../common/constants";
+import type { PlayerState } from '../../common/types';
+
 interface VRHeadsetProps {
-  selectedPlayer?: any;  
+  selectedPlayer?: PlayerState;
   className?: string;
   playerId?: string;
 }

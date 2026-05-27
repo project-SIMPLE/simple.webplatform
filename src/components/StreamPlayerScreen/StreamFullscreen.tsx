@@ -1,6 +1,6 @@
 import { useSearchParams } from "react-router-dom"
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
-import { HEADSET_COLOR } from "../../api/core/Constants.ts";
+import { HEADSET_COLOR } from "../../common/constants";
 const StreamFullscreen = () => {
     const [searchParams] = useSearchParams();
     const idParam = searchParams.get("id") ?? "";

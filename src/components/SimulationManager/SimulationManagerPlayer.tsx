@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import cross from '/src/svg_logos/x_cross.svg';
 import { getLogger } from "@logtape/logtape";
-import { Player } from "./SimulationManager";
+import type { PlayerState } from '../../common/types';
 const logger = getLogger(["components", "SimulationManagerPlayer"]);
  
 
 interface PlayerProps {
   Playerkey: string
-  selectedPlayer?: Player;
+  selectedPlayer?: PlayerState;
   className?: string;
   playerId?: string;
 

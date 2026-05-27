@@ -1,40 +1,24 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from '../../api/core/Constants';
 import { getLogger } from '@logtape/logtape';
-
-
+import type {
+  PlayerList,
+  GamaState,
+  VU_MODEL_SETTING_JSON,
+  VU_CATALOG_SETTING_JSON,
+} from '../../common/types';
 
 const logger = getLogger(["components", "WebSocketManager"]);
-interface Player {
-    connected: boolean;
-    date_connection: string;
-    in_game: boolean;
-}
-
-interface PlayerList {
-    [key: string]: Player;
-}
-
 
 // Define types for the WebSocket context
 interface WebSocketContextType {
     ws: WebSocket | null;
     isWsConnected: boolean;
     gamaless: boolean;
-    gama: {
-        connected: boolean;
-        loading: 'hidden' | 'visible';
-        experiment_state: string;
-        experiment_name: string;
-        content_error: string;
-    };
+    gama: GamaState;
     playerList: PlayerList;
     simulationList: (VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[];
     selectedSimulation: (VU_MODEL_SETTING_JSON) | null;
-
-
-    removePlayer: (id: string) => void; // Define removePlayer here
-
+    removePlayer: (id: string) => void;
 }
 
 // Initialize context with a default value of `null` for WebSocket and default values for other states
@@ -48,10 +32,11 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
     const [ws, setWs] = useState<WebSocket | null>(null);
     const [isWsConnected, setIsWsConnected] = useState<boolean>(false);
     const [gamaless, setGamaless] = useState<boolean>(false);
-    const [gama, setGama] = useState({
+    const [gama, setGama] = useState<GamaState>({
         connected: false,
-        loading: 'hidden' as 'hidden' | 'visible',
+        loading: false,
         experiment_state: 'NONE',
+        experiment_id: '',
         experiment_name: '',
         content_error: '',
     });
