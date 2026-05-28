@@ -19,6 +19,20 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
     return null;
   }
 
+  /**
+   * Simple deterministic hash of a string into a non-negative integer.
+   * Guarantees the same input always yields the same output.
+   */
+  const hashString = (str: string): number => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash |= 0; // Convert to 32-bit integer
+    }
+    return Math.abs(hash) % frame.length;
+  };
+
   const frame = [
     ` /images/Game_selection/Game_selection_Aquadefender.png`,
     ` /images/Game_selection/Game_selection_Lulut.png`,
@@ -42,7 +56,7 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
               {simulation.type === "catalog" ?
                 <img src={` /images/Game_selection/Game_selection_Folder.png`} className='absolute scale-110 top-[-10%]' alt="" />
                 :
-                <img src={frame[Math.floor(Math.random() * 5)]} alt="frame" className='absolute scale-110' />
+                <img src={frame[hashString(simulation.name)]} alt="frame" className='absolute scale-110' />
               }
               {/* //TODO the src of the image is a placeholder, selects one of the 5 frames at random */}
               <img
