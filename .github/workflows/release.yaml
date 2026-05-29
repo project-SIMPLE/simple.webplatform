@@ -1,7 +1,7 @@
 name: "Releasing with compressed binary"
 
 on:
-  workflow_call:
+  workflow_dispatch:
 
 jobs:
   build-linux:
