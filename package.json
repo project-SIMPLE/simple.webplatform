@@ -10,22 +10,11 @@
     "preview": "vite preview",
     "build:frontend": "vite build",
     "build:backend": "vite build -c vite.backend.config.ts",
-    "build:executable": "npm run build:frontend && npm run build:backend && pkg .",
-    "build:executable-compressed": "npm run build:frontend && npm run build:backend && pkg . --compress Brotli",
-    "build:sea:win": "node scripts/build-sea-win.mjs"
+    "build:sea:win": "node scripts/build-sea-win.mjs",
+    "build:sea:linux": "node scripts/build-sea-unix.mjs",
+    "build:sea:macos": "node scripts/build-sea-unix.mjs"
   },
   "bin": "dist-api/index.cjs",
-  "pkg": {
-    "assets": [
-      "dist/**/*",
-      "node_modules/uWebSockets.js/*.node"
-    ],
-    "targets": [
-      "node24-linux-x64",
-      "node24-macos-x64"
-    ],
-    "outputPath": "bin"
-  },
   "dependencies": {
     "@homebridge/ciao": "^1.1.8",
     "@logtape/file": "^2.0.4",
@@ -77,7 +66,6 @@
     "@eslint/js": "^9.39.3",
     "@eslint/json": "^1.0.0",
     "@types/express": "^5.0.6",
-    "@yao-pkg/pkg": "^6.12.0",
     "eslint": "^8.57.1",
     "eslint-plugin-react": "^7.37.5",
     "globals": "^17.3.0",
