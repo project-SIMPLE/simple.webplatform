@@ -161,12 +161,11 @@ console.log(`      Size:    ${sizeMB} MB`);
 
 const launcherName = process.env.LAUNCHER_NAME || 'simple-win.exe';
 const launcherExe = path.join(outDir, launcherName);
-const goExe = 'C:\\Program Files\\Go\\bin\\go.exe';
 const launcherSrc = path.join(__dirname, 'launcher-win.go');
 
 console.log(`\n[Launcher] Compiling ${launcherName} (Go)...`);
 execSync(
-  `"${goExe}" build -ldflags="-s -w" -trimpath -o "${launcherExe}" "${launcherSrc}"`,
+  `go build -ldflags="-s -w" -trimpath -o "${launcherExe}" "${launcherSrc}"`,
   { cwd: root, stdio: 'inherit' },
 );
 
