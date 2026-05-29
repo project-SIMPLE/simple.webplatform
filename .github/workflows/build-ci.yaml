@@ -4,7 +4,7 @@ on:
   push:
 
 jobs:
-  compilation-unix:
+  compilation-linux:
     runs-on: ubuntu-latest
     steps:
 
@@ -13,20 +13,11 @@ jobs:
         with:
           node-version: 24
 
-      - name: Get utils
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y qemu-user-binfmt
-
-      - uses: MOZGIII/install-ldid-action@v1
-        with:
-          tag: v2.1.5-procursus7
-
       - name: Install npm modules
         run: npm i
 
-      - name: Package application
-        run: npm run build:executable
+      - name: Build Linux binary
+        run: npm run build:sea:linux
 
       - name: Export release for Linux
         uses: actions/upload-artifact@v4
@@ -35,18 +26,31 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           overwrite: true
-          path: |
-            ${{ github.workspace }}/bin/simple-linux*
+          path: ${{ github.workspace }}/bin/simple-linux
 
-      - name: Export release for MacOS
+  compilation-macos:
+    runs-on: macos-latest
+    steps:
+
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install npm modules
+        run: npm i
+
+      - name: Build macOS binary
+        run: npm run build:sea:macos
+
+      - name: Export release for macOS
         uses: actions/upload-artifact@v4
         with:
           name: macos-compiled-archive
           if-no-files-found: error
           compression-level: 0
           overwrite: true
-          path: |
-            ${{ github.workspace }}/bin/simple-macos*
+          path: ${{ github.workspace }}/bin/simple-macos
 
   compilation-windows:
     runs-on: windows-latest
