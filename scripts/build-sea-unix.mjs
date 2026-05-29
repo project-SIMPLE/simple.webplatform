@@ -26,6 +26,18 @@ if (platform !== 'linux' && platform !== 'darwin') {
   process.exit(1);
 }
 
+// Node.js v26 (Arch Linux package) has a broken SEA implementation: postject
+// corrupts the ELF binary and the objcopy approach produces sections without
+// program segments, so dl_iterate_phdr never finds the blob → SIGSEGV at boot.
+// CI uses Node.js 24; local builds must match.
+const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
+if (nodeMajor !== 24) {
+  console.error(`[SEA] ERROR: Node.js v${process.versions.node} is not supported for SEA builds.`);
+  console.error('[SEA]        SEA injection is only reliable on Node.js 24.');
+  console.error('[SEA]        Run:  nvm use 24  (or: nvm install 24)');
+  process.exit(1);
+}
+
 const outputName = platform === 'darwin' ? 'simple-macos' : 'simple-linux';
 
 // ── 1. Build frontend and backend ────────────────────────────────────────────

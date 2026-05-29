@@ -21,6 +21,13 @@ import { patchPe } from './patch-pe-no-cfg.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 
+const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
+if (nodeMajor !== 24) {
+  console.error(`[SEA] ERROR: Node.js v${process.versions.node} is not supported for SEA builds.`);
+  console.error('[SEA]        SEA injection is only reliable on Node.js 24.');
+  process.exit(1);
+}
+
 // ── 1. Build frontend and backend ────────────────────────────────────────────
 
 console.log('\n[SEA] Building frontend...');
