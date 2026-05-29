@@ -15,6 +15,7 @@ import Controller from './core/Controller.ts';
 import { StaticServer } from './infra/StaticServer.ts';
 import path from 'path';
 import { createRequire } from 'module';
+import {isMacMini} from "./infra/DeviceDetector.ts";
 
 /*
     TOOLBOX ================================
@@ -177,6 +178,7 @@ async function start() {
     logger.debug(`Arch: ${process.arch}`);
     logger.debug(`Is Packaged: {isPackaged}`, {isPackaged: IS_PLATFORM_PACKAGED});
     logger.debug(`NODE_ENV: ${process.env.NODE_ENV}`);
+    logger.debug(`Is running on a Mac Mini: ${isMacMini()}`);
 
     logger.trace(process.env);
 

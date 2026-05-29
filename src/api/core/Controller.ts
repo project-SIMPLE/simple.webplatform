@@ -9,6 +9,7 @@ import { JsonPlayerAsk, JsonOutput } from "./Constants.ts";
 import { getLogger } from "@logtape/logtape";
 import { spawnSync } from 'child_process';
 import { UpsManager } from '../infra/ups/UpsManager.ts';
+import {isMacMini} from "../infra/DeviceDetector.ts";
 
 const logger = getLogger(["core", "Controller"]);
 
@@ -64,31 +65,31 @@ export class Controller {
 
     /** Called after 3 hours. Shuts down headsets, UPS, and host if UPS is on battery. */
     private async handleSessionTimeout(): Promise<void> {
-        logger.warn('3-hour session timer fired');
+        if (isMacMini()) {
+            logger.warn('3-hour session timer fired');
 
-        if (this.ups_service.isConnected() && this.ups_service.isOnAC()) {
-            logger.info('UPS is on AC power — no shutdown needed');
-            return;
-        }
-
-        logger.warn('UPS is on battery or not connected — initiating shutdown sequence');
-
-        // (1) Power off all headsets
-        if (this.adb_manager)
-            await this.adb_manager.shutdownAllHeadsets();
-
-        // (2) Arm UPS output cut in 2 minutes (only executes when on battery)
-        this.ups_service.armShutdown(120);
-
-        // (3) Shutdown host computer after 30s to allow headsets and UPS time to process
-        setTimeout(() => {
-            logger.warn('Shutting down host computer now');
-            if (process.platform === 'win32') {
-                spawnSync('shutdown', ['/s', '/t', '0']);
-            } else {
-                spawnSync('shutdown', ['-h', 'now']);
+            if (this.ups_service.isConnected() && this.ups_service.isOnAC()) {
+                logger.info('UPS is on AC power — no shutdown needed');
+                return;
             }
-        }, 30_000);
+
+            logger.warn('UPS is on battery or not connected — initiating shutdown sequence');
+
+            // (1) Power off all headsets
+            if (this.adb_manager)
+                await this.adb_manager.shutdownAllHeadsets();
+
+            // (2) Arm UPS output cut in 2 minutes (only executes when on battery)
+            this.ups_service.armShutdown(120);
+
+            // (3) Shutdown host computer after 30s to allow headsets and UPS time to process
+            logger.warn('Shutting down host computer now');
+            setTimeout(() => {
+                spawnSync('shutdown', ['-h', 'now']);
+            }, 30_000);
+        } else {
+            logger.info("Not running on a M2L2 (Mac Mini), skipping shutdown mechanism");
+        }
     }
 
     async restart() {
