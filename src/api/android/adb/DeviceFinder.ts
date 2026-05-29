@@ -91,7 +91,12 @@ class DeviceFinder {
 
     private isDeviceReachable(ipAddress: string): Promise<boolean> {
         return new Promise((resolve) => {
-            exec(`ping -c 1 -W 1 ${ipAddress}`, (error) => resolve(!error));
+            // Sanitize: only allow valid IPv4 to prevent command injection
+            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ipAddress)) { resolve(false); return; }
+            const cmd = process.platform === 'win32'
+                ? `ping -n 1 -w 1000 ${ipAddress}`
+                : `ping -c 1 -W 1 ${ipAddress}`;
+            exec(cmd, (error) => resolve(!error));
         });
     }
 

@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 jobs:
-  compilation:
+  build-linux:
     runs-on: ubuntu-latest
     steps:
 
@@ -13,28 +13,95 @@ jobs:
         with:
           node-version: 24
 
-      - name: Get utils
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y qemu-user-binfmt
+      - name: Install npm modules
+        run: npm i
 
-      - uses: MOZGIII/install-ldid-action@v1
+      - name: Build Linux binary
+        run: npm run build:sea:linux
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag: v2.1.5-procursus7
+          name: linux-release-binary
+          if-no-files-found: error
+          compression-level: 0
+          path: ${{ github.workspace }}/bin/simple-linux
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
 
       - name: Install npm modules
         run: npm i
 
+      - name: Build macOS binary
+        run: npm run build:sea:macos
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-release-binary
+          if-no-files-found: error
+          compression-level: 0
+          path: ${{ github.workspace }}/bin/simple-macos
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Install npm modules
+        run: npm i
+
+      - name: Build Windows binary
+        run: npm run build:sea:win
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release-binary
+          if-no-files-found: error
+          compression-level: 0
+          path: ${{ github.workspace }}/bin/win/simple-win.exe
+
+  release:
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Download Linux binary
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-release-binary
+          path: release-files/
+
+      - name: Download macOS binary
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-release-binary
+          path: release-files/
+
+      - name: Download Windows binary
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-release-binary
+          path: release-files/
+
       - name: Get release metadata
-        id: setup_new_release_data
-        run: |
-          date=$(date +'%d/%m/%y %R')
-          echo "date=$date" >> "$GITHUB_OUTPUT"
-
-      - name: Package application
-        run: npm run build:executable-compressed
-
-      # Publish
+        id: meta
+        run: echo "date=$(date +'%d/%m/%y %R')" >> "$GITHUB_OUTPUT"
 
       - name: Publish alpha to Github
         uses: softprops/action-gh-release@v2
@@ -45,7 +112,7 @@ jobs:
           name: Alpha Version
           body: |
             Alpha release of the SIMPLE webplatform. Please test and report issues.
-            Lastly updated on $(date +'%d/%m/%y %R').
+            Lastly updated on ${{ steps.meta.outputs.date }}.
           generate_release_notes: true
-          files: ${{ github.workspace }}/bin/*
+          files: release-files/**
           fail_on_unmatched_files: true

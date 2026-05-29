@@ -3,51 +3,96 @@ import path from 'path';
 import fs from 'fs';
 import { getLogger } from "@logtape/logtape";
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 
 const logger = getLogger(["infra", "StaticServer"]);
 
+const MIME: Record<string, string> = {
+  html: 'text/html; charset=utf-8',
+  js: 'application/javascript',
+  mjs: 'application/javascript',
+  css: 'text/css',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+  svg: 'image/svg+xml',
+  ico: 'image/x-icon',
+  json: 'application/json',
+  woff: 'font/woff',
+  woff2: 'font/woff2',
+  ttf: 'font/ttf',
+  otf: 'font/otf',
+  webp: 'image/webp',
+};
+
+function getSea(): any {
+  try {
+    // process.execPath is always an absolute path and works as a createRequire
+    // base on any platform; import.meta.url is not valid in Vite's CJS bundle.
+    const req = createRequire(process.execPath);
+    const sea = req('node:sea');
+    return sea.isSea() ? sea : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 export class StaticServer {
-    constructor() {
-        logger.debug(`Starting express server for static files...`);
-        const app = express();
-        const port = process.env.WEB_APPLICATION_PORT || '5173';
-        
-        // In bundled environment, dist might be relative to the executable or the script
-        // When using pkg, assets are often at /snapshot/project/dist
-        // We will try to find the dist folder
-        
-        const __dirname = path.dirname(fileURLToPath(import.meta.url));
-        
-        // Try multiple possible paths for 'dist'
-        const possiblePaths = [
-            path.resolve(__dirname, 'dist'),           // If index.cjs is next to dist
-            path.resolve(__dirname, '../dist'),        // If index.cjs is in a subfolder (like dist-api)
-            path.resolve(__dirname, '../../../dist'),  // If running from src/api/infra
-        ];
-        
-        let distPath = '';
-        for (const p of possiblePaths) {
-            if (fs.existsSync(p)) {
-                distPath = p;
-                break;
-            }
+  constructor() {
+    logger.debug(`Starting express server for static files...`);
+    const app = express();
+    const port = process.env.WEB_APPLICATION_PORT || '5173';
+
+    const sea = getSea();
+
+    if (sea) {
+      // SEA mode: serve frontend files from embedded SEA assets.
+      // Assets are keyed as "dist/<relative-path>" (e.g. "dist/index.html").
+      app.use((req: any, res: any, next: any) => {
+        const urlPath = req.path === '/' ? '/index.html' : req.path;
+        const assetKey = 'dist' + urlPath;
+        try {
+          const buf = sea.getAsset(assetKey);
+          const ext = path.extname(urlPath).slice(1).toLowerCase();
+          res.setHeader('Content-Type', MIME[ext] || 'application/octet-stream');
+          res.send(Buffer.from(buf));
+        } catch (_) {
+          next();
         }
-
-        if (!distPath) {
-            logger.error("Could not find 'dist' directory for static files");
-            return;
+      });
+      // SPA fallback
+      app.get('*', (_req: any, res: any) => {
+        try {
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.send(Buffer.from(sea.getAsset('dist/index.html')));
+        } catch (_) {
+          res.status(404).send('Not found');
         }
-
-        logger.debug(`Serving static files from: ${distPath}`);
-        app.use(express.static(distPath));
-        
-        // Handle SPA routing
-        app.get('*', (_req: any, res: any) => {
-            res.sendFile(path.join(distPath, 'index.html'));
-        });
-
-        app.listen(port, () => {
-            logger.info(`=========================================\n\n\tWebplatform started and is accessible\n\t\t     http://localhost:${port}\n\n=========================================`);
-        });
+      });
+    } else {
+      // Dev / pkg mode: serve from the filesystem.
+      const __dirname = path.dirname(fileURLToPath(import.meta.url));
+      const candidates = [
+        path.resolve(__dirname, 'dist'),
+        path.resolve(__dirname, '../dist'),
+        path.resolve(__dirname, '../../../dist'),
+      ];
+      let distPath = '';
+      for (const p of candidates) {
+        if (fs.existsSync(p)) { distPath = p; break; }
+      }
+      if (!distPath) {
+        logger.error("Could not find 'dist' directory for static files");
+        return;
+      }
+      logger.debug(`Serving static files from: ${distPath}`);
+      app.use(express.static(distPath));
+      app.get('*', (_req: any, res: any) => res.sendFile(path.join(distPath, 'index.html')));
     }
+
+    app.listen(port, () => {
+      logger.info(`=========================================\n\n\tWebplatform started and is accessible\n\t\t     http://localhost:${port}\n\n=========================================`);
+    });
+  }
 }
