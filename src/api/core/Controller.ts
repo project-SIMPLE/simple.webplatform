@@ -83,7 +83,11 @@ export class Controller {
         // (3) Shutdown host computer after 30s to allow headsets and UPS time to process
         setTimeout(() => {
             logger.warn('Shutting down host computer now');
-            spawnSync('shutdown', ['-h', 'now']);
+            if (process.platform === 'win32') {
+                spawnSync('shutdown', ['/s', '/t', '0']);
+            } else {
+                spawnSync('shutdown', ['-h', 'now']);
+            }
         }, 30_000);
     }
 
