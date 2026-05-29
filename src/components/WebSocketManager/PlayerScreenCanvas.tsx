@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { HEADSET_COLOR } from "../../common/constants";
+import { HEADSET_COLOR_CLASS, HEADSET_COLOR_NAME } from "../../common/constants";
 import visibility_off from "../../svg_logos/visibility_off.svg"
 import x_cross from "../../svg_logos/x_cross.svg";
 import { getLogger } from "@logtape/logtape";
@@ -30,9 +30,9 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
     const ipIdentifier: string = id.split(":")[0].split(".")[id.split(".").length - 1];
     const canvasref = useRef<HTMLDivElement>(null);
     const popupref = useRef<HTMLDivElement>(null);
-    const bgColor = HEADSET_COLOR[ipIdentifier] //careful, the constant file has been modified, these are now tailwind values
+    const bgColor = HEADSET_COLOR_CLASS[ipIdentifier] ?? "bg-gray-900";
     const [showPopup, setShowPopup] = useState<boolean>(false);
-    const isColoredHeadset = HEADSET_COLOR[ipIdentifier] !== undefined;
+    const isColoredHeadset = true;
     const CanvasStyle = "flex flex-col border-4 border-none p-2 rounded-lg items-center justify-center " //style of the colored border
     /**
     // this hook is used to add the canvases to the proper divs.
@@ -111,7 +111,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
                 >
                     <div ref={canvasref} className="w-fit h-fit relative">
                         <img
-                            src={` /images/Frames/Frame_${HEADSET_COLOR[ipIdentifier]}.png`}
+                            src={` /images/Frames/Frame_${HEADSET_COLOR_NAME[ipIdentifier] ?? "black"}.png`}
                             className="absolute inset-0 h-full w-full scale-105"/>
                     </div>
                     {/* The Background Image */}

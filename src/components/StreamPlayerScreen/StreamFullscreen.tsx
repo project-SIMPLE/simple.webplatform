@@ -1,11 +1,11 @@
 import { useSearchParams } from "react-router-dom"
 import VideoStreamManager from "../WebSocketManager/VideoStreamManager";
-import { HEADSET_COLOR } from "../../common/constants";
+import { HEADSET_COLOR_CLASS } from "../../common/constants";
 const StreamFullscreen = () => {
     const [searchParams] = useSearchParams();
     const idParam = searchParams.get("id") ?? "";
     const cleanId = idParam.replace(/\D/g, "");
-    const bgColor = HEADSET_COLOR[cleanId]
+    const bgColor = HEADSET_COLOR_CLASS[cleanId] ?? "bg-gray-900"
     //removes all non numerical values in the string, be careful when using this
 
     return (

@@ -1,5 +1,5 @@
 
-import { HEADSET_COLOR } from "../../common/constants";
+import { HEADSET_COLOR_NAME_NAME } from "../../common/constants";
 import type { PlayerState } from '../../common/types';
 
 interface VRHeadsetProps {
@@ -18,11 +18,7 @@ const VRHeadset= ({ selectedPlayer, className, playerId }: VRHeadsetProps) => {
             return ` /images/Headset/Headset_orange.png`;
         } else {
             const ipIdentifier: string = playerId!.split("_")[1];
-            if (ipIdentifier in HEADSET_COLOR) {
-                return ` /images/Headset/Headset_${HEADSET_COLOR[ipIdentifier]}.png`;
-            } else {
-                return ` /images/Headset/Headset_orange.png`;
-            }
+            return ` /images/Headset/Headset_${HEADSET_COLOR_NAME[ipIdentifier] ?? "black"}.png`;
         }
     };
 
