@@ -14,6 +14,7 @@ import { getPrettyFormatter } from "@logtape/pretty";
 import Controller from './core/Controller.ts';
 import { StaticServer } from './infra/StaticServer.ts';
 import path from 'path';
+import { createRequire } from 'module';
 
 /*
     TOOLBOX ================================
@@ -42,10 +43,21 @@ function isCommandAvailable(commandName: string): boolean {
     PROCESS .env FILE ================================
  */
 
+function _isSea(): boolean {
+    try {
+        // process.execPath is always an absolute path and works as a createRequire
+        // base on any platform.  We avoid import.meta.url because it is not a valid
+        // absolute path in Vite's CJS bundle output.
+        const _req = createRequire(process.execPath);
+        return (_req('node:sea') as any).isSea();
+    } catch (_) { return false; }
+}
+
 // Load options
 export const IS_PLATFORM_PACKAGED =
     (process as any).pkg
     || process.env.PKG_EXECPATH
+    || _isSea()
     // The runner isn't called `node`, and not starting file from root `/snapshot`
     || (!path.basename(process.argv[0]).includes('node') && !process.argv[1].startsWith("/snapshot"))
 ;
