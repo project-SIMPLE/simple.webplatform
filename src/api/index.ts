@@ -191,6 +191,13 @@ async function start() {
     await c.initialize();
 }
 
+// Third-party ADB/scrcpy libraries can emit unhandled rejections during async
+// stream teardown (e.g. ExactReadableEndedError when a device disconnects mid-session).
+// Log and continue — a long-running server must not crash on library internals.
+process.on('unhandledRejection', (reason) => {
+    logger.error('Unhandled promise rejection (ignored): {reason}', { reason });
+});
+
 start().catch(err => {
     console.error("Failed to start application:", err);
     process.exit(1);

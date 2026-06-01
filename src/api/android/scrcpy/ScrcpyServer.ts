@@ -372,7 +372,11 @@ export class ScrcpyServer {
                 logger.warn(`[${streamIp}] Inverted aspect ratio (${metadata?.width}×${metadata?.height}), closing and retrying with flipped crop after cooldown...`);
                 // Close gracefully so the device releases the scrcpy server, then let the
                 // supervisor loop restart with the flipped crop after its 1s cooldown.
+                // Awaiting client.exited after close() drains any in-flight ADB stream
+                // promises, preventing ExactReadableEndedError from escaping as an
+                // unhandled rejection and crashing the process.
                 await client.close().catch(() => {});
+                await client.exited.catch(() => {});
                 client = undefined;
                 this.flipWidthForIp.set(streamIp, !flipWidth);
                 return true;
