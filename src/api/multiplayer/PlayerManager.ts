@@ -155,29 +155,39 @@ class PlayerManager {
             // ======================================
 
             close: (ws, code: number, message) => {
-                let playerIP!: string;
-                try {
-                    playerIP = this.getIndexByPlayerWs(ws)!;
-                } catch (e) {
-                    logger.warn("Can't find player from websocket, trying fallback method...")
-                    logger.trace("{e}", {e});
+                // Try exact ws reference match first
+                let playerIP: string | undefined = this.getIndexByPlayerWs(ws);
+
+                // Fallback: identify by remote IP (getIndexByPlayerWs returns undefined when
+                // the player has already reconnected and player.ws points to the new socket)
+                if (!playerIP) {
                     try {
-                        playerIP = Buffer.from(ws.getRemoteAddressAsText()).toString();
+                        const ip = Buffer.from(ws.getRemoteAddressAsText()).toString();
+                        if (ip) playerIP = ip;
                     } catch (e) {
-                        playerIP = Buffer.from(message).toString();
+                        logger.trace("getRemoteAddressAsText failed in close handler: {e}", {e});
                     }
                 }
 
-                if (playerIP == "" || playerIP == undefined)
+                if (!playerIP)
                     logger.error("Can't find which WebSocket been closed...");
                 else try {
-                    logger.info(`Connection closed with ${this.playerList.get(playerIP)!.id} - ${playerIP}.\n\tCode: ${code}`);
-                    (code != 1000) ? logger.info(`, Reason: ${Buffer.from(message).toString()}`) : "";
+                    const player = this.playerList.get(playerIP);
+                    if (player) {
+                        logger.info(`Connection closed with ${player.id} - ${playerIP}.\n\tCode: ${code}`);
+                        (code != 1000) ? logger.info(`, Reason: ${Buffer.from(message).toString()}`) : "";
 
-                    logger.debug("Flagging player as disconnected");
-                    this.playerList.get(playerIP)!.connected = false;
-                    clearInterval(this.playerList.get(playerIP)!.timeout);
-
+                        // Only mark disconnected if this close event is for the current active socket.
+                        // If the player already reconnected, player.ws points to the new socket and
+                        // we must not clobber the reconnected state.
+                        if (player.ws === ws) {
+                            logger.debug("Flagging player as disconnected");
+                            player.connected = false;
+                            clearInterval(player.timeout);
+                        } else {
+                            logger.debug(`Close event for stale WebSocket of ${player.id} — ignoring`);
+                        }
+                    }
                 } catch (err) {
                     logger.error('Error during close handling: {err}', {err});
                 }
@@ -349,8 +359,15 @@ class PlayerManager {
 
     closePlayerWS(playerWsId: string) {
         if(this.playerList.has(playerWsId)){
-            this.playerList.get(playerWsId)!.connected = false;
-            this.playerList.get(playerWsId)!.ws.end(1000, playerWsId);
+            const player = this.playerList.get(playerWsId)!;
+            player.connected = false;
+            clearInterval(player.timeout);
+            try {
+                player.ws.end(1000, playerWsId);
+            } catch (e) {
+                // Socket already closed (e.g. Unity closed Play Mode before the heartbeat fired)
+                logger.warn(`${playerWsId} WebSocket already closed`);
+            }
         }
     }
 
@@ -486,9 +503,16 @@ class PlayerManager {
             return -1;
         }
 
-        return jsonPlayer.ws.send(
-            JSON.stringify(message),
-            false, true); // not binary, compress
+        try {
+            return jsonPlayer.ws.send(
+                JSON.stringify(message),
+                false, true); // not binary, compress
+        } catch (e) {
+            // Socket closed between the connected-check above and the send (race condition)
+            logger.warn(`WebSocket for ${playerWsId} closed mid-send, marking disconnected`);
+            jsonPlayer.connected = false;
+            return 0;
+        }
     }
 
     close() {
