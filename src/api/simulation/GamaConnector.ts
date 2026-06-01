@@ -88,7 +88,7 @@ class GamaConnector {
      * @returns a JSON payload of type load to be sent to the Gama server
      */
     jsonLoadExperiment(): GAMA_JSON_LOAD_EXPERIMENT {
-        const model = this.controller.model_manager.getActiveModel();
+        const model = this.controller.model_manager!.getActiveModel();
 
         const payload: GAMA_JSON_LOAD_EXPERIMENT = {
                 type: "load",
@@ -177,6 +177,7 @@ class GamaConnector {
 
                             this.setGamaExperimentId(message.exp_id);
                             if (['NONE', 'NOTREADY'].includes(message.content) && ['RUNNING', 'PAUSED', 'NOTREADY'].includes(this.jsonGamaState.experiment_state)) {
+                                this.controller.cancelLaunchInterval();
                                 this.controller.player_manager.disableAllPlayerInGame();
                                 this.controller.notifyMonitor();
                             }
@@ -232,6 +233,7 @@ class GamaConnector {
                 this.setGamaConnection(false);
                 this.setGamaExperimentState("NONE");
 
+                this.controller.cancelLaunchInterval();
                 // Always calls remove in game players when the socket closes
                 this.controller.player_manager.disableAllPlayerInGame();
                 this.controller.notifyMonitor();
@@ -320,7 +322,7 @@ class GamaConnector {
                 this.setGamaLoading(false);
             });
 
-            this.model = this.controller.model_manager.getActiveModel();
+            this.model = this.controller.model_manager!.getActiveModel();
         } else {
             logger.warn("GAMA is not connected or an experiment is already running...");
         }
