@@ -1,5 +1,5 @@
 //! accomodates the gama server map
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import VRHeadset from '../VRHeadset/VRHeadset';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +21,23 @@ const SimulationManager = () => {
   const detectedPlayers = Object.keys(playerList); // List Detected Players
   const maxPlayers = selectedSimulation?.maximal_players || 0;
   const minPlayers = selectedSimulation?.minimal_players || 0;
+
+  // Navigate back to home when GAMA closes the experiment from its side
+  // (mirrors the behaviour of the Stop button, which calls navigate('/') immediately)
+  const prevExperimentStateRef = useRef<string>(gama.experiment_state);
+  useEffect(() => {
+    const prev = prevExperimentStateRef.current;
+    prevExperimentStateRef.current = gama.experiment_state;
+
+    if (
+      !gamaless &&
+      simulationStarted &&
+      ['RUNNING', 'PAUSED', 'LAUNCHING'].includes(prev) &&
+      ['NONE', 'NOTREADY'].includes(gama.experiment_state)
+    ) {
+      navigate('/');
+    }
+  }, [gamaless, simulationStarted, gama.experiment_state, navigate]);
 
   // Auto-start simulation when max players reached — only fires once per session
   useEffect(() => {
