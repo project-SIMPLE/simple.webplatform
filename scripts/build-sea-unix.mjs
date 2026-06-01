@@ -3,7 +3,8 @@
  * Unix platform (Linux x64 or macOS x64/arm64).
  *
  * Run this script on the target platform — it uses process.execPath as
- * the base binary and embeds the matching uWebSockets.js .node file.
+ * the base binary and embeds the matching uWebSockets.js and node-hid
+ * .node files.
  *
  * Produces:
  *   bin/simple-linux   (when run on Linux)
@@ -81,12 +82,45 @@ if (!fs.existsSync(uwsPath)) {
   process.exit(1);
 }
 
+console.log(`[SEA] Including native module: ${uwsFile}`);
+
+// ── 3b. Add node-hid native module for this platform ─────────────────────────
+//
+// node-hid ships prebuilt NAPI binaries via prebuild-install, with a node-gyp
+// fallback.  Check the prebuild path first, then the gyp Release path.
+
+function findHidBinary() {
+  const hidDir = path.join(root, 'node_modules', 'node-hid');
+  if (!fs.existsSync(hidDir)) {
+    console.error('[SEA] ERROR: node-hid not found in node_modules. Run: npm install');
+    process.exit(1);
+  }
+  // node-hid ships as prebuilds/{name}-{platform}-{arch}/node-napi-v4.node
+  // On Linux, the hidraw driver variant is the default and preferred.
+  const primaryName = platform === 'linux' ? 'HID_hidraw' : 'HID';
+  const candidates = [
+    path.join(hidDir, 'prebuilds', `${primaryName}-${platform}-${arch}`, 'node-napi-v4.node'),
+    // fallback to non-hidraw on Linux if hidraw prebuilt is absent
+    ...(platform === 'linux' ? [path.join(hidDir, 'prebuilds', `HID-${platform}-${arch}`, 'node-napi-v4.node')] : []),
+    // legacy node-gyp build output
+    path.join(hidDir, 'build', 'Release', 'HID.node'),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  console.error('[SEA] ERROR: node-hid native binary not found. Tried:');
+  candidates.forEach(c => console.error(`         ${c}`));
+  process.exit(1);
+}
+
+const hidPath = findHidBinary();
+console.log(`[SEA] Including native module: HID.node  (from ${path.relative(root, hidPath)})`);
+
 const assets = {
   ...distAssets,
   [uwsFile]: path.relative(root, uwsPath),
+  'HID.node': path.relative(root, hidPath),
 };
-
-console.log(`[SEA] Including native module: ${uwsFile}`);
 
 // ── 4. Write sea-config.json ──────────────────────────────────────────────────
 

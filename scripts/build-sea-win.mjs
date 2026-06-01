@@ -10,6 +10,7 @@
  * The SEA binary embeds:
  *   - dist/**  (compiled frontend, served from memory via express in SEA mode)
  *   - uws_win32_x64_<modules>.node  (uWebSockets.js native module for Windows x64)
+ *   - HID.node                      (node-hid native module for Windows x64)
  */
 
 import { execSync } from 'child_process';
@@ -69,12 +70,41 @@ if (!fs.existsSync(uwsPath)) {
   process.exit(1);
 }
 
+console.log(`[SEA] Including native module: ${uwsFile}`);
+
+// ── 3b. Add node-hid native module for Windows x64 ───────────────────────────
+//
+// node-hid ships prebuilt NAPI binaries via prebuild-install, with a node-gyp
+// fallback.  Check the prebuild path first, then the gyp Release path.
+
+function findHidBinary() {
+  const hidDir = path.join(root, 'node_modules', 'node-hid');
+  if (!fs.existsSync(hidDir)) {
+    console.error('[SEA] ERROR: node-hid not found in node_modules. Run: npm install');
+    process.exit(1);
+  }
+  // node-hid ships as prebuilds/{name}-{platform}-{arch}/node-napi-v4.node
+  const candidates = [
+    path.join(hidDir, 'prebuilds', 'HID-win32-x64', 'node-napi-v4.node'),
+    // legacy node-gyp build output
+    path.join(hidDir, 'build', 'Release', 'HID.node'),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  console.error('[SEA] ERROR: node-hid native binary not found. Tried:');
+  candidates.forEach(c => console.error(`         ${c}`));
+  process.exit(1);
+}
+
+const hidPath = findHidBinary();
+console.log(`[SEA] Including native module: HID.node  (from ${path.relative(root, hidPath).replace(/\\/g, '/')})`);
+
 const assets = {
   ...distAssets,
   [uwsFile]: path.relative(root, uwsPath).replace(/\\/g, '/'),
+  'HID.node': path.relative(root, hidPath).replace(/\\/g, '/'),
 };
-
-console.log(`[SEA] Including native module: ${uwsFile}`);
 
 // ── 4. Write sea-config.json ──────────────────────────────────────────────────
 
