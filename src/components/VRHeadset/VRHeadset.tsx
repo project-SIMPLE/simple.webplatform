@@ -1,5 +1,5 @@
 
-import { HEADSET_COLOR_NAME_NAME } from "../../common/constants";
+import { HEADSET_COLOR_NAME } from "../../common/constants";
 import type { PlayerState } from '../../common/types';
 
 interface VRHeadsetProps {

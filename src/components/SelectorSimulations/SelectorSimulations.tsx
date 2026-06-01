@@ -135,6 +135,9 @@ const SelectorSimulations = () => {
     let interval: NodeJS.Timeout;
     if (ws && !gama.connected) {
       interval = setInterval(() => {
+        // Guard against a stale ws reference — the socket may have closed between
+        // the time this interval was set up and now (e.g. during HMR or reconnect).
+        if (ws.readyState !== WebSocket.OPEN) return;
         ws.send(JSON.stringify({ type: 'try_connection' }));
         logger.info('Trying to connect to GAMA, connection status: {gamaStatus}', { gamaStatus: gama.connected });
       }, 3000);

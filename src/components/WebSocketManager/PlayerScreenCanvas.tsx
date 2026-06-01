@@ -6,17 +6,17 @@ import { getLogger } from "@logtape/logtape";
  
 //TODO pour fix le problème du canvas qui est en petit, puis qui devient grand quand tu clique dessus, regarder les hook qui sont trigger quand on clique sur le canvas (surtout le truc qui applique les classes tailwind)
 //TODO et juste nettoyer complètement le css à chaque fois, et le réappliquer pour éviter le problème, quitte à ce que le code soit redondant
-/* eslint react-hooks/rules-of-hooks: 0, curly: 2 */ //? desactive les avertissements sur les hooks qui sont appelés conditionnellement, ce qui n'arrive jamais dans ce cas
+// All hooks in this component are called unconditionally — the early `return null` at the
+// top guards against an invalid id, but it runs before any hook call.
 interface PlayerScreenCanvasProps {
-    isPlaceholder?: boolean; //if true, will display an empty div. PlayerScreenCanvases are rendered using a list of canvases in the video stream manager. if the element is empty, it renders a canvas
-    needsInteractivity?: boolean; //boolean used when a player screen canvas is displayed in the StreamPlayersScreenControl page, in order to be able to click each mirror to have a pop up window
-    canvas?: HTMLCanvasElement;
-    id?: string;
-    setActiveCanvas?: (a: string) => void //function that is passed as a prop by the videostreammanager, this function here returns the canvas and the ip of the headset that need to be displayed in a popup window
-    hideInfos?: boolean; // boolean used in case you want to hide player id and identifier, used in case of fullscreen for example
-    tailwindCanvasDim?: [string, string]; //tailwind raw dimensions to be passed to the canvas element
-    isLimitingWidth?: boolean; //whether the maximum dimension is the width or the height
-    gridDisplay?: boolean;
+    isPlaceholder?: boolean; // if true, renders an empty placeholder div instead of a canvas tile
+    needsInteractivity?: boolean; // enables click-to-popup behaviour for the StreamPlayersScreenControl page
+    canvas?: HTMLCanvasElement; // the canvas element managed by VideoStreamManager; attached to the DOM via a ref inside the useEffect
+    id?: string; // headset identifier (e.g. "192.168.1.101:5555"); used to derive color and display the player label
+    hideInfos?: boolean; // hides the player id label, used in fullscreen mode
+    tailwindCanvasDim?: [string, string]; // [width-class, height-class] computed by VideoStreamManager's layout logic
+    isLimitingWidth?: boolean; // true when width is the constraining dimension; controls flex/grid sizing
+    gridDisplay?: boolean; // true when 4+ streams are shown; switches from flex to grid layout
 }
 
 
@@ -70,7 +70,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, isLimitingWi
                 }
             }
         }
-    })
+    }, [canvas, showPopup, tailwindCanvasDim]);
 
     return (
         <>

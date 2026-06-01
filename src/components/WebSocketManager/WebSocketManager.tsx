@@ -65,60 +65,62 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
         setWs(socket);
 
         socket.onopen = () => {
-            logger.info('[WebSocketManager] WebSocket connected to backend');
+            logger.info('WebSocket connected to backend');
             setIsWsConnected(true);
         };
 
         socket.onmessage = (event: MessageEvent) => {
-            logger.info(`[WebSocketManager] message received`)
-            let data = JSON.parse(event.data);
-            logger.debug(data.type)
-            if (typeof data == "string") {
-                try {
+            let data;
+            logger.trace(`Message received, { event }`, { event })
+            try {
+                data = JSON.parse(event.data);
+                // The backend double-encodes the simulation list: it sends a JSON string
+                // whose value is itself a JSON array. Parse a second time in that case.
+                if (typeof data === 'string') {
                     data = JSON.parse(data);
-                } catch (e) {
-                    logger.error("Can't JSON parse this received string: {data}", { data });
                 }
+            } catch (e) {
+                logger.error("Failed to parse incoming message: {error}", { error: e });
+                return;
             }
 
-            if (Array.isArray(data) && data.every(d => d.type === 'json_simulation_list')) {
-                setSimulationList(data.map(sim => sim.jsonSettings));
-                logger.debug('[WebSocketManager] Simulation list: {data}',{data : data.toString()});
-            } else {
-                switch (data.type) {
-                    // this case is launch too much time
-                    case 'json_state':
-                        const isGamaless = Object.keys(data.gama).length === 0;
-                        setGamaless(isGamaless);
-                        if (!isGamaless) {
-                            setGama(data.gama);
-                        }
-                        setPlayerList(data.player);
-                        break;
-                    //Sets the selected simulation for the websocketManager's context
-                    case 'get_simulation_by_index':
-                        setSelectedSimulation(data.simulation);
-                        break;
-                    case 'screen_control':
-                        //TODO voir si on a toujours besoin de ça ?
-                        break;
-                    case 'json_settings':
-                        // Single simulation metadata — should not replace the list
-                        logger.debug('[WebSocketManager] Single json_settings received, ignoring for simulationList');
-                        break;
-                    default:
-                        logger.warn('[WebSocketManager] Message not processed. data:{data}', { data });
-                        if (Array.isArray(data)) {
-                            setSimulationList(data);
-                        }
-                   
-                }
+            // The backend sends the simulation list as a plain array of json_settings/catalog
+            // objects with no wrapping type field — handle it before the switch.
+            if (Array.isArray(data)) {
+                setSimulationList(data);
+                logger.debug('Simulation list updated, {count} entries', { count: data.length });
+                return;
+            }
+
+            switch (data.type) {
+                // this case is launched too often
+                case 'json_state':
+                    const isGamaless = Object.keys(data.gama).length === 0;
+                    setGamaless(isGamaless);
+                    if (!isGamaless) {
+                        setGama(data.gama);
+                    }
+                    setPlayerList(data.player);
+                    break;
+                // Sets the selected simulation for the websocketManager's context
+                case 'get_simulation_by_index':
+                    setSelectedSimulation(data.simulation);
+                    break;
+                case 'screen_control':
+                    //TODO voir si on a toujours besoin de ça ?
+                    break;
+                case 'json_settings':
+                    // Single simulation metadata — should not replace the list
+                    logger.debug('Single json_settings received, ignoring for simulationList');
+                    break;
+                default:
+                    logger.warn('Message not processed. data:{data}', { data });
             }
         };
 
 
         socket.onclose = () => {
-            logger.info('[WebSocketManager] WebSocket disconnected');
+            logger.info('WebSocket disconnected');
             setIsWsConnected(false);
         };
 

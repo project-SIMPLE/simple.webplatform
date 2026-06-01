@@ -57,6 +57,7 @@ self.addEventListener("message", (e) => {
     });
   } else {
     console.error("[Worker] Invalid stream transfer type or missing stream/port.");
+    self.close(); // terminate the worker so it doesn't sit idle leaking memory
     return;
   }
 

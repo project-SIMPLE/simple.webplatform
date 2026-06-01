@@ -32,6 +32,9 @@ const deserializeData = (serializedData: string) => {
           data: Uint8Array.from(atob(parsed.data), (c) => c.charCodeAt(0)),
         },
       };
+    default:
+      logger.warn("[Scrcpy-VideoStreamManager] Unknown packet type received: {type}", { type: parsed.type });
+      return null;
   }
 };
 
@@ -128,6 +131,19 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     const worker = new Worker(new URL("../../workers/scrcpyDecoder.ts", import.meta.url), { type: "module" });
     decoderWorkers.current.set(deviceId, worker);
 
+    worker.onerror = (err) => {
+      logger.error("[Scrcpy-VideoStreamManager] Worker error for {deviceId}: {message}", { deviceId, message: err.message });
+    };
+    worker.onmessage = (event) => {
+      if (event.data?.type === 'sizeChanged') {
+        logger.debug("[Scrcpy-VideoStreamManager] Canvas resized for {deviceId}: {width}x{height}", {
+          deviceId,
+          width: event.data.width,
+          height: event.data.height,
+        });
+      }
+    };
+
     // Create the ReadableStream BEFORE the async codec check.
     // new ReadableStream() calls start() synchronously, so the real controller is placed
     // in readableControllers before this function ever suspends at the first await.
@@ -167,7 +183,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
     if (typeof VideoDecoder === 'undefined') {
       logger.warn("[Scrcpy-VideoStreamManager] WebCodecs API (VideoDecoder) is not available in this browser, aborting stream");
-      readableControllers.delete(deviceId);
+      stream.cancel(); // closes the ReadableStream and triggers its cancel() cleanup callback
       worker.terminate();
       decoderWorkers.current.delete(deviceId);
       return;
@@ -179,7 +195,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
     }).then((supported) => {
       if (useH265 && !supported.supported) {
         logger.warn("[Scrcpy-VideoStreamManager] Should decode h265, but not compatible, waiting for new stream to start...");
-        readableControllers.delete(deviceId);
+        stream.cancel(); // closes the ReadableStream and triggers its cancel() cleanup callback
         worker.terminate();
         decoderWorkers.current.delete(deviceId);
         return;
@@ -261,6 +277,9 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
   useEffect(() => {
     let cleanedUp = false;
     const deviceSockets = new Map<string, WebSocket>();
+    // Tracks pending reconnect timers so they can be cancelled if the component unmounts
+    // before the delay fires — otherwise the callback would try to reconnect a dead component.
+    const pendingReconnects = new Set<ReturnType<typeof setTimeout>>();
 
     // Opens a dedicated socket for a device at /stream/:deviceIp.
     // All packets (config then data) arrive here in order — no split-channel ordering issues.
@@ -293,46 +312,47 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       ws.onmessage = (event) => {
         // Deserialize the message and enqueue the data into the readable stream
         const deserializedData = deserializeData(event.data);
+        if (!deserializedData) return; // unknown packet type — already logged in deserializeData
 
         // Detect codec change on every configuration packet, regardless of channel ordering.
         // The server can switch codec (h265↔h264) and restart streams; the new config packet
         // may arrive on the old device socket before stream_available fires on the control
         // socket, so we can't rely on connectDeviceSocket having run first.
-        if (deserializedData!.packet.type === "configuration") {
-          const knownCodec = streamIsH265.get(deserializedData!.streamId);
-          if (knownCodec !== undefined && knownCodec !== deserializedData!.useH265) {
-            readableControllers.delete(deserializedData!.streamId);
-            isDecoderHasConfig.delete(deserializedData!.streamId);
+        if (deserializedData.packet.type === "configuration") {
+          const knownCodec = streamIsH265.get(deserializedData.streamId);
+          if (knownCodec !== undefined && knownCodec !== deserializedData.useH265) {
+            readableControllers.delete(deserializedData.streamId);
+            isDecoderHasConfig.delete(deserializedData.streamId);
           }
-          streamIsH265.set(deserializedData!.streamId, deserializedData!.useH265);
+          streamIsH265.set(deserializedData.streamId, deserializedData.useH265);
         }
 
         // Create stream if new stream
-        if (!readableControllers.has(deserializedData!.streamId)) {
-          newVideoStream(deserializedData!.streamId, deserializedData!.useH265);
+        if (!readableControllers.has(deserializedData.streamId)) {
+          newVideoStream(deserializedData.streamId, deserializedData.useH265);
         }
 
-        const controller = readableControllers.get(deserializedData!.streamId);
+        const controller = readableControllers.get(deserializedData.streamId);
 
         // Since we set very early the entry before the controller exists,
-        // this catch potential race conditions where controller do not exists
+        // this catches potential race conditions where the controller does not exist yet
         if (controller != undefined) {
           // Enqueue data package to decoder stream
-          if (deserializedData!.packet) {
+          if (deserializedData.packet) {
             if (
-              isDecoderHasConfig.get(deserializedData!.streamId) &&
-              deserializedData!.packet.type == "data"
+              isDecoderHasConfig.get(deserializedData.streamId) &&
+              deserializedData.packet.type == "data"
             ) {
-              controller!.enqueue(deserializedData!.packet);
+              controller.enqueue(deserializedData.packet);
             } else if (
-              deserializedData!.packet.type == "configuration"
+              deserializedData.packet.type == "configuration"
             ) {
-              controller!.enqueue(deserializedData!.packet);
-              isDecoderHasConfig.set(deserializedData!.streamId, true);
+              controller.enqueue(deserializedData.packet);
+              isDecoderHasConfig.set(deserializedData.streamId, true);
             }
           } else {
             logger.warn("[Scrcpy] Error piping to decoder writable stream, closing controller...");
-            controller!.close();
+            controller.close();
           }
         }
       };
@@ -340,7 +360,8 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       ws.onclose = () => {
         if (!cleanedUp) {
           logger.info(`[Scrcpy-VideoStreamManager] Device socket for ${streamId} closed, reconnecting in 1s...`);
-          setTimeout(() => {
+          const timerId = setTimeout(() => {
+            pendingReconnects.delete(timerId);
             // Only reconnect if this socket is still the current one for this stream.
             // If stream_available already opened a replacement socket, skip — that socket
             // is healthy and reconnecting here would tear it down unnecessarily.
@@ -348,6 +369,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
               connectDeviceSocket(streamId);
             }
           }, 1000);
+          pendingReconnects.add(timerId);
         }
       };
     }
@@ -456,7 +478,11 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
       socket.onclose = () => {
         logger.info("[Scrcpy-VideoStreamManager] Control socket closed, reconnecting in 2s...");
         if (!cleanedUp) {
-          setTimeout(connectControlSocket, 2000);
+          const timerId = setTimeout(() => {
+            pendingReconnects.delete(timerId);
+            connectControlSocket();
+          }, 2000);
+          pendingReconnects.add(timerId);
         }
       };
     }
@@ -465,6 +491,8 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
     return () => {
       cleanedUp = true;
+      pendingReconnects.forEach(id => clearTimeout(id));
+      pendingReconnects.clear();
       controlSocket?.close();
       deviceSockets.forEach(ws => ws.close());
       decoderWorkers.current.forEach(worker => worker.terminate());

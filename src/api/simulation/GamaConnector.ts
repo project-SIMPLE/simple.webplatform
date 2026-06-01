@@ -188,7 +188,7 @@ class GamaConnector {
                             try {
                                 this.controller.broadcastSimulationOutput(JSON.parse(message.content));
                             } catch (error) {
-                                logger.error(`-> Unable to parse received message: ${message}`);
+                                logger.error(`-> Unable to parse received message: {message}`, {message});
                             }
                             break;
 
