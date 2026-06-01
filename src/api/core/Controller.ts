@@ -18,6 +18,7 @@ export class Controller {
     monitor_server: MonitorServer;
     player_manager: PlayerManager;
     gama_connector: GamaConnector | undefined;
+    private launchInterval: ReturnType<typeof setInterval> | null = null;
 
     adb_manager: AdbManager | undefined;
     ups_service: UpsManager;
@@ -199,14 +200,21 @@ export class Controller {
             logger.debug("[sendAsk] Message received to send to GAMA, but the webplatform is in GAMALESS mode...");
     }
 
+    cancelLaunchInterval() {
+        if (this.launchInterval !== null) {
+            clearInterval(this.launchInterval);
+            this.launchInterval = null;
+        }
+    }
+
     launchExperiment() {
         if (!ENV_GAMALESS) {
+            this.cancelLaunchInterval(); // clear any stale interval from a previous attempt
             this.gama_connector!.launchExperiment();
-            // Try until simulation is ready
-            const interval = setInterval(() => {
+            // Poll until GAMA acknowledges the experiment is ready, then add players
+            this.launchInterval = setInterval(() => {
                 if (!['NONE', "NOTREADY"].includes(this.gama_connector!.jsonGamaState.experiment_state)) {
-                    // Stop calling
-                    clearInterval(interval);
+                    this.cancelLaunchInterval();
                     this.player_manager.addEveryPlayer();
                 }
                 this.notifyMonitor();
@@ -217,6 +225,7 @@ export class Controller {
 
     stopExperiment() {
         if (!ENV_GAMALESS) {
+            this.cancelLaunchInterval();
             this.gama_connector!.stopExperiment();
             this.player_manager.removeAllPlayer();
 
