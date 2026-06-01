@@ -22,10 +22,11 @@ const SimulationManager = () => {
   const maxPlayers = selectedSimulation?.maximal_players || 0;
   const minPlayers = selectedSimulation?.minimal_players || 0;
 
-  // Auto-start simulation when max players reached and experiment hasn't started
+  // Auto-start simulation when max players reached — only fires once per session
   useEffect(() => {
     if (
       !gamaless &&
+      !simulationStarted &&
       gama.experiment_state === 'NONE' &&
       detectedPlayers.length >= Number(maxPlayers) &&
       Number(maxPlayers) > 0 &&
@@ -35,7 +36,7 @@ const SimulationManager = () => {
       logger.debug("sent message {type: launch experiment}");
       ws.send(JSON.stringify({ type: "launch_experiment" }));
     }
-  }, [gamaless, gama.experiment_state, detectedPlayers.length, maxPlayers, ws]);
+  }, [gamaless, simulationStarted, gama.experiment_state, detectedPlayers.length, maxPlayers, ws]);
 
 
 
