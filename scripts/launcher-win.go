@@ -35,6 +35,11 @@ func main() {
 	signal.Ignore(os.Interrupt)
 
 	cmd := exec.Command(nodePath, os.Args[1:]...)
+	cmd.Env = append(os.Environ(),
+		"WS_NO_BUFFER_UTIL=1",
+		"WS_NO_UTF_8_VALIDATE=1",
+	)
+
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
