@@ -16,6 +16,7 @@
   },
   "bin": "dist-api/index.cjs",
   "dependencies": {
+    "@clack/prompts": "^1.6.0",
     "@homebridge/ciao": "^1.1.8",
     "@logtape/file": "^2.0.4",
     "@logtape/logtape": "^2.0.4",
