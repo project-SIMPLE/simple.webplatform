@@ -18,6 +18,7 @@ import {
   outro,
   group,
   text,
+  path,
   confirm,
   isCancel,
   cancel,
@@ -80,7 +81,8 @@ function defaultEnv(): string {
     "VERBOSE=false",
     "EXTRA_VERBOSE=false",
     'LEARNING_PACKAGE_PATH="./learning-packages"',
-    "GAMALESS=false",
+    "ENV_GAMALESS=false",
+    "AGGRESSIVE_DISCONNECT=false",
     "",
   ].join("\n");
 }
@@ -131,21 +133,23 @@ function buildEnv(cfg: WizardResult): string {
     `WEB_APPLICATION_PORT=${webPort}`,
     "",
     `VERBOSE=${cfg.verbose}`,
-    `EXTRA_VERBOSE=${cfg.extraVerbose}`,
+    `EXTRA_VERBOSE=${cfg.extraVerbose ?? false}`,
     "",
-    `LEARNING_PACKAGE_PATH="${cfg.learningPath}"`,
-    "",
-    // useGama === true  ->  GAMALESS=false
-    `GAMALESS=${!cfg.useGama}`,
+    // useGama === true  ->  ENV_GAMALESS=false
+    `ENV_GAMALESS=${!cfg.useGama}`,
   );
 
-  if (cfg.extraLearningPath && cfg.extraLearningPath.trim()) {
-    lines.push(`EXTRA_LEARNING_PACKAGE_PATH="${cfg.extraLearningPath.trim()}"`);
+  // Learning packages are only asked (and only relevant) in GAMA mode.
+  if (cfg.useGama && cfg.learningPath) {
+    lines.push("", `LEARNING_PACKAGE_PATH="${cfg.learningPath}"`);
+    if (cfg.extraLearningPath && cfg.extraLearningPath.trim()) {
+      lines.push(`EXTRA_LEARNING_PACKAGE_PATH="${cfg.extraLearningPath.trim()}"`);
+    }
   }
   if (cfg.headsetsIp.trim()) {
     lines.push("", `HEADSETS_IP="${cfg.headsetsIp.trim()}"`);
   }
-  lines.push("", `AGGRESSIVE_DISCONNECT=${cfg.aggressiveDisconnect}`, "");
+  lines.push("", `AGGRESSIVE_DISCONNECT=${cfg.aggressiveDisconnect ?? false}`, "");
 
   return lines.join("\n");
 }
@@ -175,6 +179,8 @@ export async function ensureConfig(): Promise<void> {
 
   const cfg = await group(
     {
+
+
       useGama: () =>
         confirm({
           message: "Do you want to use the webplatform with GAMA?",
@@ -202,27 +208,27 @@ export async function ensureConfig(): Promise<void> {
 
       learningPath: ({ results }) =>
         results.useGama
-          ? text({
-            message: "Learning packages folder (relative path from here, or aboslute path)",
-            placeholder: "./learning-packages",
-            validate: (v) => {
-              if (!v) return 'You should give a valide path';
-              return folderExists(v) ? undefined : "Folder not found";
-            },
-          }) : undefined,
+          ? path({
+              message: "Learning packages folder (relative path from here, or absolute path)",
+              root: process.cwd(),
+              directory: true,
+            }) : undefined,
 
       extraLearningPath: ({ results }) =>
         results.useGama
-          ? text({
-            message: "Extra learning packages folder (optional, leave blank to skip)",
-            defaultValue: "",
-            // allow empty (it's optional), otherwise it must exist
-            validate: (v) => {
-              if (v == results.learningPath) 
-                return "This path should not be the same as previous given path";
-              return !v.trim() || folderExists(v) ? undefined : "Folder not found";
-            },
-          }) : undefined,
+          ? path({
+              message: "Extra learning packages folder (optional, leave blank to skip)",
+              root: process.cwd(),
+              directory: true,
+              // allow empty (it's optional), otherwise it must exist
+              validate: (v) => {
+                if (!v.trim()) return undefined;
+                const same =
+                  resolve(baseDir, v) === resolve(baseDir, (results.learningPath as string) ?? "");
+                if (same) return "This path should not be the same as the previous path";
+                return folderExists(v) ? undefined : "Folder not found";
+              },
+            }) : undefined,
 
       aggressiveDisconnect: ({ results }) =>
         results.useGama
@@ -242,7 +248,7 @@ export async function ensureConfig(): Promise<void> {
 
       verbose: () =>
         confirm({
-          message: "Enable verbose logging? (Useful while developping VU)",
+          message: "Enable verbose logging? (Useful while developing VU)",
           initialValue: false,
         }),
 
@@ -295,12 +301,6 @@ export async function ensureConfig(): Promise<void> {
       },
     },
   );
-
-  // Guard each value (Ctrl+C inside a step) before the final review.
-  if (Object.values(cfg).some((v) => isCancel(v))) {
-    cancel("Configuration cancelled — no .env written.");
-    process.exit(0);
-  }
 
   const shouldProceed = await confirm({
     message: "[Finished] Is all the configuration above correct?",
