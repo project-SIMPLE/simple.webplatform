@@ -12,7 +12,10 @@
     "build:backend": "vite build -c vite.backend.config.ts",
     "build:sea:win": "node scripts/build-sea-win.mjs",
     "build:sea:linux": "node scripts/build-sea-unix.mjs",
-    "build:sea:macos": "node scripts/build-sea-unix.mjs"
+    "build:sea:macos": "node scripts/build-sea-unix.mjs",
+    "lint": "biome lint .",
+    "format": "biome format .",
+    "check": "biome check ."
   },
   "bin": "dist-api/index.cjs",
   "dependencies": {
@@ -25,8 +28,6 @@
     "@types/react-dom": "^18.3.0",
     "@types/react-router-dom": "^5.3.3",
     "@types/ws": "^8.5.12",
-    "@typescript-eslint/eslint-plugin": "^7.15.0",
-    "@typescript-eslint/parser": "^7.15.0",
     "@vitejs/plugin-react": "^4.3.1",
     "@yume-chan/adb": "^2.5.1",
     "@yume-chan/adb-scrcpy": "^2.3.2",
@@ -38,9 +39,6 @@
     "concurrently": "^8.2.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "eslint-config": "^0.3.0",
-    "eslint-plugin-react-hooks": "^4.6.2",
-    "eslint-plugin-react-refresh": "^0.4.7",
     "evilscan": "^1.9.1",
     "express": "^4.22.2",
     "geoip-lite": "^1.4.10",
@@ -61,15 +59,10 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.3",
-    "@eslint/json": "^1.0.0",
+    "@biomejs/biome": "^2.4.16",
     "@types/express": "^5.0.6",
-    "eslint": "^8.57.1",
-    "eslint-plugin-react": "^7.37.5",
-    "globals": "^17.3.0",
     "jest": "^29.7.0",
     "jiti": "^2.6.1",
-    "postject": "^1.0.0-alpha.6",
-    "typescript-eslint": "^8.56.0"
+    "postject": "^1.0.0-alpha.6"
   }
 }
