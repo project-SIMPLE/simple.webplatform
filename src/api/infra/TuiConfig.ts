@@ -43,19 +43,77 @@ const NETWORK_DEFAULTS = {
   webPort: "8000",
 } as const;
 
+// Clack passes `undefined` to `validate` when a field is submitted empty (the
+// default value is only applied afterwards), so every validator coerces first.
+
 /** Validate a TCP port (1–65535). Returns an error string or undefined. */
-function validatePort(value: string): string | undefined {
-  const n = Number(value);
+function validatePort(value: string | undefined): string | undefined {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed) return "Port is required";
+  if (!/^\d+$/.test(trimmed)) return "Port must be a number";
+  const n = Number(trimmed);
   if (!Number.isInteger(n) || n < 1 || n > 65535) {
     return "Enter a port between 1 and 65535";
   }
   return undefined;
 }
 
-/** Validate a hostname / IP literal. */
-function validateHost(value: string): string | undefined {
-  if (!value) return "Host is required";
-  if (!/^[a-zA-Z0-9.-]+$/.test(value)) return "Invalid host format";
+/**
+ * Validate a TCP port and ensure it doesn't collide with ports already chosen
+ * earlier in the wizard. `used` is the list of previously-entered port values.
+ */
+function validatePortUnique(
+  value: string | undefined,
+  used: Array<string | undefined>,
+): string | undefined {
+  const base = validatePort(value);
+  if (base) return base;
+  const n = Number((value ?? "").trim());
+  if (used.some((p) => p !== undefined && Number(p) === n)) {
+    return "This port is already used by another service";
+  }
+  return undefined;
+}
+
+/** True if `v` is a well-formed IPv4 literal (each octet 0–255). */
+function isIpv4(v: string): boolean {
+  const m = v.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (!m) return false;
+  return m.slice(1).every((octet) => Number(octet) <= 255);
+}
+
+// Hostname per RFC-1123: dot-separated labels, each 1–63 chars of
+// alphanumerics/hyphens, no leading/trailing hyphen, no empty labels.
+const HOSTNAME_RE =
+  /^(?=.{1,253}$)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+/** Validate a hostname or IPv4 literal. */
+function validateHost(value: string | undefined): string | undefined {
+  const v = (value ?? "").trim();
+  if (!v) return "Host is required";
+  // Digits-and-dots only -> it's meant to be an IPv4, so require a valid one.
+  // (Catches typos like "1992.22..22" that aren't valid hostnames either.)
+  if (/^[\d.]+$/.test(v)) {
+    return isIpv4(v) ? undefined : "Invalid IPv4 address";
+  }
+  if (!HOSTNAME_RE.test(v)) return "Invalid host format";
+  return undefined;
+}
+
+/**
+ * Validate an optional ";"-separated list of headset IPv4 addresses.
+ * Empty input is allowed (the setting is optional).
+ */
+function validateHeadsetsIp(value: string | undefined): string | undefined {
+  const v = value ?? "";
+  if (!v.trim()) return undefined;
+  const parts = v
+    .split(";")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return undefined;
+  const invalid = parts.filter((p) => !isIpv4(p));
+  if (invalid.length) return `Invalid IP address: ${invalid.join(", ")}`;
   return undefined;
 }
 
@@ -94,6 +152,7 @@ interface WizardResult {
   gamaIp?: string;
   gamaWsPort?: string;
   learningPath: string;
+  useExtraLearningPath: boolean;
   extraLearningPath: string;
   headsetsIp: string;
   verbose: boolean;
@@ -133,7 +192,6 @@ function buildEnv(cfg: WizardResult): string {
     `WEB_APPLICATION_PORT=${webPort}`,
     "",
     `VERBOSE=${cfg.verbose}`,
-    `EXTRA_VERBOSE=${cfg.extraVerbose ?? false}`,
     "",
     // useGama === true  ->  ENV_GAMALESS=false
     `ENV_GAMALESS=${!cfg.useGama}`,
@@ -145,6 +203,9 @@ function buildEnv(cfg: WizardResult): string {
     if (cfg.extraLearningPath && cfg.extraLearningPath.trim()) {
       lines.push(`EXTRA_LEARNING_PACKAGE_PATH="${cfg.extraLearningPath.trim()}"`);
     }
+  }
+  if (cfg.extraVerbose ?? false) {
+    lines.push("", `EXTRA_VERBOSE=${cfg.extraVerbose}`);
   }
   if (cfg.headsetsIp.trim()) {
     lines.push("", `HEADSETS_IP="${cfg.headsetsIp.trim()}"`);
@@ -212,21 +273,34 @@ export async function ensureConfig(): Promise<void> {
               message: "Learning packages folder (relative path from here, or absolute path)",
               root: process.cwd() + "/",
               directory: true,
+              validate: (v) => {
+                const p = (v ?? "").trim();
+                if (!p) return "Learning packages folder is required";
+                return folderExists(p) ? undefined : "Folder not found";
+              },
             }) : undefined,
 
-      extraLearningPath: ({ results }) =>
+      useExtraLearningPath: ({ results }) =>
         results.useGama
+          ? confirm({
+          message: "Do you want to set an extra path to learning packages?",
+          initialValue: false,
+        }) : undefined,
+
+      extraLearningPath: ({ results }) =>
+        (results.useGama && results.useExtraLearningPath)
           ? path({
               message: "Extra learning packages folder (optional, leave blank to skip)",
               root: process.cwd() + "/",
               directory: true,
               // allow empty (it's optional), otherwise it must exist
               validate: (v) => {
-                if (!v.trim()) return undefined;
+                const p = (v ?? "").trim();
+                if (!p) return undefined;
                 const same =
-                  resolve(baseDir, v) === resolve(baseDir, (results.learningPath as string) ?? "");
+                  resolve(baseDir, p) === resolve(baseDir, (results.learningPath as string) ?? "");
                 if (same) return "This path should not be the same as the previous path";
-                return folderExists(v) ? undefined : "Folder not found";
+                return folderExists(p) ? undefined : "Folder not found";
               },
             }) : undefined,
 
@@ -244,6 +318,7 @@ export async function ensureConfig(): Promise<void> {
           message: 'Headset IPs to scrcpy (optional, ";"-separated)',
           placeholder: "192.168.68.101;192.168.68.102",
           defaultValue: "",
+          validate: validateHeadsetsIp,
         }),
 
       verbose: () =>
@@ -271,21 +346,26 @@ export async function ensureConfig(): Promise<void> {
           ? text({
               message: "Web application port (Which port serves the web interface)",
               initialValue: NETWORK_DEFAULTS.webPort,
-              validate: validatePort,
+              validate: (v) => validatePortUnique(v, [results.gamaWsPort]),
             }) : undefined,
       monitorWsPort: ({ results }) =>
         results.advanced
           ? text({
               message: "Monitor WebSocket port (Which port is used to update the web interface/streams)",
               initialValue: NETWORK_DEFAULTS.monitorWsPort,
-              validate: validatePort,
+              validate: (v) => validatePortUnique(v, [results.gamaWsPort, results.webPort]),
             }) : undefined,
       headsetWsPort: ({ results }) =>
         results.advanced
           ? text({
               message: "Headset WebSocket port (⚠️ Change it only if you know what you're doing ⚠️)",
               initialValue: NETWORK_DEFAULTS.headsetWsPort,
-              validate: validatePort,
+              validate: (v) =>
+                validatePortUnique(v, [
+                  results.gamaWsPort,
+                  results.webPort,
+                  results.monitorWsPort,
+                ]),
             }) : undefined,
       extraVerbose: ({ results }) =>
         results.advanced
@@ -301,6 +381,28 @@ export async function ensureConfig(): Promise<void> {
       },
     },
   );
+
+  // Final cross-check: a custom GAMA port (asked before the advanced step) can
+  // still collide with a default port the user never got prompted for.
+  const resolved = cfg as WizardResult;
+  const portEntries: Array<[string, string]> = [
+    ["HEADSET_WS_PORT", resolved.headsetWsPort ?? NETWORK_DEFAULTS.headsetWsPort],
+    ["MONITOR_WS_PORT", resolved.monitorWsPort ?? NETWORK_DEFAULTS.monitorWsPort],
+    ["WEB_APPLICATION_PORT", resolved.webPort ?? NETWORK_DEFAULTS.webPort],
+  ];
+  if (resolved.useGama && resolved.gamaWsPort) {
+    portEntries.push(["GAMA_WS_PORT", resolved.gamaWsPort]);
+  }
+  const seen = new Map<number, string>();
+  for (const [name, value] of portEntries) {
+    const n = Number(value);
+    const other = seen.get(n);
+    if (other) {
+      cancel(`Port ${n} is used by both ${other} and ${name}. Re-run configuration with distinct ports.`);
+      process.exit(1);
+    }
+    seen.set(n, name);
+  }
 
   const shouldProceed = await confirm({
     message: "[Finished] Is all the configuration above correct?",
