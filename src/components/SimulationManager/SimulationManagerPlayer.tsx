@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import cross from '/src/svg_logos/x_cross.svg';
 import { getLogger } from "@logtape/logtape";
+import { wsApi } from '../../common/wsApi';
 import type { PlayerState } from '../../common/types';
 const logger = getLogger(["components", "SimulationManagerPlayer"]);
  
@@ -31,7 +32,7 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
   const handleRemove = (id: string) => {
     if (ws !== null) {
       logger.info("ID headset: {id}", { id });
-      ws.send(JSON.stringify({ "type": "remove_player_headset", id }));
+      wsApi.removePlayerHeadset(ws, id);
       toggleShowPopUpManageHeadset();
     } else {
       logger.error("Websocket not connected")

@@ -1,6 +1,7 @@
 import Button from '../Button/Button';
 import { useWebSocket } from '../WebSocketManager/WebSocketManager';
 import { getLogger } from '@logtape/logtape';
+import { wsApi } from '../../common/wsApi';
 const SimulationManagerButtons = () => {
 
   const logger = getLogger(["components", "SimulationManagerButtons"]);
@@ -8,7 +9,13 @@ const SimulationManagerButtons = () => {
 
   const handlePlayPause = () => {
     if (ws !== null) {
-      ws.send(JSON.stringify({ "type": gama.experiment_state == "NONE" ? "launch_experiment" : (gama.experiment_state != "RUNNING" ? "resume_experiment" : "pause_experiment") }));
+      if (gama.experiment_state == "NONE") {
+        wsApi.launchExperiment(ws);
+      } else if (gama.experiment_state != "RUNNING") {
+        wsApi.resumeExperiment(ws);
+      } else {
+        wsApi.pauseExperiment(ws);
+      }
     } else {
       logger.error("WS is null");
     }
@@ -16,7 +23,7 @@ const SimulationManagerButtons = () => {
 
   const handleEnd = () => {
     if (ws !== null) {
-      ws.send(JSON.stringify({ "type": "stop_experiment" }));
+      wsApi.stopExperiment(ws);
     } else {
       logger.error("WS is null");
     }

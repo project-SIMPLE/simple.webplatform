@@ -7,6 +7,7 @@ import Header from '../Header/Header';
 import { Link } from 'react-router-dom';
 import SimulationList from './SimulationList';
 import { getLogger } from '@logtape/logtape';
+import { wsApi } from '../../common/wsApi';
 import type {
   VU_CATALOG_SETTING_JSON,
   VU_MODEL_SETTING_JSON,
@@ -31,7 +32,7 @@ const SelectorSimulations = () => {
 
   useEffect(() => {
     if (isWsConnected && ws !== null) {
-      ws.send(JSON.stringify({ type: 'get_simulation_informations' }));
+      wsApi.getSimulationInformations(ws);
       setLoading(true);
     }
   }, [isWsConnected, ws]);
@@ -122,7 +123,7 @@ const SelectorSimulations = () => {
         logger.error("no subprojects, ERROR:{e}", { e });
       }
     } else if (item.type === "json_settings") {
-      ws.send(JSON.stringify({ type: 'send_simulation', simulation: item }));
+      wsApi.sendSimulation(ws, item);
       setTimeout(() => {
         navigate('/simulationManager');
       }, 100);
@@ -138,7 +139,7 @@ const SelectorSimulations = () => {
         // Guard against a stale ws reference — the socket may have closed between
         // the time this interval was set up and now (e.g. during HMR or reconnect).
         if (ws.readyState !== WebSocket.OPEN) return;
-        ws.send(JSON.stringify({ type: 'try_connection' }));
+        wsApi.tryConnection(ws);
         logger.info('Trying to connect to GAMA, connection status: {gamaStatus}', { gamaStatus: gama.connected });
       }, 3000);
     }

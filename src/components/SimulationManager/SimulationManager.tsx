@@ -9,6 +9,7 @@ import SimulationManagerPlayer from './SimulationManagerPlayer';
 import Header from '../Header/Header';
 import { Link } from 'react-router-dom';
 import { getLogger } from '@logtape/logtape';
+import { wsApi } from '../../common/wsApi';
 
 const SimulationManager = () => {
 
@@ -51,7 +52,7 @@ const SimulationManager = () => {
     ) {
       setSimulationStarted(true);
       logger.debug("sent message {type: launch experiment}");
-      ws.send(JSON.stringify({ type: "launch_experiment" }));
+      wsApi.launchExperiment(ws);
     }
   }, [gamaless, simulationStarted, gama.experiment_state, detectedPlayers.length, maxPlayers, ws]);
 
@@ -63,9 +64,13 @@ const SimulationManager = () => {
       if (gama.experiment_state == "NONE" && !simulationStarted) {
         setSimulationStarted(true);
         logger.debug("sent message {type: launch experiment}")
-        ws.send(JSON.stringify({ "type": "launch_experiment" }));
+        wsApi.launchExperiment(ws);
       } else if (gama.experiment_state != "NOTREADY") {
-        ws.send(JSON.stringify({ "type": (gama.experiment_state != "RUNNING" ? "resume_experiment" : "pause_experiment") }));
+        if (gama.experiment_state != "RUNNING") {
+          wsApi.resumeExperiment(ws);
+        } else {
+          wsApi.pauseExperiment(ws);
+        }
       }
     } else {
       logger.error("WS is null");
@@ -74,7 +79,7 @@ const SimulationManager = () => {
 
   const handleEnd = () => {
     if (ws !== null) {
-      ws.send(JSON.stringify({ "type": "stop_experiment" }));
+      wsApi.stopExperiment(ws);
       //  redirect to the main page :
       navigate('/');
     } else {
