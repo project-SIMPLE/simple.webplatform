@@ -1,45 +1,33 @@
-
 import { HEADSET_COLOR_NAME } from "../../common/constants";
-import type { PlayerState } from '../../common/types';
+import type { PlayerState } from "../../common/types";
 
 interface VRHeadsetProps {
-  selectedPlayer?: PlayerState;
-  className?: string;
-  playerId?: string;
+	selectedPlayer?: PlayerState;
+	className?: string;
+	playerId?: string;
 }
 
-const VRHeadset= ({ selectedPlayer, className, playerId }: VRHeadsetProps) => {
+const VRHeadset = ({ selectedPlayer, className, playerId }: VRHeadsetProps) => {
+	// Determines if the player is available
+	const isAvailable = !!selectedPlayer;
 
-  // Determines if the player is available 
-  const isAvailable = !!selectedPlayer;
+	const getHeadsetColor = () => {
+		if (!isAvailable || playerId === undefined) {
+			return ` /images/Headset/Headset_orange.png`;
+		} else {
+			const ipIdentifier: string = playerId?.split("_")[1];
+			return ` /images/Headset/Headset_${HEADSET_COLOR_NAME[ipIdentifier] ?? "black"}.png`;
+		}
+	};
 
-    const getHeadsetColor = () => {
-        if (!isAvailable || playerId === undefined) {
-            return ` /images/Headset/Headset_orange.png`;
-        } else {
-            const ipIdentifier: string = playerId!.split("_")[1];
-            return ` /images/Headset/Headset_${HEADSET_COLOR_NAME[ipIdentifier] ?? "black"}.png`;
-        }
-    };
-
-
-  return (
-    <>
-      <div
-        className={`flex flex-col items-center relative ${className} ${isAvailable ? 'grayscale-0' : 'opacity-80 cursor-not-allowed size-52'}`}
-        style={{ transition: 'all 0.3s ease', cursor: isAvailable ? 'pointer' : 'not-allowed' }}
-      >
-        <img 
-          src={getHeadsetColor()}
-          alt="VR Headset"
-           className={`size-48`}
-
-        />
-
-
-    </div>
-    </>
-  );
+	return (
+		<div
+			className={`flex flex-col items-center relative ${className} ${isAvailable ? "grayscale-0" : "opacity-80 cursor-not-allowed size-52"}`}
+			style={{ transition: "all 0.3s ease", cursor: isAvailable ? "pointer" : "not-allowed" }}
+		>
+			<img src={getHeadsetColor()} alt="VR Headset" className={`size-48`} />
+		</div>
+	);
 };
 
-export default VRHeadset; 
+export default VRHeadset;

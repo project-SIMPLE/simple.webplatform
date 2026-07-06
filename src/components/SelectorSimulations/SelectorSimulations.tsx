@@ -1,216 +1,221 @@
-import { useNavigate } from 'react-router-dom';
-import { useWebSocket } from '../WebSocketManager/WebSocketManager';
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import Footer from '../Footer/Footer';
-import Header from '../Header/Header';
-import { Link } from 'react-router-dom';
-import SimulationList from './SimulationList';
-import { getLogger } from '@logtape/logtape';
-import { wsApi } from '../../common/wsApi';
-import type {
-  VU_CATALOG_SETTING_JSON,
-  VU_MODEL_SETTING_JSON,
-} from '../../common/types';
- 
+import { getLogger } from "@logtape/logtape";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link, useNavigate } from "react-router-dom";
+import type { VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from "../../common/types";
+import { wsApi } from "../../common/wsApi";
+import Footer from "../Footer/Footer";
+import Header from "../Header/Header";
+import { useWebSocket } from "../WebSocketManager/WebSocketManager";
+import SimulationList from "./SimulationList";
+
 const SelectorSimulations = () => {
-  const { ws, isWsConnected, gamaless, gama, simulationList } = useWebSocket();
-  const [loading, setLoading] = useState<boolean>(true);
-  const [connectionStatus, setConnectionStatus] = useState<string>('Waiting for connection ...');
-  const { t } = useTranslation();
-  const [subProjectsList, setSubProjectsList] = useState<(VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[]>(simulationList);
-  useEffect(() => {
-    if (simulationList && simulationList.length > 0) {
-      setSubProjectsList(simulationList);
-    }
-  }, [simulationList]);
+	const { ws, isWsConnected, gamaless, gama, simulationList } = useWebSocket();
+	const [loading, setLoading] = useState<boolean>(true);
+	const [connectionStatus, setConnectionStatus] = useState<string>("Waiting for connection ...");
+	const { t } = useTranslation();
+	const [subProjectsList, setSubProjectsList] =
+		useState<(VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[]>(simulationList);
+	useEffect(() => {
+		if (simulationList && simulationList.length > 0) {
+			setSubProjectsList(simulationList);
+		}
+	}, [simulationList]);
 
-  const [path, setPath] = useState<number[]>([]);
-  const navigate = useNavigate();
-  const logger = getLogger(["components", "SelectorSimulation"]);
+	const [path, setPath] = useState<number[]>([]);
+	const navigate = useNavigate();
+	const logger = getLogger(["components", "SelectorSimulation"]);
 
-  useEffect(() => {
-    if (isWsConnected && ws !== null) {
-      wsApi.getSimulationInformations(ws);
-      setLoading(true);
-    }
-  }, [isWsConnected, ws]);
+	useEffect(() => {
+		if (isWsConnected && ws !== null) {
+			wsApi.getSimulationInformations(ws);
+			setLoading(true);
+		}
+	}, [isWsConnected, ws]);
 
-  useEffect(() => {
-    if (simulationList.length > 0) {
-      setLoading(false);
-    }
-  }, [simulationList]);
+	useEffect(() => {
+		if (simulationList.length > 0) {
+			setLoading(false);
+		}
+	}, [simulationList]);
 
-  useEffect(() => {
-    // the path here is a list of nested indexes, which are used to see which catalogs the user clicked
-    if (!Array.isArray(simulationList)) {
-      logger.warn("simulationList is not an array, resetting subProjectsList");
-      setSubProjectsList([]);
-      return;
-    }
-    if (path.length > 0) {
-      let list: (VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[] = simulationList;
-      for (const index of path) {
-        logger.debug("index in the use effect: {index}", { index });
-        if (!Array.isArray(list)) {
-          logger.error("Expected list to be an array during path traversal");
-          break;
-        }
-        const entry = list[index];
-        if (entry?.type === "catalog" && Array.isArray((entry as VU_CATALOG_SETTING_JSON).entries)) {
-          list = (entry as VU_CATALOG_SETTING_JSON).entries;
-        } else if (entry) {
-          list = [entry];
-        } else {
-          logger.error("Invalid path index {index}", { index });
-          break;
-        }
-      }
-      setSubProjectsList(list);
-    } else {
-      setSubProjectsList(simulationList);
-    }
-  }, [path, simulationList]);
+	useEffect(() => {
+		// the path here is a list of nested indexes, which are used to see which catalogs the user clicked
+		if (!Array.isArray(simulationList)) {
+			logger.warn("simulationList is not an array, resetting subProjectsList");
+			setSubProjectsList([]);
+			return;
+		}
+		if (path.length > 0) {
+			let list: (VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[] = simulationList;
+			for (const index of path) {
+				logger.debug("index in the use effect: {index}", { index });
+				if (!Array.isArray(list)) {
+					logger.error("Expected list to be an array during path traversal");
+					break;
+				}
+				const entry = list[index];
+				if (entry?.type === "catalog" && Array.isArray((entry as VU_CATALOG_SETTING_JSON).entries)) {
+					list = (entry as VU_CATALOG_SETTING_JSON).entries;
+				} else if (entry) {
+					list = [entry];
+				} else {
+					logger.error("Invalid path index {index}", { index });
+					break;
+				}
+			}
+			setSubProjectsList(list);
+		} else {
+			setSubProjectsList(simulationList);
+		}
+	}, [path, simulationList, logger.debug, logger.warn, logger.error]);
 
-  /**Function used to add a clicked subfolder to path
-   * path is an ordered array containing the indexes of all clicked subfolders
-   * @param index 
-   */
-  const addToPath = (index: number) => {
-    setPath([...path, index])
-  }
+	/**Function used to add a clicked subfolder to path
+	 * path is an ordered array containing the indexes of all clicked subfolders
+	 * @param index
+	 */
+	const addToPath = (index: number) => {
+		setPath([...path, index]);
+	};
 
-  /**Removes the last index used to travel the subproject folder
-   * 
-   */
-  const back = () => {
-    if (path.length > 1) {
-      setPath([...path.slice(0, -1)])
-    }
-    if (path.length === 1) {
-      setPath([])
-      setSubProjectsList([])
-    }
-  }
+	/**Removes the last index used to travel the subproject folder
+	 *
+	 */
+	const back = () => {
+		if (path.length > 1) {
+			setPath([...path.slice(0, -1)]);
+		}
+		if (path.length === 1) {
+			setPath([]);
+			setSubProjectsList([]);
+		}
+	};
 
-  /**
-   * handles either navigating through the list of projects or launch a simulation
-   * @param index index of the current selected element
-   */
-  const handleSimulation = (index: number) => {
-    if (!isWsConnected || ws === null) {
-      logger.warn("Websocket not connected \n isWsConnected:{isWsConnected}\n ws:{ws}", { isWsConnected, ws })
-      return;
-    }
+	/**
+	 * handles either navigating through the list of projects or launch a simulation
+	 * @param index index of the current selected element
+	 */
+	const handleSimulation = (index: number) => {
+		if (!isWsConnected || ws === null) {
+			logger.warn("Websocket not connected \n isWsConnected:{isWsConnected}\n ws:{ws}", { isWsConnected, ws });
+			return;
+		}
 
-    const item = subProjectsList[index];
+		const item = subProjectsList[index];
 
-    if (item.type === "catalog") {
-      const catalog_item = item as VU_CATALOG_SETTING_JSON;
-      logger.debug("catalog detected, subprojectList:{subprojectList}", { subProjectList: JSON.stringify(catalog_item.entries) });
-      try {
-        setSubProjectsList(catalog_item.entries);
-        addToPath(index);
-        if (!catalog_item.splashscreen) {
-          logger.warn("No splashscreen could be found for simulation {simulation}", { simulation: catalog_item.name })
-        }
-        logger.debug("called handle simulation, selected item is a catalog of name:{expName}", { expName: catalog_item.name });
-      } catch (e) {
-        logger.error("no subprojects, ERROR:{e}", { e });
-      }
-    } else if (item.type === "json_settings") {
-      wsApi.sendSimulation(ws, item);
-      setTimeout(() => {
-        navigate('/simulationManager');
-      }, 100);
-    }
-  };
+		if (item.type === "catalog") {
+			const catalog_item = item as VU_CATALOG_SETTING_JSON;
+			logger.debug("catalog detected, subprojectList:{subprojectList}", {
+				subProjectList: JSON.stringify(catalog_item.entries),
+			});
+			try {
+				setSubProjectsList(catalog_item.entries);
+				addToPath(index);
+				if (!catalog_item.splashscreen) {
+					logger.warn("No splashscreen could be found for simulation {simulation}", { simulation: catalog_item.name });
+				}
+				logger.debug("called handle simulation, selected item is a catalog of name:{expName}", {
+					expName: catalog_item.name,
+				});
+			} catch (e) {
+				logger.error("no subprojects, ERROR:{e}", { e });
+			}
+		} else if (item.type === "json_settings") {
+			wsApi.sendSimulation(ws, item);
+			setTimeout(() => {
+				navigate("/simulationManager");
+			}, 100);
+		}
+	};
 
-  // Loop which tries to connect to Gama (skipped in GAMALESS mode)
-  useEffect(() => {
-    if (gamaless) return;
-    let interval: NodeJS.Timeout;
-    if (ws && !gama.connected) {
-      interval = setInterval(() => {
-        // Guard against a stale ws reference — the socket may have closed between
-        // the time this interval was set up and now (e.g. during HMR or reconnect).
-        if (ws.readyState !== WebSocket.OPEN) return;
-        wsApi.tryConnection(ws);
-        logger.info('Trying to connect to GAMA, connection status: {gamaStatus}', { gamaStatus: gama.connected });
-      }, 3000);
-    }
-    return () => {
-      clearInterval(interval);
-    };
-  }, [ws, gama.connected, gamaless]);
+	// Loop which tries to connect to Gama (skipped in GAMALESS mode)
+	useEffect(() => {
+		if (gamaless) return;
+		let interval: NodeJS.Timeout;
+		if (ws && !gama.connected) {
+			interval = setInterval(() => {
+				// Guard against a stale ws reference — the socket may have closed between
+				// the time this interval was set up and now (e.g. during HMR or reconnect).
+				if (ws.readyState !== WebSocket.OPEN) return;
+				wsApi.tryConnection(ws);
+				logger.info("Trying to connect to GAMA, connection status: {gamaStatus}", { gamaStatus: gama.connected });
+			}, 3000);
+		}
+		return () => {
+			clearInterval(interval);
+		};
+	}, [ws, gama.connected, gamaless, logger.info]);
 
-  // Display connexion status
-  useEffect(() => {
-    if (gama.connected) {
-      setConnectionStatus('');
-    } else {
-      setConnectionStatus(t('loading')); // Pass the translated string directly
-    }
-  }, [gama.connected, t]);
+	// Display connexion status
+	useEffect(() => {
+		if (gama.connected) {
+			setConnectionStatus("");
+		} else {
+			setConnectionStatus(t("loading")); // Pass the translated string directly
+		}
+	}, [gama.connected, t]);
 
-  return (
-    <div className="flex flex-col items-center justify-between h-full">
+	return (
+		<div className="flex flex-col items-center justify-between h-full">
+			<Header
+				onLogoClick={() => {
+					setPath([]);
+					setSubProjectsList(simulationList);
+				}}
+			/>
+			{/* ↑ prop to specify whether it should use the small version of the navigation bar */}
 
-      <Header onLogoClick={() => {
-        setPath([]);
-        setSubProjectsList(simulationList);
-      }} />
-      {/* ↑ prop to specify whether it should use the small version of the navigation bar */}
+			{gamaless ? (
+				<>
+					<div className="bg-yellow-100 border-4 border-yellow-500 rounded-xl px-8 py-6 text-center max-w-lg">
+						<h2 className="text-2xl font-bold text-yellow-700 mb-2">GAMALESS Mode</h2>
+						<p className="text-yellow-800">Simulation features are disabled. No GAMA server is connected.</p>
+						<p className="text-yellow-700 mt-2 text-sm">Headset management is still operational.</p>
+					</div>
+					<Link to={"../streamPlayerScreen"} className="rounded-lg" target="_blank">
+						<img src={` /images/Buttons/Button_Display.png`} alt="display button" className="size-[6dvh]" />
+					</Link>
+				</>
+			) : loading ? (
+				<div className="text-center">
+					<div className="animate-pulse ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4 -z-50"></div>
+					<h2 className="text-gray-700">{t("loading")}</h2>
+				</div>
+			) : (
+				<div className="flex flex-col justify-center items-center size-full rounded-md relative">
+					{
+						//? Shows the back button if in a nested folder
+						path.length >= 1 && (
+							<img
+								src={` /images/Buttons/Button_back.png`}
+								alt="back button"
+								onClick={() => back()}
+								className="cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200 absolute left-[3.1dvw] top-10 "
+							/>
+						)
+					}
 
-      {gamaless ? (
-<>
-          <div className="bg-yellow-100 border-4 border-yellow-500 rounded-xl px-8 py-6 text-center max-w-lg">
-            <h2 className="text-2xl font-bold text-yellow-700 mb-2">GAMALESS Mode</h2>
-            <p className="text-yellow-800">Simulation features are disabled. No GAMA server is connected.</p>
-            <p className="text-yellow-700 mt-2 text-sm">Headset management is still operational.</p>
-          </div>
-          <Link to={"../streamPlayerScreen"} className='rounded-lg' target='_blank'>
-            <img src={` /images/Buttons/Button_Display.png`} alt="display button" className='size-[6dvh]'/>
-          </Link>
-</>
-      ) : loading ? (
-        <div className="text-center">
-          <div className="animate-pulse ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4 -z-50"></div>
-          <h2 className="text-gray-700">{t('loading')}</h2>
-        </div>
-      ) : (
-        <div className="flex flex-col justify-center items-center size-full rounded-md relative">
-
-          {
-            //? Shows the back button if in a nested folder
-            path.length >= 1 &&
-
-              <img src={` /images/Buttons/Button_back.png`} alt="back button" onClick={() => back()}
-              className='cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200 absolute left-[3.1dvw] top-10 ' />
-            
-          }
-
-          <div className="flex flex-col items-center justify-around h-fit w-full relative">
-
-            <SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
-          </div>
-          <Link to={"../streamPlayerScreen"} className='rounded-lg absolute bottom-[10dvh]' target='_blank'>
-            <img src={` /images/Buttons/Button_Display.png`} alt="" className='size-[6dvh] hover:scale-110 transition-transform duration-200' />
-          </Link>
-          {/* Display the status, ask for the user to connect to Gama if still not */}
-          <div className='flex gap-2 mt-6'>
-            <div className={gama.connected ? 'text-green-500' : 'text-red-500'}>
-              {gama.connected ? '' : connectionStatus}
-            </div>
-          </div>
-
-
-        </div>
-      )}
-      <Footer />
-    </div>
-  );
+					<div className="flex flex-col items-center justify-around h-fit w-full relative">
+						<SimulationList list={subProjectsList} handleSimulation={handleSimulation} gama={gama} />
+					</div>
+					<Link to={"../streamPlayerScreen"} className="rounded-lg absolute bottom-[10dvh]" target="_blank">
+						<img
+							src={` /images/Buttons/Button_Display.png`}
+							alt=""
+							className="size-[6dvh] hover:scale-110 transition-transform duration-200"
+						/>
+					</Link>
+					{/* Display the status, ask for the user to connect to Gama if still not */}
+					<div className="flex gap-2 mt-6">
+						<div className={gama.connected ? "text-green-500" : "text-red-500"}>
+							{gama.connected ? "" : connectionStatus}
+						</div>
+					</div>
+				</div>
+			)}
+			<Footer />
+		</div>
+	);
 };
 
 export default SelectorSimulations;

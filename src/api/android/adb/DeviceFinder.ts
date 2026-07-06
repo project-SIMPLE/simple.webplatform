@@ -1,208 +1,198 @@
 // @ts-expect-error
-import Evilscan from "evilscan";
-import {networkInterfaces} from "os";
-import {exec} from "child_process";
 
-import {HEADSETS_IP, ENV_EXTRA_VERBOSE, ENV_VERBOSE} from "../../index.ts";
-import {getLogger} from "@logtape/logtape";
-import {AdbManager} from "./AdbManager.ts";
+import { exec } from "node:child_process";
+import { networkInterfaces } from "node:os";
+import { getLogger } from "@logtape/logtape";
+import Evilscan from "evilscan";
+import { ENV_EXTRA_VERBOSE, ENV_VERBOSE, HEADSETS_IP } from "../../index.ts";
+import type { AdbManager } from "./AdbManager.ts";
 
 // Override the log function
-const logger= getLogger(["android", "DeviceFinder"]);
-const loggerES= getLogger(["android", "DeviceFinder", "EvilScan"]);
+const logger = getLogger(["android", "DeviceFinder"]);
+const loggerES = getLogger(["android", "DeviceFinder", "EvilScan"]);
 
 class DeviceFinder {
-    adbManager: AdbManager;
-    ipToConnect: string[];
-    isScanning: boolean = false;
+	adbManager: AdbManager;
+	ipToConnect: string[];
+	isScanning: boolean = false;
 
-    constructor(adbm: AdbManager) {
-        this.adbManager = adbm;
-        this.ipToConnect = HEADSETS_IP;
+	constructor(adbm: AdbManager) {
+		this.adbManager = adbm;
+		this.ipToConnect = HEADSETS_IP;
 
-        // Filter out already connected IPs
-        this.removeConnectedIp();
+		// Filter out already connected IPs
+		this.removeConnectedIp();
 
-        logger.debug("Loaded successfully, will start to scan for devices now...");
-    }
+		logger.debug("Loaded successfully, will start to scan for devices now...");
+	}
 
-    private removeConnectedIp(){
-        const clientStreaming = this.adbManager.clientCurrentlyStreaming;
-        this.ipToConnect = this.ipToConnect.filter(ip => {
-            return !clientStreaming.some(item => item.serial.startsWith(ip));
-        });
-    }
+	private removeConnectedIp() {
+		const clientStreaming = this.adbManager.clientCurrentlyStreaming;
+		this.ipToConnect = this.ipToConnect.filter((ip) => {
+			return !clientStreaming.some((item) => item.serial.startsWith(ip));
+		});
+	}
 
-    public async scanAndConnect(firstRun: boolean = false) {
-        if(firstRun && HEADSETS_IP.length == 0) {
-            // Auto-detect headsets if none listed
-            await this.autoDetectDevices();
-            this.removeConnectedIp();
-        }
+	public async scanAndConnect(firstRun: boolean = false) {
+		if (firstRun && HEADSETS_IP.length === 0) {
+			// Auto-detect headsets if none listed
+			await this.autoDetectDevices();
+			this.removeConnectedIp();
+		}
 
-        if (this.ipToConnect.length === 0 || this.isScanning) {
-            if(this.ipToConnect.length === 0)
-                logger.debug('Every known IP already connected, stopping now...');
-            else
-                logger.trace('Already scanning for new IP, skipping this call...');
+		if (this.ipToConnect.length === 0 || this.isScanning) {
+			if (this.ipToConnect.length === 0) logger.debug("Every known IP already connected, stopping now...");
+			else logger.trace("Already scanning for new IP, skipping this call...");
 
-            return;
-        }
+			return;
+		}
 
-        this.isScanning = true; // Set the flag before starting to connect, otherwise, multiple attempts will start concurrently before the flag will be set.
+		this.isScanning = true; // Set the flag before starting to connect, otherwise, multiple attempts will start concurrently before the flag will be set.
 
-        try {
-            logger.debug('Start looking to connect for those IP: {list}', {list: this.ipToConnect});
+		try {
+			logger.debug("Start looking to connect for those IP: {list}", { list: this.ipToConnect });
 
-            for (let i = 0; i < this.ipToConnect.length; i++) { // Directly use this.ipToConnect. No need to copy
-                const ip = this.ipToConnect[i];
-                logger.debug(`Trying ${ip}`);
+			for (let i = 0; i < this.ipToConnect.length; i++) {
+				// Directly use this.ipToConnect. No need to copy
+				const ip = this.ipToConnect[i];
+				logger.debug(`Trying ${ip}`);
 
-                try {
-                    const output: boolean = await this.scanAndConnectIP(ip);
+				try {
+					const output: boolean = await this.scanAndConnectIP(ip);
 
-                    if (output) { //.includes('OK')
-                        logger.debug(`Successfully connected to ${ip}`);
-                        this.ipToConnect.splice(i--, 1); // Remove the connected IP; adjust index
-                    } else
-                        if (ENV_VERBOSE) logger.warn(`Failed to connect to ${ip}`);
+					if (output) {
+						//.includes('OK')
+						logger.debug(`Successfully connected to ${ip}`);
+						this.ipToConnect.splice(i--, 1); // Remove the connected IP; adjust index
+					} else if (ENV_VERBOSE) logger.warn(`Failed to connect to ${ip}`);
+				} catch (innerError) {
+					logger.error(`Error connecting to ${ip}: {e}`, { e: innerError });
+				}
+			}
+		} finally {
+			if (this.ipToConnect.length > 0) {
+				this.isScanning = false; // Allow new thread to search for devices
 
-                } catch (innerError) {
-                    logger.error(`Error connecting to ${ip}: {e}`, {e: innerError});
-                }
-            }
-        } finally {
-            if (this.ipToConnect.length > 0) {
+				logger.debug("Those IP are left to be connected: {list}\nRetry in 5 seconds...", { list: this.ipToConnect });
 
-                this.isScanning = false;  // Allow new thread to search for devices
+				// Trigger new call
+				setTimeout(async () => {
+					await this.scanAndConnect();
+				}, 5000);
+			} else {
+				logger.debug("All devices connected.\nStopping now...");
+			}
+		}
+	}
 
-                logger.debug('Those IP are left to be connected: {list}\nRetry in 5 seconds...', {list: this.ipToConnect});
+	private isDeviceReachable(ipAddress: string): Promise<boolean> {
+		return new Promise((resolve) => {
+			// Sanitize: only allow valid IPv4 to prevent command injection
+			if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ipAddress)) {
+				resolve(false);
+				return;
+			}
+			const cmd = process.platform === "win32" ? `ping -n 1 -w 1000 ${ipAddress}` : `ping -c 1 -W 1 ${ipAddress}`;
+			exec(cmd, (error) => resolve(!error));
+		});
+	}
 
-                // Trigger new call
-                setTimeout(async () => {
-                    await this.scanAndConnect();
-                }, 5000);
+	public async scanAndConnectIP(ipAddress: string): Promise<boolean> {
+		let alreadyConnected: boolean = false;
+		let finishedScanning: boolean = false;
 
-            } else {
-                logger.debug('All devices connected.\nStopping now...');
-            }
-        }
-    }
+		const isUp = await this.isDeviceReachable(ipAddress);
+		if (!isUp) {
+			logger.debug(`Device at ${ipAddress} is not reachable, skipping port scan`);
+			return false;
+		}
 
-    private isDeviceReachable(ipAddress: string): Promise<boolean> {
-        return new Promise((resolve) => {
-            // Sanitize: only allow valid IPv4 to prevent command injection
-            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ipAddress)) { resolve(false); return; }
-            const cmd = process.platform === 'win32'
-                ? `ping -n 1 -w 1000 ${ipAddress}`
-                : `ping -c 1 -W 1 ${ipAddress}`;
-            exec(cmd, (error) => resolve(!error));
-        });
-    }
+		const scanner = new Evilscan({
+			target: ipAddress,
+			port: "5555,30000-49999", // your custom range
+			status: "O", // 'TROU' : Timeout, Refused, Open, Unreachable
+			concurrency: 500, // how many ports to test in parallel
+			timeout: 250, // maximum number of milliseconds before closing the connection
+			banner: false,
+		});
 
-    public async scanAndConnectIP(ipAddress: string): Promise<boolean> {
-        let alreadyConnected: boolean = false;
-        let finishedScanning: boolean = false;
+		scanner
+			.on("result", async (data: any) => {
+				loggerES.trace(`Scan of ${ipAddress} find this: {data}`, { data });
+				if (!alreadyConnected) {
+					loggerES.trace(`Trying to ADB connect to ${data.ip}:${data.port}`);
 
-        const isUp = await this.isDeviceReachable(ipAddress);
-        if (!isUp) {
-            logger.debug(`Device at ${ipAddress} is not reachable, skipping port scan`);
-            return false;
-        }
+					try {
+						alreadyConnected = await this.adbManager.connectNewDevice(data.ip, data.port);
+						if (alreadyConnected) scanner.abort();
+					} catch (e) {
+						if (ENV_EXTRA_VERBOSE) loggerES.error("Couldn't connect with this error message: {e}", { e });
+					}
+				} else loggerES.trace(`Already connected, skipping ${data.ip}:${data.port}`);
+			})
+			.on("done", () => {
+				loggerES.trace(`Scan of ${ipAddress} completed.`);
+				finishedScanning = true;
+			})
+			.run();
 
-        const scanner = new Evilscan({
-                target: ipAddress,
-                port: '5555,30000-49999',   // your custom range
-                status: 'O',                // 'TROU' : Timeout, Refused, Open, Unreachable
-                concurrency: 500,           // how many ports to test in parallel
-                timeout: 250,               // maximum number of milliseconds before closing the connection
-                banner:false
-            });
+		// Dirty waiting for scan to finish
+		while (!finishedScanning) {
+			await new Promise((f) => setTimeout(f, 1000));
+		}
 
-        scanner.on('result', async (data:any) => {
-                loggerES.trace(`Scan of ${ipAddress} find this: {data}`, {data});
-                if (!alreadyConnected){
-                    loggerES.trace(`Trying to ADB connect to ${data.ip}:${data.port}`);
+		return alreadyConnected;
+	}
 
-                    try {
-                        alreadyConnected = await this.adbManager.connectNewDevice(data.ip, data.port);
-                        if (alreadyConnected)
-                            scanner.abort();
-                    } catch (e) {
-                        if (ENV_EXTRA_VERBOSE) loggerES.error("Couldn't connect with this error message: {e}", {e})
-                    }
-                } else
-                    loggerES.trace(`Already connected, skipping ${data.ip}:${data.port}`);
-            })
-            .on('done', () => {
-                loggerES.trace(`Scan of ${ipAddress} completed.`);
-                finishedScanning = true;
-            })
-            .run();
+	public async autoDetectDevices() {
+		let serverLocalIp: string = "";
+		let finishedScanning: boolean = false;
 
-        // Dirty waiting for scan to finish
-        while(!finishedScanning) {
-            await new Promise(f => setTimeout(f, 1000));
-        }
+		try {
+			for (const [interfaceName, interfaceInfo] of Object.entries(networkInterfaces())) {
+				// Skip localhost/vpn interfaces
+				if (interfaceName.startsWith("lo") || interfaceName.startsWith("tail")) continue;
 
-        return alreadyConnected;
-    }
+				for (const i of interfaceInfo!) {
+					if (i.family === "IPv6" || i.address.startsWith("127.0.0")) continue;
+					else serverLocalIp = i.address;
+				}
+			}
+		} catch (e) {
+			loggerES.error("Can't find the ip address for your device...\n{e}", { e });
+		} finally {
+			loggerES.debug(`Scanning over IP subnet: ${serverLocalIp}/24`);
+		}
 
-    public async autoDetectDevices() {
-        let serverLocalIp:string = "";
-        let finishedScanning: boolean = false;
+		if (!serverLocalIp.startsWith("192.168.68")) {
+			loggerES.warn("Disable device auto-scan because server is not in the default IP range");
+			return;
+		}
 
-        try {
-            for (let [interfaceName, interfaceInfo] of Object.entries(networkInterfaces())) {
-                // Skip localhost/vpn interfaces
-                if (interfaceName.startsWith('lo') || interfaceName.startsWith('tail'))
-                    continue;
+		new Evilscan({
+			target: `${serverLocalIp}/24`, //ip address subnet,
+			port: "5555", // your custom range
+			status: "RO", // 'TROU' : Timeout, Refused, Open, Unreachable
+			concurrency: 255, // how many ports to test in parallel
+			timeout: 1000, // maximum number of milliseconds before closing the connection
+		})
+			.on("result", async (data: any) => {
+				if (data.ip !== serverLocalIp) {
+					loggerES.trace(`Scan find this: ${data.ip}`);
+					this.ipToConnect.push(data.ip);
+				}
+			})
+			.on("done", () => {
+				loggerES.trace("=== Scan completed.");
+				finishedScanning = true;
+			})
+			.run();
 
-                for (const i of interfaceInfo!){
-                    if (
-                        i.family === "IPv6"
-                        || i.address.startsWith("127.0.0")
-                    )
-                        continue;
-                    else
-                        serverLocalIp = i.address;
-                }
-            }
-        } catch (e) {
-            loggerES.error("Can't find the ip address for your device...\n{e}", {e});
-        } finally {
-            loggerES.debug(`Scanning over IP subnet: ${serverLocalIp}/24`);
-        }
-
-        if (!serverLocalIp.startsWith("192.168.68")) {
-            loggerES.warn("Disable device auto-scan because server is not in the default IP range");
-            return;
-        }
-
-        new Evilscan({
-                target: serverLocalIp + "/24",  //ip address subnet,
-                port: '5555',                     // your custom range
-                status: 'RO',                   // 'TROU' : Timeout, Refused, Open, Unreachable
-                concurrency: 255,               // how many ports to test in parallel
-                timeout: 1000                    // maximum number of milliseconds before closing the connection
-            })
-            .on('result', async (data:any) => {
-                if (data.ip != serverLocalIp) {
-                    loggerES.trace(`Scan find this: ${data.ip}`);
-                    this.ipToConnect.push(data.ip);
-                }
-            })
-            .on('done', () => {
-                loggerES.trace('=== Scan completed.');
-                finishedScanning = true;
-            })
-            .run();
-
-        // Dirty waiting for scan to finish
-        while(!finishedScanning) {
-            await new Promise(f => setTimeout(f, 1000));
-        }
-    }
+		// Dirty waiting for scan to finish
+		while (!finishedScanning) {
+			await new Promise((f) => setTimeout(f, 1000));
+		}
+	}
 }
 
 export default DeviceFinder;

@@ -1,23 +1,18 @@
-
 const Footer = () => {
-  return (
+	return (
+		<footer className="flex justify-between items-center w-full relative  mb-[3dvh]">
+			<div className="flex gap-3 ml-10 mb-[1.6dvh] ">
+				<img src={`images/Logos/funded-by-ue.png`} alt="UE" className="h-12" />
+				<img src={`images/Logos/global-gateway-euro.png`} alt="GlobalGateway" className="h-12" />
+				<img src={`images/Logos/nstda-logo.png`} alt="NSTDA" className="h-12" />
+			</div>
 
-
-    <footer className="flex justify-between items-center w-full relative  mb-[3dvh]">
-      <div className='flex gap-3 ml-10 mb-[1.6dvh] '>
-        <img src={`images/Logos/funded-by-ue.png`} alt="UE" className="h-12" />
-        <img src={`images/Logos/global-gateway-euro.png`} alt="GlobalGateway" className="h-12" />
-        <img src={`images/Logos/nstda-logo.png`} alt="NSTDA" className="h-12" />
-      </div>
-
-      <div className='flex gap-[50px] mr-[5dvw] mb-[1.5dvh]' >
-        <img src={`images/Logos/IRD-logo.png`} alt="IRD" className="h-12" />
-        <img src={`images/Logos/ctu-logo.png`} alt="CTU" className="h-12" />
-      </div>
-    </footer>
-
-
-  );
+			<div className="flex gap-[50px] mr-[5dvw] mb-[1.5dvh]">
+				<img src={`images/Logos/IRD-logo.png`} alt="IRD" className="h-12" />
+				<img src={`images/Logos/ctu-logo.png`} alt="CTU" className="h-12" />
+			</div>
+		</footer>
+	);
 };
 
 export default Footer;

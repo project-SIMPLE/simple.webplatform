@@ -13,47 +13,47 @@
  *   - HID.node                      (node-hid native module for Windows x64)
  */
 
-import { execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { patchPe } from './patch-pe-no-cfg.mjs';
+import { execSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { patchPe } from "./patch-pe-no-cfg.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, "..");
 
-const nodeMajor = parseInt(process.versions.node.split('.')[0], 10);
+const nodeMajor = parseInt(process.versions.node.split(".")[0], 10);
 if (nodeMajor !== 24) {
-  console.error(`[SEA] ERROR: Node.js v${process.versions.node} is not supported for SEA builds.`);
-  console.error('[SEA]        SEA injection is only reliable on Node.js 24.');
-  process.exit(1);
+	console.error(`[SEA] ERROR: Node.js v${process.versions.node} is not supported for SEA builds.`);
+	console.error("[SEA]        SEA injection is only reliable on Node.js 24.");
+	process.exit(1);
 }
 
 // ── 1. Build frontend and backend ────────────────────────────────────────────
 
-console.log('\n[SEA] Building frontend...');
-execSync('npm run build:frontend', { cwd: root, stdio: 'inherit' });
+console.log("\n[SEA] Building frontend...");
+execSync("npm run build:frontend", { cwd: root, stdio: "inherit" });
 
-console.log('\n[SEA] Building backend...');
-execSync('npm run build:backend', { cwd: root, stdio: 'inherit' });
+console.log("\n[SEA] Building backend...");
+execSync("npm run build:backend", { cwd: root, stdio: "inherit" });
 
 // ── 2. Collect all dist/ files as SEA assets ─────────────────────────────────
 
-const distDir = path.join(root, 'dist');
+const distDir = path.join(root, "dist");
 
 function collectAssets(dir, base = distDir) {
-  const out = {};
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      Object.assign(out, collectAssets(full, base));
-    } else {
-      const key = 'dist/' + path.relative(base, full).replace(/\\/g, '/');
-      const value = path.relative(root, full).replace(/\\/g, '/');
-      out[key] = value;
-    }
-  }
-  return out;
+	const out = {};
+	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+		const full = path.join(dir, entry.name);
+		if (entry.isDirectory()) {
+			Object.assign(out, collectAssets(full, base));
+		} else {
+			const key = `dist/${path.relative(base, full).replace(/\\/g, "/")}`;
+			const value = path.relative(root, full).replace(/\\/g, "/");
+			out[key] = value;
+		}
+	}
+	return out;
 }
 
 const distAssets = collectAssets(distDir);
@@ -63,11 +63,11 @@ console.log(`\n[SEA] ${Object.keys(distAssets).length} frontend files collected.
 
 const modulesVer = process.versions.modules; // e.g. '137'
 const uwsFile = `uws_win32_x64_${modulesVer}.node`;
-const uwsPath = path.join(root, 'node_modules', 'uWebSockets.js', uwsFile);
+const uwsPath = path.join(root, "node_modules", "uWebSockets.js", uwsFile);
 
 if (!fs.existsSync(uwsPath)) {
-  console.error(`[SEA] ERROR: ${uwsFile} not found. Is uWebSockets.js installed?`);
-  process.exit(1);
+	console.error(`[SEA] ERROR: ${uwsFile} not found. Is uWebSockets.js installed?`);
+	process.exit(1);
 }
 
 console.log(`[SEA] Including native module: ${uwsFile}`);
@@ -78,67 +78,69 @@ console.log(`[SEA] Including native module: ${uwsFile}`);
 // fallback.  Check the prebuild path first, then the gyp Release path.
 
 function findHidBinary() {
-  const hidDir = path.join(root, 'node_modules', 'node-hid');
-  if (!fs.existsSync(hidDir)) {
-    console.error('[SEA] ERROR: node-hid not found in node_modules. Run: npm install');
-    process.exit(1);
-  }
-  // node-hid ships as prebuilds/{name}-{platform}-{arch}/node-napi-v4.node
-  const candidates = [
-    path.join(hidDir, 'prebuilds', 'HID-win32-x64', 'node-napi-v4.node'),
-    // legacy node-gyp build output
-    path.join(hidDir, 'build', 'Release', 'HID.node'),
-  ];
-  for (const c of candidates) {
-    if (fs.existsSync(c)) return c;
-  }
-  console.error('[SEA] ERROR: node-hid native binary not found. Tried:');
-  candidates.forEach(c => console.error(`         ${c}`));
-  process.exit(1);
+	const hidDir = path.join(root, "node_modules", "node-hid");
+	if (!fs.existsSync(hidDir)) {
+		console.error("[SEA] ERROR: node-hid not found in node_modules. Run: npm install");
+		process.exit(1);
+	}
+	// node-hid ships as prebuilds/{name}-{platform}-{arch}/node-napi-v4.node
+	const candidates = [
+		path.join(hidDir, "prebuilds", "HID-win32-x64", "node-napi-v4.node"),
+		// legacy node-gyp build output
+		path.join(hidDir, "build", "Release", "HID.node"),
+	];
+	for (const c of candidates) {
+		if (fs.existsSync(c)) return c;
+	}
+	console.error("[SEA] ERROR: node-hid native binary not found. Tried:");
+	candidates.forEach((c) => console.error(`         ${c}`));
+	process.exit(1);
 }
 
 const hidPath = findHidBinary();
-console.log(`[SEA] Including native module: HID.node  (from ${path.relative(root, hidPath).replace(/\\/g, '/')})`);
+console.log(`[SEA] Including native module: HID.node  (from ${path.relative(root, hidPath).replace(/\\/g, "/")})`);
 
 const assets = {
-  ...distAssets,
-  [uwsFile]: path.relative(root, uwsPath).replace(/\\/g, '/'),
-  'HID.node': path.relative(root, hidPath).replace(/\\/g, '/'),
+	...distAssets,
+	[uwsFile]: path.relative(root, uwsPath).replace(/\\/g, "/"),
+	"HID.node": path.relative(root, hidPath).replace(/\\/g, "/"),
 };
 
 // ── 4. Write sea-config.json ──────────────────────────────────────────────────
 
 const seaConfig = {
-  main: 'dist-api/index.cjs',
-  output: 'sea-prep.blob',
-  disableExperimentalSEAWarning: true,
-  assets,
+	main: "dist-api/index.cjs",
+	output: "sea-prep.blob",
+	disableExperimentalSEAWarning: true,
+	assets,
 };
 
-fs.writeFileSync(path.join(root, 'sea-config.json'), JSON.stringify(seaConfig, null, 2));
+fs.writeFileSync(path.join(root, "sea-config.json"), JSON.stringify(seaConfig, null, 2));
 console.log(`[SEA] sea-config.json written (${Object.keys(assets).length} assets).`);
 
 // ── 5. Generate SEA blob ──────────────────────────────────────────────────────
 
-console.log('\n[SEA] Generating blob...');
-execSync('node --experimental-sea-config sea-config.json', { cwd: root, stdio: 'inherit' });
-console.log('[SEA] Blob generated: sea-prep.blob');
+console.log("\n[SEA] Generating blob...");
+execSync("node --experimental-sea-config sea-config.json", { cwd: root, stdio: "inherit" });
+console.log("[SEA] Blob generated: sea-prep.blob");
 
 // ── 6. Locate the Windows node.exe to use as the base binary ─────────────────
 
 const nodeVersion = process.version; // e.g. 'v24.16.0'
 const pkgCachedExe = path.join(
-  process.env.USERPROFILE || process.env.HOME || '',
-  '.pkg-cache', 'sea', `node-${nodeVersion}-win-x64.exe`,
+	process.env.USERPROFILE || process.env.HOME || "",
+	".pkg-cache",
+	"sea",
+	`node-${nodeVersion}-win-x64.exe`,
 );
 
 let sourceExe;
 if (fs.existsSync(pkgCachedExe)) {
-  sourceExe = pkgCachedExe;
-  console.log(`\n[SEA] Using pkg-cached node binary: ${sourceExe}`);
+	sourceExe = pkgCachedExe;
+	console.log(`\n[SEA] Using pkg-cached node binary: ${sourceExe}`);
 } else {
-  sourceExe = process.execPath;
-  console.log(`\n[SEA] Using current node.exe: ${sourceExe}`);
+	sourceExe = process.execPath;
+	console.log(`\n[SEA] Using current node.exe: ${sourceExe}`);
 }
 
 // ── 7. Copy node.exe and inject SEA blob ─────────────────────────────────────
@@ -149,9 +151,9 @@ if (fs.existsSync(pkgCachedExe)) {
 // Without this shim the DLL initialization crashes with 0xC0000005 regardless
 // of path, signature, or CFG status.  We place it in its own subdirectory so
 // it does not conflict with a system node installation.
-const outDir = path.join(root, 'bin', 'win');
+const outDir = path.join(root, "bin", "win");
 fs.mkdirSync(outDir, { recursive: true });
-const outExe = path.join(outDir, 'node.exe');
+const outExe = path.join(outDir, "node.exe");
 
 fs.copyFileSync(sourceExe, outExe);
 console.log(`[SEA] Copied to: ${outExe}`);
@@ -164,12 +166,12 @@ console.log(`[SEA] Copied to: ${outExe}`);
 // module.  Starting from a clean unsigned binary avoids that regression.
 patchPe(outExe);
 
-console.log('[SEA] PE patched (signature stripped, CFG cleared).');
+console.log("[SEA] PE patched (signature stripped, CFG cleared).");
 
-console.log('[SEA] Injecting blob with postject...');
+console.log("[SEA] Injecting blob with postject...");
 execSync(
-  `npx postject "${outExe}" NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 --overwrite`,
-  { cwd: root, stdio: 'inherit' },
+	`npx postject "${outExe}" NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 --overwrite`,
+	{ cwd: root, stdio: "inherit" },
 );
 
 const sizeMB = (fs.statSync(outExe).size / 1024 / 1024).toFixed(1);
@@ -189,24 +191,21 @@ console.log(`      Size:    ${sizeMB} MB`);
 // On first launch the embedded node.exe is extracted to a per-size temp folder
 // and reused on subsequent launches.
 
-const launcherName = process.env.LAUNCHER_NAME || 'simple-win.exe';
+const launcherName = process.env.LAUNCHER_NAME || "simple-win.exe";
 const launcherExe = path.join(outDir, launcherName);
-const launcherSrc = path.join(__dirname, 'launcher-win.go');
+const launcherSrc = path.join(__dirname, "launcher-win.go");
 
 console.log(`\n[Launcher] Compiling ${launcherName} (Go)...`);
-execSync(
-  `go build -ldflags="-s -w" -trimpath -o "${launcherExe}" "${launcherSrc}"`,
-  { cwd: root, stdio: 'inherit' },
-);
+execSync(`go build -ldflags="-s -w" -trimpath -o "${launcherExe}" "${launcherSrc}"`, { cwd: root, stdio: "inherit" });
 
-console.log('[Launcher] Bundling node.exe into launcher...');
+console.log("[Launcher] Bundling node.exe into launcher...");
 const launcherBytes = fs.readFileSync(launcherExe);
-const nodeBytes     = fs.readFileSync(outExe);
+const nodeBytes = fs.readFileSync(outExe);
 
 // 12-byte footer: [8 bytes: embedded size as int64 LE] [4 bytes: magic "SWPN"]
 const footer = Buffer.alloc(12);
 footer.writeBigInt64LE(BigInt(nodeBytes.length), 0);
-footer.write('SWPN', 8, 'ascii');
+footer.write("SWPN", 8, "ascii");
 
 fs.writeFileSync(launcherExe, Buffer.concat([launcherBytes, nodeBytes, footer]));
 
