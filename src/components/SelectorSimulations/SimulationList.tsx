@@ -46,11 +46,11 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
   return (
     <div className="flex flex-row w-full justify-evenly">
       {list.map((simulation: VU_MODEL_SETTING_JSON | VU_CATALOG_SETTING_JSON, index: number) => (
-        <div className='items-center text-center w-fit ' key={index}>
+        <div className='items-center text-center w-fit ' key={`${simulation.name ?? 'sim'}-${index}`}>
 
           <div
             className={`rounded-2xl items-center  cursor-pointer relative size-[13dvw]  ${className && className}  ${!gama.connected && 'opacity-50' }`}
-            key={index} onClick={gama.connected ? () => handleSimulation(index) : () => { }}>
+            onClick={gama.connected ? () => handleSimulation(index) : () => { }}>
             {/* {simulation.type == "catalog" ? <img src={` /images/Headset/Headset_04_orange.png`} className='rounded-full bg-slate-500 opacity-90 size-16 absolute top-[40%] left-[40%] z-20' /> : null} //? downward arrow */}
             <div className='relative size-full bg-[#fcf7ec] hover:scale-110 transition-transform duration-200'>
               {simulation.type === "catalog" ?

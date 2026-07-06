@@ -39,11 +39,6 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
     }
   };
 
-  const handleRestart = (id: string) => {
-    logger.error(`Restart button clicked for headset ${id}`);
-    // Logic for restart button
-  };
-
   {
 
     return (
@@ -75,8 +70,8 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
                 </button>
                 {/* bouton vers le mirror d ece casque spécifiquement */}
                 <button
-                  className="bg-orange-500 text-white px-4 py-2 mt-4 rounded-r-md rounded-l-none"
-                  onClick={() => handleRestart(Playerkey)}  >
+                  className="bg-orange-500 text-white px-4 py-2 mt-4 rounded-r-md rounded-l-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled  /* TODO: implement restart */ >
 
                   {t('relaunch')}
                 </button>

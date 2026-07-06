@@ -25,7 +25,6 @@ const SelectorSimulations = () => {
     }
   }, [simulationList]);
 
-  const [selectedSplashscreen, setSelectedSplashscreen] = useState("")
   const [path, setPath] = useState<number[]>([]);
   const navigate = useNavigate();
   const logger = getLogger(["components", "SelectorSimulation"]);
@@ -113,9 +112,7 @@ const SelectorSimulations = () => {
       try {
         setSubProjectsList(catalog_item.entries);
         addToPath(index);
-        if (catalog_item.splashscreen) {
-          setSelectedSplashscreen(catalog_item.splashscreen);
-        } else {
+        if (!catalog_item.splashscreen) {
           logger.warn("No splashscreen could be found for simulation {simulation}", { simulation: catalog_item.name })
         }
         logger.debug("called handle simulation, selected item is a catalog of name:{expName}", { expName: catalog_item.name });
@@ -163,7 +160,6 @@ const SelectorSimulations = () => {
       <Header onLogoClick={() => {
         setPath([]);
         setSubProjectsList(simulationList);
-        setSelectedSplashscreen('');
       }} />
       {/* ↑ prop to specify whether it should use the small version of the navigation bar */}
 

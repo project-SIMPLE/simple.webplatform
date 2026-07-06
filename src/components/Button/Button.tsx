@@ -5,8 +5,7 @@ interface ButtonProps {
   text?: string;
   bgColor: string;
   icon?: React.ReactNode;
-  showText?: boolean;
-  className?: string; 
+  className?: string;
   customStyle?: React.CSSProperties;
 }
 
