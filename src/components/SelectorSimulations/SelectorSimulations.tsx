@@ -1,9 +1,9 @@
 import { getLogger } from "@logtape/logtape";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
-import type { VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from "../../common/types";
+import { Link } from "react-router-dom";
 import { wsApi } from "../../common/wsApi";
+import { useSimulationNav } from "../../hooks/useSimulationNav";
 import Footer from "../Footer/Footer";
 import Header from "../Header/Header";
 import { useWebSocket } from "../WebSocketManager/WebSocketManager";
@@ -11,19 +11,10 @@ import SimulationList from "./SimulationList";
 
 const SelectorSimulations = () => {
 	const { ws, isWsConnected, gamaless, gama, simulationList } = useWebSocket();
+	const { subProjectsList, path, back, reset, handleSimulation } = useSimulationNav();
 	const [loading, setLoading] = useState<boolean>(true);
 	const [connectionStatus, setConnectionStatus] = useState<string>("Waiting for connection ...");
 	const { t } = useTranslation();
-	const [subProjectsList, setSubProjectsList] =
-		useState<(VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[]>(simulationList);
-	useEffect(() => {
-		if (simulationList && simulationList.length > 0) {
-			setSubProjectsList(simulationList);
-		}
-	}, [simulationList]);
-
-	const [path, setPath] = useState<number[]>([]);
-	const navigate = useNavigate();
 	const logger = getLogger(["components", "SelectorSimulation"]);
 
 	useEffect(() => {
@@ -38,95 +29,6 @@ const SelectorSimulations = () => {
 			setLoading(false);
 		}
 	}, [simulationList]);
-
-	useEffect(() => {
-		// the path here is a list of nested indexes, which are used to see which catalogs the user clicked
-		if (!Array.isArray(simulationList)) {
-			logger.warn("simulationList is not an array, resetting subProjectsList");
-			setSubProjectsList([]);
-			return;
-		}
-		if (path.length > 0) {
-			let list: (VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[] = simulationList;
-			for (const index of path) {
-				logger.debug("index in the use effect: {index}", { index });
-				if (!Array.isArray(list)) {
-					logger.error("Expected list to be an array during path traversal");
-					break;
-				}
-				const entry = list[index];
-				if (entry?.type === "catalog" && Array.isArray((entry as VU_CATALOG_SETTING_JSON).entries)) {
-					list = (entry as VU_CATALOG_SETTING_JSON).entries;
-				} else if (entry) {
-					list = [entry];
-				} else {
-					logger.error("Invalid path index {index}", { index });
-					break;
-				}
-			}
-			setSubProjectsList(list);
-		} else {
-			setSubProjectsList(simulationList);
-		}
-	}, [path, simulationList, logger.debug, logger.warn, logger.error]);
-
-	/**Function used to add a clicked subfolder to path
-	 * path is an ordered array containing the indexes of all clicked subfolders
-	 * @param index
-	 */
-	const addToPath = (index: number) => {
-		setPath([...path, index]);
-	};
-
-	/**Removes the last index used to travel the subproject folder
-	 *
-	 */
-	const back = () => {
-		if (path.length > 1) {
-			setPath([...path.slice(0, -1)]);
-		}
-		if (path.length === 1) {
-			setPath([]);
-			setSubProjectsList([]);
-		}
-	};
-
-	/**
-	 * handles either navigating through the list of projects or launch a simulation
-	 * @param index index of the current selected element
-	 */
-	const handleSimulation = (index: number) => {
-		if (!isWsConnected || ws === null) {
-			logger.warn("Websocket not connected \n isWsConnected:{isWsConnected}\n ws:{ws}", { isWsConnected, ws });
-			return;
-		}
-
-		const item = subProjectsList[index];
-
-		if (item.type === "catalog") {
-			const catalog_item = item as VU_CATALOG_SETTING_JSON;
-			logger.debug("catalog detected, subprojectList:{subprojectList}", {
-				subProjectList: JSON.stringify(catalog_item.entries),
-			});
-			try {
-				setSubProjectsList(catalog_item.entries);
-				addToPath(index);
-				if (!catalog_item.splashscreen) {
-					logger.warn("No splashscreen could be found for simulation {simulation}", { simulation: catalog_item.name });
-				}
-				logger.debug("called handle simulation, selected item is a catalog of name:{expName}", {
-					expName: catalog_item.name,
-				});
-			} catch (e) {
-				logger.error("no subprojects, ERROR:{e}", { e });
-			}
-		} else if (item.type === "json_settings") {
-			wsApi.sendSimulation(ws, item);
-			setTimeout(() => {
-				navigate("/simulationManager");
-			}, 100);
-		}
-	};
 
 	// Loop which tries to connect to Gama (skipped in GAMALESS mode)
 	useEffect(() => {
@@ -157,12 +59,7 @@ const SelectorSimulations = () => {
 
 	return (
 		<div className="flex flex-col items-center justify-between h-full">
-			<Header
-				onLogoClick={() => {
-					setPath([]);
-					setSubProjectsList(simulationList);
-				}}
-			/>
+			<Header onLogoClick={reset} />
 			{/* ↑ prop to specify whether it should use the small version of the navigation bar */}
 
 			{gamaless ? (
