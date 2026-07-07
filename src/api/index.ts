@@ -44,7 +44,7 @@ function _isSea(): boolean {
 		// base on any platform.  We avoid import.meta.url because it is not a valid
 		// absolute path in Vite's CJS bundle output.
 		const _req = createRequire(process.execPath);
-		return (_req("node:sea") as any).isSea();
+		return (_req("node:sea") as { isSea(): boolean }).isSea();
 	} catch (_) {
 		return false;
 	}
@@ -52,7 +52,7 @@ function _isSea(): boolean {
 
 // Load options
 export const IS_PLATFORM_PACKAGED =
-	(process as any).pkg ||
+	(process as typeof process & { pkg?: boolean }).pkg ||
 	process.env.PKG_EXECPATH ||
 	_isSea() ||
 	// The runner isn't called `node`, and not starting file from root `/snapshot`
@@ -61,7 +61,7 @@ const exeDir = IS_PLATFORM_PACKAGED ? path.dirname(process.execPath) : process.c
 dotenv.config({ path: path.join(exeDir, ".env") });
 
 // Fix for some dependencies (like evilscan) that might use undeclared variables
-(global as any).targetMatch = undefined;
+(globalThis as Record<string, unknown>).targetMatch = undefined;
 
 // Default value for every option value
 // GAMA =====

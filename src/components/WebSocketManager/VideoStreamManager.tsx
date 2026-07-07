@@ -272,6 +272,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
 	// -------------------------------------------------------------------------------------------------------------------
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: effect manages the full WS lifecycle; Maps and newVideoStream are render-local by design — adding them would tear down the socket on every render
 	useEffect(() => {
 		let cleanedUp = false;
 		const deviceSockets = new Map<string, WebSocket>();
@@ -488,25 +489,20 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 
 		return () => {
 			cleanedUp = true;
-			pendingReconnects.forEach((id) => clearTimeout(id));
+			pendingReconnects.forEach((id) => {
+				clearTimeout(id);
+			});
 			pendingReconnects.clear();
 			controlSocket?.close();
-			deviceSockets.forEach((ws) => ws.close());
-			decoderWorkers.current.forEach((worker) => worker.terminate());
+			deviceSockets.forEach((ws) => {
+				ws.close();
+			});
+			decoderWorkers.current.forEach((worker) => {
+				worker.terminate();
+			});
 			decoderWorkers.current.clear();
 		};
-	}, [
-		isDecoderHasConfig.set,
-		streamIsH265.set,
-		readableControllers.has,
-		streamIsH265.get, // Signal end-of-stream to the decoder pipeline
-		readableControllers.get,
-		isDecoderHasConfig.get,
-		streamIsH265.delete,
-		readableControllers.delete,
-		newVideoStream,
-		isDecoderHasConfig.delete,
-	]);
+	}, []);
 
 	useEffect(() => {
 		const update = () => {

@@ -10,7 +10,7 @@ import type uWS from "uWebSockets.js";
 export interface JsonOutput {
 	contents?: Array<{
 		id: string[];
-		contents: any;
+		contents: unknown;
 	}>;
 }
 

@@ -1,6 +1,14 @@
 import { getLogger } from "@logtape/logtape";
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
-import type { GamaState, PlayerList, VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from "../../common/types";
+import type {
+	GamaState,
+	PlayerList,
+	VU_CATALOG_SETTING_JSON,
+	VU_MODEL_SETTING_JSON,
+	WsGetSimulationByIndex,
+	WsJsonState,
+	WsScreenControl,
+} from "../../common/types";
 
 const logger = getLogger(["components", "WebSocketManager"]);
 
@@ -63,7 +71,13 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 		};
 
 		socket.onmessage = (event: MessageEvent) => {
-			let data;
+			let data:
+				| WsJsonState
+				| WsGetSimulationByIndex
+				| WsScreenControl
+				| VU_CATALOG_SETTING_JSON
+				| VU_MODEL_SETTING_JSON
+				| (VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[];
 			logger.trace(`Message received, { event }`, { event });
 			try {
 				data = JSON.parse(event.data);

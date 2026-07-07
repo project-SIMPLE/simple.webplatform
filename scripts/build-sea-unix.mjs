@@ -109,7 +109,9 @@ function findHidBinary() {
 		if (fs.existsSync(c)) return c;
 	}
 	console.error("[SEA] ERROR: node-hid native binary not found. Tried:");
-	candidates.forEach((c) => console.error(`         ${c}`));
+	candidates.forEach((c) => {
+		console.error(`         ${c}`);
+	});
 	process.exit(1);
 }
 

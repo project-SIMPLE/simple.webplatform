@@ -173,8 +173,8 @@ export class HeadsetSetup {
 		logger.debug(`[${serial}] All on-device broadcasts sent`);
 	}
 
-	private async checkSetting(adb: Adb, namespace: string, param: string, expectedValue: any): Promise<boolean> {
-		let result: any;
+	private async checkSetting(adb: Adb, namespace: string, param: string, expectedValue: string): Promise<boolean> {
+		let result: string;
 
 		const process = await adb.subprocess.noneProtocol.spawn(`settings get ${namespace} ${param}`);
 		// @ts-expect-error
@@ -190,8 +190,8 @@ export class HeadsetSetup {
 		return result === expectedValue;
 	}
 
-	private async setSetting(adb: Adb, namespace: string, param: string, value: any) {
-		let result: any;
+	private async setSetting(adb: Adb, namespace: string, param: string, value: string) {
+		let result: string;
 
 		const process = await adb.subprocess.noneProtocol.spawn(`settings put ${namespace} ${param} ${value}`);
 		// @ts-expect-error

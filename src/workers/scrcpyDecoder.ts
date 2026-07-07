@@ -15,7 +15,7 @@ self.addEventListener("message", (e) => {
 		type: "direct" | "port";
 	};
 
-	let renderer;
+	let renderer: WebGLVideoFrameRenderer | BitmapVideoFrameRenderer;
 	if (WebGLVideoFrameRenderer.isSupported) {
 		renderer = new WebGLVideoFrameRenderer(canvas);
 	} else {

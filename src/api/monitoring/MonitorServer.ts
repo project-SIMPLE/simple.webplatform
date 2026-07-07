@@ -12,7 +12,7 @@ const logger = getLogger(["monitor", "MonitorServer"]);
  */
 export class MonitorServer {
 	private controller: Controller;
-	private wsClients: Set<uWS.WebSocket<any>>;
+	private wsClients: Set<uWS.WebSocket<unknown>>;
 	private wsServer!: TemplatedApp; //: WebSocketServer;
 
 	/**
@@ -21,7 +21,7 @@ export class MonitorServer {
 	 */
 	constructor(controller: Controller) {
 		this.controller = controller;
-		this.wsClients = new Set<uWS.WebSocket<any>>();
+		this.wsClients = new Set<uWS.WebSocket<unknown>>();
 
 		const host = process.env.WEB_APPLICATION_HOST || "0.0.0.0";
 		const port = parseInt(process.env.MONITOR_WS_PORT || "8001", 10);
@@ -265,7 +265,7 @@ export class MonitorServer {
 	 * @param clientWsId (optional) WS to send the message to
 	 * @return void
 	 */
-	sendMessageByWs(message: any, clientWsId?: any): void {
+	sendMessageByWs(message: unknown, clientWsId?: uWS.WebSocket<unknown>): void {
 		if (this.wsClients !== undefined) {
 			this.wsClients.forEach((client) => {
 				if (clientWsId === undefined || clientWsId === client) {

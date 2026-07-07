@@ -41,7 +41,7 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
 	return (
 		<div className="flex flex-row w-full justify-evenly">
 			{list.map((simulation: VU_MODEL_SETTING_JSON | VU_CATALOG_SETTING_JSON, index: number) => (
-				<div className="items-center text-center w-fit " key={`${simulation.name ?? "sim"}-${index}`}>
+				<div className="items-center text-center w-fit " key={simulation.name ?? simulation.model_file_path}>
 					<div
 						className={`rounded-2xl items-center  cursor-pointer relative size-[13dvw]  ${className && className}  ${!gama.connected && "opacity-50"}`}
 						onClick={gama.connected ? () => handleSimulation(index) : () => {}}

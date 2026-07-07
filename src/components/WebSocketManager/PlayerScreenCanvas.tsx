@@ -31,24 +31,12 @@ const PlayerScreenCanvas = ({
 }: PlayerScreenCanvasProps) => {
 	const logger = getLogger(["components", "PlayerScreenCanvas"]);
 
-	if (!id) {
-		return null;
-	}
-
-	const ipIdentifier: string = id.split(":")[0].split(".")[id.split(".").length - 1];
+	const ipIdentifier: string = id ? id.split(":")[0].split(".")[id.split(".").length - 1] : "";
 	const canvasref = useRef<HTMLDivElement>(null);
 	const popupref = useRef<HTMLDivElement>(null);
 	const bgColor = HEADSET_COLOR_CLASS[ipIdentifier] ?? "bg-gray-900";
 	const [showPopup, setShowPopup] = useState<boolean>(false);
-	const isColoredHeadset = true;
-	const CanvasStyle = "flex flex-col border-4 border-none p-2 rounded-lg items-center justify-center "; //style of the colored border
-	/**
-    // this hook is used to add the canvases to the proper divs.
-    // by default, it will use the base display (canvasref) that is the element of the list.
-    // when the element is clicked, it will change showPopup to  True, and this hook will use the
-    // other ref, which is popupref, that represents the popup window. additionnal parameters are 
-    // passed to determine the size of the canvas on the screen 
-    */
+
 	useEffect(() => {
 		if (canvas) {
 			canvas.classList.remove(...canvas.classList);
@@ -78,6 +66,12 @@ const PlayerScreenCanvas = ({
 			}
 		}
 	}, [canvas, showPopup, tailwindCanvasDim, logger.warn]);
+
+	if (!id) {
+		return null;
+	}
+	const isColoredHeadset = true;
+	const CanvasStyle = "flex flex-col border-4 border-none p-2 rounded-lg items-center justify-center ";
 
 	return (
 		<>

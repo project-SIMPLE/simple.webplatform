@@ -16,7 +16,7 @@ export class ScrcpyServer {
 	// =======================
 	// WebSocket
 	private readonly wsServer!: TemplatedApp;
-	private readonly wsClients: Set<uWS.WebSocket<any>>; // control channel: codec negotiation + stream_available announcements
+	private readonly wsClients: Set<uWS.WebSocket<unknown>>; // control channel: codec negotiation + stream_available announcements
 	private readonly streamClients: Map<string, Set<uWS.WebSocket<{ streamId: string }>>>; // per-device data sockets, keyed by device IP
 	private readonly activeStreams: Set<string>; // device IPs with a live scrcpy session (used to validate /stream/:id upgrades)
 	private readonly scrcpyClientsByIp: Map<string, AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>>; // for triggering config reset on new device socket
@@ -50,7 +50,7 @@ export class ScrcpyServer {
 		// Set local variables
 		this.adbManager = adbManager;
 
-		this.wsClients = new Set<uWS.WebSocket<any>>();
+		this.wsClients = new Set<uWS.WebSocket<unknown>>();
 		this.streamClients = new Map();
 		this.activeStreams = new Set();
 		this.scrcpyClientsByIp = new Map();
@@ -543,14 +543,14 @@ export class ScrcpyServer {
 		}
 	}
 
-	async resentConfigPackage(client: AdbScrcpyClient<any>): Promise<boolean> {
+	async resentConfigPackage(client: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>): Promise<boolean> {
 		logger.trace("Reset video for client {client}", { client });
 		try {
 			const result = await client.controller?.resetVideo();
 			logger.trace("Properly reset video stream {result}", { result });
 			return false; // false = no error
 		} catch (err) {
-			const textError = err && (typeof err === "string" ? err : (err as any).message || String(err));
+			const textError = err && (typeof err === "string" ? err : err instanceof Error ? err.message : String(err));
 			if (textError?.includes("WritableStream is closed")) {
 				logger.error("ResetVideo failed, probably leftover timeout from previous video stream { err }", { err });
 			} else {
@@ -591,7 +591,7 @@ export class ScrcpyServer {
 		this.wsClients.forEach((client) => {
 			if (client.getBufferedAmount() > this.dropThreshold) {
 				customLogger.warn("Dropping frame — client too slow");
-				return false;
+				return;
 			}
 
 			/*  Possible returned values:

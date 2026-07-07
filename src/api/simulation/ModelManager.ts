@@ -18,7 +18,7 @@ class ModelManager {
 	controller: Controller;
 	models: Model[];
 	activeModel: Model | undefined;
-	monitorNestedModels: any[] = [];
+	monitorNestedModels: unknown[] = [];
 
 	/**
 	 * Creates the model manager
@@ -197,7 +197,8 @@ class ModelManager {
 						...(entry.splashscreen !== undefined && { splashscreen: entry.splashscreen }),
 					});
 					break;
-				// @ts-expect-error If unknown, trying to parse it as a legacy entry...
+				// biome-ignore lint/suspicious/useDefaultSwitchClauseLast: intentional fallthrough to json_settings for unknown types
+				// biome-ignore lint/suspicious/noFallthroughSwitchClause: intentional fallthrough to json_settings for unknown types
 				default:
 					logger.warn(`[${catalogName}] Unknown type for this entry: {entry}`, { entry });
 					logger.warn(`[${catalogName}] Trying to parse it as a legacy entry...`);

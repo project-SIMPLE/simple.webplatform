@@ -117,7 +117,7 @@ class DeviceFinder {
 		});
 
 		scanner
-			.on("result", async (data: any) => {
+			.on("result", async (data: unknown) => {
 				loggerES.trace(`Scan of ${ipAddress} find this: {data}`, { data });
 				if (!alreadyConnected) {
 					loggerES.trace(`Trying to ADB connect to ${data.ip}:${data.port}`);
@@ -176,10 +176,10 @@ class DeviceFinder {
 			concurrency: 255, // how many ports to test in parallel
 			timeout: 1000, // maximum number of milliseconds before closing the connection
 		})
-			.on("result", async (data: any) => {
-				if (data.ip !== serverLocalIp) {
+			.on("result", async (data: unknown) => {
+				if ((data as { ip: string }).ip !== serverLocalIp) {
 					loggerES.trace(`Scan find this: ${data.ip}`);
-					this.ipToConnect.push(data.ip);
+					this.ipToConnect.push((data as { ip: string }).ip);
 				}
 			})
 			.on("done", () => {

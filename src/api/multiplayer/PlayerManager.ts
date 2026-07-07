@@ -244,7 +244,7 @@ class PlayerManager {
 
 	// Getters
 	getIndexByPlayerId(id: string): string | undefined {
-		let toReturn;
+		let toReturn: string | undefined;
 		for (const [key, player] of this.playerList) {
 			if (player.id === id) {
 				toReturn = key;
@@ -257,7 +257,7 @@ class PlayerManager {
 	}
 
 	getIndexByPlayerWs(ws: uWS.WebSocket<unknown>): string | undefined {
-		let toReturn;
+		let toReturn: string | undefined;
 		for (const [key, player] of this.playerList) {
 			if (player.ws === ws) {
 				toReturn = key;
@@ -298,7 +298,7 @@ class PlayerManager {
 	 * Removed attribute `ws` which is very verbose and not necessary
 	 */
 	getArrayPlayerList() {
-		// Turn Map to a dictionnary
+		// Turn Map to a dictionary
 		// Remove very verbose `ws` attribute
 		return Object.fromEntries(
 			Array.from(this.playerList.entries()).map(([, value]) => [
@@ -483,7 +483,7 @@ class PlayerManager {
 		if (this.playerList.has(playerWsId)) {
 			const jsonPlayer: Player = this.playerList.get(playerWsId)!;
 
-			const { ws, timeout, ...newJsonPlayer } = jsonPlayer!;
+			const { ws, timeout, ...newJsonPlayer } = jsonPlayer;
 
 			const jsonStatePlayer = {
 				type: "json_state",
@@ -504,8 +504,8 @@ class PlayerManager {
 	 * @return Returns 1 for success, 2 for dropped due to backpressure limit, and 0 for built up backpressure that will drain over time.
 	 * @return -1 if playerWsId missing or not connected
 	 */
-	//message sent is not necessarily a string, see PlayerManager for example
-	sendMessageByWs(playerWsId: string, message: any): number {
+	//message sent is not necessarily a string, see PlayerManager, for example
+	sendMessageByWs(playerWsId: string, message: unknown): number {
 		let jsonPlayer!: Player;
 		if (this.playerList.has(playerWsId) && this.playerList.get(playerWsId)?.connected)
 			jsonPlayer = this.playerList.get(playerWsId)!;

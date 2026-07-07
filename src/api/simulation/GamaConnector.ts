@@ -18,7 +18,7 @@ class GamaConnector {
 	jsonGamaState: GamaState;
 	gama_socket: WebSocket | null = null;
 
-	listMessages: any[] = [];
+	listMessages: unknown[] = [];
 
 	/**
 	 * Constructor of the websocket client
