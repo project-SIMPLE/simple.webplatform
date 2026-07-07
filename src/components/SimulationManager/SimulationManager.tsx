@@ -1,95 +1,26 @@
 //! accomodates the gama server map
 
-import { getLogger } from "@logtape/logtape";
-import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
-import { wsApi } from "../../common/wsApi";
+import { Link } from "react-router-dom";
+import { useGamaExperiment } from "../../hooks/useGamaExperiment";
 import Footer from "../Footer/Footer";
 import Header from "../Header/Header";
 import VRHeadset from "../VRHeadset/VRHeadset";
-import { useWebSocket } from "../WebSocketManager/WebSocketManager";
 import SimulationManagerPlayer from "./SimulationManagerPlayer";
 
 const SimulationManager = () => {
-	const logger = getLogger(["simulationManager", "SimulationManager"]);
-	const { ws, gamaless, gama, playerList, selectedSimulation } = useWebSocket(); // `removePlayer` is now available
-	const navigate = useNavigate();
-	const [simulationStarted, setSimulationStarted] = useState(false);
+	const {
+		gama,
+		gamaless,
+		playerList,
+		selectedSimulation,
+		detectedPlayers,
+		maxPlayers,
+		minPlayers,
+		handlePlayPause,
+		handleEnd,
+	} = useGamaExperiment();
 	const { t } = useTranslation();
-	// Comparaison between players from the simulationList and the maximal/minimal players
-	const detectedPlayers = Object.keys(playerList); // List Detected Players
-	const maxPlayers = selectedSimulation?.maximal_players || 0;
-	const minPlayers = selectedSimulation?.minimal_players || 0;
-
-	// Navigate back to home when GAMA closes the experiment from its side
-	// (mirrors the behaviour of the Stop button, which calls navigate('/') immediately)
-	const prevExperimentStateRef = useRef<string>(gama.experiment_state);
-	useEffect(() => {
-		const prev = prevExperimentStateRef.current;
-		prevExperimentStateRef.current = gama.experiment_state;
-
-		if (
-			!gamaless &&
-			simulationStarted &&
-			["RUNNING", "PAUSED", "LAUNCHING"].includes(prev) &&
-			["NONE", "NOTREADY"].includes(gama.experiment_state)
-		) {
-			navigate("/");
-		}
-	}, [gamaless, simulationStarted, gama.experiment_state, navigate]);
-
-	// Auto-start simulation when max players reached — only fires once per session
-	useEffect(() => {
-		if (
-			!gamaless &&
-			!simulationStarted &&
-			gama.experiment_state === "NONE" &&
-			detectedPlayers.length >= Number(maxPlayers) &&
-			Number(maxPlayers) > 0 &&
-			ws !== null
-		) {
-			setSimulationStarted(true);
-			logger.debug("sent message {type: launch experiment}");
-			wsApi.launchExperiment(ws);
-		}
-	}, [gamaless, simulationStarted, gama.experiment_state, detectedPlayers.length, maxPlayers, ws, logger.debug]);
-
-	const handlePlayPause = () => {
-		if (ws !== null) {
-			if (gama.experiment_state === "NONE" && !simulationStarted) {
-				setSimulationStarted(true);
-				logger.debug("sent message {type: launch experiment}");
-				wsApi.launchExperiment(ws);
-			} else if (gama.experiment_state !== "NOTREADY") {
-				if (gama.experiment_state !== "RUNNING") {
-					wsApi.resumeExperiment(ws);
-				} else {
-					wsApi.pauseExperiment(ws);
-				}
-			}
-		} else {
-			logger.error("WS is null");
-		}
-	};
-
-	const handleEnd = () => {
-		if (ws !== null) {
-			wsApi.stopExperiment(ws);
-			//  redirect to the main page :
-			navigate("/");
-		} else {
-			logger.error("WS is null");
-		}
-	};
-
-	useEffect(() => {
-		if (!gamaless && !selectedSimulation) {
-			navigate("/");
-		}
-	}, [gamaless, selectedSimulation, navigate]);
-
-	// Handler for removing players
 
 	return (
 		<div className="flex flex-col h-full justify-between">
