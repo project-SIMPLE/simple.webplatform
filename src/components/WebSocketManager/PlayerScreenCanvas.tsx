@@ -47,7 +47,6 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, needsInterac
 		return null;
 	}
 	const isColoredHeadset = true;
-	const CanvasStyle = "flex flex-col border-4 border-none p-2 rounded-lg items-center justify-center ";
 
 	return (
 		<>
@@ -98,15 +97,22 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, needsInterac
 						className="absolute inset-0 h-full w-full z-10 pointer-events-none"
 						alt=""
 					/>
-					{/* Inset holder sits inside the frame border (extra room at the bottom, which isn't straight).
-					    overflow-hidden + radius rounds only the canvas corners, leaving the frame untouched. */}
-					<div ref={canvasref} className="absolute inset-[7%] overflow-hidden rounded-[5%]" />
+					{/* Inset holder sits inside the frame border (extra room at the bottom, which isn't straight). */}
+					<div ref={canvasref} className="absolute inset-[7%]" />
 				</div>
 			) : (
 				//  placeholder, with an eye icon
-				<div className={`${CanvasStyle} bg-stone-100 relative w-full h-full`}>
-					<img src={` /images/Frames/Frame_blue.png`} className="absolute inset-0 h-full w-full" alt="" />
-					<img src={visibility_off} alt="" className="mix-blend-difference size-1/2" />
+				<div className="w-full h-full relative">
+					{/* Frame border overlay — sits on top, matching a live tile */}
+					<img
+						src={` /images/Frames/Frame_blue.png`}
+						className="absolute inset-0 h-full w-full z-10 pointer-events-none"
+						alt=""
+					/>
+					{/* Light backdrop + centered eye in the same inset window the video occupies in a live tile */}
+					<div className="absolute inset-[7%] bg-stone-100 flex items-center justify-center">
+						<img src={visibility_off} alt="" className="size-1/2 object-contain mix-blend-difference" />
+					</div>
 				</div>
 			)}
 		</>
