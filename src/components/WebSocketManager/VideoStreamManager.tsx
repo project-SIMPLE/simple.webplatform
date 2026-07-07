@@ -1,10 +1,13 @@
 import { getLogger } from "@logtape/logtape";
 import { type ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useVideoGrid } from "../../hooks/useVideoGrid";
 import PlayerScreenCanvas from "./PlayerScreenCanvas.tsx";
 
 const host: string = window.location.hostname;
 const port: string = "8082";
+// Quest streams land landscape after the server's inverted-ratio flip (~1570x1482); used to size grid cells.
+const STREAM_ASPECT_RATIO = 1570 / 1482;
 
 const logger = getLogger(["components", "VideoStreamManager"]);
 
@@ -49,22 +52,17 @@ interface VideoStreamManagerProps {
 const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
 	const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
 	const canvasRefs = useRef<Map<string, HTMLCanvasElement>>(new Map());
-	const maxElements: number = 1; //! dictates the amount of placeholders and streams displayed on screen
-	const placeholdersNeeded = maxElements - Object.keys(canvasList).length; //represents the actual amout of place holders needed to fill the display
-	const placeholders = Array.from({ length: placeholdersNeeded });
-	const [islimitingDimWidth, setIslimitingDimWidth] = useState<boolean>(false);
-	const [isPortrait, setIsPortrait] = useState<boolean>(false);
-	const [viewport, setViewport] = useState(() => ({
-		//used to determine optimal display type (ie portrait or landscape mode)
-		width: window.innerWidth,
-		height: window.innerHeight,
-	}));
-	const [tailwindCanvasDim, setTailwindCanvasDim] = useState<[string, string]>(["", ""]);
-	const [gridDisplay, setGriDisplay] = useState<boolean>(false);
 
 	const sortedKeys = useMemo(() => {
 		return Object.keys(canvasList).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 	}, [canvasList]);
+
+	// Dynamic grid: one cell per live stream, sized to the container by useVideoGrid.
+	const streamCount = sortedKeys.length;
+	const { containerRef, cols, rows, cellWidth, cellHeight } = useVideoGrid(streamCount, STREAM_ASPECT_RATIO);
+	// Letterbox the stream aspect into the measured cell so each tile fits exactly (no overflow, no distortion).
+	const tileWidth = Math.min(cellWidth, cellHeight * STREAM_ASPECT_RATIO);
+	const tileHeight = tileWidth / STREAM_ASPECT_RATIO;
 
 	// Tables storing data for decoding scrcpy streams
 	const readableControllers = new Map<string, ReadableStreamDefaultController | undefined>();
@@ -504,161 +502,6 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 		};
 	}, []);
 
-	useEffect(() => {
-		const update = () => {
-			setViewport({
-				width: window.innerWidth,
-				height: window.innerHeight,
-			});
-		};
-
-		update(); // initial sync
-		window.addEventListener("resize", update);
-
-		return () => window.removeEventListener("resize", update);
-	}, []);
-
-	//apply style to the container, so that 1 element is displayed in fullscreen, 2 are displayed side by side, and more than that are displayed in a grid
-	const amountElements = Math.max(maxElements, Object.keys(canvasList).length);
-
-	const canvasContainerStyle =
-		amountElements <= 3
-			? isPortrait
-				? "flex flex-col items-center justify-around"
-				: "flex flex-row items-center justify-around"
-			: isPortrait
-				? "grid grid-cols-2 auto-rows-fr grid-flow-row gap-2 place-items-center"
-				: "grid grid-rows-2 auto-cols-fr grid-flow-col gap-2 place-items-center";
-
-	useEffect(() => {
-		const { width, height } = viewport;
-		const portrait = height > width;
-		setIsPortrait(portrait);
-		let limitingWidth = portrait;
-		let isGrid = false;
-		const amountElements = Math.max(maxElements, Object.keys(canvasList).length);
-
-		if (portrait) {
-			switch (amountElements) {
-				case 1:
-					setTailwindCanvasDim(["w-[95dvw]", "h-[95dvw]"]);
-					limitingWidth = false;
-
-					break;
-
-				case 2:
-					if (width * amountElements > height) {
-						limitingWidth = true;
-						setTailwindCanvasDim(["w-[45dvh]", "h-[47dvh]"]);
-					} else {
-						limitingWidth = false;
-						setTailwindCanvasDim(["w-[45dvw]", "h-[47dvw]"]);
-					}
-					break;
-
-				case 3:
-					if (width * amountElements > height) {
-						setTailwindCanvasDim(["w-[33dvw]", "h-[33dvw]"]);
-						limitingWidth = false;
-					} else {
-						setTailwindCanvasDim(["w-[33dvh]", "h-[33dvh]"]);
-						limitingWidth = true;
-					}
-					break;
-
-				case 4:
-					setTailwindCanvasDim(["w-[45dvw]", "h-[45dvw]"]);
-					limitingWidth = false;
-					isGrid = true;
-
-					break;
-
-				case 5:
-					isGrid = true;
-					if ((width / 2) * 3 > height) {
-						limitingWidth = true;
-						setTailwindCanvasDim(["w-[29dvh]", "h-[29dvh]"]);
-					} else {
-						setTailwindCanvasDim(["w-[30dvh]", "h-[27dvh]"]);
-						limitingWidth = false;
-					}
-					break;
-
-				case 6:
-					isGrid = true;
-					if ((width / 2) * 3 > height) {
-						limitingWidth = true;
-						setTailwindCanvasDim(["w-[29dvh]", "h-[29dvh]"]);
-					} else {
-						setTailwindCanvasDim(["w-[30dvh]", "h-[27dvh]"]);
-						limitingWidth = false;
-					}
-					break;
-
-				default:
-					break;
-			}
-		} else if (!portrait) {
-			//mode paysage
-			switch (amountElements) {
-				case 1:
-					limitingWidth = true;
-					setTailwindCanvasDim(["w-[95dvh]", "h-[95dvh]"]);
-					break;
-				case 2:
-					if (height * 2 > width) {
-						setTailwindCanvasDim(["w-[45dvw]", "h-[45dvw]"]);
-						limitingWidth = false;
-					} else {
-						setTailwindCanvasDim(["w-[92dvh]", "h-[90dvh]"]);
-						limitingWidth = true;
-					}
-					break;
-				case 3:
-					if (height * 3 > width) {
-						setTailwindCanvasDim(["w-[35dvw]", "h-[30dvw]"]);
-						limitingWidth = false;
-					} else {
-						setTailwindCanvasDim(["w-[90dvh]", "h-[90dvh]"]);
-						limitingWidth = true;
-					}
-					break;
-				case 4:
-					isGrid = true;
-					limitingWidth = true;
-					setTailwindCanvasDim(["w-[43dvh]", "h-[46dvh]"]);
-
-					break;
-				case 5:
-					isGrid = true;
-					if ((height / 2) * 3 > width) {
-						limitingWidth = false;
-						setTailwindCanvasDim(["w-[27dvw]", "h-[27dvw]"]);
-					} else {
-						limitingWidth = true;
-						setTailwindCanvasDim(["w-[43dvh]", "h-[43dvh]"]);
-					}
-					break;
-				case 6:
-					isGrid = true;
-					if ((height / 2) * 3 > width) {
-						limitingWidth = false;
-						setTailwindCanvasDim(["w-[27dvw]", "h-[29dvw]"]);
-					} else {
-						limitingWidth = true;
-						setTailwindCanvasDim(["w-[43dvh]", "h-[46dvh]"]);
-					}
-					break;
-
-				default:
-					break;
-			}
-		}
-
-		setIslimitingDimWidth(limitingWidth);
-		setGriDisplay(isGrid);
-	}, [viewport, canvasList]);
-
 	return selectedCanvas ? (
 		<div className="w-fit">
 			<p>amount of streams: {Object.keys(canvasList).length}</p>
@@ -668,30 +511,30 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 		</div>
 	) : (
 		<div className="w-full h-full flex flex-col items-center">
-			<div className={`${canvasContainerStyle} w-full h-full`} id="canvascontainer">
+			<div
+				ref={containerRef}
+				id="canvascontainer"
+				className="w-full h-full grid gap-2 place-items-center p-2"
+				style={{
+					gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+					gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+				}}
+			>
 				{sortedKeys.map((key) => (
-					<PlayerScreenCanvas
-						key={key}
-						id={key}
-						canvas={canvasList[key]}
-						needsInteractivity={true}
-						hideInfos={hideInfos}
-						isLimitingWidth={islimitingDimWidth}
-						tailwindCanvasDim={tailwindCanvasDim}
-						gridDisplay={gridDisplay}
-					/>
+					<div key={key} style={{ width: tileWidth, height: tileHeight }} className="flex items-center justify-center">
+						<PlayerScreenCanvas id={key} canvas={canvasList[key]} needsInteractivity={true} hideInfos={hideInfos} />
+					</div>
 				))}
-				{placeholders.map((_, index) => (
-					<PlayerScreenCanvas
-						isPlaceholder
-						id={index.toString()}
-						key={index}
-						needsInteractivity={needsInteractivity}
-						hideInfos={hideInfos}
-						isLimitingWidth={islimitingDimWidth}
-						tailwindCanvasDim={tailwindCanvasDim}
-					/> //TODO retirer l'intéractivité et le mode plein écran des placeholder, check dans le playerscreencanvas
-				))}
+				{streamCount === 0 && (
+					<div style={{ width: tileWidth, height: tileHeight }} className="flex items-center justify-center">
+						<PlayerScreenCanvas
+							isPlaceholder
+							id="placeholder"
+							needsInteractivity={needsInteractivity}
+							hideInfos={hideInfos}
+						/>
+					</div>
+				)}
 			</div>
 		</div>
 	);

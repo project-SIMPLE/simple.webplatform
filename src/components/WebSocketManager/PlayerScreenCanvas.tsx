@@ -1,11 +1,8 @@
-import { getLogger } from "@logtape/logtape";
 import { useEffect, useRef, useState } from "react";
 import { HEADSET_COLOR_CLASS, HEADSET_COLOR_NAME } from "../../common/constants";
 import visibility_off from "../../svg_logos/visibility_off.svg";
 import x_cross from "../../svg_logos/x_cross.svg";
 
-//TODO pour fix le problème du canvas qui est en petit, puis qui devient grand quand tu clique dessus, regarder les hook qui sont trigger quand on clique sur le canvas (surtout le truc qui applique les classes tailwind)
-//TODO et juste nettoyer complètement le css à chaque fois, et le réappliquer pour éviter le problème, quitte à ce que le code soit redondant
 // All hooks in this component are called unconditionally — the early `return null` at the
 // top guards against an invalid id, but it runs before any hook call.
 interface PlayerScreenCanvasProps {
@@ -14,58 +11,37 @@ interface PlayerScreenCanvasProps {
 	canvas?: HTMLCanvasElement; // the canvas element managed by VideoStreamManager; attached to the DOM via a ref inside the useEffect
 	id?: string; // headset identifier (e.g. "192.168.1.101:5555"); used to derive color and display the player label
 	hideInfos?: boolean; // hides the player id label, used in fullscreen mode
-	tailwindCanvasDim?: [string, string]; // [width-class, height-class] computed by VideoStreamManager's layout logic
-	isLimitingWidth?: boolean; // true when width is the constraining dimension; controls flex/grid sizing
-	gridDisplay?: boolean; // true when 4+ streams are shown; switches from flex to grid layout
 }
 
-const PlayerScreenCanvas = ({
-	canvas,
-	id,
-	isPlaceholder,
-	hideInfos,
-	isLimitingWidth,
-	tailwindCanvasDim,
-	gridDisplay,
-	needsInteractivity,
-}: PlayerScreenCanvasProps) => {
-	const logger = getLogger(["components", "PlayerScreenCanvas"]);
-
+const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, needsInteractivity }: PlayerScreenCanvasProps) => {
 	const ipIdentifier: string = id ? id.split(":")[0].split(".")[id.split(".").length - 1] : "";
 	const canvasref = useRef<HTMLDivElement>(null);
 	const popupref = useRef<HTMLDivElement>(null);
 	const bgColor = HEADSET_COLOR_CLASS[ipIdentifier] ?? "bg-gray-900";
 	const [showPopup, setShowPopup] = useState<boolean>(false);
 
+	// Attach the managed canvas to the DOM. The canvas always fits its container via
+	// object-contain, so the grid (VideoStreamManager) controls the cell size and the
+	// canvas scales to fit — no per-count dimension classes to juggle.
 	useEffect(() => {
 		if (canvas) {
 			canvas.classList.remove(...canvas.classList);
-			canvas.classList.add("rounded-lg");
+			canvas.classList.add("object-contain");
 
 			if (showPopup) {
 				if (popupref.current) {
 					popupref.current.querySelector("canvas")?.remove();
 					popupref.current.appendChild(canvas);
-					canvas.classList.add("max-h-[95dvh]");
-					canvas.classList.add("max-w-[95dvw]");
+					canvas.classList.add("rounded-lg", "max-h-[95dvh]", "max-w-[95dvw]");
 				}
-			} else {
-				if (canvasref.current) {
-					if (tailwindCanvasDim) {
-						canvas.classList.add(tailwindCanvasDim[0]);
-						canvas.classList.add(tailwindCanvasDim[1]);
-					} else {
-						logger.warn("no dimensions received, using default full screen values");
-						canvas.classList.add("max-h-[95dvh]");
-						canvas.classList.add("max-w-[95dvw]");
-					}
-
-					canvasref.current.querySelector("canvas")?.remove();
-					canvasref.current.appendChild(canvas);
-				}
+			} else if (canvasref.current) {
+				// Fill the inset holder; the holder insets from the frame border and clips the corners.
+				canvas.classList.add("w-full", "h-full");
+				canvasref.current.querySelector("canvas")?.remove();
+				canvasref.current.appendChild(canvas);
 			}
 		}
-	}, [canvas, showPopup, tailwindCanvasDim, logger.warn]);
+	}, [canvas, showPopup]);
 
 	if (!id) {
 		return null;
@@ -107,8 +83,7 @@ const PlayerScreenCanvas = ({
 			{/* meaningful content */}
 			{!isPlaceholder ? (
 				<div
-					className={`flex flex-row items-center justify-center p-2 rounded-lg relative scale-95
-                    ${gridDisplay ? "" : isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"}`}
+					className="w-full h-full relative"
 					onClick={
 						needsInteractivity
 							? () => {
@@ -117,32 +92,25 @@ const PlayerScreenCanvas = ({
 							: undefined
 					}
 				>
-					<div ref={canvasref} className="w-fit h-fit relative">
-						<img
-							src={` /images/Frames/Frame_${HEADSET_COLOR_NAME[ipIdentifier] ?? "black"}.png`}
-							className="absolute inset-0 h-full w-full scale-105"
-						/>
-					</div>
-					{/* The Background Image */}
-
-					{/* Your Canvas or other content goes here */}
-					<div className="relative z-20">{/* Canvas element would live here */}</div>
+					{/* Frame border overlay — sits on top, never clipped */}
+					<img
+						src={` /images/Frames/Frame_${HEADSET_COLOR_NAME[ipIdentifier] ?? "black"}.png`}
+						className="absolute inset-0 h-full w-full z-10 pointer-events-none"
+						alt=""
+					/>
+					{/* Inset holder sits inside the frame border (extra room at the bottom, which isn't straight).
+					    overflow-hidden + radius rounds only the canvas corners, leaving the frame untouched. */}
+					<div ref={canvasref} className="absolute inset-[7%] overflow-hidden rounded-[5%]" />
 				</div>
 			) : (
 				//  placeholder, with an eye icon
-				<div
-					className={`${CanvasStyle} bg-stone-100 ${isLimitingWidth ? "max-w-full h-full" : "max-h-full w-full"} aspect-square m-4 scale-95`}
-				>
-					{" "}
-					{/*this only works under the assumption that the width is bigger than the height of the screen*/}
-					<img src={` /images/Frames/Frame_blue.png`} className="absolute h-full w-auto scale-[103%]" alt="" />
-					<img src={visibility_off} alt="" className="mix-blend-difference size-full" />
+				<div className={`${CanvasStyle} bg-stone-100 relative w-full h-full`}>
+					<img src={` /images/Frames/Frame_blue.png`} className="absolute inset-0 h-full w-full" alt="" />
+					<img src={visibility_off} alt="" className="mix-blend-difference size-1/2" />
 				</div>
 			)}
 		</>
 	);
 };
-
-//
 
 export default PlayerScreenCanvas;
