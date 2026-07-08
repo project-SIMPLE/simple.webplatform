@@ -53,7 +53,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, needsInterac
 			{/* Popup */}
 			{showPopup === true ? (
 				<div
-					className={`backdrop-blur-md w-full h-full fixed inset-0 flex flex-col items-center justify-center z-10`}
+					className={`backdrop-blur-md w-full h-full fixed inset-0 flex flex-col items-center justify-center z-50`}
 					onClick={() => setShowPopup(false)}
 				>
 					{/* <div ref={popupref} className={` ${isColoredHeadset ? bgColor : "bg-slate-500"} size-2/3 flex flex-col items-center justify-center`}> */}
