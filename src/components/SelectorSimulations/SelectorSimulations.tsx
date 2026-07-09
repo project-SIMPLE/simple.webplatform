@@ -1,5 +1,5 @@
 import { getLogger } from "@logtape/logtape";
-import { useEffect, useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { wsApi } from "../../common/wsApi";
@@ -57,6 +57,29 @@ const SelectorSimulations = () => {
 		}
 	}, [gama.connected, t]);
 
+	// --- Keyboard navigation across the back button + simulation tiles ---
+	const navRef = useRef<HTMLDivElement>(null);
+
+	// Auto-focus the first simulation tile once the list is ready, so the user can
+	// navigate with arrows / Enter without tabbing in first.
+	useEffect(() => {
+		// Only once the list is visible and the tiles are enabled (GAMA connected) — a disabled
+		// button cannot take focus anyway.
+		if (loading || gamaless || !gama.connected || subProjectsList.length === 0) return;
+		navRef.current?.querySelector<HTMLElement>('[data-nav-item="tile"]')?.focus();
+	}, [loading, gamaless, gama.connected, subProjectsList]);
+
+	// Move focus between nav items (back button + tiles) with the arrow keys.
+	const handleNavKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+		if (!["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+		const items = Array.from(navRef.current?.querySelectorAll<HTMLElement>("[data-nav-item]") ?? []);
+		if (items.length === 0) return;
+		e.preventDefault();
+		const dir = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : -1;
+		const current = items.indexOf(document.activeElement as HTMLElement);
+		items[current === -1 ? 0 : current + dir]?.focus();
+	};
+
 	return (
 		<div className="flex flex-col items-center justify-between h-full">
 			<Header onLogoClick={reset} />
@@ -79,16 +102,24 @@ const SelectorSimulations = () => {
 					<h2 className="text-gray-700">{t("loading")}</h2>
 				</div>
 			) : (
-				<div className="flex flex-col justify-center items-center size-full rounded-md relative">
+				// biome-ignore lint/a11y/noStaticElementInteractions: onKeyDown only reroutes arrow keys to the child nav buttons; the div itself is not an interactive control
+				<div
+					ref={navRef}
+					onKeyDown={handleNavKeyDown}
+					className="flex flex-col justify-center items-center size-full rounded-md relative"
+				>
 					{
 						//? Shows the back button if in a nested folder
 						path.length >= 1 && (
-							<img
-								src={` /images/Buttons/Button_back.png`}
-								alt="back button"
+							<button
+								type="button"
+								data-nav-item="back"
 								onClick={() => back()}
-								className="cursor-pointer size-[6dvh] hover:scale-110 transition-transform duration-200 absolute left-[3.1dvw] top-10 "
-							/>
+								aria-label="Back"
+								className="absolute left-[3.1dvw] top-10 bg-transparent border-none p-0 cursor-pointer focus:outline-none hover:scale-110 focus:scale-110 transition-transform duration-200"
+							>
+								<img src={` /images/Buttons/Button_back.png`} alt="" className="size-[6dvh]" />
+							</button>
 						)
 					}
 

@@ -42,12 +42,17 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
 		<div className="flex flex-row w-full justify-evenly">
 			{list.map((simulation: VU_MODEL_SETTING_JSON | VU_CATALOG_SETTING_JSON, index: number) => (
 				<div className="items-center text-center w-fit " key={simulation.name ?? simulation.model_file_path}>
-					<div
-						className={`rounded-2xl items-center  cursor-pointer relative size-[13dvw]  ${className && className}  ${!gama.connected && "opacity-50"}`}
-						onClick={gama.connected ? () => handleSimulation(index) : () => {}}
+					{/* data-nav-item marks this as an arrow-key navigation target (handled by SelectorSimulations). */}
+					<button
+						type="button"
+						data-nav-item="tile"
+						disabled={!gama.connected}
+						onClick={() => handleSimulation(index)}
+						className={`group rounded-2xl items-center relative size-[13dvw] bg-transparent border-none p-0 cursor-pointer focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${className && className}`}
 					>
 						{/* {simulation.type == "catalog" ? <img src={` /images/Headset/Headset_04_orange.png`} className='rounded-full bg-slate-500 opacity-90 size-16 absolute top-[40%] left-[40%] z-20' /> : null} //? downward arrow */}
-						<div className="relative size-full bg-[#fcf7ec] hover:scale-110 transition-transform duration-200">
+						{/* Hovered or focused tile scales up, so keyboard focus shows the active tile like a hover. */}
+						<div className="relative size-full bg-[#fcf7ec] group-hover:scale-110 group-focus:scale-110 transition-transform duration-200">
 							{simulation.type === "catalog" ? (
 								<img
 									src={` /images/Game_selection/Game_selection_Folder.png`}
@@ -55,11 +60,12 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
 									alt=""
 								/>
 							) : (
-								<img src={frame[hashString(simulation.name)]} alt="frame" className="absolute scale-110" />
+								<img src={frame[hashString(simulation.name)]} alt="" className="absolute scale-110" />
 							)}
 							{/* //TODO the src of the image is a placeholder, selects one of the 5 frames at random */}
 							<img
 								src={simulation.splashscreen?.trim() ? simulation.splashscreen.trim() : "/images/simple_logo.png"}
+								alt=""
 								className="h-full -z-10 bg-[#fcf7ec]"
 								onError={(e) => {
 									const target = e.currentTarget;
@@ -71,7 +77,7 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
 								}}
 							/>
 						</div>
-					</div>
+					</button>
 
 					<h2 className="text-sm text-center mt-7 text-[#0B374D]">
 						{/*                                                                                                                     ↓ added one for folders to start at 1 instead of 0 */}
