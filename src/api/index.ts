@@ -1,6 +1,6 @@
 // Import des modules nécessaires
 
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { getRotatingFileSink } from "@logtape/file";
@@ -24,14 +24,18 @@ const _extractIPv4 = (raw: string): string | null => {
 	return ip.split(".").every((octet) => Number(octet) >= 0 && Number(octet) <= 255) ? ip : null;
 };
 
-function isCommandAvailable(commandName: string): boolean {
-	if (process.platform === "win32") {
-		const checkAdbProcess = spawnSync("where", [commandName]);
-		return checkAdbProcess.status === 0;
-	} else {
-		const checkAdbProcess = spawnSync("which", [commandName]);
-		return checkAdbProcess.status === 0;
-	}
+// Runs a command asynchronously and resolves with its exit code (or null if it failed to spawn).
+function _runCommand(command: string, args: string[]): Promise<number | null> {
+	return new Promise((resolve) => {
+		const child = spawn(command, args, { stdio: "ignore" });
+		child.on("error", () => resolve(null));
+		child.on("close", (code) => resolve(code));
+	});
+}
+
+async function isCommandAvailable(commandName: string): Promise<boolean> {
+	const checker = process.platform === "win32" ? "where" : "which";
+	return (await _runCommand(checker, [commandName])) === 0;
 }
 
 /*
@@ -104,12 +108,14 @@ const ENV_GAMALESS: boolean =
 		? ["true", "1", "yes"].includes(process.env.ENV_GAMALESS.toLowerCase())
 		: false;
 
-const useAdb: boolean =
-	isCommandAvailable("adb") &&
-	(() => {
-		const checkAdb = spawnSync("adb", ["devices"]);
-		return checkAdb.status === 0;
-	})();
+let useAdb: boolean = false;
+
+// Only the adb binary needs to exist to enable adb management. The (potentially slow on a
+// cold boot) daemon start happens asynchronously in AdbManager.init(), so it never gates
+// server startup / the frontend WebSocket connection.
+async function _detectAdb(): Promise<boolean> {
+	return isCommandAvailable("adb");
+}
 
 /*
     SETUP LOGGING SYSTEM ================================
@@ -192,6 +198,8 @@ async function start() {
 	if (process.env.NODE_ENV === "production" || IS_PLATFORM_PACKAGED) {
 		new StaticServer();
 	}
+
+	useAdb = await _detectAdb();
 
 	const c = new Controller(useAdb);
 	await c.initialize();

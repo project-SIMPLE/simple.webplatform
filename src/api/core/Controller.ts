@@ -54,9 +54,21 @@ export class Controller {
 
 	// Allow running init functions for some components needing it
 	async initialize() {
-		if (this.adb_manager) await this.adb_manager.init();
+		// Run adb init in the background so a slow (cold-boot) daemon start or device probe
+		// never gates the uWS servers. Failures just disable adb management, not crash startup.
+		if (this.adb_manager) {
+			void this.adb_manager.init().catch((e) => logger.error("ADB init failed: {e}", { e }));
+		}
 
-		await this.ups_service.connect();
+		// The UPS exists only on M2L2 (Mac mini) deployments, and node-hid's HID.devices()
+		// probe is a SYNCHRONOUS native call that blocks the event loop — starving the uWS
+		// servers (monitor/player/video) and delaying the frontend WebSocket connection.
+		// Skip it entirely off-M2L2, and run it in the background so it never gates startup.
+		if (isMacMini()) {
+			void this.ups_service.connect();
+		} else {
+			logger.info("Not running on M2L2 (Mac Mini) hardware — skipping UPS connection");
+		}
 
 		const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
 		setTimeout(() => void this.handleSessionTimeout(), THREE_HOURS_MS);

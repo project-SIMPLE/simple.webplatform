@@ -6,6 +6,7 @@
  * It manages Adb sockets :)
  */
 
+import { spawn } from "node:child_process";
 import { Adb, AdbServerClient } from "@yume-chan/adb";
 import { AdbServerNodeTcpConnector } from "@yume-chan/adb-server-node-tcp";
 
@@ -44,7 +45,24 @@ export class AdbManager {
 		this.headsetSetup = new HeadsetSetup(this.adbServer);
 	}
 
+	/** Start the adb daemon asynchronously (idempotent; returns fast if already running). */
+	private startAdbDaemon(): Promise<void> {
+		return new Promise((resolve) => {
+			const proc = spawn("adb", ["start-server"], { stdio: "ignore" });
+			proc.on("close", () => resolve());
+			proc.on("error", (e) => {
+				logger.error("Failed to start adb daemon: {e}", { e });
+				resolve();
+			});
+		});
+	}
+
 	async init() {
+		// Ensure the adb daemon is running WITHOUT blocking the event loop. A cold-boot daemon
+		// start can take several seconds; spawnSync would freeze the whole process (and the uWS
+		// servers) during that time, so use async spawn instead.
+		await this.startAdbDaemon();
+
 		// Init watching ADB clients
 		this.observer = await this.adbServer.trackDevices();
 
