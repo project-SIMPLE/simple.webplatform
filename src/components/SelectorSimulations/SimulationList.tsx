@@ -9,6 +9,10 @@ interface SimulationListProps {
 }
 const logger = getLogger(["components", "SimulationList"]);
 
+// When there's no splashscreen (or it fails to load) we show the SIMPLE logo — sized to ~50%
+// and centred so it doesn't fill the tile like a real, full-bleed splashscreen would.
+const PLACEHOLDER_IMG_CLASS = "absolute inset-0 m-auto size-3/5 object-contain";
+
 const SimulationList = ({ list, handleSimulation, gama, className }: SimulationListProps) => {
 	if (!Array.isArray(list)) {
 		logger.error("SimulationList received non-array list: {list}", { list });
@@ -64,15 +68,17 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
 							)}
 							{/* //TODO the src of the image is a placeholder, selects one of the 5 frames at random */}
 							<img
-								src={simulation.splashscreen?.trim() ? simulation.splashscreen.trim() : "/images/simple_logo.png"}
+								src={simulation.splashscreen?.trim() ? simulation.splashscreen.trim() : "/images/Logos/simple_logo.png"}
 								alt=""
-								className="h-full -z-10 bg-[#fcf7ec]"
+								className={simulation.splashscreen?.trim() ? "h-full -z-10 bg-[#fcf7ec]" : PLACEHOLDER_IMG_CLASS}
 								onError={(e) => {
 									const target = e.currentTarget;
 									// Prevent infinite loop if the fallback is also broken
 									if (target.src.includes("simple_logo.png")) return;
 
 									target.src = "/images/Logos/simple_logo.png";
+									// The real splashscreen failed to load — shrink/centre the logo placeholder.
+									target.className = PLACEHOLDER_IMG_CLASS;
 									logger.warn("couldn't load an image for simulation {index}, using the placeholder", { index });
 								}}
 							/>
