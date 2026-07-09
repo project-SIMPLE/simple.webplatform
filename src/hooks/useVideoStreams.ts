@@ -2,7 +2,9 @@ import { getLogger } from "@logtape/logtape";
 import { type ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-const host: string = window.location.hostname;
+// `localhost` resolves to IPv6 ::1 first in most browsers, but the backend uWS video server
+// binds IPv4 (0.0.0.0) only — a ::1 connection hangs. Force IPv4 loopback to match.
+const host: string = window.location.hostname === "localhost" ? "127.0.0.1" : window.location.hostname;
 const port: string = "8082";
 
 const logger = getLogger(["hooks", "useVideoStreams"]);

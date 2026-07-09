@@ -59,7 +59,9 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 	};
 
 	useEffect(() => {
-		const host = window.location.hostname;
+		// `localhost` resolves to IPv6 ::1 first in most browsers, but the backend uWS servers
+		// bind IPv4 (0.0.0.0) only — a ::1 connection hangs. Force IPv4 loopback to match.
+		const host = window.location.hostname === "localhost" ? "127.0.0.1" : window.location.hostname;
 		const port = process.env.MONITOR_WS_PORT || "8001";
 		const url = `ws://${host}:${port}`;
 
