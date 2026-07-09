@@ -61,16 +61,24 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 	useEffect(() => {
 		const host = window.location.hostname;
 		const port = process.env.MONITOR_WS_PORT || "8001";
+		const url = `ws://${host}:${port}`;
 
-		const socket = new WebSocket(`ws://${host}:${port}`);
-		setWs(socket);
+		let socket: WebSocket | null = null;
+		let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+		let connectTimeout: ReturnType<typeof setTimeout> | null = null;
+		// Set on unmount so pending timers don't reconnect a dead component.
+		let disposed = false;
 
-		socket.onopen = () => {
-			logger.info("WebSocket connected to backend");
-			setIsWsConnected(true);
+		const scheduleReconnect = () => {
+			if (disposed || reconnectTimer) return;
+			reconnectTimer = setTimeout(() => {
+				reconnectTimer = null;
+				logger.info("Reconnecting to backend...");
+				connect();
+			}, 1000);
 		};
 
-		socket.onmessage = (event: MessageEvent) => {
+		const handleMessage = (event: MessageEvent) => {
 			let data:
 				| WsJsonState
 				| WsGetSimulationByIndex
@@ -126,15 +134,48 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 			}
 		};
 
-		socket.onclose = () => {
-			logger.info("WebSocket disconnected");
-			setIsWsConnected(false);
+		const connect = () => {
+			if (disposed) return;
+			socket = new WebSocket(url);
+			setWs(socket);
+
+			// The backend binds port 8001 early but can block the event loop during startup
+			// (adb probe, synchronous model-file scan), leaving the WS upgrade pending for
+			// seconds. If we're still CONNECTING after 3s, abort and retry — the retry
+			// usually lands once startup's blocking work is done.
+			connectTimeout = setTimeout(() => {
+				if (socket && socket.readyState === WebSocket.CONNECTING) {
+					logger.warn("WebSocket still connecting after 3s, retrying...");
+					socket.close(); // triggers onclose → scheduleReconnect
+				}
+			}, 3000);
+
+			socket.onopen = () => {
+				if (connectTimeout) clearTimeout(connectTimeout);
+				logger.info("WebSocket connected to backend");
+				setIsWsConnected(true);
+			};
+
+			socket.onclose = () => {
+				if (connectTimeout) clearTimeout(connectTimeout);
+				logger.info("WebSocket disconnected");
+				setIsWsConnected(false);
+				scheduleReconnect();
+			};
+
+			// onerror is always followed by onclose; let onclose own the reconnect.
+			socket.onerror = () => {};
+
+			socket.onmessage = handleMessage;
 		};
 
+		connect();
+
 		return () => {
-			if (socket) {
-				socket.close();
-			}
+			disposed = true;
+			if (reconnectTimer) clearTimeout(reconnectTimer);
+			if (connectTimeout) clearTimeout(connectTimeout);
+			socket?.close();
 		};
 	}, []);
 
