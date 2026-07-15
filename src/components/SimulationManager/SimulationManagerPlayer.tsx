@@ -1,7 +1,6 @@
 import { getLogger } from "@logtape/logtape";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import cross from "/src/svg_logos/x_cross.svg";
 import type { PlayerState } from "../../common/types";
 import { wsApi } from "../../common/wsApi";
 import VRHeadset from "../VRHeadset/VRHeadset";
@@ -52,7 +51,7 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
 								{Playerkey}: {/* //TODO ajouter les traduction ici  */}
 							</h2>
 							<img
-								src={cross}
+								src="/images/Buttons/Button_stop.png"
 								alt="X"
 								className={`w-8 h-8 rounded-full cursor-pointer mix-blend-difference hover:bg-gray-800 ${className}`}
 								onClick={toggleShowPopUpManageHeadset}

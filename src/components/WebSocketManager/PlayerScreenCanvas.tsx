@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { HEADSET_COLOR_CLASS, HEADSET_COLOR_NAME } from "../../common/constants";
-import visibility_off from "../../svg_logos/visibility_off.svg";
-import x_cross from "../../svg_logos/x_cross.svg";
 
 // All hooks in this component are called unconditionally — the early `return null` at the
 // top guards against an invalid id, but it runs before any hook call.
@@ -73,7 +71,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, needsInterac
 							className="bg-white hover:bg-gray-200 rounded-full p-1 size-fit mb-2w"
 							style={{ position: "absolute", top: "0.5rem", right: "0.5rem" }}
 						>
-							<img src={x_cross} alt="" className="mix-blend-difference size-8" />
+							<img src="/images/Buttons/Button_stop.png" alt="" className="size-8" />
 						</button>
 					</div>
 				</div>
@@ -111,7 +109,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, needsInterac
 					/>
 					{/* Light backdrop + centered eye in the same inset window the video occupies in a live tile */}
 					<div className="absolute inset-[7%] bg-stone-100 flex items-center justify-center">
-						<img src={visibility_off} alt="" className="size-1/2 object-contain mix-blend-difference" />
+						<img src="/images/Logos/simple_logo.png" alt="" className="size-1/2 object-contain" />
 					</div>
 				</div>
 			)}
