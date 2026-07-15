@@ -236,6 +236,12 @@ export class HeadsetSetup {
 				permission: "android.permission.WRITE_SECURE_SETTINGS",
 				needsToStart: true,
 			},
+			{
+				packageName: "com.meta.shell.env.footprint.haven2025",
+				apkFile: "eu.project_simple.no-loft.apk",
+				permission: "",
+				needsToStart: false,
+			},
 		];
 
 		for (const { packageName, apkFile, permission, needsToStart } of REQUIRED_APPS) {
@@ -260,7 +266,8 @@ export class HeadsetSetup {
 				}
 			}
 
-			await this.ensurePermission(adb, serial, packageName, permission);
+			if (permission !== "")
+				await this.ensurePermission(adb, serial, packageName, permission);
 
 			if (needsToStart) {
 				logger.debug(`[${serial}] First time installing '${packageName}', needs to start the application once...`);
