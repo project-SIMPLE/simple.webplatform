@@ -26,6 +26,7 @@ import {
 	ON_DEVICE_ADB_SYSTEM_SETTINGS,
 	ON_DEVICE_OVR_PREFS,
 } from "../../core/Constants.ts";
+import { readApkVersionName } from "./ApkInspector.ts";
 
 const logger = getLogger(["android", "HeadsetSetup"]);
 
@@ -245,7 +246,7 @@ export class HeadsetSetup {
 		];
 
 		for (const { packageName, apkFile, permission, needsToStart } of REQUIRED_APPS) {
-			const targetVersion = this.parseApkVersion(apkFile);
+			const targetVersion = await this.parseApkVersion(apkFile);
 			logger.debug(`[${serial}] Checking '${packageName}'${targetVersion ? ` (target: v${targetVersion})` : ""}...`);
 
 			const isInstalled = await this.isPackageInstalled(adb, packageName);
@@ -266,8 +267,7 @@ export class HeadsetSetup {
 				}
 			}
 
-			if (permission !== "")
-				await this.ensurePermission(adb, serial, packageName, permission);
+			if (permission !== "") await this.ensurePermission(adb, serial, packageName, permission);
 
 			if (needsToStart) {
 				logger.debug(`[${serial}] First time installing '${packageName}', needs to start the application once...`);
@@ -284,9 +284,19 @@ export class HeadsetSetup {
 		}
 	}
 
-	private parseApkVersion(apkFile: string): string | null {
-		const match = apkFile.match(/-(\d+(?:\.\d+)+)\.apk$/);
-		return match ? match[1] : null;
+	private async parseApkVersion(apkFile: string): Promise<string | null> {
+		// Fast path: version encoded in the filename, e.g. "myapp-1.2.3.apk"
+		const fileNameMatch = apkFile.match(/-(\d+(?:\.\d+)+)\.apk$/);
+		if (fileNameMatch !== null) return fileNameMatch[1];
+
+		// Slow path: crack open the APK and read android:versionName from its manifest.
+		try {
+			const apkBytes = await readFile(resolve("toolkit", apkFile));
+			return readApkVersionName(apkBytes);
+		} catch (e) {
+			logger.warn(`Could not inspect version of APK '${apkFile}': {e}`, { e });
+			return null;
+		}
 	}
 
 	private compareVersions(a: string, b: string): number {
@@ -316,7 +326,9 @@ export class HeadsetSetup {
 		for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
 			output += chunk;
 		}
-		return output.match(/versionName=(\S+)/)?.[1] ?? null;
+
+		const t = output.match(/versionName=(\S+)/)?.[1] ?? null;
+		return t;
 	}
 
 	private async uninstallPackage(adb: Adb, serial: string, packageName: string): Promise<void> {
