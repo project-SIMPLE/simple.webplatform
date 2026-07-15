@@ -163,15 +163,81 @@ execSync(
 	{ cwd: root, stdio: "inherit" },
 );
 
-// ── 8. Sign the binary (macOS only) ──────────────────────────────────────────
+// ── 8. Sign and notarize the binary (macOS only) ─────────────────────────────
 //
-// postject modifies the Mach-O binary, invalidating any existing signature.
-// An ad-hoc re-sign is required for macOS to allow execution (especially on
-// Apple Silicon where unsigned modified binaries are blocked by default).
+// postject modifies the Mach-O binary, invalidating any existing signature, so
+// macOS requires a re-sign before the binary will run.
+//
+// Two modes:
+//
+//   1. Distribution — set APPLE_SIGNING_IDENTITY to a "Developer ID Application"
+//      certificate. The binary is signed with the hardened runtime + timestamp
+//      + entitlements, then (if notarization credentials are present) submitted
+//      to Apple's notary service. This is what Gatekeeper accepts on machines
+//      that download the release. See scripts/entitlements.mac.plist.
+//
+//   2. Local — with no identity configured, fall back to an ad-hoc signature.
+//      This lets the binary run on the machine that built it, but it will be
+//      quarantined and blocked if distributed.
 
 if (platform === "darwin") {
-	console.log("[SEA] Ad-hoc signing binary...");
-	execSync(`codesign --sign - "${outBin}"`, { cwd: root, stdio: "inherit" });
+	const identity = process.env.APPLE_SIGNING_IDENTITY;
+
+	if (!identity) {
+		console.log("[SEA] No APPLE_SIGNING_IDENTITY set — ad-hoc signing (local use only).");
+		execSync(`codesign --sign - "${outBin}"`, { cwd: root, stdio: "inherit" });
+	} else {
+		const entitlements = path.join(__dirname, "entitlements.mac.plist");
+		console.log(`[SEA] Signing with Developer ID: ${identity}`);
+		execSync(
+			`codesign --force --timestamp --options runtime ` +
+				`--entitlements "${entitlements}" --sign "${identity}" "${outBin}"`,
+			{ cwd: root, stdio: "inherit" },
+		);
+		execSync(`codesign --verify --strict --verbose=2 "${outBin}"`, { cwd: root, stdio: "inherit" });
+
+		// ── 8b. Notarize ──────────────────────────────────────────────────────
+		//
+		// notarytool cannot ingest a bare Mach-O binary — it must be wrapped in a
+		// zip, .dmg, or .pkg. We zip the binary, submit, and wait for the ticket.
+		//
+		// A bare executable also cannot be stapled (stapler only supports .app,
+		// .dmg, .pkg), so Gatekeeper performs an online notarization check on
+		// first launch. That is sufficient for a downloaded CLI binary.
+		//
+		// Provide EITHER App Store Connect API key credentials:
+		//   APPLE_API_KEY_ID, APPLE_API_ISSUER_ID, APPLE_API_KEY_PATH (.p8 file)
+		// OR Apple ID credentials:
+		//   APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD (app-specific password)
+
+		let notaryArgs = null;
+		if (process.env.APPLE_API_KEY_ID && process.env.APPLE_API_ISSUER_ID && process.env.APPLE_API_KEY_PATH) {
+			notaryArgs =
+				`--key "${process.env.APPLE_API_KEY_PATH}" ` +
+				`--key-id "${process.env.APPLE_API_KEY_ID}" ` +
+				`--issuer "${process.env.APPLE_API_ISSUER_ID}"`;
+		} else if (process.env.APPLE_ID && process.env.APPLE_TEAM_ID && process.env.APPLE_APP_PASSWORD) {
+			notaryArgs =
+				`--apple-id "${process.env.APPLE_ID}" ` +
+				`--team-id "${process.env.APPLE_TEAM_ID}" ` +
+				`--password "${process.env.APPLE_APP_PASSWORD}"`;
+		}
+
+		if (!notaryArgs) {
+			console.warn("[SEA] WARNING: no notarization credentials set — binary is signed but NOT notarized.");
+			console.warn("[SEA]          Downloaded copies will still be blocked by Gatekeeper.");
+		} else {
+			const zipPath = path.join(outDir, `${outputName}.zip`);
+			console.log("[SEA] Zipping for notarization...");
+			execSync(`ditto -c -k --keepParent "${outBin}" "${zipPath}"`, { cwd: root, stdio: "inherit" });
+
+			console.log("[SEA] Submitting to Apple notary service (this can take a few minutes)...");
+			execSync(`xcrun notarytool submit "${zipPath}" ${notaryArgs} --wait`, { cwd: root, stdio: "inherit" });
+
+			fs.rmSync(zipPath, { force: true });
+			console.log("[SEA] Notarization accepted.");
+		}
+	}
 }
 
 const sizeMB = (fs.statSync(outBin).size / 1024 / 1024).toFixed(1);

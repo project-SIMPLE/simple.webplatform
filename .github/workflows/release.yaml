@@ -2,6 +2,11 @@ name: "Releasing with compressed binary"
 
 on:
   workflow_dispatch:
+    inputs:
+      prerelease:
+        description: "Publish as a prerelease (alpha). Uncheck for a full release."
+        type: boolean
+        default: true
 
 jobs:
   build-linux:
@@ -39,7 +44,33 @@ jobs:
       - name: Install npm modules
         run: npm i
 
-      - name: Build macOS binary
+      - name: Import Developer ID certificate
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+        run: |
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          CERT_PATH="$RUNNER_TEMP/certificate.p12"
+
+          echo "$MACOS_CERTIFICATE" | base64 --decode > "$CERT_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$MACOS_CERTIFICATE_PWD" \
+            -k "$KEYCHAIN_PATH" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain-db
+          rm -f "$CERT_PATH"
+
+      - name: Build, sign and notarize macOS binary
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
         run: npm run build:sea:macos
 
       - name: Upload macOS artifact
@@ -103,15 +134,17 @@ jobs:
         id: meta
         run: echo "date=$(date +'%d/%m/%y %R')" >> "$GITHUB_OUTPUT"
 
-      - name: Publish alpha to Github
+      - name: Publish to Github
         uses: softprops/action-gh-release@v2
         with:
-          prerelease: true
-          make_latest: false
-          tag_name: "alpha"
-          name: Alpha Version
+          prerelease: ${{ inputs.prerelease }}
+          make_latest: ${{ inputs.prerelease == false }}
+          tag_name: ${{ inputs.prerelease && 'alpha' || github.ref_name }}
+          name: ${{ inputs.prerelease && 'Alpha Version' || format('Release {0}', github.ref_name) }}
           body: |
-            Alpha release of the SIMPLE webplatform. Please test and report issues.
+            ${{ inputs.prerelease
+              && 'Alpha release of the SIMPLE webplatform. Please test and report issues.'
+              || 'Release of the SIMPLE webplatform.' }}
             Lastly updated on ${{ steps.meta.outputs.date }}.
           generate_release_notes: true
           files: release-files/**

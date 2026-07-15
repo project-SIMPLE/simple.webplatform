@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+		Entitlements for the SIMPLE WebPlatform Node.js SEA binary under the
+		macOS hardened runtime (required for notarization).
+
+		Node embeds the V8 engine, which JIT-compiles JavaScript at runtime, so
+		it needs permission to allocate and execute writable memory. The binary
+		also dlopen()s native .node modules (uWebSockets.js, node-hid) that are
+		extracted from the SEA blob and are not signed by the same Team ID, so
+		library validation must be disabled.
+	-->
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<true/>
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>
