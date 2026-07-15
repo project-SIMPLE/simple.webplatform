@@ -19,6 +19,7 @@
   },
   "bin": "dist-api/index.cjs",
   "dependencies": {
+    "@clack/prompts": "^1.6.0",
     "@homebridge/ciao": "^1.1.8",
     "@logtape/file": "^2.0.4",
     "@logtape/logtape": "^2.0.4",
@@ -53,7 +54,7 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "tailwindcss": "^3.4.7",
-    "tsx": "^4.19.1",
+    "tsx": "^4.22.4",
     "typescript": "^5.2.2",
     "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.67.0",
     "vite": "^7.3.2",

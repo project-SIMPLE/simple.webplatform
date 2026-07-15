@@ -12,6 +12,13 @@ import { isMacMini } from "./infra/DeviceDetector.ts";
 import { StaticServer } from "./infra/StaticServer.ts";
 
 /*
+    Ensure config exists ================================
+ */
+
+import { ensureConfig } from "./infra/TuiConfig.ts";
+await ensureConfig();           // no-op if .env exists; prompts on first run
+
+/*
     TOOLBOX ================================
  */
 
