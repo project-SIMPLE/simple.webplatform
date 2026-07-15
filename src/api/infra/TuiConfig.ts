@@ -13,6 +13,7 @@
 
 import { existsSync, writeFileSync, statSync } from "node:fs";
 import { dirname, join, isAbsolute, resolve } from "node:path";
+import { networkInterfaces } from "node:os";
 import {
   intro,
   outro,
@@ -42,6 +43,33 @@ const NETWORK_DEFAULTS = {
   webHost: "0.0.0.0",
   webPort: "8000",
 } as const;
+
+// DeviceFinder can only auto-scan for headsets when the server sits in this
+// subnet; outside it, auto-detection disables itself. Keep in sync with
+// src/api/android/adb/DeviceFinder.ts.
+const HEADSET_SUBNET_PREFIX = "192.168.68";
+
+/**
+ * True if this machine has a non-internal IPv4 address in the headset subnet —
+ * i.e. runtime auto-detection would actually find something. Mirrors the
+ * interface walk in DeviceFinder.autoDetectDevices().
+ */
+function isOnHeadsetSubnet(): boolean {
+  for (const [name, infos] of Object.entries(networkInterfaces())) {
+    // Skip loopback and tailscale/VPN interfaces, like DeviceFinder does.
+    if (name.startsWith("lo") || name.startsWith("tail")) continue;
+    for (const i of infos ?? []) {
+      if (
+        i.family === "IPv4" &&
+        !i.internal &&
+        i.address.startsWith(HEADSET_SUBNET_PREFIX)
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 // Clack passes `undefined` to `validate` when a field is submitted empty (the
 // default value is only applied afterwards), so every validator coerces first.
@@ -154,7 +182,8 @@ interface WizardResult {
   learningPath: string;
   useExtraLearningPath: boolean;
   extraLearningPath: string;
-  headsetsIp: string;
+  autoDetectHeadsets: boolean;
+  headsetsIp?: string;
   verbose: boolean;
   extraVerbose: boolean;
   aggressiveDisconnect: boolean;
@@ -207,7 +236,8 @@ function buildEnv(cfg: WizardResult): string {
   if (cfg.extraVerbose ?? false) {
     lines.push("", `EXTRA_VERBOSE=${cfg.extraVerbose}`);
   }
-  if (cfg.headsetsIp.trim()) {
+  // Left unset when auto-detection is enabled, so DeviceFinder scans on startup.
+  if (cfg.headsetsIp && cfg.headsetsIp.trim()) {
     lines.push("", `HEADSETS_IP="${cfg.headsetsIp.trim()}"`);
   }
   lines.push("", `AGGRESSIVE_DISCONNECT=${cfg.aggressiveDisconnect ?? false}`, "");
@@ -237,6 +267,10 @@ export async function ensureConfig(): Promise<void> {
 
   intro("SIMPLE WebPlatform — initial configuration");
   note(`Configuration will be written to:\n${envPath}`, "Location");
+
+  // Only worth offering headset auto-detection when this machine is actually on
+  // the subnet DeviceFinder scans; otherwise force manual entry.
+  const canAutoDetectHeadsets = isOnHeadsetSubnet();
 
   const cfg = await group(
     {
@@ -313,13 +347,26 @@ export async function ensureConfig(): Promise<void> {
 
       // --- Default config ---
 
-      headsetsIp: () =>
-        text({
-          message: 'Headset IPs to scrcpy (optional, ";"-separated)',
-          placeholder: "192.168.68.101;192.168.68.102",
-          defaultValue: "",
-          validate: validateHeadsetsIp,
-        }),
+      // Only offered when this machine is on the headset subnet: leaving
+      // HEADSETS_IP unset lets DeviceFinder auto-scan on first run. Off-subnet,
+      // this prompt is skipped and we fall through to manual entry.
+      autoDetectHeadsets: () =>
+        canAutoDetectHeadsets
+          ? confirm({
+              message:
+                "Auto-detect headsets on the local network? (Otherwise list their IPs manually)",
+              initialValue: true,
+            }) : undefined,
+
+      headsetsIp: ({ results }) =>
+        results.autoDetectHeadsets
+          ? undefined
+          : text({
+              message: 'Headset IPs to scrcpy (optional, ";"-separated)',
+              placeholder: "192.168.68.101;192.168.68.102",
+              defaultValue: "",
+              validate: validateHeadsetsIp,
+            }),
 
       verbose: () =>
         confirm({
