@@ -118,12 +118,8 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 			});
 		};
 		worker.onmessage = (event) => {
-			if (event.data?.type === "sizeChanged") {
-				logger.debug("[Scrcpy-VideoStreamManager] Canvas resized for {deviceId}: {width}x{height}", {
-					deviceId,
-					width: event.data.width,
-					height: event.data.height,
-				});
+			if (event.data?.type !== "sizeChanged") {
+				logger.debug(`[${deviceId}] Received an unknown message: ${event.data}`);
 			}
 		};
 
