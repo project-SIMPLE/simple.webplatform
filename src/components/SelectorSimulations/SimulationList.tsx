@@ -45,7 +45,7 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
 	return (
 		<div className="flex flex-row w-full justify-evenly">
 			{list.map((simulation: VU_MODEL_SETTING_JSON | VU_CATALOG_SETTING_JSON, index: number) => (
-				<div className="items-center text-center w-fit " key={simulation.name ?? simulation.model_file_path}>
+				<div className="items-center text-center w-fit " key={simulation.name}>
 					{/* data-nav-item marks this as an arrow-key navigation target (handled by SelectorSimulations). */}
 					<button
 						type="button"
