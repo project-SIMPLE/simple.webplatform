@@ -35,7 +35,7 @@ const LanguageSelector = () => {
 						<img
 							src={` images/Language_selection/Language_selection_close.png`}
 							alt=""
-							className="size-[5dvh] absolute top-[8%] right-[11.5%] mr-1 cursor-pointer z-10 hover:scale-110 transition-transform duration-200"
+							className="size-[5dvh] absolute top-[6%] right-[11.5%] mr-1 cursor-pointer z-10 hover:scale-110 transition-transform duration-200"
 							onClick={() => setShowPopup(false)}
 						/>
 
@@ -59,7 +59,7 @@ const LanguageSelector = () => {
 							<div className={buttonStyle}>
 								<img
 									src={`images/Language_selection/Language_selection_Button_02.png`}
-									alt="Français"
+									alt="French"
 									onClick={() => changeLanguage("fr")}
 								/>
 								<p className="absolute pointer-events-none pb-2">Français</p>
@@ -67,18 +67,34 @@ const LanguageSelector = () => {
 							<div className={buttonStyle}>
 								<img
 									src={`images/Language_selection/Language_selection_Button_03.png`}
-									alt="English"
-									onClick={() => changeLanguage("vn")}
+									alt="Vietnamese"
+									onClick={() => changeLanguage("vi")}
 								/>
 								<p className="absolute pointer-events-none pb-2">Việt</p>
 							</div>
 							<div className={buttonStyle}>
 								<img
 									src={`images/Language_selection/Language_selection_Button_04.png`}
-									alt="English"
+									alt="Thai"
 									onClick={() => changeLanguage("th")}
 								/>
 								<p className="absolute pointer-events-none pb-2">แบบไทย</p>
+							</div>
+							<div className={buttonStyle}>
+								<img
+									src={`images/Language_selection/Language_selection_Button_05.png`}
+									alt="Lao"
+									onClick={() => changeLanguage("lo")}
+								/>
+								<p className="absolute pointer-events-none pb-2">ພາສາລາວ</p>
+							</div>
+							<div className={buttonStyle}>
+								<img
+									src={`images/Language_selection/Language_selection_Button_06.png`}
+									alt="Khmer"
+									onClick={() => changeLanguage("km")}
+								/>
+								<p className="absolute pointer-events-none pb-2 text-white">ភាសាខ្មែរ</p>
 							</div>
 						</div>
 					</div>
