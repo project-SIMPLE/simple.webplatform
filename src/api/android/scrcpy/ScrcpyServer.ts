@@ -1,6 +1,5 @@
 import uWS, { type TemplatedApp } from "uWebSockets.js";
 import fs from "node:fs/promises";
-import path from "node:path";
 import { getLogger, type Logger } from "@logtape/logtape";
 import type { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyExitedError, AdbScrcpyOptions3_3_3 } from "@yume-chan/adb-scrcpy";
@@ -8,6 +7,7 @@ import { DefaultServerPath, type ScrcpyMediaStreamPacket } from "@yume-chan/scrc
 import { ReadableStream } from "@yume-chan/stream-extra";
 
 import type { AdbManager } from "../adb/AdbManager.ts";
+import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
 
 // Override the log function
 const logger = getLogger(["android", "ScrcpyServer"]);
@@ -234,7 +234,7 @@ export class ScrcpyServer {
 		// Use custom hotfix from rom1v (official scrcpy's dev)
 		// This fix 'simply' better manage fallback video API weirdly working on MQ headsets
 		// https://github.com/Genymobile/scrcpy/issues/5913#issuecomment-3677889916
-		const scrcpyServerFullPath: string = path.join(process.cwd(), "toolkit", "scrcpyServer-v3.3.4-rom1v");
+		const scrcpyServerFullPath: string = resolveToolkitAsset("scrcpyServer-v3.3.4-rom1v");
 		this.server = await fs.readFile(scrcpyServerFullPath);
 		logger.trace(`Loading scrcpy server from '${scrcpyServerFullPath}'`);
 	}
@@ -336,11 +336,25 @@ export class ScrcpyServer {
 		// metadata) must not be mistaken for a codec switch and suppress restart.
 		let registered = false;
 
-		try {
-			if (this.server == null) {
+		// Load the scrcpy server binary before entering the session. A failure here
+		// (e.g. the toolkit binary missing from the package) can never be fixed by
+		// retrying, so stop the supervisor loop cleanly instead of restarting every
+		// second forever — otherwise the device appears to "loop" without ever
+		// streaming. See resolveToolkitAsset / build-sea-*.mjs for bundling.
+		if (this.server == null) {
+			try {
 				await this.loadScrcpyServer();
+			} catch (e) {
+				logger.fatal(
+					`[${streamIp}] Cannot load the scrcpy server binary — streaming disabled for ${adbConnection.serial}. ` +
+						`Is the 'toolkit/' folder bundled? {e}`,
+					{ e },
+				);
+				return false; // do not restart: retrying cannot recover a missing/unreadable binary
 			}
+		}
 
+		try {
 			logger.info(`[${streamIp}] Starting scrcpy for ${adbConnection.serial}`);
 
 			logger.debug(`[${streamIp}] Sync adb with ${adbConnection.serial}`);

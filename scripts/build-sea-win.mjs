@@ -102,8 +102,28 @@ function findHidBinary() {
 const hidPath = findHidBinary();
 console.log(`[SEA] Including native module: HID.node  (from ${path.relative(root, hidPath).replace(/\\/g, "/")})`);
 
+// Toolkit files (headset APKs + custom scrcpy server binary) read at runtime by
+// HeadsetSetup and ScrcpyServer via resolveToolkitAsset (keys: `toolkit/<name>`).
+const toolkitDir = path.join(root, "toolkit");
+const toolkitAssets = {};
+if (fs.existsSync(toolkitDir)) {
+	for (const name of fs.readdirSync(toolkitDir)) {
+		const full = path.join(toolkitDir, name);
+		if (fs.statSync(full).isFile()) {
+			toolkitAssets[`toolkit/${name}`] = path.relative(root, full).replace(/\\/g, "/");
+		}
+	}
+}
+const toolkitCount = Object.keys(toolkitAssets).length;
+if (toolkitCount === 0) {
+	console.error("[SEA] ERROR: no files found in toolkit/. Headset setup and streaming need them.");
+	process.exit(1);
+}
+console.log(`[SEA] Including ${toolkitCount} toolkit file(s): ${Object.keys(toolkitAssets).join(", ")}`);
+
 const assets = {
 	...distAssets,
+	...toolkitAssets,
 	[uwsFile]: path.relative(root, uwsPath).replace(/\\/g, "/"),
 	"HID.node": path.relative(root, hidPath).replace(/\\/g, "/"),
 };

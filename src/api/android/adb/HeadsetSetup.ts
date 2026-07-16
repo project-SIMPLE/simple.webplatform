@@ -15,9 +15,9 @@ import { ReadableStream } from "@yume-chan/stream-extra";
 import Device = AdbServerClient.Device;
 
 import { readFile, stat } from "node:fs/promises";
-import { resolve } from "node:path";
 
 import { getLogger } from "@logtape/logtape";
+import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
 import {
 	ON_DEVICE_ADB_BROADCASTS,
 	ON_DEVICE_ADB_GLOBAL_SETTINGS,
@@ -246,7 +246,7 @@ export class HeadsetSetup {
 
 			if (!isInstalled) {
 				logger.warn(`[${serial}] '${packageName}' is not installed — installing...`);
-				if (!(await this.installApk(adb, serial, resolve("toolkit", apkFile)))) continue;
+				if (!(await this.installApk(adb, serial, resolveToolkitAsset(apkFile)))) continue;
 			} else if (targetVersion) {
 				const installedVersion = await this.getInstalledVersion(adb, packageName);
 				if (!installedVersion || this.compareVersions(installedVersion, targetVersion) < 0) {
@@ -254,7 +254,7 @@ export class HeadsetSetup {
 						`[${serial}] '${packageName}' v${installedVersion ?? "?"} → v${targetVersion} — uninstalling first (signature may differ)...`,
 					);
 					await this.uninstallPackage(adb, serial, packageName);
-					if (!(await this.installApk(adb, serial, resolve("toolkit", apkFile)))) continue;
+					if (!(await this.installApk(adb, serial, resolveToolkitAsset(apkFile)))) continue;
 				} else {
 					logger.debug(`[${serial}] '${packageName}' is up to date (v${installedVersion})`);
 				}
