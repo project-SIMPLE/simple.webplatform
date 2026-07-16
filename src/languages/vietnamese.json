@@ -26,6 +26,10 @@
     "select_subproject" : "Chọn dự án phụ để khởi chạy",
     "in_game": "Trong trò chơi",
     "connected": "Đã kết nối", 
-    "error": "Lỗi"
+    "error": "Lỗi",
+    "gamaless_banner": "GAMALESS — điều khiển mô phỏng bị vô hiệu hóa",
+    "gamaless_mode_title": "Chế độ GAMALESS",
+    "gamaless_mode_description": "Các tính năng mô phỏng bị vô hiệu hóa. Không có máy chủ GAMA nào được kết nối.",
+    "gamaless_mode_headsets": "Việc quản lý kính thực tế ảo vẫn hoạt động."
 
 }

@@ -27,5 +27,9 @@
   "in_game": "នៅក្នុងហ្គេម",
   "connected": "បានភ្ជាប់",
   "error": "កំហុស",
-  "simulation_loading": "ការផ្ទុកការក្លែងធ្វើ"
+  "simulation_loading": "ការផ្ទុកការក្លែងធ្វើ",
+  "gamaless_banner": "GAMALESS — ការគ្រប់គ្រងការក្លែងធ្វើត្រូវបានបិទ",
+  "gamaless_mode_title": "របៀប GAMALESS",
+  "gamaless_mode_description": "មុខងារក្លែងធ្វើត្រូវបានបិទ។ គ្មានម៉ាស៊ីនមេ GAMA ត្រូវបានភ្ជាប់ទេ។",
+  "gamaless_mode_headsets": "ការគ្រប់គ្រងកាសនៅតែដំណើរការ។"
 }

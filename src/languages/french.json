@@ -27,6 +27,10 @@
     "in_game": "En jeu",
     "connected" : "Connecté",
     "error" : "Erreur",
-    "simulation_loading": "Chargement de la simulation"
+    "simulation_loading": "Chargement de la simulation",
+    "gamaless_banner": "GAMALESS — contrôles de simulation désactivés",
+    "gamaless_mode_title": "Mode GAMALESS",
+    "gamaless_mode_description": "Les fonctionnalités de simulation sont désactivées. Aucun serveur GAMA n'est connecté.",
+    "gamaless_mode_headsets": "La gestion des casques reste opérationnelle."
 
 }

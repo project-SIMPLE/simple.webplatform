@@ -25,5 +25,9 @@
     "ask_launch_gama": "กรุณาเรียกใช้กามา..",
     "in_game": "ในเกม",
     "connected": "เชื่อมต่อ",
-    "error": "ข้อผิดพลาด"
+    "error": "ข้อผิดพลาด",
+    "gamaless_banner": "GAMALESS — ปิดใช้งานการควบคุมแบบจำลอง",
+    "gamaless_mode_title": "โหมด GAMALESS",
+    "gamaless_mode_description": "ฟีเจอร์แบบจำลองถูกปิดใช้งาน ไม่มีเซิร์ฟเวอร์ GAMA เชื่อมต่ออยู่",
+    "gamaless_mode_headsets": "การจัดการเฮดเซ็ตยังคงใช้งานได้"
 }

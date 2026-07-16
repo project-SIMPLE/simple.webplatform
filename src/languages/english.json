@@ -27,6 +27,10 @@
     "in_game": "In game",
     "connected": "Connected",
     "error": "Error",
-    "simulation_loading": "Simulation loading"
+    "simulation_loading": "Simulation loading",
+    "gamaless_banner": "GAMALESS — simulation controls disabled",
+    "gamaless_mode_title": "GAMALESS Mode",
+    "gamaless_mode_description": "Simulation features are disabled. No GAMA server is connected.",
+    "gamaless_mode_headsets": "Headset management is still operational."
   }
   

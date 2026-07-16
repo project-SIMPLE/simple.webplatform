@@ -19,7 +19,7 @@ const StatusBanner = ({ gamaless, experimentState, playerCount, minPlayers, maxP
 	if (gamaless) {
 		return (
 			<div className="mt-4 px-4 py-2 bg-yellow-100 border-2 border-yellow-400 rounded-lg text-yellow-800 text-sm text-center">
-				GAMALESS — simulation controls disabled
+				{t("gamaless_banner")}
 			</div>
 		);
 	}

@@ -27,5 +27,9 @@
   "in_game": "ໃນເກມ",
   "connected": "ເຊື່ອມຕໍ່ແລ້ວ",
   "error": "ຂໍ້ຜິດພາດ",
-  "simulation_loading": "ກຳລັງໂຫຼດການຈຳລອງ"
+  "simulation_loading": "ກຳລັງໂຫຼດການຈຳລອງ",
+  "gamaless_banner": "GAMALESS — ປິດການຄວບຄຸມການຈຳລອງ",
+  "gamaless_mode_title": "ໂໝດ GAMALESS",
+  "gamaless_mode_description": "ຄຸນສົມບັດການຈຳລອງຖືກປິດໃຊ້ງານ. ບໍ່ມີເຊີບເວີ GAMA ເຊື່ອມຕໍ່.",
+  "gamaless_mode_headsets": "ການຈັດການຊຸດຫູຟັງຍັງໃຊ້ງານໄດ້."
 }
