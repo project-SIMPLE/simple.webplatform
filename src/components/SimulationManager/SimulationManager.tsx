@@ -39,6 +39,7 @@ const SimulationManager = () => {
 									playerCount={playerCount}
 									minPlayers={minPlayers}
 									maxPlayers={maxPlayers}
+									foreignExperimentDetected={gama.foreign_experiment_detected}
 								/>
 								<ExperimentControls
 									experimentState={gama.experiment_state}

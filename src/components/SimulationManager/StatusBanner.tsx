@@ -6,20 +6,37 @@ interface StatusBannerProps {
 	playerCount: number;
 	minPlayers: string | number;
 	maxPlayers: string | number;
+	foreignExperimentDetected?: boolean;
 }
 
 /**
  * State/waiting message for the SimulationManager screen: the GAMALESS banner, the
- * waiting-for-min / waiting-for-max messages, or "all players connected". Renders null
- * once the experiment is running/paused/launching.
+ * foreign-experiment warning, the waiting-for-min / waiting-for-max messages, or
+ * "all players connected". Renders null once the experiment is running/paused/launching.
  */
-const StatusBanner = ({ gamaless, experimentState, playerCount, minPlayers, maxPlayers }: StatusBannerProps) => {
+const StatusBanner = ({
+	gamaless,
+	experimentState,
+	playerCount,
+	minPlayers,
+	maxPlayers,
+	foreignExperimentDetected,
+}: StatusBannerProps) => {
 	const { t } = useTranslation();
 
 	if (gamaless) {
 		return (
 			<div className="mt-4 px-4 py-2 bg-yellow-100 border-2 border-yellow-400 rounded-lg text-yellow-800 text-sm text-center">
 				{t("gamaless_banner")}
+			</div>
+		);
+	}
+
+	// GAMA runs an experiment the platform didn't launch and cannot control (issue #156)
+	if (foreignExperimentDetected) {
+		return (
+			<div className="mt-4 px-4 py-2 bg-orange-100 border-2 border-orange-400 rounded-lg text-orange-800 text-sm text-center">
+				{t("foreign_experiment_banner")}
 			</div>
 		);
 	}
