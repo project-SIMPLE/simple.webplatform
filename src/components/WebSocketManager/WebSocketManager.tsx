@@ -42,6 +42,7 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 		experiment_id: "",
 		experiment_name: "",
 		content_error: "",
+		foreign_experiment_detected: false,
 	});
 	const [playerList, setPlayerList] = useState<PlayerList>({});
 	const [simulationList, setSimulationList] = useState<(VU_CATALOG_SETTING_JSON | VU_MODEL_SETTING_JSON)[]>([]);

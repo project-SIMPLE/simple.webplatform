@@ -29,6 +29,7 @@
   "error": "ຂໍ້ຜິດພາດ",
   "simulation_loading": "ກຳລັງໂຫຼດການຈຳລອງ",
   "gamaless_banner": "GAMALESS — ປິດການຄວບຄຸມການຈຳລອງ",
+  "foreign_experiment_banner": "GAMA ກຳລັງແລ່ນການທົດລອງທີ່ເປີດຈາກໜ້າຈໍຂອງ GAMA ເອງ — ແພລດຟອມບໍ່ສາມາດຄວບຄຸມໄດ້ ກະລຸນາປິດການທົດລອງໃນ GAMA ກ່ອນເລີ່ມການທົດລອງຢູ່ບ່ອນນີ້",
   "gamaless_mode_title": "ໂໝດ GAMALESS",
   "gamaless_mode_description": "ຄຸນສົມບັດການຈຳລອງຖືກປິດໃຊ້ງານ. ບໍ່ມີເຊີບເວີ GAMA ເຊື່ອມຕໍ່.",
   "gamaless_mode_headsets": "ການຈັດການຊຸດຫູຟັງຍັງໃຊ້ງານໄດ້."
