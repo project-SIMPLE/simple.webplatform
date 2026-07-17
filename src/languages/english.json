@@ -9,6 +9,7 @@
     "wait_minim_players_1":"Waiting for",
     "wait_minim_players_2":"more players to reach minimum players",
     "wait_maximum_players_1":"more players to reach maximum players",
+    "all_players_connected": "All players connected",
     "popup_question": "Do you really want to disconnect and remove",
     "remove": "Remove",
     "relaunch": "Relaunch",
