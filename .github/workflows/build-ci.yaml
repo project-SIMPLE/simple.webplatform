@@ -4,6 +4,81 @@ on:
   push:
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install npm modules
+        run: npm ci
+
+      - name: Lint & format check (biome)
+        run: npm run check
+
+      - name: Unit & frontend tests
+        run: npm run test:unit
+
+  # Real-GAMA integration tests. Boots a headless GAMA server, then runs the
+  # `integration` project (which auto-skips when no server is reachable).
+  #
+  # This job only runs once the repository variable GAMA_DOWNLOAD_URL is set to
+  # a GAMA headless build for Linux — until then it is a no-op, so it never
+  # blocks CI. Confirm the correct download URL and server-launch command for
+  # the GAMA version the team targets, then set that variable.
+  test-integration:
+    runs-on: ubuntu-latest
+    if: ${{ vars.GAMA_DOWNLOAD_URL != '' }}
+    env:
+      GAMA_IP_ADDRESS: localhost
+      GAMA_WS_PORT: "1000"
+    steps:
+
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install npm modules
+        run: npm ci
+
+      - name: Download & unpack GAMA headless
+        run: |
+          curl -L "${{ vars.GAMA_DOWNLOAD_URL }}" -o gama-headless.zip
+          unzip -q gama-headless.zip -d gama-headless
+
+      - name: Start GAMA WebSocket server
+        # Adjust to match the GAMA version's server-launch command. GAMA exposes
+        # a WebSocket server on GAMA_WS_PORT that GamaConnector connects to.
+        run: |
+          chmod +x gama-headless/**/gama-headless.sh || true
+          nohup bash -c 'gama-headless/**/gama-headless.sh -socket ${{ env.GAMA_WS_PORT }}' > gama-server.log 2>&1 &
+          # Wait (up to ~60s) for the server port to open.
+          for i in $(seq 1 60); do
+            if bash -c "echo > /dev/tcp/localhost/${{ env.GAMA_WS_PORT }}" 2>/dev/null; then
+              echo "GAMA server is up"; break
+            fi
+            sleep 1
+          done
+
+      - name: Integration tests (real GAMA)
+        run: npm run test:integration
+
+      - name: Upload GAMA server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gama-server-log
+          path: gama-server.log
+          if-no-files-found: ignore
+
   compilation-linux:
     runs-on: ubuntu-latest
     steps:
