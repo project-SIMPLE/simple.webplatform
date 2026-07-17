@@ -44,6 +44,15 @@ export default defineConfig({
 					hookTimeout: 30_000,
 				},
 			},
+			{
+				test: {
+					name: "adb",
+					environment: "node",
+					include: ["test/adb/**/*.test.ts"],
+					testTimeout: 30_000,
+					hookTimeout: 30_000,
+				},
+			},
 		],
 		coverage: {
 			provider: "v8",

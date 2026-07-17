@@ -20,6 +20,7 @@
     "test:watch": "vitest",
     "test:unit": "vitest run --project unit --project frontend",
     "test:integration": "vitest run --project integration",
+    "test:adb": "vitest run --project adb",
     "test:coverage": "vitest run --project unit --project frontend --coverage"
   },
   "bin": "dist-api/index.cjs",
