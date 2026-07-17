@@ -22,6 +22,9 @@ jobs:
       - name: Unit & frontend tests
         run: npm run test:unit
 
+      - name: Real local-socket tests
+        run: npm run test:server
+
   # Real-GAMA integration tests. Boots a headless GAMA server, then runs the
   # `integration` project (which auto-skips when no server is reachable).
   #

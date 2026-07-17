@@ -19,6 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run --project unit --project frontend",
+    "test:server": "vitest run --project server",
     "test:integration": "vitest run --project integration",
     "test:adb": "vitest run --project adb",
     "test:coverage": "vitest run --project unit --project frontend --coverage"
