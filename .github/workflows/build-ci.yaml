@@ -79,6 +79,44 @@ jobs:
           path: gama-server.log
           if-no-files-found: ignore
 
+  # Real-device ADB tests against a hardware-accelerated Android emulator.
+  # Covers the generic adb-server + shell paths (device discovery, isDeviceReady,
+  # transport shell round-trip, package/version detection). Quest/Oculus-specific
+  # provisioning is out of scope — no emulator equivalent exists.
+  #
+  # Separate, non-blocking job: emulator runs are the slowest/flakiest part of CI,
+  # so a failure here should not gate merges.
+  test-adb:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install npm modules
+        run: npm ci
+
+      # Grant the runner access to /dev/kvm so the emulator is hardware-accelerated
+      # (boots in ~15s instead of minutes). Requires GitHub's KVM-enabled Linux runners.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run ADB tests on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          # The emulator boots and registers with the adb server on localhost:5037,
+          # then `npm run test:adb` connects to it. The suite auto-skips if no
+          # device is present, so a boot failure surfaces as skipped, not a false pass.
+          script: npm run test:adb
+
   compilation-linux:
     runs-on: ubuntu-latest
     steps:
