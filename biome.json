@@ -6,6 +6,8 @@
 			"src/**/*.tsx",
 			"src/**/*.js",
 			"src/**/*.mjs",
+			"test/**/*.test.ts",
+			"test/setup/**/*.ts",
 			"scripts/**/*.mjs",
 			"*.config.ts",
 			"*.config.js",
