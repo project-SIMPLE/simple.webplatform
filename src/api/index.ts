@@ -26,6 +26,30 @@ export const _extractIPv4 = (raw: string): string | null => {
 	return ip.split(".").every((octet) => Number(octet) >= 0 && Number(octet) <= 255) ? ip : null;
 };
 
+// Coerce an env-var string to a boolean: true for "true"/"1"/"yes" (case-insensitive),
+// false for anything else (including undefined).
+export function asBool(value: string | undefined): boolean {
+	return value !== undefined ? ["true", "1", "yes"].includes(value.toLowerCase()) : false;
+}
+
+// Parse a ";"-separated HEADSETS_IP string into sanitized IPv4s. Pure: returns the
+// extracted IPs plus human-readable warnings for tokens that were fixed or dropped
+// (the caller logs them), so misconfigured entries are never silently ignored.
+export function parseHeadsetsIp(raw: string | undefined): { ips: string[]; warnings: string[] } {
+	const warnings: string[] = [];
+	const tokens = raw ? raw.split(";").filter((value) => value.trim() !== "") : [];
+	const ips = tokens.flatMap((token) => {
+		const ip = _extractIPv4(token);
+		if (!ip) {
+			warnings.push(`Could not extract a valid IP from: "${token.trim()}"`);
+			return [];
+		}
+		if (ip !== token.trim()) warnings.push(`Sanitized "${token.trim()}" → "${ip}"`);
+		return [ip];
+	});
+	return { ips, warnings };
+}
+
 // Runs a command asynchronously and resolves with its exit code (or null if it failed to spawn).
 function _runCommand(command: string, args: string[]): Promise<number | null> {
 	return new Promise((resolve) => {
@@ -115,10 +139,7 @@ async function loadConfiguration(): Promise<void> {
 	process.env.LEARNING_PACKAGE_PATH = process.env.LEARNING_PACKAGE_PATH || "./learning-packages";
 	process.env.EXTRA_LEARNING_PACKAGE_PATH = process.env.EXTRA_LEARNING_PACKAGE_PATH || "";
 
-	ENV_AGGRESSIVE_DISCONNECT =
-		process.env.AGGRESSIVE_DISCONNECT !== undefined
-			? ["true", "1", "yes"].includes(process.env.AGGRESSIVE_DISCONNECT.toLowerCase())
-			: false;
+	ENV_AGGRESSIVE_DISCONNECT = asBool(process.env.AGGRESSIVE_DISCONNECT);
 	// ! GAMA =====
 
 	// Headsets  =====
@@ -131,25 +152,15 @@ async function loadConfiguration(): Promise<void> {
 	// ! Website  =====
 
 	// Debug  =====
-	ENV_EXTRA_VERBOSE =
-		process.env.EXTRA_VERBOSE !== undefined
-			? ["true", "1", "yes"].includes(process.env.EXTRA_VERBOSE.toLowerCase())
-			: false;
+	ENV_EXTRA_VERBOSE = asBool(process.env.EXTRA_VERBOSE);
 
 	// Make verbose option more user friendly and ts-friendly
-	ENV_VERBOSE = ENV_EXTRA_VERBOSE
-		? true
-		: process.env.VERBOSE !== undefined
-			? ["true", "1", "yes"].includes(process.env.VERBOSE.toLowerCase())
-			: false;
+	ENV_VERBOSE = ENV_EXTRA_VERBOSE ? true : asBool(process.env.VERBOSE);
 
-	// Supports legacy `ENV_GAMALESS` and linter `GAMALESS`
+	// Supports legacy `ENV_GAMALESS` and linter `GAMALESS`. ENV_GAMALESS wins when set
+	// (even to a falsy value); only then do we consult GAMALESS.
 	ENV_GAMALESS =
-		process.env.ENV_GAMALESS !== undefined
-			? ["true", "1", "yes"].includes(process.env.ENV_GAMALESS.toLowerCase())
-			: process.env.GAMALESS !== undefined
-				? ["true", "1", "yes"].includes(process.env.GAMALESS.toLowerCase())
-				: false;
+		process.env.ENV_GAMALESS !== undefined ? asBool(process.env.ENV_GAMALESS) : asBool(process.env.GAMALESS);
 
 	/*
 	    SETUP LOGGING SYSTEM ================================
@@ -198,17 +209,9 @@ async function loadConfiguration(): Promise<void> {
 	// HEADSETS_IP entries from .env may contain stray characters (e.g. `192.168.1.1"`) due to
 	// shell quoting or copy-paste artifacts. We extract the first valid IPv4 from each token and
 	// warn when the raw value had to be fixed, so misconfigured IPs are never silently ignored.
-	HEADSETS_IP = (
-		process.env.HEADSETS_IP ? process.env.HEADSETS_IP.split(";").filter((value) => value.trim() !== "") : []
-	).flatMap((raw) => {
-		const ip = _extractIPv4(raw);
-		if (!ip) {
-			logger.warn`[HEADSETS_IP] Could not extract a valid IP from: "${raw.trim()}"`;
-			return [];
-		}
-		if (ip !== raw.trim()) logger.warn`[HEADSETS_IP] Sanitized "${raw.trim()}" → "${ip}"`;
-		return [ip];
-	});
+	const parsedHeadsets = parseHeadsetsIp(process.env.HEADSETS_IP);
+	for (const warning of parsedHeadsets.warnings) logger.warn`[HEADSETS_IP] ${warning}`;
+	HEADSETS_IP = parsedHeadsets.ips;
 }
 
 /*

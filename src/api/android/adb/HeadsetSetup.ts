@@ -53,6 +53,31 @@ export function compareVersions(a: string, b: string): number {
 	return 0;
 }
 
+export interface ShellGetSet {
+	verbIndex: number;
+	/** The expected value the `get` output should contain. */
+	checkValue: string;
+	/** Args for the get command (verb prefixed with "g"). */
+	getArgs: string[];
+	/** Args for the set command (verb prefixed with "s"). */
+	setArgs: string[];
+}
+
+/**
+ * Derive the get/set adb-shell commands from a shell-setting entry. Each entry
+ * carries an "et"-prefixed verb; the get form prepends "g" and drops the last two
+ * elements (set_value + check_value), the set form prepends "s" and drops only the
+ * check_value. Returns null when no "et"-prefixed verb is present.
+ */
+export function deriveShellGetSet(args: string[]): ShellGetSet | null {
+	const verbIndex = args.findIndex((a) => a.startsWith("et"));
+	if (verbIndex === -1) return null;
+	const checkValue = args[args.length - 1];
+	const getArgs = args.slice(0, -2).map((a, i) => (i === verbIndex ? `g${a}` : a));
+	const setArgs = args.slice(0, -1).map((a, i) => (i === verbIndex ? `s${a}` : a));
+	return { verbIndex, checkValue, getArgs, setArgs };
+}
+
 /** True if `packageName` is installed on the device (via `pm list packages`). */
 export async function isPackageInstalled(adb: Adb, packageName: string): Promise<boolean> {
 	const process = await adb.subprocess.noneProtocol.spawn(`pm list packages ${packageName}`);
@@ -124,16 +149,14 @@ export class HeadsetSetup {
 		logger.debug(`[${serial}] Checking on-device shell settings...`);
 
 		for (const args of ON_DEVICE_ADB_SHELL_SETTINGS) {
-			const verbIndex = args.findIndex((a) => a.startsWith("et"));
-			if (verbIndex === -1) {
+			const derived = deriveShellGetSet(args);
+			if (!derived) {
 				logger.warn(`[${serial}] Shell setting entry has no 'et'-prefixed verb, skipping: ${args.join(" ")}`);
 				continue;
 			}
 
-			const checkValue = args[args.length - 1];
+			const { checkValue, getArgs, setArgs } = derived;
 
-			// Get command: verb → "g"+verb, drop the last 2 elements (set_value + check_value)
-			const getArgs = args.slice(0, -2).map((a, i) => (i === verbIndex ? `g${a}` : a));
 			const getProcess = await adb.subprocess.noneProtocol.spawn(getArgs.join(" "));
 			let getOutput = "";
 			// @ts-expect-error
@@ -145,8 +168,6 @@ export class HeadsetSetup {
 
 			if (getOutput.trim().includes(checkValue)) continue;
 
-			// Set command: verb → "s"+verb, drop only the last element (check_value)
-			const setArgs = args.slice(0, -1).map((a, i) => (i === verbIndex ? `s${a}` : a));
 			logger.debug(`[${serial}] Shell setting '${setArgs.join(" ")}' isn't correct, fixing it...`);
 			const setProcess = await adb.subprocess.noneProtocol.spawn(setArgs.join(" "));
 			let setOutput = "";

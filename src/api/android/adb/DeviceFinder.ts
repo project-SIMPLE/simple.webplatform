@@ -1,7 +1,7 @@
 // @ts-expect-error
 
 import { exec } from "node:child_process";
-import { networkInterfaces } from "node:os";
+import { type NetworkInterfaceInfo, networkInterfaces } from "node:os";
 import { getLogger } from "@logtape/logtape";
 import Evilscan from "evilscan";
 import { ENV_EXTRA_VERBOSE, ENV_VERBOSE, HEADSETS_IP } from "../../index.ts";
@@ -10,6 +10,36 @@ import type { AdbManager } from "./AdbManager.ts";
 // Override the log function
 const logger = getLogger(["android", "DeviceFinder"]);
 const loggerES = getLogger(["android", "DeviceFinder", "EvilScan"]);
+
+// Subnet the platform auto-scans for headsets. Keep in sync with TuiConfig.
+const HEADSET_SUBNET_PREFIX = "192.168.68";
+
+/** Strict IPv4 literal check (four 1–3 digit octets). Guards against command injection. */
+export function isValidIpv4Literal(ip: string): boolean {
+	return /^\d{1,3}(\.\d{1,3}){3}$/.test(ip);
+}
+
+/** True if `ip` sits in the subnet DeviceFinder is allowed to auto-scan. */
+export function isOnHeadsetSubnet(ip: string): boolean {
+	return ip.startsWith(HEADSET_SUBNET_PREFIX);
+}
+
+/**
+ * Pick this machine's local IPv4 from the interface table, skipping loopback/VPN
+ * interfaces and IPv6/loopback addresses. Mirrors the walk in autoDetectDevices;
+ * returns "" when nothing suitable is found.
+ */
+export function pickServerLocalIp(interfaces: NodeJS.Dict<NetworkInterfaceInfo[]>): string {
+	let serverLocalIp = "";
+	for (const [interfaceName, interfaceInfo] of Object.entries(interfaces)) {
+		if (interfaceName.startsWith("lo") || interfaceName.startsWith("tail")) continue;
+		for (const i of interfaceInfo ?? []) {
+			if (i.family === "IPv6" || i.address.startsWith("127.0.0")) continue;
+			serverLocalIp = i.address;
+		}
+	}
+	return serverLocalIp;
+}
 
 class DeviceFinder {
 	adbManager: AdbManager;
@@ -88,7 +118,7 @@ class DeviceFinder {
 	private isDeviceReachable(ipAddress: string): Promise<boolean> {
 		return new Promise((resolve) => {
 			// Sanitize: only allow valid IPv4 to prevent command injection
-			if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ipAddress)) {
+			if (!isValidIpv4Literal(ipAddress)) {
 				resolve(false);
 				return;
 			}
@@ -149,22 +179,14 @@ class DeviceFinder {
 		let finishedScanning: boolean = false;
 
 		try {
-			for (const [interfaceName, interfaceInfo] of Object.entries(networkInterfaces())) {
-				// Skip localhost/vpn interfaces
-				if (interfaceName.startsWith("lo") || interfaceName.startsWith("tail")) continue;
-
-				for (const i of interfaceInfo!) {
-					if (i.family === "IPv6" || i.address.startsWith("127.0.0")) continue;
-					else serverLocalIp = i.address;
-				}
-			}
+			serverLocalIp = pickServerLocalIp(networkInterfaces());
 		} catch (e) {
 			loggerES.error("Can't find the ip address for your device...\n{e}", { e });
 		} finally {
 			loggerES.debug(`Scanning over IP subnet: ${serverLocalIp}/24`);
 		}
 
-		if (!serverLocalIp.startsWith("192.168.68")) {
+		if (!isOnHeadsetSubnet(serverLocalIp)) {
 			loggerES.warn("Disable device auto-scan because server is not in the default IP range");
 			return;
 		}
