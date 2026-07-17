@@ -17,7 +17,6 @@ import Device = AdbServerClient.Device;
 import { readFile, stat } from "node:fs/promises";
 
 import { getLogger } from "@logtape/logtape";
-import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
 import {
 	ON_DEVICE_ADB_BROADCASTS,
 	ON_DEVICE_ADB_GLOBAL_SETTINGS,
@@ -26,8 +25,33 @@ import {
 	ON_DEVICE_ADB_SYSTEM_SETTINGS,
 	ON_DEVICE_OVR_PREFS,
 } from "../../core/Constants.ts";
+import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
 
 const logger = getLogger(["android", "HeadsetSetup"]);
+
+/**
+ * Extract a dotted version (e.g. "1.2.3") from an APK filename like
+ * "MyApp-1.2.3.apk". Returns null when no version suffix is present.
+ */
+export function parseApkVersion(apkFile: string): string | null {
+	const match = apkFile.match(/-(\d+(?:\.\d+)+)\.apk$/);
+	return match ? match[1] : null;
+}
+
+/**
+ * Compare two dotted version strings. Returns a negative number when a < b,
+ * a positive number when a > b, and 0 when they are equal. Missing segments
+ * are treated as 0 (so "1.2" === "1.2.0").
+ */
+export function compareVersions(a: string, b: string): number {
+	const pa = a.split(".").map(Number);
+	const pb = b.split(".").map(Number);
+	for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+		const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
+		if (diff !== 0) return diff;
+	}
+	return 0;
+}
 
 export class HeadsetSetup {
 	private adbServer: AdbServerClient;
@@ -239,7 +263,7 @@ export class HeadsetSetup {
 		];
 
 		for (const { packageName, apkFile, permission, needsToStart } of REQUIRED_APPS) {
-			const targetVersion = this.parseApkVersion(apkFile);
+			const targetVersion = parseApkVersion(apkFile);
 			logger.debug(`[${serial}] Checking '${packageName}'${targetVersion ? ` (target: v${targetVersion})` : ""}...`);
 
 			const isInstalled = await this.isPackageInstalled(adb, packageName);
@@ -249,7 +273,7 @@ export class HeadsetSetup {
 				if (!(await this.installApk(adb, serial, resolveToolkitAsset(apkFile)))) continue;
 			} else if (targetVersion) {
 				const installedVersion = await this.getInstalledVersion(adb, packageName);
-				if (!installedVersion || this.compareVersions(installedVersion, targetVersion) < 0) {
+				if (!installedVersion || compareVersions(installedVersion, targetVersion) < 0) {
 					logger.info(
 						`[${serial}] '${packageName}' v${installedVersion ?? "?"} → v${targetVersion} — uninstalling first (signature may differ)...`,
 					);
@@ -275,21 +299,6 @@ export class HeadsetSetup {
 			}
 			logger.info(`[${serial}] All good updating '${packageName}' application :)`);
 		}
-	}
-
-	private parseApkVersion(apkFile: string): string | null {
-		const match = apkFile.match(/-(\d+(?:\.\d+)+)\.apk$/);
-		return match ? match[1] : null;
-	}
-
-	private compareVersions(a: string, b: string): number {
-		const pa = a.split(".").map(Number);
-		const pb = b.split(".").map(Number);
-		for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-			const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
-			if (diff !== 0) return diff;
-		}
-		return 0;
 	}
 
 	private async isPackageInstalled(adb: Adb, packageName: string): Promise<boolean> {

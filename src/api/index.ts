@@ -3,14 +3,15 @@
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { getRotatingFileSink } from "@logtape/file";
 import { configure, fingersCrossed, getConsoleSink, getLevelFilter, getLogger, withFilter } from "@logtape/logtape";
 import { getPrettyFormatter } from "@logtape/pretty";
 import dotenv from "dotenv";
 import Controller from "./core/Controller.ts";
 import { isMacMini } from "./infra/DeviceDetector.ts";
-import { ensureConfig } from "./infra/TuiConfig.ts";
 import { StaticServer } from "./infra/StaticServer.ts";
+import { ensureConfig } from "./infra/TuiConfig.ts";
 
 /*
     TOOLBOX ================================
@@ -18,7 +19,7 @@ import { StaticServer } from "./infra/StaticServer.ts";
 
 // Extracts the first valid IPv4 address found in a string, or returns null.
 // Used to sanitize HEADSETS_IP entries that may carry stray characters (e.g. trailing quotes).
-const _extractIPv4 = (raw: string): string | null => {
+export const _extractIPv4 = (raw: string): string | null => {
 	const match = raw.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
 	if (!match) return null;
 	const ip = match[1];
@@ -252,7 +253,24 @@ async function main() {
 	await start();
 }
 
-main().catch((err) => {
-	console.error("Failed to start application:", err);
-	process.exit(1);
-});
+// Only boot the platform when this module is the process entry point. Importing
+// it (e.g. from the test suite) must not spin up servers, adb, timers, etc.
+function _isEntryPoint(): boolean {
+	// In a packaged SEA build this bundle is always the entry point.
+	if (IS_PLATFORM_PACKAGED) return true;
+	try {
+		const entry = process.argv[1] ? path.resolve(process.argv[1]) : "";
+		const self = fileURLToPath(import.meta.url);
+		// Match dev (`tsx src/api/index.ts`) and any compiled `.js`/`.cjs` sibling.
+		return entry === self || entry === self.replace(/\.ts$/, ".js") || entry === self.replace(/\.ts$/, ".cjs");
+	} catch {
+		return false;
+	}
+}
+
+if (_isEntryPoint()) {
+	main().catch((err) => {
+		console.error("Failed to start application:", err);
+		process.exit(1);
+	});
+}
