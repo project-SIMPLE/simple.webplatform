@@ -1,69 +1,66 @@
-import { readFile } from "node:fs/promises";
-import { AdbScrcpyClient, AdbScrcpyOptions3_3_3 } from "@yume-chan/adb-scrcpy";
-import { DefaultServerPath, type ScrcpyMediaStreamPacket } from "@yume-chan/scrcpy";
-import { ReadableStream } from "@yume-chan/stream-extra";
+import type { Adb } from "@yume-chan/adb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { resolveToolkitAsset } from "../../src/api/infra/ToolkitAssets.ts";
+import type { AdbManager } from "../../src/api/android/adb/AdbManager.ts";
+import { ScrcpyServer } from "../../src/api/android/scrcpy/ScrcpyServer.ts";
 import { type AdbConnection, connectFirstDevice } from "../setup/adb-connect.ts";
 import { isAdbDeviceReady } from "../setup/adb-probe.ts";
+import { freePort } from "../setup/free-port.ts";
+import { openClient } from "../setup/ws-client.ts";
 
-// Streams the device screen with scrcpy the way the platform does: it pushes the
-// SAME toolkit scrcpy server binary (via resolveToolkitAsset) and starts it with
-// the SAME @yume-chan client/options as ScrcpyServer.runSession, then asserts real
-// video frames arrive from the emulator. The Wi-Fi IP-serial gate and the uWS
-// fan-out in startStreaming are platform plumbing, not scrcpy, and are out of
-// scope here (runSession blocks on client.exited, so it isn't directly awaitable).
+// Drives the REAL platform streaming path: ScrcpyServer.runSession pushes the
+// toolkit scrcpy server, starts it, registers the stream and fans video frames
+// out over its uWS control (`/`) and per-device data (`/stream/:ip`) sockets. We
+// connect real ws clients and assert the real announcements + encoded frames.
 //
-// NB: a single session per file — starting a second session back-to-back races
-// with the device-side server teardown ("Aborted"); the platform itself waits a
-// 1s cooldown between restarts for the same reason.
+// runSession is private and takes an explicit streamIp (the Wi-Fi IP-serial gate
+// lives in startStreaming, not here), so we call it via a typed cast with a
+// synthetic "127.0.0.1" key — the same value a real headset serial would yield.
 const reachable = isAdbDeviceReady();
 if (!reachable) {
 	console.warn("[adb] No adb device/emulator attached — skipping scrcpy streaming tests.");
 }
 
-// Mirrors the video-only subset of ScrcpyServer.runSession's options.
-function scrcpyOptions() {
-	return new AdbScrcpyOptions3_3_3(
-		{
-			videoCodec: "h264", // universally supported by the emulator encoder
-			video: true,
-			audio: false,
-			control: false,
-			maxSize: 800,
-			maxFps: 15,
-			videoBitRate: 2_000_000,
-			stayAwake: true,
-		},
-		{ version: "3.3.4" },
-	);
-}
+const STREAM_IP = "127.0.0.1";
 
-describe.skipIf(!reachable)("scrcpy streaming (real device/emulator)", () => {
+// The private members runSession-driven tests need to reach on the real instance.
+type ScrcpySession = { close(): Promise<void>; exited: Promise<unknown> };
+type ScrcpyInternals = {
+	useH265: boolean;
+	runSession(adb: Adb, streamIp: string, deviceModel: string, flipWidth: boolean): Promise<boolean>;
+	scrcpyClientsByIp: Map<string, ScrcpySession>;
+};
+
+describe.skipIf(!reachable)("ScrcpyServer streaming (real device/emulator)", () => {
 	let conn: AdbConnection;
+	let server: ScrcpyServer;
+	let internals: ScrcpyInternals;
+	let port: number;
+	let sessionPromise: Promise<boolean> | undefined;
 
 	beforeAll(async () => {
 		conn = await connectFirstDevice();
-		// Push the toolkit scrcpy server once (mirrors runSession's sync.write).
-		const serverBytes = new Uint8Array(await readFile(resolveToolkitAsset("scrcpyServer-v3.3.4-rom1v")));
-		expect(serverBytes.byteLength).toBeGreaterThan(0);
-		const sync = await conn.adb.sync();
-		try {
-			await sync.write({
-				filename: DefaultServerPath,
-				file: new ReadableStream({
-					start: (controller) => {
-						controller.enqueue(serverBytes);
-						controller.close();
-					},
-				}),
-			});
-		} finally {
-			await sync.dispose();
-		}
+		port = await freePort();
+		process.env.VIDEO_WS_PORT = String(port);
+		process.env.WEB_APPLICATION_HOST = "127.0.0.1";
+
+		// Real ScrcpyServer. The AdbManager is only touched on error/reconnect paths.
+		server = new ScrcpyServer({ disconnectDevice: async () => {} } as unknown as AdbManager);
+		internals = server as unknown as ScrcpyInternals;
+		// Force h264 (universally supported by the emulator encoder); the platform
+		// starts optimistic h265 and downgrades on client capability — same field.
+		internals.useH265 = false;
 	});
 
 	afterAll(async () => {
+		// Gracefully end the live session so runSession unblocks, then release adb.
+		try {
+			const client = internals?.scrcpyClientsByIp.get(STREAM_IP);
+			await client?.close().catch(() => {});
+			await client?.exited.catch(() => {});
+			await sessionPromise?.catch(() => {});
+		} catch {
+			/* ignore */
+		}
 		try {
 			await conn?.adb?.close();
 		} catch {
@@ -71,41 +68,32 @@ describe.skipIf(!reachable)("scrcpy streaming (real device/emulator)", () => {
 		}
 	});
 
-	it("negotiates metadata and delivers a configuration header, a keyframe, and data packets", async () => {
-		const client = await AdbScrcpyClient.start(conn.adb, DefaultServerPath, scrcpyOptions());
-		const types: string[] = [];
-		let dataPackets = 0;
-		let sawKeyframe = false;
-		try {
-			const { metadata, stream } = await client.videoStream;
-			// Real display metadata from the device.
-			expect(metadata.width ?? 0).toBeGreaterThan(0);
-			expect(metadata.height ?? 0).toBeGreaterThan(0);
+	it("announces the stream and fans real video frames to a data-socket client", async () => {
+		// 1. A control client connects before the session starts.
+		const control = openClient(`ws://127.0.0.1:${port}`);
+		await control.waitOpen();
 
-			// Drain the single session until we've seen a config header, a keyframe,
-			// and a couple of data packets (or hit the packet cap).
-			const reader = stream.getReader();
-			try {
-				for (let i = 0; i < 60 && !(types.includes("configuration") && sawKeyframe && dataPackets >= 2); i++) {
-					const { value, done } = await reader.read();
-					if (done) break;
-					const packet = value as ScrcpyMediaStreamPacket;
-					types.push(packet.type);
-					if (packet.type === "data") {
-						dataPackets++;
-						if (packet.keyframe) sawKeyframe = true;
-					}
-				}
-			} finally {
-				await reader.cancel().catch(() => {});
-			}
-		} finally {
-			await client.close().catch(() => {});
-			await client.exited.catch(() => {});
-		}
+		// 2. Fire the real supervisor session (blocks on client.exited; don't await).
+		sessionPromise = internals.runSession(conn.adb, STREAM_IP, "emulator", false);
 
-		expect(types).toContain("configuration");
-		expect(dataPackets).toBeGreaterThanOrEqual(1);
-		expect(sawKeyframe).toBe(true);
-	}, 60_000);
+		// 3. The control socket is told the stream is available.
+		const available = await control.waitFor((m) => m.type === "stream_available" && m.streamId === STREAM_IP, 25_000);
+		expect(available.streamId).toBe(STREAM_IP);
+
+		// 4. Open the per-device data socket and expect a real config header + frame.
+		const data = openClient(`ws://127.0.0.1:${port}/stream/${STREAM_IP}`);
+		await data.waitOpen();
+
+		const config = await data.waitFor((m) => m.type === "configuration", 25_000);
+		expect(config.streamId).toBe(STREAM_IP);
+		expect(typeof config.data).toBe("string");
+
+		const frame = await data.waitFor((m) => m.type === "data", 25_000);
+		expect(frame.streamId).toBe(STREAM_IP);
+		expect(typeof frame.data).toBe("string"); // base64 payload
+		expect((frame.data as string).length).toBeGreaterThan(0);
+
+		await data.close();
+		await control.close();
+	}, 40_000);
 });
