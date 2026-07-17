@@ -53,6 +53,28 @@ export function compareVersions(a: string, b: string): number {
 	return 0;
 }
 
+/** True if `packageName` is installed on the device (via `pm list packages`). */
+export async function isPackageInstalled(adb: Adb, packageName: string): Promise<boolean> {
+	const process = await adb.subprocess.noneProtocol.spawn(`pm list packages ${packageName}`);
+	let output = "";
+	// @ts-expect-error
+	for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
+		output += chunk;
+	}
+	return output.includes(`package:${packageName}`);
+}
+
+/** Installed `versionName` of `packageName` (via `dumpsys package`), or null if absent. */
+export async function getInstalledVersion(adb: Adb, packageName: string): Promise<string | null> {
+	const process = await adb.subprocess.noneProtocol.spawn(`dumpsys package ${packageName}`);
+	let output = "";
+	// @ts-expect-error
+	for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
+		output += chunk;
+	}
+	return output.match(/versionName=(\S+)/)?.[1] ?? null;
+}
+
 export class HeadsetSetup {
 	private adbServer: AdbServerClient;
 
@@ -238,7 +260,7 @@ export class HeadsetSetup {
 		const APPS_TO_REMOVE: string[] = ["com.tpn.adbautoenable"];
 
 		for (const packageName of APPS_TO_REMOVE) {
-			const isInstalled = await this.isPackageInstalled(adb, packageName);
+			const isInstalled = await isPackageInstalled(adb, packageName);
 			if (isInstalled) {
 				logger.warn(`[${serial}] '${packageName}' is installed — removing...`);
 				await this.uninstallPackage(adb, serial, packageName);
@@ -266,13 +288,13 @@ export class HeadsetSetup {
 			const targetVersion = parseApkVersion(apkFile);
 			logger.debug(`[${serial}] Checking '${packageName}'${targetVersion ? ` (target: v${targetVersion})` : ""}...`);
 
-			const isInstalled = await this.isPackageInstalled(adb, packageName);
+			const isInstalled = await isPackageInstalled(adb, packageName);
 
 			if (!isInstalled) {
 				logger.warn(`[${serial}] '${packageName}' is not installed — installing...`);
 				if (!(await this.installApk(adb, serial, resolveToolkitAsset(apkFile)))) continue;
 			} else if (targetVersion) {
-				const installedVersion = await this.getInstalledVersion(adb, packageName);
+				const installedVersion = await getInstalledVersion(adb, packageName);
 				if (!installedVersion || compareVersions(installedVersion, targetVersion) < 0) {
 					logger.info(
 						`[${serial}] '${packageName}' v${installedVersion ?? "?"} → v${targetVersion} — uninstalling first (signature may differ)...`,
@@ -299,26 +321,6 @@ export class HeadsetSetup {
 			}
 			logger.info(`[${serial}] All good updating '${packageName}' application :)`);
 		}
-	}
-
-	private async isPackageInstalled(adb: Adb, packageName: string): Promise<boolean> {
-		const process = await adb.subprocess.noneProtocol.spawn(`pm list packages ${packageName}`);
-		let output = "";
-		// @ts-expect-error
-		for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
-			output += chunk;
-		}
-		return output.includes(`package:${packageName}`);
-	}
-
-	private async getInstalledVersion(adb: Adb, packageName: string): Promise<string | null> {
-		const process = await adb.subprocess.noneProtocol.spawn(`dumpsys package ${packageName}`);
-		let output = "";
-		// @ts-expect-error
-		for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
-			output += chunk;
-		}
-		return output.match(/versionName=(\S+)/)?.[1] ?? null;
 	}
 
 	private async uninstallPackage(adb: Adb, serial: string, packageName: string): Promise<void> {
