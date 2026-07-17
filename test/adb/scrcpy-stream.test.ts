@@ -13,6 +13,10 @@ import { isAdbDeviceReady } from "../setup/adb-probe.ts";
 // video frames arrive from the emulator. The Wi-Fi IP-serial gate and the uWS
 // fan-out in startStreaming are platform plumbing, not scrcpy, and are out of
 // scope here (runSession blocks on client.exited, so it isn't directly awaitable).
+//
+// NB: a single session per file — starting a second session back-to-back races
+// with the device-side server teardown ("Aborted"); the platform itself waits a
+// 1s cooldown between restarts for the same reason.
 const reachable = isAdbDeviceReady();
 if (!reachable) {
 	console.warn("[adb] No adb device/emulator attached — skipping scrcpy streaming tests.");
@@ -67,39 +71,22 @@ describe.skipIf(!reachable)("scrcpy streaming (real device/emulator)", () => {
 		}
 	});
 
-	it("negotiates display metadata and a first frame", async () => {
-		const client = await AdbScrcpyClient.start(conn.adb, DefaultServerPath, scrcpyOptions());
-		try {
-			const { metadata, stream } = await client.videoStream;
-			expect(metadata.width ?? 0).toBeGreaterThan(0);
-			expect(metadata.height ?? 0).toBeGreaterThan(0);
-
-			const reader = stream.getReader();
-			try {
-				const { value, done } = await reader.read();
-				expect(done).toBe(false);
-				const packet = value as ScrcpyMediaStreamPacket;
-				expect(["configuration", "data"]).toContain(packet.type);
-				expect(packet.data.byteLength).toBeGreaterThan(0);
-			} finally {
-				await reader.cancel().catch(() => {});
-			}
-		} finally {
-			await client.close().catch(() => {});
-			await client.exited.catch(() => {});
-		}
-	}, 60_000);
-
-	it("delivers a configuration header, a keyframe, and multiple data packets", async () => {
+	it("negotiates metadata and delivers a configuration header, a keyframe, and data packets", async () => {
 		const client = await AdbScrcpyClient.start(conn.adb, DefaultServerPath, scrcpyOptions());
 		const types: string[] = [];
 		let dataPackets = 0;
 		let sawKeyframe = false;
 		try {
-			const { stream } = await client.videoStream;
+			const { metadata, stream } = await client.videoStream;
+			// Real display metadata from the device.
+			expect(metadata.width ?? 0).toBeGreaterThan(0);
+			expect(metadata.height ?? 0).toBeGreaterThan(0);
+
+			// Drain the single session until we've seen a config header, a keyframe,
+			// and a couple of data packets (or hit the packet cap).
 			const reader = stream.getReader();
 			try {
-				for (let i = 0; i < 40 && dataPackets < 3; i++) {
+				for (let i = 0; i < 60 && !(types.includes("configuration") && sawKeyframe && dataPackets >= 2); i++) {
 					const { value, done } = await reader.read();
 					if (done) break;
 					const packet = value as ScrcpyMediaStreamPacket;
