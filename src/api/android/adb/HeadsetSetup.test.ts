@@ -1,6 +1,6 @@
 import type { AdbServerClient } from "@yume-chan/adb";
 import { describe, expect, it, vi } from "vitest";
-import { compareVersions, HeadsetSetup, parseApkVersion } from "./HeadsetSetup.ts";
+import { compareVersions, deriveShellGetSet, HeadsetSetup, parseApkVersion } from "./HeadsetSetup.ts";
 
 type Device = Parameters<HeadsetSetup["setupHeadset"]>[0];
 
@@ -29,6 +29,35 @@ describe("compareVersions", () => {
 
 	it("returns 0 for equal versions", () => {
 		expect(compareVersions("3.4.5", "3.4.5")).toBe(0);
+	});
+});
+
+describe("deriveShellGetSet", () => {
+	it("derives get (g-verb, drops set+check) and set (s-verb, drops check)", () => {
+		// [...shared, set_value, check_value] with an "et"-prefixed verb.
+		const derived = deriveShellGetSet(["am", "et-standby-bucket", "com.oculus.updater", "restricted", "5"]);
+		expect(derived).not.toBeNull();
+		expect(derived?.checkValue).toBe("5");
+		expect(derived?.getArgs).toEqual(["am", "get-standby-bucket", "com.oculus.updater"]);
+		expect(derived?.setArgs).toEqual(["am", "set-standby-bucket", "com.oculus.updater", "restricted"]);
+	});
+
+	it("handles set_value and check_value differing", () => {
+		const derived = deriveShellGetSet([
+			"cmd",
+			"appops",
+			"et",
+			"com.oculus.updater",
+			"RUN_ANY_IN_BACKGROUND",
+			"deny",
+			"deny",
+		]);
+		expect(derived?.getArgs).toEqual(["cmd", "appops", "get", "com.oculus.updater", "RUN_ANY_IN_BACKGROUND"]);
+		expect(derived?.setArgs).toEqual(["cmd", "appops", "set", "com.oculus.updater", "RUN_ANY_IN_BACKGROUND", "deny"]);
+	});
+
+	it("returns null when no 'et'-prefixed verb is present", () => {
+		expect(deriveShellGetSet(["am", "foo", "bar", "baz"])).toBeNull();
 	});
 });
 
