@@ -5,14 +5,18 @@ import { compareVersions, deriveShellGetSet, HeadsetSetup, parseApkVersion } fro
 type Device = Parameters<HeadsetSetup["setupHeadset"]>[0];
 
 describe("parseApkVersion", () => {
-	it("extracts a dotted version from an APK filename", () => {
-		expect(parseApkVersion("MyApp-1.2.3.apk")).toBe("1.2.3");
-		expect(parseApkVersion("some.long-name-10.0.apk")).toBe("10.0");
+	it("extracts a dotted version from the filename (fast path)", async () => {
+		expect(await parseApkVersion("MyApp-1.2.3.apk")).toBe("1.2.3");
+		expect(await parseApkVersion("some.long-name-10.0.apk")).toBe("10.0");
 	});
 
-	it("returns null when there is no version suffix", () => {
-		expect(parseApkVersion("MyApp.apk")).toBeNull();
-		expect(parseApkVersion("MyApp-beta.apk")).toBeNull();
+	it("reads android:versionName from a toolkit APK's manifest (slow path)", async () => {
+		expect(await parseApkVersion("eu.project_simple.no-loft.apk")).toBe("999.9.9.9.99");
+	});
+
+	it("returns null when neither the filename nor a resolvable APK yields a version", async () => {
+		expect(await parseApkVersion("MyApp.apk")).toBeNull();
+		expect(await parseApkVersion("does-not-exist.apk")).toBeNull();
 	});
 });
 
@@ -87,10 +91,10 @@ describe("version/shell helpers — adversarial inputs", () => {
 		expect(compareVersions("2", "")).toBeGreaterThan(0);
 	});
 
-	it("parseApkVersion needs a dotted version right before .apk", () => {
-		expect(parseApkVersion("app-1.apk")).toBeNull(); // single number, no dot
-		expect(parseApkVersion("app-1.2.3-beta.apk")).toBeNull(); // suffix after version
-		expect(parseApkVersion("app-1.2.apk")).toBe("1.2");
+	it("parseApkVersion needs a dotted version right before .apk", async () => {
+		expect(await parseApkVersion("app-1.apk")).toBeNull(); // single number, no dot → slow path, no such APK
+		expect(await parseApkVersion("app-1.2.3-beta.apk")).toBeNull(); // suffix after version
+		expect(await parseApkVersion("app-1.2.apk")).toBe("1.2");
 	});
 
 	it("deriveShellGetSet returns null without an 'et'-verb and tolerates too-short entries", () => {

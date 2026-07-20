@@ -26,16 +26,27 @@ import {
 	ON_DEVICE_OVR_PREFS,
 } from "../../core/Constants.ts";
 import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
+import { readApkVersionName } from "./ApkInspector.ts";
 
 const logger = getLogger(["android", "HeadsetSetup"]);
 
 /**
- * Extract a dotted version (e.g. "1.2.3") from an APK filename like
- * "MyApp-1.2.3.apk". Returns null when no version suffix is present.
+ * Resolve the target version of a toolkit APK. Fast path: a dotted version encoded
+ * in the filename (e.g. "MyApp-1.2.3.apk"). Slow path: crack the APK open and read
+ * android:versionName from its compiled manifest (via ApkInspector). Returns null
+ * when neither is available.
  */
-export function parseApkVersion(apkFile: string): string | null {
-	const match = apkFile.match(/-(\d+(?:\.\d+)+)\.apk$/);
-	return match ? match[1] : null;
+export async function parseApkVersion(apkFile: string): Promise<string | null> {
+	const fileNameMatch = apkFile.match(/-(\d+(?:\.\d+)+)\.apk$/);
+	if (fileNameMatch !== null) return fileNameMatch[1];
+
+	try {
+		const apkBytes = await readFile(resolveToolkitAsset(apkFile));
+		return readApkVersionName(apkBytes);
+	} catch (e) {
+		logger.warn(`Could not inspect version of APK '${apkFile}': {e}`, { e });
+		return null;
+	}
 }
 
 /**
@@ -303,10 +314,16 @@ export class HeadsetSetup {
 				permission: "android.permission.WRITE_SECURE_SETTINGS",
 				needsToStart: true,
 			},
+			{
+				packageName: "com.meta.shell.env.footprint.haven2025",
+				apkFile: "eu.project_simple.no-loft.apk",
+				permission: "",
+				needsToStart: false,
+			},
 		];
 
 		for (const { packageName, apkFile, permission, needsToStart } of REQUIRED_APPS) {
-			const targetVersion = parseApkVersion(apkFile);
+			const targetVersion = await parseApkVersion(apkFile);
 			logger.debug(`[${serial}] Checking '${packageName}'${targetVersion ? ` (target: v${targetVersion})` : ""}...`);
 
 			const isInstalled = await isPackageInstalled(adb, packageName);
@@ -327,7 +344,7 @@ export class HeadsetSetup {
 				}
 			}
 
-			await this.ensurePermission(adb, serial, packageName, permission);
+			if (permission !== "") await this.ensurePermission(adb, serial, packageName, permission);
 
 			if (needsToStart) {
 				logger.debug(`[${serial}] First time installing '${packageName}', needs to start the application once...`);
