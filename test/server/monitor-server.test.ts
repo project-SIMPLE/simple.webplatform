@@ -84,3 +84,59 @@ describe("MonitorServer over a real WebSocket", () => {
 		expect(controller.model_manager?.setActiveModelByIndex).not.toHaveBeenCalled();
 	});
 });
+
+// Adversarial inputs. The non-JSON-frame fragility (unguarded JSON.parse in the
+// message handler) is documented in test/chaos-findings.md, not run here (it
+// surfaces as uncaughtException and would fail the run).
+describe("MonitorServer chaos — malformed input", () => {
+	let server: MonitorServer;
+	let controller: Controller;
+	let client: TestClient;
+
+	beforeEach(async () => {
+		const port = await freePort();
+		process.env.MONITOR_WS_PORT = String(port);
+		controller = recordingController();
+		server = new MonitorServer(controller);
+		client = openClient(`ws://127.0.0.1:${port}`);
+		await client.waitOpen();
+	});
+
+	afterEach(async () => {
+		await client.close();
+		server.close();
+	});
+
+	it("ignores an unknown command type and keeps routing valid ones", async () => {
+		client.send({ type: "totally_unknown_command" });
+		client.send({ type: "launch_experiment" });
+		await vi.waitFor(() => expect(controller.launchExperiment).toHaveBeenCalledTimes(1));
+	});
+
+	it.each([-1, 9999, undefined])("ignores get_simulation_by_index with a bad index (%s)", async (simulationIndex) => {
+		client.send({ type: "get_simulation_by_index", simulationIndex });
+		await expect(client.waitFor((m) => m.type === "get_simulation_by_index", 400)).rejects.toThrow(/timed out/);
+		expect(controller.model_manager?.setActiveModelByIndex).not.toHaveBeenCalled();
+	});
+
+	it("treats a NaN index as 0 — JSON serializes NaN→null and null passes the >=0 bounds check (see chaos-findings.md)", async () => {
+		client.send({ type: "get_simulation_by_index", simulationIndex: Number.NaN });
+		const reply = await client.waitFor((m) => m.type === "get_simulation_by_index", 1000);
+		expect(reply.simulation).toEqual(SETTINGS);
+		expect(controller.model_manager?.setActiveModelByIndex).toHaveBeenCalledWith(null);
+	});
+
+	it("does not add a player when add_player_headset omits the id", async () => {
+		client.send({ type: "add_player_headset" });
+		client.send({ type: "launch_experiment" }); // sentinel proving the message was processed
+		await vi.waitFor(() => expect(controller.launchExperiment).toHaveBeenCalled());
+		expect(controller.addInGamePlayer).not.toHaveBeenCalled();
+	});
+
+	it("does not purge a player when remove_player_headset omits the id", async () => {
+		client.send({ type: "remove_player_headset" });
+		client.send({ type: "launch_experiment" });
+		await vi.waitFor(() => expect(controller.launchExperiment).toHaveBeenCalled());
+		expect(controller.purgePlayer).not.toHaveBeenCalled();
+	});
+});

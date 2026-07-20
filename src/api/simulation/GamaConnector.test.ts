@@ -35,6 +35,7 @@ type FakeWebSocket = InstanceType<typeof FakeWebSocket>;
 
 vi.mock("ws", () => ({ default: FakeWebSocket }));
 
+import { GAMA_ERROR_MESSAGES } from "../core/Constants.ts";
 import type Controller from "../core/Controller.ts";
 import GamaConnector from "./GamaConnector.ts";
 
@@ -206,3 +207,83 @@ describe("GamaConnector command guards", () => {
 function receive_state(_gama: GamaConnector, socket: FakeWebSocket, state: string) {
 	socket.onmessage?.({ data: JSON.stringify({ type: "SimulationStatus", exp_id: "e1", content: state }) });
 }
+
+// Adversarial frames, faults and wrong-order commands driven through the real
+// on* handlers. NB: stopExperiment() with nothing running loops forever waiting
+// for PAUSED — a hang, documented in test/chaos-findings.md, not run here.
+describe("GamaConnector chaos — malformed frames & lifecycle", () => {
+	function receive(socket: FakeWebSocket, raw: unknown) {
+		socket.onmessage?.({ data: typeof raw === "string" ? raw : JSON.stringify(raw) });
+	}
+
+	it("survives a non-JSON frame without changing state", () => {
+		const { gama, socket } = newConnector();
+		socket.onopen?.();
+		const before = { ...gama.getJsonGama() };
+		expect(() => receive(socket, "definitely not json {{{")).not.toThrow();
+		expect(gama.getJsonGama()).toEqual(before);
+	});
+
+	it("ignores an unknown message type", () => {
+		const { gama, socket } = newConnector();
+		receive(socket, { type: "SomethingWeInvented", content: "x" });
+		expect(gama.getJsonGama().content_error).toBe("");
+		expect(gama.getJsonGama().experiment_state).toBe("NONE");
+	});
+
+	it.each(GAMA_ERROR_MESSAGES)("records the %s error frame as content_error", (type) => {
+		const { gama, socket } = newConnector();
+		const frame = { type, content: "boom" };
+		receive(socket, frame);
+		expect(gama.getJsonGama().content_error).toEqual(frame);
+	});
+
+	it("does not broadcast a SimulationOutput whose content is not JSON", () => {
+		const { controller, socket } = newConnector();
+		expect(() => receive(socket, { type: "SimulationOutput", content: "not-json{{{" })).not.toThrow();
+		expect(controller.broadcastSimulationOutput).not.toHaveBeenCalled();
+	});
+
+	it("cleans up when the socket closes mid-experiment", () => {
+		const { gama, controller, socket } = newConnector();
+		receive(socket, { type: "SimulationStatus", exp_id: "e1", content: "RUNNING" });
+		socket.onclose?.({ wasClean: false });
+		expect(gama.getJsonGama().connected).toBe(false);
+		expect(gama.getJsonGama().experiment_state).toBe("NONE");
+		expect(controller.cancelLaunchInterval).toHaveBeenCalled();
+		expect(controller.player_manager.disableAllPlayerInGame).toHaveBeenCalled();
+	});
+
+	it("reconnects after a connection error (GAMA appearing late)", () => {
+		vi.useFakeTimers();
+		try {
+			const { socket } = newConnector();
+			const before = FakeWebSocket.instances.length;
+			socket.onerror?.({ error: { code: "ECONNREFUSED" } });
+			socket.readyState = 3; // the errored socket is now CLOSED
+			vi.advanceTimersByTime(5000);
+			expect(FakeWebSocket.instances.length).toBe(before + 1);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("guards commands issued in the wrong state (no frames sent)", () => {
+		const { gama, socket } = newConnector();
+		socket.onopen?.(); // connected, state NONE
+		gama.pauseExperiment(); // only acts while RUNNING
+		gama.resumeExperiment(); // only acts while PAUSED
+		gama.removeInGamePlayer("p1"); // NONE/NOTREADY guard
+		gama.sendAsk({ type: "ask", action: "a", args: "{}", agent: "x" });
+		expect(socket.sent).toHaveLength(0);
+	});
+
+	it("launchExperiment is a no-op once an experiment is already live", () => {
+		const { gama, socket } = newConnector();
+		socket.onopen?.();
+		receive(socket, { type: "SimulationStatus", exp_id: "e1", content: "RUNNING" });
+		const sentBefore = socket.sent.length;
+		gama.launchExperiment(); // guard: only when connected && state === "NONE"
+		expect(socket.sent.length).toBe(sentBefore);
+	});
+});
