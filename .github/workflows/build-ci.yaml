@@ -42,27 +42,35 @@ jobs:
   # the GAMA version the team targets, then set that variable.
   test-integration:
     runs-on: ubuntu-latest
-    if: ${{ vars.GAMA_DOWNLOAD_URL != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        gama-version: ['latest', 'pre-release']
     env:
       GAMA_IP_ADDRESS: localhost
-      GAMA_WS_PORT: "1000"
+      GAMA_WS_PORT: "2000"
     steps:
+      - name: Resolve GAMA download link
+        run: |
+          if [ "${{ matrix.gama-version }}" = "latest" ]; then
+            GAMA_DOWNLOAD_URL=$(curl -s https://api.github.com/repos/gama-platform/gama/releases/latest | jq -r '.assets[] | select(.name | contains("Linux_with_JDK") and endswith(".zip")) | .browser_download_url')
+          else
+            GAMA_DOWNLOAD_URL=$(curl -s https://api.github.com/repos/gama-platform/gama/releases | jq -r '[.[] | select(.prerelease == true)][0].assets[] | select(.name | contains("Linux_with_JDK") and endswith(".zip")) | .browser_download_url')
+          fi
+          echo "GAMA_DOWNLOAD_URL=$GAMA_DOWNLOAD_URL" >> $GITHUB_ENV
 
       - uses: actions/checkout@v6
+
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
 
       - name: Install npm modules
         run: npm ci
 
       - name: Download & unpack GAMA headless
         run: |
-          curl -L "${{ vars.GAMA_DOWNLOAD_URL }}" -o gama-headless.zip
+          curl -L "${{ env.GAMA_DOWNLOAD_URL }}" -o gama-headless.zip
           unzip -q gama-headless.zip -d gama-headless
 
       - name: Start GAMA WebSocket server
@@ -78,6 +86,10 @@ jobs:
             fi
             sleep 1
           done
+
+      - name: Set custom GAMA port
+        run: |
+          echo "GAMA_WS_PORT=${{ env.GAMA_WS_PORT }}" >> .env
 
       - name: Integration tests (real GAMA)
         run: npm run test:integration
