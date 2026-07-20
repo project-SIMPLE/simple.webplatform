@@ -115,3 +115,25 @@ describe("useGamaExperiment navigation guards", () => {
 		expect(navigate).toHaveBeenCalledWith("/");
 	});
 });
+
+describe("useGamaExperiment chaos — degenerate player counts", () => {
+	it("never auto-launches when maxPlayers is 0", () => {
+		wsState.selectedSimulation = { maximal_players: "0", minimal_players: "0" };
+		wsState.playerList = { a: {}, b: {} };
+		renderHook(() => useGamaExperiment());
+		expect(launch).not.toHaveBeenCalled();
+	});
+
+	it("never auto-launches when the simulation has no maxPlayers", () => {
+		wsState.selectedSimulation = { maximal_players: undefined as unknown as string, minimal_players: "0" };
+		wsState.playerList = { a: {}, b: {} };
+		renderHook(() => useGamaExperiment());
+		expect(launch).not.toHaveBeenCalled();
+	});
+
+	it("auto-launches exactly once even when players exceed the maximum", () => {
+		wsState.playerList = { a: {}, b: {}, c: {}, d: {} }; // 4 > max 2
+		renderHook(() => useGamaExperiment());
+		expect(launch).toHaveBeenCalledTimes(1);
+	});
+});

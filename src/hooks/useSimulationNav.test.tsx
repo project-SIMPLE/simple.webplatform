@@ -102,3 +102,18 @@ describe("useSimulationNav handleSimulation", () => {
 		expect(navigate).not.toHaveBeenCalled();
 	});
 });
+
+describe("useSimulationNav chaos — bad inputs", () => {
+	it("collapses subProjectsList to [] when the list is not an array", () => {
+		wsState.simulationList = "not an array" as unknown as unknown[];
+		const { result } = renderHook(() => useSimulationNav());
+		expect(result.current.subProjectsList).toEqual([]);
+	});
+
+	it("throws on an out-of-range selection index (see chaos-findings.md)", () => {
+		wsState.simulationList = [catalog, model];
+		const { result } = renderHook(() => useSimulationNav());
+		// subProjectsList[999] is undefined; handleSimulation reads item.type unguarded.
+		expect(() => act(() => result.current.handleSimulation(999))).toThrow();
+	});
+});
