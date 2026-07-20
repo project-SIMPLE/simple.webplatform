@@ -11,6 +11,13 @@ node_modules
 dist
 dist-ssr
 *.local
+coverage
+test-results
+playwright-report
+
+# Never commit nested markdown (findings/reports); keep root docs (README, BUILD_EXECUTABLE.md, ...)
+*.md
+!/*.md
 
 # Editor directories and files
 .vscode/*

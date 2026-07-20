@@ -5,9 +5,8 @@ import type { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyExitedError, AdbScrcpyOptions3_3_3 } from "@yume-chan/adb-scrcpy";
 import { DefaultServerPath, type ScrcpyMediaStreamPacket } from "@yume-chan/scrcpy";
 import { ReadableStream } from "@yume-chan/stream-extra";
-
-import type { AdbManager } from "../adb/AdbManager.ts";
 import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
+import type { AdbManager } from "../adb/AdbManager.ts";
 
 // Override the log function
 const logger = getLogger(["android", "ScrcpyServer"]);

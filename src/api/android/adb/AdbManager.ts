@@ -161,7 +161,7 @@ export class AdbManager {
 
 	async startNewStream(device: Device) {
 		if (!this.isDeviceReady(device)) {
-			logger.debug(`[${device.serial}] Not ready to interact with ADB. Skipping...`)
+			logger.debug(`[${device.serial}] Not ready to interact with ADB. Skipping...`);
 			return;
 		}
 
@@ -217,28 +217,28 @@ export class AdbManager {
 	isDeviceReady(device: Device): boolean {
 		let isReady = false;
 
-
 		if (device.serial.endsWith("._adb-tls-connect._tcp"))
 			logger.debug(`[${device.serial}] Not a real device. Skipping...`);
-		else switch (device.state) {
-			case "device":
-				isReady = true;
-				break;
+		else
+			switch (device.state) {
+				case "device":
+					isReady = true;
+					break;
 
-			case "offline":
-				logger.warn(`[${device.serial}] Device is offline, disconnecting stale entry...`);
-				void this.disconnectDevice(device.serial);
-				break;
+				case "offline":
+					logger.warn(`[${device.serial}] Device is offline, disconnecting stale entry...`);
+					void this.disconnectDevice(device.serial);
+					break;
 
-			case "unauthorized":
-				logger.error(
-					`[${device.serial}] Device is not authorized — You need to manually pair the headset with this computer (accept the RSA key prompt on the device)`,
-				);
-				break;
+				case "unauthorized":
+					logger.error(
+						`[${device.serial}] Device is not authorized — You need to manually pair the headset with this computer (accept the RSA key prompt on the device)`,
+					);
+					break;
 
-			default:
-				logger.warn(`[${device.serial}] Device is not ready with an unknown state (${device.state}), skipping`);
-		}
+				default:
+					logger.warn(`[${device.serial}] Device is not ready with an unknown state (${device.state}), skipping`);
+			}
 
 		return isReady;
 	}

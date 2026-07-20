@@ -15,7 +15,15 @@
     "build:sea:macos": "node scripts/build-sea-unix.mjs",
     "lint": "biome lint .",
     "format": "biome format .",
-    "check": "biome check ."
+    "check": "biome check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run --project unit --project frontend",
+    "test:server": "vitest run --project server",
+    "test:integration": "vitest run --project integration",
+    "test:adb": "vitest run --project adb",
+    "test:coverage": "vitest run --project unit --project frontend --coverage",
+    "test:e2e": "npm run build:frontend && playwright test"
   },
   "bin": "dist-api/index.cjs",
   "dependencies": {
@@ -62,9 +70,16 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
+    "@playwright/test": "^1.61.1",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/express": "^5.0.6",
-    "jest": "^29.7.0",
+    "@vitest/coverage-v8": "^4.1.10",
     "jiti": "^2.6.1",
-    "postject": "^1.0.0-alpha.6"
+    "jsdom": "^29.1.1",
+    "postject": "^1.0.0-alpha.6",
+    "vitest": "^4.1.10"
   }
 }
