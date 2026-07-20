@@ -78,4 +78,45 @@ describe("ModelManager active model", () => {
 		mm.setActiveModelByIndex(1);
 		expect(mm.getActiveModel()).toBe("second");
 	});
+
+	it("getActiveModel falls back to models[0] when the active index is out of range", () => {
+		const mm = bareManager();
+		mm.models = ["only", "second"] as unknown as Model[];
+		mm.setActiveModelByIndex(99); // activeModel = models[99] = undefined → fallback
+		expect(mm.getActiveModel()).toBe("only");
+	});
+});
+
+describe("ModelManager.parseCatalog — malformed catalogs", () => {
+	it("returns [] for an empty catalog", () => {
+		const mm = bareManager();
+		expect(mm.parseCatalog({ type: "catalog", name: "empty", entries: [] }, "/pkg/settings.json")).toEqual([]);
+	});
+
+	it("skips an entry that fails to build (bad settings) without throwing", () => {
+		const mm = bareManager();
+		const catalog: VU_CATALOG_SETTING_JSON = {
+			type: "catalog",
+			name: "root",
+			entries: [
+				model("Good", "./Good.gaml"),
+				// Missing model_file_path → Model constructor throws → caught per-entry.
+				{ type: "json_settings", name: "Bad" } as unknown as VU_MODEL_SETTING_JSON,
+			],
+		};
+		let entries: unknown[] = [];
+		expect(() => {
+			entries = mm.parseCatalog(catalog, "/pkg/settings.json");
+		}).not.toThrow();
+		expect(entries).toHaveLength(1); // only "Good" survived
+		expect(mm.getModelList()).toHaveLength(1);
+	});
+
+	it("treats an unknown entry type as a legacy json_settings (fallthrough)", () => {
+		const mm = bareManager();
+		const weird = { ...model("W", "./W.gaml"), type: "mystery" } as unknown as VU_MODEL_SETTING_JSON;
+		const entries = mm.parseCatalog({ type: "catalog", name: "root", entries: [weird] }, "/pkg/settings.json");
+		expect(entries).toHaveLength(1);
+		expect(mm.getModelList()).toHaveLength(1);
+	});
 });

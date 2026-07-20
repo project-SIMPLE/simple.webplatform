@@ -134,3 +134,25 @@ describe("buildEnv / defaultEnv", () => {
 		expect(env).toContain("ENV_GAMALESS=false");
 	});
 });
+
+describe("TuiConfig validators — adversarial inputs", () => {
+	it("rejects non-numeric, signed, hex and out-of-range ports", () => {
+		for (const p of ["0", "65536", "-1", "0x50", "8080abc", "8_080"]) {
+			expect(validatePort(p)).toBeDefined();
+		}
+		expect(validatePort(" 80 ")).toBeUndefined(); // trimmed, still valid
+	});
+
+	it("rejects hostnames with spaces, empty labels, or over 253 chars", () => {
+		expect(validateHost("has space")).toBeDefined();
+		expect(validateHost("a..b")).toBeDefined();
+		expect(validateHost(".")).toBeDefined();
+		expect(validateHost(`${"a".repeat(300)}.com`)).toBeDefined();
+	});
+
+	it("names every invalid entry in a mixed headset list", () => {
+		const err = validateHeadsetsIp("192.168.0.1;garbage;999.0.0.1;10.0.0.2");
+		expect(err).toMatch(/garbage/);
+		expect(err).toMatch(/999\.0\.0\.1/);
+	});
+});

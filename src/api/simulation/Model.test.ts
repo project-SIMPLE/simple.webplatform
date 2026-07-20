@@ -46,3 +46,21 @@ describe("Model", () => {
 		expect(model.toString()).toBe(model.getModelFilePath());
 	});
 });
+
+describe("Model — adversarial inputs", () => {
+	it("does not throw for a nonexistent model file (only logs a warning)", () => {
+		expect(
+			() => new Model("/pkg/demo/settings.json", settings({ model_file_path: "./does/not/exist.gaml" })),
+		).not.toThrow();
+	});
+
+	it("resolves a '..' relative path against the settings directory", () => {
+		const model = new Model("/pkg/demo/settings.json", settings({ model_file_path: "../shared/M.gaml" }));
+		expect(model.getModelFilePath()).toBe(path.join("/pkg/shared", "M.gaml"));
+	});
+
+	it("surfaces a missing experiment_name as undefined rather than crashing", () => {
+		const model = new Model("/pkg/demo/settings.json", settings({ experiment_name: undefined as unknown as string }));
+		expect(model.getExperimentName()).toBeUndefined();
+	});
+});

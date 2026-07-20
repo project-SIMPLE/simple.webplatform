@@ -56,3 +56,18 @@ describe("DeviceFinder.removeConnectedIp", () => {
 		expect(finder.ipToConnect).toEqual(["192.168.68.11"]);
 	});
 });
+
+describe("isValidIpv4Literal — adversarial (injection guard, not a range validator)", () => {
+	it("rejects anything with shell metacharacters or wrong shape", () => {
+		for (const bad of ["1.2.3.4 ", "1.2.3.4;x", "1.2.3.4|nc", "1.2.3.4\n", "1.2.3.4.5", "1.2.3.", "1.2.3", "١.٢.٣.٤"]) {
+			expect(isValidIpv4Literal(bad)).toBe(false);
+		}
+	});
+
+	it("accepts out-of-range octets — it only guards shape, not 0–255 (documents current behavior)", () => {
+		// The guard exists to block command injection into `ping`, not to validate
+		// correctness; DeviceFinder only feeds it IPs discovered by scanning.
+		expect(isValidIpv4Literal("999.999.999.999")).toBe(true);
+		expect(isValidIpv4Literal("256.0.0.1")).toBe(true);
+	});
+});

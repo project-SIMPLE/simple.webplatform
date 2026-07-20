@@ -40,3 +40,26 @@ describe("parseHeadsetsIp", () => {
 		expect(warnings.join(" ")).toMatch(/Could not extract/);
 	});
 });
+
+describe("env helpers — adversarial inputs", () => {
+	it("strips a shell-injection suffix down to the bare IP", () => {
+		const { ips } = parseHeadsetsIp("1.2.3.4; rm -rf /");
+		expect(ips).toEqual(["1.2.3.4"]); // injection payload discarded
+	});
+
+	it("drops out-of-range octets and non-ASCII digits", () => {
+		expect(parseHeadsetsIp("999.999.999.999").ips).toEqual([]);
+		expect(parseHeadsetsIp("１２７.0.0.1").ips).toEqual([]); // full-width digits
+	});
+
+	it("extracts an IP embedded in surrounding noise", () => {
+		expect(parseHeadsetsIp("headset at 192.168.1.5 now").ips).toEqual(["192.168.1.5"]);
+	});
+
+	it("asBool is whitespace- and format-sensitive (documents current behavior)", () => {
+		expect(asBool(" true")).toBe(false); // not trimmed
+		expect(asBool("TRUE ")).toBe(false);
+		expect(asBool("1.0")).toBe(false);
+		expect(asBool("👍")).toBe(false);
+	});
+});

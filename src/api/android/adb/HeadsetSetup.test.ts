@@ -76,3 +76,28 @@ describe("HeadsetSetup.setupHeadset device gate", () => {
 		expect(createTransport).not.toHaveBeenCalled();
 	});
 });
+
+describe("version/shell helpers — adversarial inputs", () => {
+	it("compareVersions returns NaN for non-numeric segments (documents current behavior)", () => {
+		expect(Number.isNaN(compareVersions("1.a.3", "1.0.3"))).toBe(true);
+	});
+
+	it("compareVersions treats an empty string as 0.0.0", () => {
+		expect(compareVersions("", "1.0.0")).toBeLessThan(0);
+		expect(compareVersions("2", "")).toBeGreaterThan(0);
+	});
+
+	it("parseApkVersion needs a dotted version right before .apk", () => {
+		expect(parseApkVersion("app-1.apk")).toBeNull(); // single number, no dot
+		expect(parseApkVersion("app-1.2.3-beta.apk")).toBeNull(); // suffix after version
+		expect(parseApkVersion("app-1.2.apk")).toBe("1.2");
+	});
+
+	it("deriveShellGetSet returns null without an 'et'-verb and tolerates too-short entries", () => {
+		expect(deriveShellGetSet(["a", "b", "c"])).toBeNull();
+		const tiny = deriveShellGetSet(["et"]);
+		expect(tiny).not.toBeNull();
+		expect(tiny?.getArgs).toEqual([]);
+		expect(tiny?.setArgs).toEqual([]);
+	});
+});
