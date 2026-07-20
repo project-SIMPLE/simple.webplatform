@@ -119,11 +119,14 @@ describe("MonitorServer chaos — malformed input", () => {
 		expect(controller.model_manager?.setActiveModelByIndex).not.toHaveBeenCalled();
 	});
 
-	it("treats a NaN index as 0 — JSON serializes NaN→null and null passes the >=0 bounds check (see chaos-findings.md)", async () => {
+	// CORRECT behavior: a NaN index must be rejected. JSON serializes NaN → null, and
+	// `null >= 0 && null < len` is true, so the handler currently selects model 0
+	// instead. This test is intentionally RED until the bounds check requires an
+	// integer (Number.isInteger). See the local chaos-findings.md.
+	it("rejects a NaN/null index instead of silently selecting model 0", async () => {
 		client.send({ type: "get_simulation_by_index", simulationIndex: Number.NaN });
-		const reply = await client.waitFor((m) => m.type === "get_simulation_by_index", 1000);
-		expect(reply.simulation).toEqual(SETTINGS);
-		expect(controller.model_manager?.setActiveModelByIndex).toHaveBeenCalledWith(null);
+		await expect(client.waitFor((m) => m.type === "get_simulation_by_index", 500)).rejects.toThrow(/timed out/);
+		expect(controller.model_manager?.setActiveModelByIndex).not.toHaveBeenCalled();
 	});
 
 	it("does not add a player when add_player_headset omits the id", async () => {

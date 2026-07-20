@@ -140,19 +140,10 @@ describe("PlayerManager chaos — malformed & lifecycle", () => {
 		await vi.waitFor(() => expect(controller.sendExpression).toHaveBeenCalledWith("p1", "do stuff;"));
 	});
 
-	it("does NOT flag disconnect over a loopback address (empty remote key) — see chaos-findings.md", async () => {
-		// getRemoteAddressAsText() is empty over loopback, so the player is keyed by
-		// "" and the close handler's `!playerIP` guard skips cleanup. Characterization
-		// of the current behavior; real headsets have non-empty IPs so this only bites
-		// loopback/IPv6 clients.
-		const c = connect();
-		await c.waitOpen();
-		c.send({ type: "connection", id: "p1", heartbeat: 5000 });
-		await c.waitFor((m) => m.type === "json_state");
-		await c.close();
-		await new Promise((r) => setTimeout(r, 300));
-		expect(pm.getArrayPlayerList().p1?.connected).toBe(true);
-	});
+	// (The "disconnect flagging on drop" path can't be tested over loopback: uWS
+	// returns an empty getRemoteAddressAsText(), so the player is keyed by "" and the
+	// close handler's `!playerIP` guard skips cleanup. Real headsets have non-empty
+	// IPs; this empty-key edge is reported in the local chaos-findings.md instead.)
 
 	it("treats a second socket from the same host as a reconnect (one entry)", async () => {
 		const c1 = connect();

@@ -110,10 +110,12 @@ describe("useSimulationNav chaos — bad inputs", () => {
 		expect(result.current.subProjectsList).toEqual([]);
 	});
 
-	it("throws on an out-of-range selection index (see chaos-findings.md)", () => {
+	// CORRECT behavior: an out-of-range selection should be a graceful no-op.
+	// handleSimulation reads `subProjectsList[index].type` unguarded, so it currently
+	// throws on undefined. Intentionally RED until it guards `if (!item) return;`.
+	it("does not throw on an out-of-range selection index", () => {
 		wsState.simulationList = [catalog, model];
 		const { result } = renderHook(() => useSimulationNav());
-		// subProjectsList[999] is undefined; handleSimulation reads item.type unguarded.
-		expect(() => act(() => result.current.handleSimulation(999))).toThrow();
+		expect(() => act(() => result.current.handleSimulation(999))).not.toThrow();
 	});
 });

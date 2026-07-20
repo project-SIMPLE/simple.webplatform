@@ -64,9 +64,9 @@ describe("isValidIpv4Literal — adversarial (injection guard, not a range valid
 		}
 	});
 
-	it("accepts out-of-range octets — it only guards shape, not 0–255 (documents current behavior)", () => {
-		// The guard exists to block command injection into `ping`, not to validate
-		// correctness; DeviceFinder only feeds it IPs discovered by scanning.
+	it("accepts any dotted-quad shape — its contract is injection prevention, not range validation", () => {
+		// Range checking (0–255) belongs to _extractIPv4; this guard's sole job is to
+		// ensure `ping` receives a bare dotted-quad with no shell metacharacters.
 		expect(isValidIpv4Literal("999.999.999.999")).toBe(true);
 		expect(isValidIpv4Literal("256.0.0.1")).toBe(true);
 	});
