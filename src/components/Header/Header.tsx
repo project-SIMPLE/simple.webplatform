@@ -10,7 +10,11 @@ const Header = ({ onLogoClick }: HeaderProps) => {
 	return (
 		<div className="flex w-full justify-between align-middle relative">
 			{onLogoClick ? (
-				<button onClick={onLogoClick} className="text-white hover:text-gray-400 z-10 bg-transparent border-none p-0">
+				<button
+					type="button"
+					onClick={onLogoClick}
+					className="text-white hover:text-gray-400 z-10 bg-transparent border-none p-0"
+				>
 					<img
 						src={logoSimple}
 						alt="Logo"

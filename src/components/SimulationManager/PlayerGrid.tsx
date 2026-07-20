@@ -18,11 +18,14 @@ const PlayerGrid = ({ playerList, maxPlayers }: PlayerGridProps) => {
 			})}
 
 			{/* //!       Display remaining headsets in transparent orange if the number of detected players is less than the maximum number of players */}
-			{Array.from({ length: Number(maxPlayers) - Object.keys(playerList).length }).map((_, index) => (
-				<div key={`placeholder-${index}`} className="flex flex-col items-center cursor-not-allowed">
-					<VRHeadset />
-				</div>
-			))}
+			{Array.from({ length: Number(maxPlayers) - Object.keys(playerList).length }).map((_, _index) => {
+				const uniqueId = crypto.randomUUID();
+				return (
+					<div key={`placeholder-${uniqueId}`} className="flex flex-col items-center cursor-not-allowed">
+						<VRHeadset />
+					</div>
+				);
+			})}
 		</div>
 	);
 };
