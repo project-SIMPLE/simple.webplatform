@@ -208,7 +208,7 @@ export function buildEnv(cfg: WizardResult): string {
 	// Learning packages are only asked (and only relevant) in GAMA mode.
 	if (cfg.useGama && cfg.learningPath) {
 		lines.push("", `LEARNING_PACKAGE_PATH="${cfg.learningPath}"`);
-		if (cfg.extraLearningPath && cfg.extraLearningPath.trim()) {
+		if (cfg.extraLearningPath?.trim()) {
 			lines.push(`EXTRA_LEARNING_PACKAGE_PATH="${cfg.extraLearningPath.trim()}"`);
 		}
 	}
@@ -216,7 +216,7 @@ export function buildEnv(cfg: WizardResult): string {
 		lines.push("", `EXTRA_VERBOSE=${cfg.extraVerbose}`);
 	}
 	// Left unset when auto-detection is enabled, so DeviceFinder scans on startup.
-	if (cfg.headsetsIp && cfg.headsetsIp.trim()) {
+	if (cfg.headsetsIp?.trim()) {
 		lines.push("", `HEADSETS_IP="${cfg.headsetsIp.trim()}"`);
 	}
 	lines.push("", `AGGRESSIVE_DISCONNECT=${cfg.aggressiveDisconnect ?? false}`, "");
@@ -284,7 +284,7 @@ export async function ensureConfig(): Promise<void> {
 				results.useGama
 					? path({
 							message: "Learning packages folder (relative path from here, or absolute path)",
-							root: process.cwd() + "/",
+							root: `${process.cwd()}/`,
 							directory: true,
 							validate: (v) => {
 								const p = (v ?? "").trim();
@@ -306,7 +306,7 @@ export async function ensureConfig(): Promise<void> {
 				results.useGama && results.useExtraLearningPath
 					? path({
 							message: "Extra learning packages folder (optional, leave blank to skip)",
-							root: process.cwd() + "/",
+							root: `${process.cwd()}/`,
 							directory: true,
 							// allow empty (it's optional), otherwise it must exist
 							validate: (v) => {
