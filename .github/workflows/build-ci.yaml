@@ -25,6 +25,14 @@ jobs:
       - name: Real local-socket tests
         run: npm run test:server
 
+      # Build the frontend so the StaticServer HTTP test runs (the GAMA tests in
+      # the integration project auto-skip here since no GAMA server is present).
+      - name: Build frontend
+        run: npm run build:frontend
+
+      - name: Integration tests (StaticServer; GAMA-gated ones skip)
+        run: npm run test:integration
+
   # Real-GAMA integration tests. Boots a headless GAMA server, then runs the
   # `integration` project (which auto-skips when no server is reachable).
   #
@@ -81,6 +89,26 @@ jobs:
           name: gama-server-log
           path: gama-server.log
           if-no-files-found: ignore
+
+  # Browser end-to-end: real backend (StaticServer + MonitorServer + ModelManager)
+  # driven by a headless Chromium. No GAMA/hardware needed — tiles render disabled.
+  test-e2e:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install npm modules
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests (builds frontend, boots the real backend)
+        run: npm run test:e2e
 
   # Real-device ADB tests against a hardware-accelerated Android emulator.
   # Covers the generic adb-server + shell paths (device discovery, isDeviceReady,

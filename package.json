@@ -22,7 +22,8 @@
     "test:server": "vitest run --project server",
     "test:integration": "vitest run --project integration",
     "test:adb": "vitest run --project adb",
-    "test:coverage": "vitest run --project unit --project frontend --coverage"
+    "test:coverage": "vitest run --project unit --project frontend --coverage",
+    "test:e2e": "npm run build:frontend && playwright test"
   },
   "bin": "dist-api/index.cjs",
   "dependencies": {
@@ -69,6 +70,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
+    "@playwright/test": "^1.61.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
