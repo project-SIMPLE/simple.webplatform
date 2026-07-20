@@ -43,6 +43,7 @@ export default defineConfig({
 				test: {
 					name: "integration",
 					environment: "node",
+					setupFiles: ["dotenv/config"],
 					include: ["test/integration/**/*.test.ts"],
 					testTimeout: 30_000,
 					hookTimeout: 30_000,
