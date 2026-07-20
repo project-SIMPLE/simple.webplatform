@@ -63,4 +63,28 @@ describe.skipIf(!reachable)("monitor → Controller → GAMA launch flow (live G
 		const state = await monitor.waitFor((m) => m.type === "json_state", 5_000);
 		expect(state.gama).toBeDefined();
 	});
+
+	it("pauses, resumes and stops the experiment from the monitor", async () => {
+		// Ensure it is running first (idempotent if the previous test left it live).
+		if (!LIVE_STATES.includes(experimentState(controller))) {
+			monitor.send({ type: "launch_experiment" });
+			await waitFor(() => LIVE_STATES.includes(experimentState(controller)), 15_000, "experiment to go live");
+		}
+		if (experimentState(controller) !== "RUNNING") {
+			monitor.send({ type: "resume_experiment" });
+			await waitFor(() => experimentState(controller) === "RUNNING", 10_000, "resume");
+		}
+
+		monitor.send({ type: "pause_experiment" });
+		await waitFor(() => experimentState(controller) === "PAUSED", 10_000, "pause");
+		expect(experimentState(controller)).toBe("PAUSED");
+
+		monitor.send({ type: "resume_experiment" });
+		await waitFor(() => experimentState(controller) === "RUNNING", 10_000, "resume");
+		expect(experimentState(controller)).toBe("RUNNING");
+
+		monitor.send({ type: "stop_experiment" });
+		await waitFor(() => experimentState(controller) === "NONE", 10_000, "stop");
+		expect(experimentState(controller)).toBe("NONE");
+	});
 });
