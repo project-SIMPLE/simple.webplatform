@@ -73,7 +73,7 @@ jobs:
           curl -L "${{ env.GAMA_DOWNLOAD_URL }}" -o gama-headless.zip
           unzip -q gama-headless.zip -d gama-headless
           # Install SIMPLE's GAMA plugin
-          python3 $GITHUB_WORKSPACE/test/setup/p2-download.py 'https://project-simple.github.io/simple.toolchain/' ./gama-headless/dropins
+          python3 $GITHUB_WORKSPACE/test/setup/p2Downloader.py 'https://project-simple.github.io/simple.toolchain/' ./gama-headless/dropins
           # Force using dropins in headless
           rm -fr gama-headless/headless/configuration && cp -r gama-headless/configuration gama-headless/headless/configuration
 
@@ -172,7 +172,7 @@ jobs:
           curl -L "${{ env.GAMA_DOWNLOAD_URL }}" -o gama-headless.zip
           unzip -q gama-headless.zip -d gama-headless
           # Install SIMPLE's GAMA plugin
-          python3 $GITHUB_WORKSPACE/test/setup/p2-download.py 'https://project-simple.github.io/simple.toolchain/' ./gama-headless/dropins
+          python3 $GITHUB_WORKSPACE/test/setup/p2Downloader.py 'https://project-simple.github.io/simple.toolchain/' ./gama-headless/dropins
           # Force using dropins in headless
           rm -fr gama-headless/headless/configuration && cp -r gama-headless/configuration gama-headless/headless/configuration
 
