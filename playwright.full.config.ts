@@ -29,6 +29,9 @@ if (!existsSync(BINARY)) {
 
 export default defineConfig({
 	testDir: "./test/e2e",
+	// app.spec asserts the *no-GAMA* state (simulation tiles disabled); in this lane
+	// GAMA is connected so the tiles are enabled. It runs in the source/binary lanes.
+	testIgnore: ["**/app.spec.ts"],
 	// GAMA can take a while to load and run a model, so give the full flow room.
 	timeout: 120_000,
 	fullyParallel: false,

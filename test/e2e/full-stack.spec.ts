@@ -35,8 +35,16 @@ test("platform connects to GAMA and launches an experiment from the browser", as
 	await expect(play).toBeVisible({ timeout: 15_000 });
 	await play.click();
 
-	// GAMA loads and runs the experiment → the controls switch to pause + stop.
-	await expect(page.getByLabel("Pause")).toBeVisible({ timeout: 30_000 });
+	// The experiment now exists in GAMA — Stop becomes available. GAMA loads
+	// experiments paused, so the controls come up as Play (resume) + Stop.
+	await expect(page.getByLabel("Stop")).toBeVisible({ timeout: 30_000 });
+
+	// Resume it if it came up paused, then confirm it is actually running (Pause shown).
+	const pause = page.getByLabel("Pause");
+	if (!(await pause.isVisible())) {
+		await page.getByLabel("Play").click();
+	}
+	await expect(pause).toBeVisible({ timeout: 30_000 });
 
 	// Stop the experiment; the UI navigates back to the selector.
 	await page.getByLabel("Stop").click();
