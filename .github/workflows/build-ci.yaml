@@ -72,6 +72,10 @@ jobs:
         run: |
           curl -L "${{ env.GAMA_DOWNLOAD_URL }}" -o gama-headless.zip
           unzip -q gama-headless.zip -d gama-headless
+          # Install SIMPLE's GAMA plugin
+          python3 $GITHUB_WORKSPACE/test/setup/p2-download.py 'https://project-simple.github.io/simple.toolchain/' ./gama-headless/dropins
+          # Force using dropins in headless
+          rm -fr gama-headless/headless/configuration && cp -r gama-headless/configuration gama-headless/headless/configuration
 
       - name: Start GAMA WebSocket server
         # Adjust to match the GAMA version's server-launch command. GAMA exposes
@@ -167,6 +171,10 @@ jobs:
         run: |
           curl -L "${{ env.GAMA_DOWNLOAD_URL }}" -o gama-headless.zip
           unzip -q gama-headless.zip -d gama-headless
+          # Install SIMPLE's GAMA plugin
+          python3 $GITHUB_WORKSPACE/test/setup/p2-download.py 'https://project-simple.github.io/simple.toolchain/' ./gama-headless/dropins
+          # Force using dropins in headless
+          rm -fr gama-headless/headless/configuration && cp -r gama-headless/configuration gama-headless/headless/configuration
 
       - name: Start GAMA WebSocket server
         run: |
