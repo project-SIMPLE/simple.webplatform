@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
 // Full-stack end-to-end: the COMPILED binary wired to a real GAMA server and a
@@ -15,11 +16,14 @@ const WEB_PORT = 8100;
 const MONITOR_WS_PORT = 8001;
 const GAMA_WS_PORT = process.env.GAMA_WS_PORT ?? "2000";
 
-const BINARY =
+// Absolute path so the webServer command launches under any shell (Windows cmd
+// doesn't accept the "./" prefix; forward-slash relative paths fail there).
+const BINARY = path.resolve(
 	{
 		darwin: "./bin/simple-macos",
 		win32: "./bin/simple-win.exe",
-	}[process.platform as string] ?? "./bin/simple-linux";
+	}[process.platform as string] ?? "./bin/simple-linux",
+);
 
 if (!existsSync(BINARY)) {
 	throw new Error(

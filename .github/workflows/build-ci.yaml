@@ -216,6 +216,144 @@ jobs:
           path: gama-server.log
           if-no-files-found: ignore
 
+  # macOS full-stack E2E: the compiled macOS binary + a real GAMA server, WITHOUT
+  # the Android emulator (that stays Linux-only). The macOS binary is a bare node
+  # SEA with no launcher — the same setup that hit the bufferutil bug — so this
+  # guards the GAMA-send path on macOS. The GAMA setup mirrors test-e2e-full; the
+  # GAMA steps are best-effort (macOS asset naming can differ) and non-fatal, so a
+  # GAMA that never comes up makes full-stack self-skip rather than fail the job.
+  test-e2e-full-macos:
+    runs-on: macos-latest
+    needs: compilation-macos
+    env:
+      GAMA_IP_ADDRESS: localhost
+      GAMA_WS_PORT: "2000"
+    steps:
+
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install npm modules
+        run: npm ci
+
+      - name: Download the compiled macOS binary (from compilation-macos)
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-compiled-archive
+          path: bin
+
+      - name: Make the binary executable
+        run: chmod +x bin/simple-macos
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      # macOS GAMA ships ONLY as a .dmg (no headless zip). macos-latest is ARM, so
+      # use the M1 build with a bundled JDK.
+      - name: Resolve GAMA download link (macOS, M1 .dmg with JDK)
+        run: |
+          GAMA_DOWNLOAD_URL=$(curl -s https://api.github.com/repos/gama-platform/gama/releases/latest | jq -r '.assets[] | select(.name | contains("MacOS_M1_with_JDK") and endswith(".dmg")) | .browser_download_url')
+          echo "GAMA_DOWNLOAD_URL=$GAMA_DOWNLOAD_URL" >> $GITHUB_ENV
+
+      # Mount the .dmg, copy GAMA.app out (the volume is read-only), install the
+      # SIMPLE plugin into the app's dropins. Paths inside GAMA.app are discovered
+      # with `find` since the bundle layout differs from the Linux zip.
+      - name: Download, mount GAMA .dmg and install the SIMPLE plugin
+        continue-on-error: true
+        run: |
+          curl -L "${{ env.GAMA_DOWNLOAD_URL }}" -o gama.dmg
+          hdiutil attach gama.dmg -nobrowse -mountpoint /Volumes/GAMA
+          cp -R /Volumes/GAMA/*.app ./GAMA.app
+          hdiutil detach /Volumes/GAMA
+          DROPINS=$(find ./GAMA.app -type d -name dropins | head -1)
+          [ -z "$DROPINS" ] && DROPINS="./GAMA.app/Contents/Eclipse/dropins" && mkdir -p "$DROPINS"
+          python3 $GITHUB_WORKSPACE/test/setup/p2Downloader.py 'https://project-simple.github.io/simple.toolchain/' "$DROPINS"
+
+      - name: Start GAMA WebSocket server
+        continue-on-error: true
+        run: |
+          HEADLESS=$(find ./GAMA.app -name 'gama-headless.sh' | head -1)
+          chmod +x "$HEADLESS" || true
+          nohup bash -c "'$HEADLESS' -socket ${{ env.GAMA_WS_PORT }}" > gama-server.log 2>&1 &
+          for i in $(seq 1 120); do
+            if bash -c "echo > /dev/tcp/localhost/${{ env.GAMA_WS_PORT }}" 2>/dev/null; then echo "GAMA server is up"; break; fi
+            sleep 1
+          done
+
+      - name: Full-stack E2E (macOS binary + GAMA, no emulator)
+        run: npm run test:e2e:full
+
+      - name: Upload GAMA server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gama-server-log-e2e-macos
+          path: gama-server.log
+          if-no-files-found: ignore
+
+  # Windows full-stack E2E: the compiled Windows binary + a real GAMA server, no
+  # emulator (Windows runners can't nest-virtualize Android). The Windows binary
+  # already sets WS_NO_BUFFER_UTIL via its launcher, so it dodged the bufferutil
+  # bug — this lane confirms it stays working. GAMA on Windows uses gama-headless.bat
+  # via pwsh; the exact layout/flags may need tuning, so the GAMA steps are
+  # non-fatal and full-stack self-skips if GAMA never comes up.
+  test-e2e-full-windows:
+    runs-on: windows-latest
+    needs: compilation-windows
+    env:
+      GAMA_IP_ADDRESS: localhost
+      GAMA_WS_PORT: "2000"
+    steps:
+
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install npm modules
+        run: npm ci
+
+      # download-artifact flattens the single-file archive to bin/simple-win.exe,
+      # which is what playwright.full.config.ts expects on win32.
+      - name: Download the compiled Windows binary (from compilation-windows)
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-compiled-archive
+          path: bin
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      - name: Resolve GAMA download link (Windows)
+        shell: bash
+        run: |
+          GAMA_DOWNLOAD_URL=$(curl -s https://api.github.com/repos/gama-platform/gama/releases/latest | jq -r '.assets[] | select(.name | contains("Windows") and contains("with_JDK") and endswith(".zip")) | .browser_download_url')
+          echo "GAMA_DOWNLOAD_URL=$GAMA_DOWNLOAD_URL" >> $GITHUB_ENV
+
+      - name: Download & unpack GAMA headless
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          curl.exe -L "$env:GAMA_DOWNLOAD_URL" -o gama-headless.zip
+          Expand-Archive -Path gama-headless.zip -DestinationPath gama-headless -Force
+          python "$env:GITHUB_WORKSPACE/test/setup/p2Downloader.py" 'https://project-simple.github.io/simple.toolchain/' ./gama-headless/dropins
+
+      - name: Start GAMA WebSocket server
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $bat = Get-ChildItem -Path gama-headless -Recurse -Filter gama-headless.bat | Select-Object -First 1
+          Start-Process -FilePath $bat.FullName -ArgumentList '-socket', '${{ env.GAMA_WS_PORT }}' -NoNewWindow
+          for ($i = 0; $i -lt 90; $i++) {
+            if (Test-NetConnection -ComputerName localhost -Port ${{ env.GAMA_WS_PORT }} -InformationLevel Quiet) { break }
+            Start-Sleep -Seconds 1
+          }
+
+      - name: Full-stack E2E (Windows binary + GAMA, no emulator)
+        run: npm run test:e2e:full
+
   # Real-device ADB tests against a hardware-accelerated Android emulator.
   # Covers the generic adb-server + shell paths (device discovery, isDeviceReady,
   # transport shell round-trip, package/version detection). Quest/Oculus-specific

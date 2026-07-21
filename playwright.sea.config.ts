@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
 // Same end-to-end specs as playwright.config.ts, but driven against the COMPILED
@@ -12,11 +13,14 @@ import { defineConfig, devices } from "@playwright/test";
 const WEB_PORT = 8100;
 const MONITOR_WS_PORT = 8001;
 
-const BINARY =
+// Absolute path so the webServer command launches under any shell (Windows cmd
+// doesn't accept the "./" prefix).
+const BINARY = path.resolve(
 	{
 		darwin: "./bin/simple-macos",
 		win32: "./bin/simple-win.exe",
-	}[process.platform as string] ?? "./bin/simple-linux";
+	}[process.platform as string] ?? "./bin/simple-linux",
+);
 
 if (!existsSync(BINARY)) {
 	throw new Error(
