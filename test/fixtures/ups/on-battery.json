@@ -1,0 +1,32 @@
+{
+	"name": "on-battery",
+	"description": "AC lost, running on battery at 55%, input voltage collapsed to 0, beeper muted.",
+	"reports": {
+		"12": [12, 55],
+		"15": [15, 88, 2],
+		"19": [19, 0],
+		"48": [48, 0],
+		"49": [49, 0, 0],
+		"21": [21, 255, 255],
+		"120": [120, 3],
+		"82": [82, 74, 1],
+		"50": [50, 176, 0],
+		"51": [51, 26, 1],
+		"13": [13, 95]
+	},
+	"expected": {
+		"batteryCharge": 55,
+		"runtimeSeconds": 600,
+		"runtimeMinutes": 10,
+		"inputVoltage": 0,
+		"inputVoltagePrecise": 0,
+		"acPresent": false,
+		"onBattery": true,
+		"shutdownTimer": -1,
+		"beeperStatus": "muted",
+		"nominalPowerWatts": 330,
+		"lowVoltageTransfer": 176,
+		"highVoltageTransfer": 282,
+		"fullChargeCapacity": 95
+	}
+}
