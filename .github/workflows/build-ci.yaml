@@ -45,7 +45,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gama-version: ['latest', 'pre-release']
+        # Disable pre-release as the plugin isn't compatible yet
+        #gama-version: ['latest', 'pre-release']
+        gama-version: ['latest']
     env:
       GAMA_IP_ADDRESS: localhost
       GAMA_WS_PORT: "2000"
