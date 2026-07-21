@@ -23,7 +23,9 @@
     "test:integration": "vitest run --project integration",
     "test:adb": "vitest run --project adb",
     "test:coverage": "vitest run --project unit --project frontend --coverage",
-    "test:e2e": "npm run build:frontend && playwright test"
+    "test:e2e": "npm run build:frontend && playwright test",
+    "test:e2e:sea": "playwright test -c playwright.sea.config.ts",
+    "test:e2e:full": "playwright test -c playwright.full.config.ts"
   },
   "bin": "dist-api/index.cjs",
   "dependencies": {
