@@ -102,7 +102,7 @@ jobs:
 
       - name: Upload GAMA server log on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: gama-server-log
           path: gama-server.log
@@ -153,7 +153,7 @@ jobs:
         run: npm ci
 
       - name: Download the compiled Linux binary (from compilation-linux)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: linux-compiled-archive
           path: bin
@@ -210,7 +210,7 @@ jobs:
 
       - name: Upload GAMA server log on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: gama-server-log-e2e
           path: gama-server.log
@@ -239,7 +239,7 @@ jobs:
         run: npm ci
 
       - name: Download the compiled macOS binary (from compilation-macos)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: macos-compiled-archive
           path: bin
@@ -287,7 +287,7 @@ jobs:
 
       - name: Upload GAMA server log on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: gama-server-log-e2e-macos
           path: gama-server.log
@@ -318,7 +318,7 @@ jobs:
       # download-artifact flattens the single-file archive to bin/simple-win.exe,
       # which is what playwright.full.config.ts expects on win32.
       - name: Download the compiled Windows binary (from compilation-windows)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: windows-compiled-archive
           path: bin
@@ -408,7 +408,7 @@ jobs:
         run: npm run build:sea:linux
 
       - name: Export release for Linux
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux-compiled-archive
           if-no-files-found: error
@@ -432,7 +432,7 @@ jobs:
         run: npm run build:sea:macos
 
       - name: Export release for macOS
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: macos-compiled-archive
           if-no-files-found: error
@@ -448,7 +448,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: 'stable'
 
@@ -459,7 +459,7 @@ jobs:
         run: npm run build:sea:win
 
       - name: Export release for Windows
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-compiled-archive
           if-no-files-found: error

@@ -25,7 +25,7 @@ jobs:
         run: npm run build:sea:linux
 
       - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: linux-release-binary
           if-no-files-found: error
@@ -74,7 +74,7 @@ jobs:
         run: npm run build:sea:macos
 
       - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: macos-release-binary
           if-no-files-found: error
@@ -89,7 +89,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: 'stable'
 
@@ -100,7 +100,7 @@ jobs:
         run: npm run build:sea:win
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: windows-release-binary
           if-no-files-found: error
@@ -113,19 +113,19 @@ jobs:
     steps:
 
       - name: Download Linux binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: linux-release-binary
           path: release-files/
 
       - name: Download macOS binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: macos-release-binary
           path: release-files/
 
       - name: Download Windows binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: windows-release-binary
           path: release-files/
