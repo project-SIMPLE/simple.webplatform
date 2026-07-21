@@ -28,6 +28,8 @@ if (!existsSync(BINARY)) {
 
 export default defineConfig({
 	testDir: "./test/e2e",
+	// full-stack.spec needs a live GAMA server; it only runs under playwright.full.config.ts.
+	testIgnore: ["**/full-stack.spec.ts"],
 	timeout: 30_000,
 	fullyParallel: false,
 	forbidOnly: !!process.env.CI,

@@ -14,10 +14,12 @@ test("platform connects to GAMA and launches an experiment from the browser", as
 	await expect(page.getByText("LinkToUnity")).toBeVisible({ timeout: 20_000 });
 
 	// GAMA connection: tiles are enabled only once the platform reports GAMA connected.
+	// Keep this probe well under the test timeout so a missing GAMA skips cleanly
+	// instead of tripping the test-level timeout.
 	const tile = page.locator('button[data-nav-item="tile"]').first();
 	let gamaConnected = true;
 	try {
-		await expect(tile).toBeEnabled({ timeout: 30_000 });
+		await expect(tile).toBeEnabled({ timeout: 15_000 });
 	} catch {
 		gamaConnected = false;
 	}

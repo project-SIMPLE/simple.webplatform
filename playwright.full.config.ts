@@ -29,7 +29,8 @@ if (!existsSync(BINARY)) {
 
 export default defineConfig({
 	testDir: "./test/e2e",
-	timeout: 60_000,
+	// GAMA can take a while to load and run a model, so give the full flow room.
+	timeout: 120_000,
 	fullyParallel: false,
 	forbidOnly: !!process.env.CI,
 	retries: 0,
