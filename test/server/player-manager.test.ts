@@ -74,6 +74,22 @@ describe("PlayerManager over a real WebSocket", () => {
 		expect(ping.type).toBe("ping");
 		client.send({ type: "pong", id: "p1" });
 	});
+
+	// Regression: issue #3 — "Dynamic heartbeat". Each client may request its own
+	// ping cadence via the `heartbeat` field of the connection message (a slower
+	// rate for clients that need more time to initialise); the server must store
+	// it per-player instead of the fixed 5s default.
+	it("honours a per-client heartbeat interval from the connection message (issue #3)", async () => {
+		client.send({ type: "connection", id: "slow", heartbeat: 1234 });
+		await client.waitFor((m) => m.type === "json_state" && m.id_player === "slow");
+		expect(pm.getArrayPlayerList().slow?.ping_interval).toBe(1234);
+	});
+
+	it("falls back to the 5s default when no heartbeat is provided (issue #3)", async () => {
+		client.send({ type: "connection", id: "default" });
+		await client.waitFor((m) => m.type === "json_state" && m.id_player === "default");
+		expect(pm.getArrayPlayerList().default?.ping_interval).toBe(5000);
+	});
 });
 
 // Adversarial inputs + wrong-order lifecycle. NB: the three genuinely-crashing
