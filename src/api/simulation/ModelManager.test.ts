@@ -87,6 +87,45 @@ describe("ModelManager active model", () => {
 	});
 });
 
+// Regression: issue #112 — "Games mixed with two settings files".
+// With a second (EXTRA) learning package configured, selecting one game pulled
+// another game's player counts: the single-player game (max 1) waited for 4
+// players because it picked up the LinkToUnity default settings. `model_index`
+// must be globally unique across every package/catalog so setActiveModelByIndex
+// always resolves back to that game's own settings.
+describe("ModelManager cross-package selection (issue #112)", () => {
+	function game(name: string, file: string, min: string, max: string): VU_MODEL_SETTING_JSON {
+		return { ...model(name, file), minimal_players: min, maximal_players: max };
+	}
+
+	it("resolves each game's index to its own settings, never another package's", () => {
+		const mm = bareManager();
+
+		// Main package: a catalog holding the single-player game (waits for 1 player).
+		const mainEntries = mm.parseCatalog(
+			{ type: "catalog", name: "Demos", entries: [game("Single Player Game", "./Single.gaml", "1", "1")] },
+			"/pkg-main/settings.json",
+		);
+		// EXTRA package: the LinkToUnity default game (waits for up to 4 players).
+		const linkEntry = mm.saveNewModel("/pkg-extra/settings.json", game("LinkToUnity", "./Link.gaml", "0", "4"));
+
+		const singleIndex = (mainEntries[0] as { model_index: number }).model_index;
+
+		// Indices are globally distinct across the two packages.
+		expect(singleIndex).not.toBe(linkEntry.model_index);
+
+		// Selecting the single-player game yields *its* player counts, not LinkToUnity's.
+		mm.setActiveModelByIndex(singleIndex);
+		expect(mm.getActiveModel().getJsonSettings().name).toBe("Single Player Game");
+		expect(mm.getActiveModel().getJsonSettings().maximal_players).toBe("1");
+
+		// And selecting LinkToUnity yields the max-4 config.
+		mm.setActiveModelByIndex(linkEntry.model_index);
+		expect(mm.getActiveModel().getJsonSettings().name).toBe("LinkToUnity");
+		expect(mm.getActiveModel().getJsonSettings().maximal_players).toBe("4");
+	});
+});
+
 describe("ModelManager.parseCatalog — malformed catalogs", () => {
 	it("returns [] for an empty catalog", () => {
 		const mm = bareManager();
