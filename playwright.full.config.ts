@@ -14,6 +14,7 @@ import { defineConfig, devices } from "@playwright/test";
 //   - an Android emulator registered with the adb server on localhost:5037
 const WEB_PORT = 8100;
 const MONITOR_WS_PORT = 8001;
+const HEADSET_WS_PORT = 8080;
 const GAMA_WS_PORT = process.env.GAMA_WS_PORT ?? "2000";
 
 // Absolute path so the webServer command launches under any shell (Windows cmd
@@ -53,6 +54,8 @@ export default defineConfig({
 			NODE_ENV: "production",
 			WEB_APPLICATION_PORT: String(WEB_PORT),
 			MONITOR_WS_PORT: String(MONITOR_WS_PORT),
+			// Player (Unity headset) WebSocket port — the #153 forward spec connects here.
+			HEADSET_WS_PORT: String(HEADSET_WS_PORT),
 			LEARNING_PACKAGE_PATH: "./learning-packages",
 			ENV_GAMALESS: "false",
 			// Point the platform at the GAMA server the CI job started.
