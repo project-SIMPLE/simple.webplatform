@@ -78,6 +78,25 @@ export const GAMA_ERROR_MESSAGES: string[] = [
 	"UnableToExecuteRequest",
 ];
 
+// Foreign-experiment probing ==============================================
+// Evaluated against an experiment the platform didn't launch (e.g. opened in
+// GAMA's GUI) to check whether it is actually usable: `cycle` fails unless a
+// live simulation exists, and `paused` captures the current run state.
+// Successful reply content looks like "false|3565" (paused|cycle).
+export const GAMA_PROBE_EXPR = 'string(paused) + "|" + string(cycle)';
+export const GAMA_PROBE_TIMEOUT_MS = 3000;
+
+/**
+ * Extract the player id from a `do create_player("...")` / `do remove_player("...")`
+ * expression echoed back by Gama Server in its command payloads.
+ * @returns the player id, or null if the expression is not a create_player call
+ */
+export function extractCreatePlayerId(expr: unknown): string | null {
+	if (typeof expr !== "string") return null;
+	const match = expr.match(/do create_player\("([^"]+)"\)/);
+	return match ? match[1] : null;
+}
+
 /**
  * ANSI colors for console output
  */

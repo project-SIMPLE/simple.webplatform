@@ -160,7 +160,10 @@ export class AdbManager {
 	}
 
 	async startNewStream(device: Device) {
-		if (!this.isDeviceReady(device)) return;
+		if (!this.isDeviceReady(device)) {
+			logger.debug(`[${device.serial}] Not ready to interact with ADB. Skipping...`)
+			return;
+		}
 
 		// Ensure having only one streaming per device — compare by serial, not reference
 		if (this.clientCurrentlyStreaming.some((d) => d.serial === device.serial)) {
@@ -214,7 +217,10 @@ export class AdbManager {
 	isDeviceReady(device: Device): boolean {
 		let isReady = false;
 
-		switch (device.state) {
+
+		if (device.serial.endsWith("._adb-tls-connect._tcp"))
+			logger.debug(`[${device.serial}] Not a real device. Skipping...`);
+		else switch (device.state) {
 			case "device":
 				isReady = true;
 				break;
@@ -233,6 +239,7 @@ export class AdbManager {
 			default:
 				logger.warn(`[${device.serial}] Device is not ready with an unknown state (${device.state}), skipping`);
 		}
+
 		return isReady;
 	}
 

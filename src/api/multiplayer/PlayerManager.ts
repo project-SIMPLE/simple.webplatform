@@ -320,10 +320,7 @@ class PlayerManager {
 		this.playerList.get(playerWsId)!.date_connection =
 			`${new Date().getHours().toString().padStart(2, "0")}:${new Date().getMinutes().toString().padStart(2, "0")}`;
 
-		if (
-			this.controller.gama_connector !== undefined &&
-			!["NONE", "NOTREADY"].includes(this.controller.gama_connector.jsonGamaState.experiment_state)
-		) {
+		if (this.controller.gama_connector?.canTalkToExperiment()) {
 			logger.debug(`Adding player ${this.playerList.get(playerWsId)?.id} to GAMA simulation...`);
 			this.controller.addInGamePlayer(playerWsId);
 			this.togglePlayerInGame(playerWsId, true);
@@ -417,7 +414,7 @@ class PlayerManager {
 		logger.debug("Add every player at once");
 
 		for (const [playerWsId, player] of this.playerList) {
-			if (this.controller.gama_connector !== undefined && !player.in_game) {
+			if (this.controller.gama_connector?.canTalkToExperiment() && !player.in_game) {
 				this.controller.gama_connector.addInGamePlayer(playerWsId);
 				this.togglePlayerInGame(playerWsId, true);
 			}
@@ -495,6 +492,17 @@ class PlayerManager {
 				`[Player ${jsonPlayer?.id}] Sending state update ${JSON.stringify({ ...jsonStatePlayer, ...newJsonPlayer })}`,
 			);
 		}
+	}
+
+	/**
+	 * Sends an explicit error message to a player's client
+	 * (e.g. GAMA rejected its create_player, see issue #156)
+	 * @param {string} playerId - The in-game id of the player
+	 * @param {string} error - Error identifier sent to the client
+	 */
+	notifyPlayerError(playerId: string, error: string) {
+		const playerIP = this.getIndexByPlayerId(playerId);
+		if (playerIP !== undefined) this.sendMessageByWs(playerIP, { type: "error", content: error });
 	}
 
 	/**

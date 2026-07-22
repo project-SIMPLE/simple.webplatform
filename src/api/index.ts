@@ -142,10 +142,13 @@ async function loadConfiguration(): Promise<void> {
 			? ["true", "1", "yes"].includes(process.env.VERBOSE.toLowerCase())
 			: false;
 
+	// Supports legacy `ENV_GAMALESS` and linter `GAMALESS`
 	ENV_GAMALESS =
 		process.env.ENV_GAMALESS !== undefined
 			? ["true", "1", "yes"].includes(process.env.ENV_GAMALESS.toLowerCase())
-			: false;
+			: process.env.GAMALESS !== undefined
+				? ["true", "1", "yes"].includes(process.env.GAMALESS.toLowerCase())
+				: false;
 
 	/*
 	    SETUP LOGGING SYSTEM ================================

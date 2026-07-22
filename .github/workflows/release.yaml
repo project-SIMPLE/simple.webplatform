@@ -132,7 +132,9 @@ jobs:
 
       - name: Get release metadata
         id: meta
-        run: echo "date=$(date +'%d/%m/%y %R')" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "date=$(date +'%d/%m/%y %R')" >> "$GITHUB_OUTPUT"
+          chmod +x release-files/*
 
       - name: Publish to Github
         uses: softprops/action-gh-release@v2

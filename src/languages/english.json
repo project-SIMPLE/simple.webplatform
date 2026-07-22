@@ -27,6 +27,11 @@
     "in_game": "In game",
     "connected": "Connected",
     "error": "Error",
-    "simulation_loading": "Simulation loading"
+    "simulation_loading": "Simulation loading",
+    "gamaless_banner": "GAMALESS — simulation controls disabled",
+    "foreign_experiment_banner": "GAMA is running an experiment opened in its own interface — the platform cannot control it. Close it in GAMA before launching an experiment here.",
+    "gamaless_mode_title": "GAMALESS Mode",
+    "gamaless_mode_description": "Simulation features are disabled. No GAMA server is connected.",
+    "gamaless_mode_headsets": "Headset management is still operational."
   }
   
