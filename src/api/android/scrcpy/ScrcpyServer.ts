@@ -7,6 +7,7 @@ import { DefaultServerPath, type ScrcpyMediaStreamPacket } from "@yume-chan/scrc
 import { ReadableStream } from "@yume-chan/stream-extra";
 import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
 import type { AdbManager } from "../adb/AdbManager.ts";
+import { nextUseH265 } from "./codec.ts";
 
 // Override the log function
 const logger = getLogger(["android", "ScrcpyServer"]);
@@ -108,9 +109,8 @@ export class ScrcpyServer {
 					// We never upgrade back — that would break already-connected h264-only clients.
 					if (!jsonMessage.h265 && !jsonMessage.h264) {
 						logger.fatal("Client doesn't support any compatible codec!");
-					} else if (!jsonMessage.h265) {
-						this.useH265 = false;
 					}
+					this.useH265 = nextUseH265(this.useH265, jsonMessage);
 
 					// Reset video streams if codec changed !
 					if (previousCodec !== this.useH265) {
