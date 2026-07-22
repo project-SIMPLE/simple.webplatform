@@ -47,6 +47,10 @@ export default defineConfig({
 					include: ["test/integration/**/*.test.ts"],
 					testTimeout: 30_000,
 					hookTimeout: 30_000,
+					// The GAMA tests all drive a single, stateful GAMA server; running the
+					// files in parallel makes them clobber each other's experiment (loads
+					// time out). Run them one file at a time.
+					fileParallelism: false,
 				},
 			},
 			{

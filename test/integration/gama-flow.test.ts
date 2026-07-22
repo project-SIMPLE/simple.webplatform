@@ -70,6 +70,10 @@ describe.skipIf(!reachable)("monitor → Controller → GAMA launch flow (live G
 			monitor.send({ type: "launch_experiment" });
 			await waitFor(() => LIVE_STATES.includes(experimentState(controller)), 15_000, "experiment to go live");
 		}
+		// Wait for GAMA to finish loading (leave the transient NOTREADY state) before
+		// issuing control commands — resume/pause are no-ops until the experiment is
+		// actually loaded (PAUSED/RUNNING).
+		await waitFor(() => ["RUNNING", "PAUSED"].includes(experimentState(controller)), 15_000, "experiment ready");
 		if (experimentState(controller) !== "RUNNING") {
 			monitor.send({ type: "resume_experiment" });
 			await waitFor(() => experimentState(controller) === "RUNNING", 10_000, "resume");
