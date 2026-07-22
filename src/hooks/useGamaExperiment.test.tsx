@@ -61,6 +61,26 @@ describe("useGamaExperiment auto-start", () => {
 		renderHook(() => useGamaExperiment());
 		expect(launch).not.toHaveBeenCalled();
 	});
+
+	// Regression: issue #113 — "Experiments are loaded twice".
+	// The auto-start effect re-runs on every render (new players joining, state
+	// broadcasts). Because GAMA does not leave the "NONE" state until it finishes
+	// loading, without the `simulationStarted` one-shot latch every re-render in
+	// that window fired a second `launch`, loading the experiment twice.
+	it("auto-launches only once across re-renders while GAMA is still NONE", () => {
+		wsState.playerList = { a: {}, b: {} }; // reaches max -> auto-start
+		const { rerender } = renderHook(() => useGamaExperiment());
+		expect(launch).toHaveBeenCalledTimes(1);
+
+		// A third headset connects before GAMA has left NONE (the loading window).
+		wsState.playerList = { a: {}, b: {}, c: {} };
+		rerender();
+		// A state broadcast arrives, still NONE.
+		wsState.gama = { experiment_state: "NONE" };
+		rerender();
+
+		expect(launch).toHaveBeenCalledTimes(1);
+	});
 });
 
 describe("useGamaExperiment handlePlayPause", () => {
