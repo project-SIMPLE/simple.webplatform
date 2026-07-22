@@ -80,13 +80,32 @@ function _isSea(): boolean {
 	}
 }
 
+// Pure decision for whether the app runs as a packaged binary rather than via a
+// `node`/`tsx` runner. Extracted from the eager const below so it can be unit
+// tested across platforms. Issue #118: on Windows process.argv[0] is `node.exe`,
+// which the old `.endsWith("node")` check misread as packaged, breaking .env
+// loading. `path.basename(...).includes("node")` handles `node`, `node.exe` and
+// full paths alike.
+export function computeIsPlatformPackaged(opts: {
+	pkg?: boolean;
+	pkgExecPath?: string;
+	isSea: boolean;
+	argv0: string;
+	argv1?: string;
+}): boolean {
+	// The runner isn't called `node`, and not starting the file from root `/snapshot`.
+	const runnerIsNotNode = !path.basename(opts.argv0).includes("node") && !(opts.argv1 ?? "").startsWith("/snapshot");
+	return Boolean(opts.pkg || opts.pkgExecPath || opts.isSea || runnerIsNotNode);
+}
+
 // Load options — this does not depend on the .env, so it is computed eagerly.
-export const IS_PLATFORM_PACKAGED =
-	(process as typeof process & { pkg?: boolean }).pkg ||
-	process.env.PKG_EXECPATH ||
-	_isSea() ||
-	// The runner isn't called `node`, and not starting file from root `/snapshot`
-	(!path.basename(process.argv[0]).includes("node") && !process.argv[1].startsWith("/snapshot"));
+export const IS_PLATFORM_PACKAGED = computeIsPlatformPackaged({
+	pkg: (process as typeof process & { pkg?: boolean }).pkg,
+	pkgExecPath: process.env.PKG_EXECPATH,
+	isSea: _isSea(),
+	argv0: process.argv[0],
+	argv1: process.argv[1],
+});
 const exeDir = IS_PLATFORM_PACKAGED ? path.dirname(process.execPath) : process.cwd();
 
 // Fix for some dependencies (like evilscan) that might use undeclared variables
