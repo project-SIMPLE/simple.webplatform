@@ -91,4 +91,22 @@ describe.skipIf(!reachable)("monitor → Controller → GAMA launch flow (live G
 		await waitFor(() => experimentState(controller) === "NONE", 10_000, "stop");
 		expect(experimentState(controller)).toBe("NONE");
 	});
+
+	// Regression: issue #35 — "Cannot relaunch gama with VU then clicked on Red
+	// Cross Button". After stopping an experiment (the Stop / red-cross action),
+	// launching again failed to bring GAMA back up. A stop must leave GAMA in a
+	// clean, relaunchable state.
+	it("relaunches cleanly after a full stop (issue #35)", async () => {
+		// Ensure we start from a stopped experiment (idempotent w.r.t. prior tests).
+		if (experimentState(controller) !== "NONE") {
+			monitor.send({ type: "stop_experiment" });
+			await waitFor(() => experimentState(controller) === "NONE", 10_000, "stop before relaunch");
+		}
+		expect(experimentState(controller)).toBe("NONE");
+
+		// Relaunch — this is what used to fail after a Stop with an established VU.
+		monitor.send({ type: "launch_experiment" });
+		await waitFor(() => LIVE_STATES.includes(experimentState(controller)), 15_000, "relaunch after stop");
+		expect(LIVE_STATES).toContain(experimentState(controller));
+	});
 });
