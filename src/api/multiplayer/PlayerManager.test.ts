@@ -142,3 +142,28 @@ describe("addPlayerConnection — issue #34 (re-auth after restart)", () => {
 		expect(pm.playerList.get("192.168.0.11")?.in_game).toBe(true);
 	});
 });
+
+// Regression: issues #57/#59 ("aggressive disconnect does not work").
+// removePlayer always closes the socket; only when AGGRESSIVE_DISCONNECT is on
+// does it also drop the entry from the list. This file runs with the default
+// (off) — the entry must survive so the player can reconnect. The ON branch is
+// covered in PlayerManager.aggressive.test.ts.
+describe("removePlayer — aggressive disconnect OFF (issue #57/#59)", () => {
+	let pm: PlayerManager;
+
+	beforeEach(() => {
+		pm = buildManager([["192.168.0.10", { id: "alice" }]]);
+	});
+
+	it("closes the socket but keeps the player in the list (resolved by id)", () => {
+		const endSpy = pm.playerList.get("192.168.0.10")!.ws.end as unknown as ReturnType<typeof vi.fn>;
+		pm.removePlayer("alice"); // by in-game id
+		expect(endSpy).toHaveBeenCalledWith(1000, "192.168.0.10");
+		expect(pm.playerList.has("192.168.0.10")).toBe(true);
+	});
+
+	it("warns and no-ops for an unknown player", () => {
+		expect(() => pm.removePlayer("ghost")).not.toThrow();
+		expect(pm.playerList.size).toBe(1);
+	});
+});
