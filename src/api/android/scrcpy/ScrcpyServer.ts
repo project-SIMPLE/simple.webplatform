@@ -7,6 +7,7 @@ import { DefaultServerPath, type ScrcpyMediaStreamPacket } from "@yume-chan/scrc
 import { ReadableStream } from "@yume-chan/stream-extra";
 import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
 import type { AdbManager } from "../adb/AdbManager.ts";
+import { isInvertedAspectRatio } from "./aspect.ts";
 import { nextUseH265 } from "./codec.ts";
 
 // Override the log function
@@ -392,7 +393,7 @@ export class ScrcpyServer {
 			logger.debug(`[${streamIp}] {metadata}`, { metadata });
 			// Prevent having stream ratio inverted, happened on some weird device...
 			// https://github.com/project-SIMPLE/simple.webplatform/issues/78
-			if ((metadata === undefined || metadata.width! < metadata.height!) && deviceModel.startsWith("Quest")) {
+			if (isInvertedAspectRatio(metadata, deviceModel)) {
 				logger.warn(
 					`[${streamIp}] Inverted aspect ratio (${metadata?.width}×${metadata?.height}), closing and retrying with flipped crop after cooldown...`,
 				);
