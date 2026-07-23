@@ -108,6 +108,13 @@ export const IS_PLATFORM_PACKAGED = computeIsPlatformPackaged({
 });
 const exeDir = IS_PLATFORM_PACKAGED ? path.dirname(process.execPath) : process.cwd();
 
+// errorLog.log rotation (issue #66: the log file used to grow without bound).
+// Keep at most `maxFiles` rollovers of `maxSize` each, capping total disk use.
+export const LOG_ROTATION = {
+	maxSize: 0x400 * 0x400 * 100, // 100 MiB
+	maxFiles: 5,
+} as const;
+
 // Fix for some dependencies (like evilscan) that might use undeclared variables
 (globalThis as Record<string, unknown>).targetMatch = undefined;
 
@@ -203,16 +210,10 @@ async function loadConfiguration(): Promise<void> {
 				}),
 				getLevelFilter(ENV_EXTRA_VERBOSE ? "trace" : ENV_VERBOSE ? "debug" : "info"),
 			),
-			file: fingersCrossed(
-				getRotatingFileSink("errorLog.log", {
-					maxSize: 0x400 * 0x400 * 100, // 100 MiB
-					maxFiles: 5,
-				}),
-				{
-					triggerLevel: "error",
-					bufferLevel: "debug", // Buffer debug and below; info/warn pass through immediately
-				},
-			),
+			file: fingersCrossed(getRotatingFileSink("errorLog.log", { ...LOG_ROTATION }), {
+				triggerLevel: "error",
+				bufferLevel: "debug", // Buffer debug and below; info/warn pass through immediately
+			}),
 		},
 		loggers: [
 			{ category: ["logtape", "meta"], sinks: ["console"], lowestLevel: "warning" },

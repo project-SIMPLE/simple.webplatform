@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { _extractIPv4, asBool, computeIsPlatformPackaged, parseHeadsetsIp } from "./index.ts";
+import { _extractIPv4, asBool, computeIsPlatformPackaged, LOG_ROTATION, parseHeadsetsIp } from "./index.ts";
 
 describe("_extractIPv4", () => {
 	it("extracts a bare IPv4 address", () => {
@@ -111,5 +111,21 @@ describe("parseHeadsetsIp", () => {
 		const { ips, warnings } = parseHeadsetsIp("192.168.0.10;;192.168.0.11;");
 		expect(ips).toEqual(["192.168.0.10", "192.168.0.11"]);
 		expect(warnings).toEqual([]);
+	});
+});
+
+// Regression: issue #66 ("errorLog.log file can enlarge forever"). The rotating
+// file sink must be configured with a bounded size and file count so the log
+// can never grow without limit.
+describe("LOG_ROTATION (issue #66)", () => {
+	it("bounds errorLog.log with a finite, positive size and file count", () => {
+		expect(LOG_ROTATION.maxSize).toBeGreaterThan(0);
+		expect(Number.isFinite(LOG_ROTATION.maxSize)).toBe(true);
+		expect(LOG_ROTATION.maxFiles).toBeGreaterThan(0);
+		expect(Number.isFinite(LOG_ROTATION.maxFiles)).toBe(true);
+	});
+
+	it("keeps the total capped footprint well under 1 GiB", () => {
+		expect(LOG_ROTATION.maxSize * LOG_ROTATION.maxFiles).toBeLessThan(0x400 * 0x400 * 1024);
 	});
 });
