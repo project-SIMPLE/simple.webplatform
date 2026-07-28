@@ -194,12 +194,14 @@ jobs:
         run: |
           chmod +x gama-headless/**/gama-headless.sh || true
           nohup bash -c 'gama-headless/**/gama-headless.sh -socket ${{ env.GAMA_WS_PORT }}' > gama-server.log 2>&1 &
+          up=""
           for i in $(seq 1 60); do
             if bash -c "echo > /dev/tcp/localhost/${{ env.GAMA_WS_PORT }}" 2>/dev/null; then
-              echo "GAMA server is up"; break
+              up=1; echo "GAMA server is up"; break
             fi
             sleep 1
           done
+          [ -n "$up" ] || echo "::warning::GAMA server never opened port ${{ env.GAMA_WS_PORT }} — the GAMA-gated E2E tests will be skipped"
 
       # Hardware-accelerate the emulator so it boots fast enough for the job.
       - name: Enable KVM
@@ -292,10 +294,12 @@ jobs:
           HEADLESS=$(find ./GAMA.app -name 'gama-headless.sh' | head -1)
           chmod +x "$HEADLESS" || true
           nohup bash -c "'$HEADLESS' -socket ${{ env.GAMA_WS_PORT }}" > gama-server.log 2>&1 &
+          up=""
           for i in $(seq 1 120); do
-            if bash -c "echo > /dev/tcp/localhost/${{ env.GAMA_WS_PORT }}" 2>/dev/null; then echo "GAMA server is up"; break; fi
+            if bash -c "echo > /dev/tcp/localhost/${{ env.GAMA_WS_PORT }}" 2>/dev/null; then up=1; echo "GAMA server is up"; break; fi
             sleep 1
           done
+          [ -n "$up" ] || echo "::warning::GAMA server never opened port ${{ env.GAMA_WS_PORT }} — the GAMA-gated E2E tests will be skipped"
 
       - name: Full-stack E2E (macOS binary + GAMA, no emulator)
         run: npm run test:e2e:full
@@ -357,17 +361,26 @@ jobs:
           curl.exe -L "$env:GAMA_DOWNLOAD_URL" -o gama-headless.zip
           Expand-Archive -Path gama-headless.zip -DestinationPath gama-headless -Force
           python "$env:GITHUB_WORKSPACE/test/setup/p2Downloader.py" 'https://project-simple.github.io/simple.toolchain/' ./gama-headless/dropins
+          # Force using dropins in headless (same trick as the Linux jobs)
+          Remove-Item -Recurse -Force gama-headless/headless/configuration
+          Copy-Item -Recurse gama-headless/configuration gama-headless/headless/configuration
 
       - name: Start GAMA WebSocket server
         continue-on-error: true
         shell: pwsh
         run: |
           $bat = Get-ChildItem -Path gama-headless -Recurse -Filter gama-headless.bat | Select-Object -First 1
-          Start-Process -FilePath $bat.FullName -ArgumentList '-socket', '${{ env.GAMA_WS_PORT }}' -NoNewWindow
+          # gama-headless.bat resolves everything relative to the CWD (..\plugins,
+          # ..\GAMA.ini, ..\jdk) — launched from the repo root it can't read
+          # GAMA.ini, computes -Xmx-1m and the JVM refuses to start.
+          Start-Process -FilePath $bat.FullName -ArgumentList '-socket', '${{ env.GAMA_WS_PORT }}' -WorkingDirectory $bat.DirectoryName -NoNewWindow
+          $up = $false
           for ($i = 0; $i -lt 90; $i++) {
-            if (Test-NetConnection -ComputerName localhost -Port ${{ env.GAMA_WS_PORT }} -InformationLevel Quiet) { break }
+            if (Test-NetConnection -ComputerName localhost -Port ${{ env.GAMA_WS_PORT }} -InformationLevel Quiet) { $up = $true; break }
             Start-Sleep -Seconds 1
           }
+          if ($up) { Write-Output "GAMA server is up" }
+          else { Write-Output "::warning::GAMA server never opened port ${{ env.GAMA_WS_PORT }} — the GAMA-gated E2E tests will be skipped" }
 
       - name: Full-stack E2E (Windows binary + GAMA, no emulator)
         run: npm run test:e2e:full
