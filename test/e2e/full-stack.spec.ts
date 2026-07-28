@@ -46,7 +46,27 @@ test("platform connects to GAMA and launches an experiment from the browser", as
 	}
 	await expect(pause).toBeVisible({ timeout: 30_000 });
 
+	// Pause and resume from the browser: the controls swap Play <-> Pause with the
+	// experiment state reported by the platform.
+	await pause.click();
+	await expect(page.getByLabel("Play")).toBeVisible({ timeout: 30_000 });
+	await page.getByLabel("Play").click();
+	await expect(pause).toBeVisible({ timeout: 30_000 });
+
 	// Stop the experiment; the UI navigates back to the selector.
+	await page.getByLabel("Stop").click();
+	await expect(page.getByText("LinkToUnity")).toBeVisible({ timeout: 15_000 });
+
+	// Regression (issue #35): after a full stop the platform must be able to
+	// relaunch — historically the Stop/red-cross action left GAMA unrelaunchable.
+	await tile.click();
+	await expect(page).toHaveURL(/simulationManager/);
+	const relaunch = page.getByLabel("Play");
+	await expect(relaunch).toBeVisible({ timeout: 15_000 });
+	await relaunch.click();
+	await expect(page.getByLabel("Stop")).toBeVisible({ timeout: 30_000 });
+
+	// Leave GAMA clean for the next spec in the lane.
 	await page.getByLabel("Stop").click();
 	await expect(page.getByText("LinkToUnity")).toBeVisible({ timeout: 15_000 });
 });

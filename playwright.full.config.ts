@@ -40,6 +40,11 @@ export default defineConfig({
 	// GAMA can take a while to load and run a model, so give the full flow room.
 	timeout: 120_000,
 	fullyParallel: false,
+	// One worker: every spec drives the SAME binary and the SAME stateful GAMA
+	// server (fullyParallel only serializes within a file — separate files still
+	// run in parallel workers, and e.g. player-forward's final Stop would kill
+	// full-stack's experiment mid-lifecycle).
+	workers: 1,
 	forbidOnly: !!process.env.CI,
 	retries: 0,
 	reporter: "list",
