@@ -4,8 +4,15 @@ on:
   push:
 
 jobs:
+  # Fast lane on every target OS: the platform ships as a native binary for all
+  # three, so unit/server tests must pass everywhere (path handling, native
+  # modules like node-hid and the uWebSockets.js binaries differ per OS).
   test:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
 
       - uses: actions/checkout@v6
@@ -16,7 +23,9 @@ jobs:
       - name: Install npm modules
         run: npm ci
 
+      # Lint results are platform-independent — checking once is enough.
       - name: Lint & format check (biome)
+        if: runner.os == 'Linux'
         run: npm run check
 
       - name: Unit & frontend tests
@@ -301,6 +310,12 @@ jobs:
           done
           [ -n "$up" ] || echo "::warning::GAMA server never opened port ${{ env.GAMA_WS_PORT }} — the GAMA-gated E2E tests will be skipped"
 
+      # Vitest integration project against the live GAMA booted above — real-GAMA
+      # coverage on macOS, not just Linux. Self-skips if GAMA never came up (the
+      # ::warning:: above fired in that case).
+      - name: Integration tests (real GAMA)
+        run: npm run test:integration
+
       - name: Full-stack E2E (macOS binary + GAMA, no emulator)
         run: npm run test:e2e:full
 
@@ -381,6 +396,12 @@ jobs:
           }
           if ($up) { Write-Output "GAMA server is up" }
           else { Write-Output "::warning::GAMA server never opened port ${{ env.GAMA_WS_PORT }} — the GAMA-gated E2E tests will be skipped" }
+
+      # Vitest integration project against the live GAMA booted above — real-GAMA
+      # coverage on Windows, not just Linux. Self-skips if GAMA never came up (the
+      # ::warning:: above fired in that case).
+      - name: Integration tests (real GAMA)
+        run: npm run test:integration
 
       - name: Full-stack E2E (Windows binary + GAMA, no emulator)
         run: npm run test:e2e:full
