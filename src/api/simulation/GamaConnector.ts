@@ -153,7 +153,13 @@ class GamaConnector {
 		this.setGamaLoading(true);
 
 		try {
-			this.gama_socket = new WebSocket(`ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
+			// family: 4 — GAMA's headless server only binds IPv4. Left to the OS default,
+			// "localhost" can resolve ::1 first; if nothing answers there the socket never
+			// falls through to the IPv4 address that actually works (same class of bug as
+			// the frontend's localhost->127.0.0.1 fix for the monitor WebSocket).
+			this.gama_socket = new WebSocket(`ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`, {
+				family: 4,
+			});
 
 			this.gama_socket.onopen = () => {
 				logger.debug(`Opening connection with GAMA Server`);
