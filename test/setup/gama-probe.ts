@@ -28,10 +28,10 @@ export function isGamaReachable(timeoutMs = 2000): Promise<boolean> {
 
 		let ws: WebSocket;
 		try {
-			// family: 4 — see the matching note in GamaConnector.connectGama(). Without
-			// it, a hung IPv6 "localhost" attempt can outlast this probe's own timeout
-			// and falsely report GAMA as unreachable even though it is up on IPv4.
-			ws = new WebSocket(gamaUrl(), { family: 4 });
+			// No family pin — see the matching note in GamaConnector.connectGama():
+			// GAMA on Windows listens on IPv6 only, on Linux dual-stack, so the
+			// probe must let Node try both families like the connector does.
+			ws = new WebSocket(gamaUrl());
 		} catch {
 			resolve(false);
 			return;

@@ -153,13 +153,12 @@ class GamaConnector {
 		this.setGamaLoading(true);
 
 		try {
-			// family: 4 — GAMA's headless server only binds IPv4. Left to the OS default,
-			// "localhost" can resolve ::1 first; if nothing answers there the socket never
-			// falls through to the IPv4 address that actually works (same class of bug as
-			// the frontend's localhost->127.0.0.1 fix for the monitor WebSocket).
-			this.gama_socket = new WebSocket(`ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`, {
-				family: 4,
-			});
+			// Do NOT pin an address family here. Which family GAMA's Java server binds
+			// is platform-dependent: on Linux a wildcard bind is dual-stack, but on
+			// Windows it is IPv6-ONLY (V6ONLY socket default) — ::1 answers, 127.0.0.1
+			// refuses. Node's default family autoselection tries both and connects to
+			// whichever one accepts.
+			this.gama_socket = new WebSocket(`ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
 
 			this.gama_socket.onopen = () => {
 				logger.debug(`Opening connection with GAMA Server`);
