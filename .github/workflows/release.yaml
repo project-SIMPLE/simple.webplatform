@@ -13,8 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -25,7 +25,7 @@ jobs:
         run: npm run build:sea:linux
 
       - name: Upload Linux artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: linux-release-binary
           if-no-files-found: error
@@ -36,8 +36,8 @@ jobs:
     runs-on: macos-latest
     steps:
 
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -74,7 +74,7 @@ jobs:
         run: npm run build:sea:macos
 
       - name: Upload macOS artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: macos-release-binary
           if-no-files-found: error
@@ -85,11 +85,11 @@ jobs:
     runs-on: windows-latest
     steps:
 
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: 'stable'
 
@@ -100,7 +100,7 @@ jobs:
         run: npm run build:sea:win
 
       - name: Upload Windows artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: windows-release-binary
           if-no-files-found: error
@@ -113,19 +113,19 @@ jobs:
     steps:
 
       - name: Download Linux binary
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: linux-release-binary
           path: release-files/
 
       - name: Download macOS binary
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: macos-release-binary
           path: release-files/
 
       - name: Download Windows binary
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: windows-release-binary
           path: release-files/
@@ -137,7 +137,7 @@ jobs:
           chmod +x release-files/*
 
       - name: Publish to Github
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           prerelease: ${{ inputs.prerelease }}
           make_latest: ${{ inputs.prerelease == false }}
