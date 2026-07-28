@@ -160,6 +160,52 @@ describe("GamaConnector message dispatch", () => {
 		expect(gama.getJsonGama().content_error).toBe("");
 	});
 
+	// The headless GAMA server (gama-headless.sh -socket) never pushes
+	// SimulationStatus — only command acks. The connector must derive the
+	// experiment lifecycle from CommandExecutedSuccessfully frames alone.
+	it("acks drive the full lifecycle when no SimulationStatus is pushed (headless GAMA)", () => {
+		const { gama, controller, socket } = newConnector();
+		socket.onopen?.();
+
+		receive(socket, {
+			type: "CommandExecutedSuccessfully",
+			command: { type: "load", model: "/m.gaml", experiment: "vr_xp" },
+			content: "483", // headless returns the experiment id here
+		});
+		expect(gama.getJsonGama().experiment_name).toBe("vr_xp");
+		expect(gama.getJsonGama().experiment_id).toBe("483");
+		expect(gama.getJsonGama().experiment_state).toBe("PAUSED");
+
+		receive(socket, { type: "CommandExecutedSuccessfully", command: { type: "play", exp_id: "483" }, content: "" });
+		expect(gama.getJsonGama().experiment_state).toBe("RUNNING");
+
+		receive(socket, { type: "CommandExecutedSuccessfully", command: { type: "pause", exp_id: "483" }, content: "" });
+		expect(gama.getJsonGama().experiment_state).toBe("PAUSED");
+
+		receive(socket, { type: "CommandExecutedSuccessfully", command: { type: "stop", exp_id: "483" }, content: "" });
+		expect(gama.getJsonGama().experiment_state).toBe("NONE");
+		expect(gama.getJsonGama().experiment_id).toBe("");
+		expect(controller.cancelLaunchInterval).toHaveBeenCalled();
+		expect(controller.player_manager.disableAllPlayerInGame).toHaveBeenCalled();
+	});
+
+	it("a load ack does not override state/id already set by SimulationStatus (GUI GAMA)", () => {
+		const { gama, socket } = newConnector();
+		socket.onopen?.();
+
+		// GUI order: NOTREADY push (with the real exp_id) arrives before the ack.
+		receive(socket, { type: "SimulationStatus", exp_id: "0", content: "NOTREADY" });
+		receive(socket, {
+			type: "CommandExecutedSuccessfully",
+			command: { type: "load", model: "/m.gaml", experiment: "vr_xp" },
+			content: "vr_xp", // GUI returns the experiment name here
+		});
+
+		expect(gama.getJsonGama().experiment_id).toBe("0");
+		expect(gama.getJsonGama().experiment_state).toBe("NOTREADY");
+		expect(gama.getJsonGama().experiment_name).toBe("vr_xp");
+	});
+
 	it("known GAMA error types are recorded as content_error", () => {
 		const { gama, socket } = newConnector();
 		const errorFrame = { type: "RuntimeError", content: "boom" };
