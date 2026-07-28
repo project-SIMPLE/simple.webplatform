@@ -52,13 +52,20 @@ jobs:
       GAMA_IP_ADDRESS: localhost
       GAMA_WS_PORT: "2000"
     steps:
+      # Resolved through `gh api` rather than plain curl: unauthenticated
+      # api.github.com allows 60 requests/hour per IP, which runners share and
+      # regularly exhaust — the error body then has no .assets and jq dies with
+      # "Cannot iterate over null". `gh` uses GH_TOKEN (1000 requests/hour).
       - name: Resolve GAMA download link
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${{ matrix.gama-version }}" = "latest" ]; then
-            GAMA_DOWNLOAD_URL=$(curl -s https://api.github.com/repos/gama-platform/gama/releases/latest | jq -r '.assets[] | select(.name | contains("Linux_with_JDK") and endswith(".zip")) | .browser_download_url')
+            GAMA_DOWNLOAD_URL=$(gh api repos/gama-platform/gama/releases/latest --jq '.assets[] | select(.name | contains("Linux_with_JDK") and endswith(".zip")) | .browser_download_url')
           else
-            GAMA_DOWNLOAD_URL=$(curl -s https://api.github.com/repos/gama-platform/gama/releases | jq -r '[.[] | select(.prerelease == true)][0].assets[] | select(.name | contains("Linux_with_JDK") and endswith(".zip")) | .browser_download_url')
+            GAMA_DOWNLOAD_URL=$(gh api repos/gama-platform/gama/releases --jq '[.[] | select(.prerelease == true)][0].assets[] | select(.name | contains("Linux_with_JDK") and endswith(".zip")) | .browser_download_url')
           fi
+          [ -n "$GAMA_DOWNLOAD_URL" ] || { echo "::error::No Linux_with_JDK .zip asset found on the ${{ matrix.gama-version }} GAMA release"; exit 1; }
           echo "GAMA_DOWNLOAD_URL=$GAMA_DOWNLOAD_URL" >> $GITHUB_ENV
 
       - uses: actions/checkout@v6
@@ -164,9 +171,14 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      # See the note on the test-integration job: `gh api` is authenticated, plain
+      # curl is not and hits the 60/hour per-IP limit shared across runners.
       - name: Resolve GAMA download link
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          GAMA_DOWNLOAD_URL=$(curl -s https://api.github.com/repos/gama-platform/gama/releases/latest | jq -r '.assets[] | select(.name | contains("Linux_with_JDK") and endswith(".zip")) | .browser_download_url')
+          GAMA_DOWNLOAD_URL=$(gh api repos/gama-platform/gama/releases/latest --jq '.assets[] | select(.name | contains("Linux_with_JDK") and endswith(".zip")) | .browser_download_url')
+          [ -n "$GAMA_DOWNLOAD_URL" ] || { echo "::error::No Linux_with_JDK .zip asset found on the latest GAMA release"; exit 1; }
           echo "GAMA_DOWNLOAD_URL=$GAMA_DOWNLOAD_URL" >> $GITHUB_ENV
 
       - name: Download & unpack GAMA headless
@@ -253,8 +265,11 @@ jobs:
       # macOS GAMA ships ONLY as a .dmg (no headless zip). macos-latest is ARM, so
       # use the M1 build with a bundled JDK.
       - name: Resolve GAMA download link (macOS, M1 .dmg with JDK)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          GAMA_DOWNLOAD_URL=$(curl -s https://api.github.com/repos/gama-platform/gama/releases/latest | jq -r '.assets[] | select(.name | contains("MacOS_M1_with_JDK") and endswith(".dmg")) | .browser_download_url')
+          GAMA_DOWNLOAD_URL=$(gh api repos/gama-platform/gama/releases/latest --jq '.assets[] | select(.name | contains("MacOS_M1_with_JDK") and endswith(".dmg")) | .browser_download_url')
+          [ -n "$GAMA_DOWNLOAD_URL" ] || { echo "::error::No MacOS_M1_with_JDK .dmg asset found on the latest GAMA release"; exit 1; }
           echo "GAMA_DOWNLOAD_URL=$GAMA_DOWNLOAD_URL" >> $GITHUB_ENV
 
       # Mount the .dmg, copy GAMA.app out (the volume is read-only), install the
@@ -328,8 +343,11 @@ jobs:
 
       - name: Resolve GAMA download link (Windows)
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          GAMA_DOWNLOAD_URL=$(curl -s https://api.github.com/repos/gama-platform/gama/releases/latest | jq -r '.assets[] | select(.name | contains("Windows") and contains("with_JDK") and endswith(".zip")) | .browser_download_url')
+          GAMA_DOWNLOAD_URL=$(gh api repos/gama-platform/gama/releases/latest --jq '.assets[] | select(.name | contains("Windows") and contains("with_JDK") and endswith(".zip")) | .browser_download_url')
+          [ -n "$GAMA_DOWNLOAD_URL" ] || { echo "::error::No Windows with_JDK .zip asset found on the latest GAMA release"; exit 1; }
           echo "GAMA_DOWNLOAD_URL=$GAMA_DOWNLOAD_URL" >> $GITHUB_ENV
 
       - name: Download & unpack GAMA headless
