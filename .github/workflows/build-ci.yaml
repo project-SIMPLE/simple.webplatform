@@ -388,14 +388,24 @@ jobs:
           # gama-headless.bat resolves everything relative to the CWD (..\plugins,
           # ..\GAMA.ini, ..\jdk) — launched from the repo root it can't read
           # GAMA.ini, computes -Xmx-1m and the JVM refuses to start.
-          Start-Process -FilePath $bat.FullName -ArgumentList '-socket', '${{ env.GAMA_WS_PORT }}' -WorkingDirectory $bat.DirectoryName -NoNewWindow
+          #
+          # Detached (own hidden console, output to files): with -NoNewWindow the
+          # process tree hangs off this step's console, and Windows kills it the
+          # moment the step's shell exits — GAMA reported "up" here, then every
+          # later step got ECONNREFUSED (and job cleanup saw no orphan java, so
+          # it was already dead). The Linux equivalent survives because nohup
+          # detaches it from the step.
+          Start-Process -FilePath $bat.FullName -ArgumentList '-socket', '${{ env.GAMA_WS_PORT }}' -WorkingDirectory $bat.DirectoryName -WindowStyle Hidden -RedirectStandardOutput gama-server.log -RedirectStandardError gama-server-err.log
           $up = $false
           for ($i = 0; $i -lt 90; $i++) {
             if (Test-NetConnection -ComputerName localhost -Port ${{ env.GAMA_WS_PORT }} -InformationLevel Quiet) { $up = $true; break }
             Start-Sleep -Seconds 1
           }
           if ($up) { Write-Output "GAMA server is up" }
-          else { Write-Output "::warning::GAMA server never opened port ${{ env.GAMA_WS_PORT }} — the GAMA-gated E2E tests will be skipped" }
+          else {
+            Write-Output "::warning::GAMA server never opened port ${{ env.GAMA_WS_PORT }} — the GAMA-gated E2E tests will be skipped"
+            Get-Content gama-server.log, gama-server-err.log -ErrorAction SilentlyContinue | Select-Object -Last 40
+          }
 
       # Vitest integration project against the live GAMA booted above — real-GAMA
       # coverage on Windows, not just Linux. Self-skips if GAMA never came up (the
@@ -405,6 +415,16 @@ jobs:
 
       - name: Full-stack E2E (Windows binary + GAMA, no emulator)
         run: npm run test:e2e:full
+
+      - name: Upload GAMA server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gama-server-log-windows
+          path: |
+            gama-server.log
+            gama-server-err.log
+          if-no-files-found: ignore
 
   # Real-device ADB tests against a hardware-accelerated Android emulator.
   # Covers the generic adb-server + shell paths (device discovery, isDeviceReady,
