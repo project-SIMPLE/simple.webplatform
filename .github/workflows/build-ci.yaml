@@ -40,7 +40,23 @@ jobs:
         run: npm run build:frontend
 
       - name: Integration tests (StaticServer; GAMA-gated ones skip)
-        run: npm run test:integration
+        run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-reports/integration-report.json
+
+      # `npm run build:frontend` ran above, so the StaticServer tests MUST have
+      # executed. Without this check a broken frontend build silently degrades
+      # this lane to "everything skipped, all green".
+      - name: Assert the StaticServer tests actually ran
+        run: node scripts/assert-tests-ran.mjs test-reports/integration-report.json --min-passed=2 --allow-skip=GAMA
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-${{ matrix.os }}
+          path: |
+            test-results/
+            test-reports/
+          if-no-files-found: ignore
 
   # Real-GAMA integration tests. Boots a headless GAMA server, then runs the
   # `integration` project (which auto-skips when no server is reachable).
@@ -114,7 +130,23 @@ jobs:
           echo "GAMA_WS_PORT=${{ env.GAMA_WS_PORT }}" >> .env
 
       - name: Integration tests (real GAMA)
-        run: npm run test:integration
+        run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-reports/integration-report.json
+
+      # This lane provisions GAMA, so all 12 GAMA tests must run. They self-skip
+      # when the server is unreachable — which is exactly how a dead GAMA used to
+      # produce a green build. StaticServer skips here (no `build:frontend` step).
+      - name: Assert the GAMA tests actually ran
+        run: node scripts/assert-tests-ran.mjs test-reports/integration-report.json --min-passed=12 --allow-skip=StaticServer
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-integration-${{ matrix.gama-version }}
+          path: |
+            test-results/
+            test-reports/
+          if-no-files-found: ignore
 
       - name: Upload GAMA server log on failure
         if: failure()
@@ -143,6 +175,19 @@ jobs:
 
       - name: E2E tests (builds frontend, boots the real backend)
         run: npm run test:e2e
+
+      # app.spec + the no-stream streaming spec must run here. The live-canvas
+      # spec legitimately skips: this lane has no emulator.
+      - name: Assert the E2E specs actually ran
+        run: node scripts/assert-tests-ran.mjs test-results/e2e-report.json --min-passed=2 --allow-skip="live canvas"
+
+      - name: Upload E2E report and traces
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-report
+          path: test-results/
+          if-no-files-found: ignore
 
   # Full-stack end-to-end against the COMPILED single-executable, wired to a real
   # GAMA server AND a real Android emulator. Drives the whole flow from the browser:
@@ -220,9 +265,9 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       # The emulator registers with the adb server on localhost:5037; test:e2e:full
-      # boots the binary (already pointed at GAMA), which connects to both. Specs
-      # self-skip if GAMA/streaming never come up, so this surfaces as skipped, not
-      # a false pass.
+      # boots the binary (already pointed at GAMA), which connects to both. The
+      # specs self-skip when GAMA/streaming never come up — which reads as green,
+      # so the guard step below turns that back into a failure.
       - name: Full-stack E2E (binary + GAMA + emulator)
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -230,6 +275,19 @@ jobs:
           arch: x86_64
           target: google_apis
           script: npm run test:e2e:full
+
+      # This lane provisions BOTH GAMA and an emulator, so all 4 specs must run:
+      # full-stack, player-forward and both streaming specs. Nothing may skip.
+      - name: Assert the full-stack specs actually ran
+        run: node scripts/assert-tests-ran.mjs test-results/e2e-full-report.json --min-passed=4
+
+      - name: Upload E2E report and traces
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-full-report-linux
+          path: test-results/
+          if-no-files-found: ignore
 
       - name: Upload GAMA server log on failure
         if: failure()
@@ -314,10 +372,36 @@ jobs:
       # coverage on macOS, not just Linux. Self-skips if GAMA never came up (the
       # ::warning:: above fired in that case).
       - name: Integration tests (real GAMA)
-        run: npm run test:integration
+        run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-reports/integration-report.json
 
       - name: Full-stack E2E (macOS binary + GAMA, no emulator)
         run: npm run test:e2e:full
+
+      # Reports what actually ran instead of leaving "everything skipped" looking
+      # green. Non-blocking (`continue-on-error`) to match this lane's existing
+      # posture: the GAMA install/boot steps above are non-fatal by design, so a
+      # dead GAMA should annotate rather than gate merges. Drop the flag once the
+      # macOS GAMA setup is reliable.
+      - name: Assert the GAMA tests actually ran
+        if: always()
+        continue-on-error: true
+        run: |
+          rc=0
+          # `|| rc=1` so a failing first check still lets the second one report.
+          node scripts/assert-tests-ran.mjs test-reports/integration-report.json --min-passed=12 --allow-skip=StaticServer || rc=1
+          # No emulator on this runner, so the live-canvas streaming spec skips.
+          node scripts/assert-tests-ran.mjs test-results/e2e-full-report.json --min-passed=3 --allow-skip="live canvas" || rc=1
+          exit $rc
+
+      - name: Upload test reports and traces
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-macos
+          path: |
+            test-results/
+            test-reports/
+          if-no-files-found: ignore
 
       - name: Upload GAMA server log on failure
         if: failure()
@@ -430,10 +514,37 @@ jobs:
       # coverage on Windows, not just Linux. Self-skips if GAMA never came up (the
       # ::warning:: above fired in that case).
       - name: Integration tests (real GAMA)
-        run: npm run test:integration
+        run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-reports/integration-report.json
 
       - name: Full-stack E2E (Windows binary + GAMA, no emulator)
         run: npm run test:e2e:full
+
+      # This is the lane where a GAMA killed at the step boundary produced a green
+      # run with every test skipped. The guard makes that state explicit. Kept
+      # non-blocking (`continue-on-error`) like the GAMA setup steps above; drop
+      # the flag once the WMI launcher is proven stable.
+      - name: Assert the GAMA tests actually ran
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $rc = 0
+          node scripts/assert-tests-ran.mjs test-reports/integration-report.json --min-passed=12 --allow-skip=StaticServer
+          if ($LASTEXITCODE -ne 0) { $rc = 1 }
+          # No emulator on this runner, so the live-canvas streaming spec skips.
+          node scripts/assert-tests-ran.mjs test-results/e2e-full-report.json --min-passed=3 --allow-skip="live canvas"
+          if ($LASTEXITCODE -ne 0) { $rc = 1 }
+          exit $rc
+
+      - name: Upload test reports and traces
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-windows
+          path: |
+            test-results/
+            test-reports/
+          if-no-files-found: ignore
 
       - name: Upload GAMA server log on failure
         if: failure()
@@ -478,8 +589,23 @@ jobs:
           target: google_apis
           # The emulator boots and registers with the adb server on localhost:5037,
           # then `npm run test:adb` connects to it. The suite auto-skips if no
-          # device is present, so a boot failure surfaces as skipped, not a false pass.
-          script: npm run test:adb
+          # device is present — which reads as green, so the guard step below turns
+          # a failed emulator boot back into a failure.
+          script: npm run test:adb -- --reporter=default --reporter=json --outputFile.json=test-reports/adb-report.json
+
+      # This lane provisions an emulator, so all 12 ADB tests must run.
+      - name: Assert the ADB tests actually ran
+        run: node scripts/assert-tests-ran.mjs test-reports/adb-report.json --min-passed=12
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-adb
+          path: |
+            test-results/
+            test-reports/
+          if-no-files-found: ignore
 
   compilation-linux:
     runs-on: ubuntu-latest

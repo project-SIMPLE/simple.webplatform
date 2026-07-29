@@ -38,10 +38,16 @@ export default defineConfig({
 	fullyParallel: false,
 	forbidOnly: !!process.env.CI,
 	retries: 0,
-	reporter: "list",
+	// `list` for humans reading the CI log; `json` for scripts/assert-tests-ran.mjs,
+	// which fails the lane when specs silently skipped.
+	reporter: [["list"], ["json", { outputFile: "test-results/e2e-sea-report.json" }]],
 	use: {
 		baseURL: `http://127.0.0.1:${WEB_PORT}`,
 		headless: true,
+		// Without these a CI failure leaves nothing but a one-line message.
+		trace: "retain-on-failure",
+		screenshot: "only-on-failure",
+		video: "retain-on-failure",
 	},
 	projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 	// Boot the compiled binary. As a SEA build it auto-starts the StaticServer
