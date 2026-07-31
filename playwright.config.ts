@@ -36,6 +36,7 @@ export default defineConfig({
 			WEB_APPLICATION_PORT: String(WEB_PORT),
 			MONITOR_WS_PORT: String(MONITOR_WS_PORT),
 			LEARNING_PACKAGE_PATH: "./learning-packages",
+			GAMA_WS_PORT: "65535", // Ensure it can't connect to a local dev GAMA
 		},
 		url: `http://127.0.0.1:${WEB_PORT}`,
 		timeout: 60_000,
