@@ -23,7 +23,12 @@ test("shows a live canvas when a scrcpy stream is available", async ({ page }) =
 	await page.goto("/streamPlayerScreen");
 
 	const canvas = page.locator("canvas").first();
-	const hasStream = await canvas.isVisible().catch(() => false);
+	try {
+		await canvas.waitFor({ state: "visible", timeout: 15_000 });
+	} catch {
+		// Ignore timeout; hasStream will be false and the test will skip correctly.
+	}
+	const hasStream = await canvas.isVisible();
 	test.skip(!hasStream, "no live scrcpy stream (needs emulator + GAMA + connected players)");
 
 	await expect(canvas).toBeVisible();
