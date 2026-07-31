@@ -54,10 +54,13 @@ class ModelManager {
 			if (IS_PLATFORM_PACKAGED) {
 				logger.info(`Creating folder automatically at ${learningPackagePath}....`);
 
-				fs.mkdir(learningPackagePath, { recursive: true }, (err) => {
+				try {
+					fs.mkdirSync(learningPackagePath, { recursive: true });
+					directoriesWithProjects.push(learningPackagePath);
+				} catch (err) {
 					logger.error(`Couldn't create learning package at ${learningPackagePath}...`);
 					logger.error(`Error message: ${err}`);
-				});
+				}
 			}
 		}
 
