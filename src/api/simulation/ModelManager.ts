@@ -100,9 +100,15 @@ class ModelManager {
 						if (fs.existsSync(settingsPath)) {
 							logger.debug(`Append new package to ModelManager: ${folderPath}`);
 
-							const settings: VU_MODEL_SETTING_JSON | VU_CATALOG_SETTING_JSON = JSON.parse(
-								fs.readFileSync(settingsPath, "utf-8"),
-							);
+							let settings: VU_MODEL_SETTING_JSON | VU_CATALOG_SETTING_JSON;
+							try {
+								settings = JSON.parse(
+									fs.readFileSync(settingsPath, "utf-8"),
+								);
+							} catch (e) {
+								logger.error(`Couldn't parse settings file at ${settingsPath}`, { e });
+								return; // Skip this folder and move to the next
+							}
 
 							switch (settings.type) {
 								//it's a catalog, i.e it contains a subset of catalogs and models

@@ -191,6 +191,29 @@ describe("ModelManager package discovery (real filesystem)", () => {
 		expect(mm.monitorNestedModels).toEqual([]);
 	});
 
+	// ModelManager.ts calls `JSON.parse(fs.readFileSync(settingsPath))` with no
+	// guard, so one malformed settings.json throws straight out of the
+	// constructor and takes the whole platform down at startup. Every other
+	// malformed-package case is tolerated: an unrecognised `type` is logged and
+	// skipped (see the test below), and a catalog entry that fails to build is
+	// caught in parseCatalog. Invalid JSON should behave the same way.
+	it("skips a settings.json containing malformed JSON instead of aborting the whole scan", () => {
+		const brokenDir = path.join(tmp, "broken");
+		fs.mkdirSync(brokenDir, { recursive: true });
+		// Truncated mid-object — the kind of thing a half-saved edit produces.
+		fs.writeFileSync(path.join(brokenDir, "settings.json"), '{ "type": "json_settings", "name": "Broken",');
+		// Sorts after "broken", so it is only reached if the bad package is survived.
+		writePackage(tmp, "good", modelSettings("Good", "./g.gaml"), ["g.gaml"]);
+		process.env.LEARNING_PACKAGE_PATH = tmp;
+
+		let mm: ModelManager | undefined;
+		expect(() => {
+			mm = new ModelManager(fakeController);
+		}).not.toThrow();
+
+		expect(entryNames(mm?.monitorNestedModels ?? [])).toEqual(["Good"]);
+	});
+
 	it("logs and skips a settings.json whose type is unrecognised", () => {
 		writePackage(tmp, "weird", { type: "something_else", name: "Weird" });
 		writePackage(tmp, "good", modelSettings("Good", "./g.gaml"), ["g.gaml"]);
