@@ -105,9 +105,7 @@ class ModelManager {
 
 							let settings: VU_MODEL_SETTING_JSON | VU_CATALOG_SETTING_JSON;
 							try {
-								settings = JSON.parse(
-									fs.readFileSync(settingsPath, "utf-8"),
-								);
+								settings = JSON.parse(fs.readFileSync(settingsPath, "utf-8"));
 							} catch (e) {
 								logger.error(`Couldn't parse settings file at ${settingsPath}`, { e });
 								return; // Skip this folder and move to the next

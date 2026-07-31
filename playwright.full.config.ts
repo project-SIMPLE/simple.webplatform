@@ -17,6 +17,9 @@ const MONITOR_WS_PORT = 8001;
 const HEADSET_WS_PORT = 8080;
 const GAMA_WS_PORT = process.env.GAMA_WS_PORT ?? "2000";
 
+// Expose to tests so they know not to skip hardware-dependent specs.
+process.env.EXPECT_LIVE_HARDWARE = "true";
+
 // Absolute path so the webServer command launches under any shell (Windows cmd
 // doesn't accept the "./" prefix; forward-slash relative paths fail there).
 const BINARY = path.resolve(

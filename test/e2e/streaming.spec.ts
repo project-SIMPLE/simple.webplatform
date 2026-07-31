@@ -23,13 +23,17 @@ test("shows a live canvas when a scrcpy stream is available", async ({ page }) =
 	await page.goto("/streamPlayerScreen");
 
 	const canvas = page.locator("canvas").first();
-	try {
-		await canvas.waitFor({ state: "visible", timeout: 15_000 });
-	} catch {
-		// Ignore timeout; hasStream will be false and the test will skip correctly.
+	const isFullEnv = process.env.EXPECT_LIVE_HARDWARE === "true";
+
+	if (!isFullEnv) {
+		const hasStream = await canvas.isVisible();
+		test.skip(!hasStream, "no live scrcpy stream (needs emulator + GAMA + connected players)");
+	} else {
+		// In the full E2E lane, we expect the stream to eventually appear.
+		// Wait up to 60s for the emulator and scrcpy server to initialize the stream.
+		// If it fails here, it throws a clear timeout error rather than silently skipping.
+		await canvas.waitFor({ state: "visible", timeout: 60_000 });
 	}
-	const hasStream = await canvas.isVisible();
-	test.skip(!hasStream, "no live scrcpy stream (needs emulator + GAMA + connected players)");
 
 	await expect(canvas).toBeVisible();
 });
