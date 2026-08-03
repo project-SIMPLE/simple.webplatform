@@ -284,18 +284,15 @@ jobs:
           api-level: 34
           arch: x86_64
           target: google_apis
+          # NOTE: android-emulator-runner runs this script ONE LINE PER `sh -c`.
+          # Every line must therefore be a complete command on its own — a
+          # multi-line `for`/`if`/`{ }` block is split mid-construct and dies with
+          # "Syntax error: end of file unexpected". Keep each statement on one line.
           script: |
             adb connect 127.0.0.1:5555
-            # The transport can take a moment to settle into "device" state.
-            for i in $(seq 1 10); do
-              adb devices | grep -q '^127\.0\.0\.1:5555[[:space:]]*device$' && break
-              sleep 1
-            done
+            for i in $(seq 1 10); do adb devices | grep -q '^127\.0\.0\.1:5555[[:space:]]*device$' && break; sleep 1; done
             adb devices
-            adb devices | grep -q '^127\.0\.0\.1:5555[[:space:]]*device$' || {
-              echo "::error::Emulator is not attached over TCP — the platform's Wi-Fi-serial gate will block streaming and the live-canvas spec will time out."
-              exit 1
-            }
+            adb devices | grep -q '^127\.0\.0\.1:5555[[:space:]]*device$' || { echo "::error::Emulator is not attached over TCP — the platform's Wi-Fi-serial gate will block streaming and the live-canvas spec will time out."; exit 1; }
             npm run test:e2e:full
 
       # This lane provisions BOTH GAMA and an emulator, so all 4 specs must run:
