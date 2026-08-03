@@ -301,7 +301,7 @@ jobs:
         run: node scripts/assert-tests-ran.mjs test-results/e2e-full-report.json --min-passed=4
 
       - name: Upload E2E report and traces
-        if: failure()
+        # if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-full-report-linux
