@@ -1,6 +1,7 @@
 import { getLogger } from "@logtape/logtape";
 import { type ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { deserializeData, sortStreamKeys } from "./videoPackets.ts";
 
 // `localhost` resolves to IPv6 ::1 first in most browsers, but the backend uWS video server
 // binds IPv4 (0.0.0.0) only — a ::1 connection hangs. Force IPv4 loopback to match.
@@ -8,37 +9,6 @@ const host: string = window.location.hostname === "localhost" ? "127.0.0.1" : wi
 const port: string = "8082";
 
 const logger = getLogger(["hooks", "useVideoStreams"]);
-
-// Deserialize the data into ScrcpyMediaStreamPacket
-const deserializeData = (serializedData: string) => {
-	const parsed = JSON.parse(serializedData);
-
-	switch (parsed.type) {
-		case "configuration":
-			return {
-				streamId: parsed.streamId,
-				useH265: parsed.h265,
-				packet: {
-					type: parsed.type,
-					data: Uint8Array.from(atob(parsed.data), (c) => c.charCodeAt(0)),
-				},
-			};
-		case "data":
-			return {
-				streamId: parsed.streamId,
-				useH265: parsed.h265,
-				packet: {
-					type: parsed.type,
-					keyframe: parsed.keyframe,
-					pts: BigInt(parsed.pts),
-					data: Uint8Array.from(atob(parsed.data), (c) => c.charCodeAt(0)),
-				},
-			};
-		default:
-			logger.warn("[Scrcpy-VideoStreamManager] Unknown packet type received: {type}", { type: parsed.type });
-			return null;
-	}
-};
 
 /**
  * Owns the scrcpy video-streaming lifecycle: the control socket (codec negotiation +
@@ -53,9 +23,7 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 	const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
 	const canvasRefs = useRef<Map<string, HTMLCanvasElement>>(new Map());
 
-	const sortedKeys = useMemo(() => {
-		return Object.keys(canvasList).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-	}, [canvasList]);
+	const sortedKeys = useMemo(() => sortStreamKeys(Object.keys(canvasList)), [canvasList]);
 
 	// Tables storing data for decoding scrcpy streams
 	const readableControllers = new Map<string, ReadableStreamDefaultController | undefined>();

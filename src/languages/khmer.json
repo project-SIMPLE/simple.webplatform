@@ -9,6 +9,7 @@
   "wait_minim_players_1": "កំពុងរង់ចាំ",
   "wait_minim_players_2": "អ្នកទៀត ដើម្បីឈានដល់ចំនួនអ្នកលេងអប្បបរមា",
   "wait_maximum_players_1": "អ្នកទៀត ដើម្បីឈានដល់ចំនួនអ្នកលេងអតិបរមា",
+  "all_players_connected": "អ្នកលេងទាំងអស់បានភ្ជាប់",
   "popup_question": "តើអ្នកពិតជាចង់ផ្តាច់ និងលុបចេញមែនទេ",
   "remove": "លុប",
   "relaunch": "ចាប់ផ្តើមម្តងទៀត",
@@ -27,5 +28,9 @@
   "in_game": "នៅក្នុងហ្គេម",
   "connected": "បានភ្ជាប់",
   "error": "កំហុស",
-  "simulation_loading": "ការផ្ទុកការក្លែងធ្វើ"
+  "simulation_loading": "ការផ្ទុកការក្លែងធ្វើ",
+  "gamaless_banner": "GAMALESS — ការគ្រប់គ្រងការក្លែងធ្វើត្រូវបានបិទ",
+  "gamaless_mode_title": "របៀប GAMALESS",
+  "gamaless_mode_description": "មុខងារក្លែងធ្វើត្រូវបានបិទ។ គ្មានម៉ាស៊ីនមេ GAMA ត្រូវបានភ្ជាប់ទេ។",
+  "gamaless_mode_headsets": "ការគ្រប់គ្រងកាសនៅតែដំណើរការ។"
 }

@@ -9,6 +9,7 @@
   "wait_minim_players_1": "ກຳລັງລໍຖ້າ",
   "wait_minim_players_2": "ຜູ້ຫຼິ້ນອື່ນໆ ເພື່ອໃຫ້ຮອດຈຳນວນຜູ້ຫຼິ້ນຂັ້ນຕ່ຳ",
   "wait_maximum_players_1": "ຜູ້ຫຼິ້ນອື່ນໆ ເພື່ອໃຫ້ຮອດຈຳນວນຜູ້ຫຼິ້ນສູງສຸດ",
+  "all_players_connected": "ຜູ້ຫຼິ້ນທັງໝົດເຊື່ອມຕໍ່ແລ້ວ",
   "popup_question": "ທ່ານຕ້ອງການຕັດການເຊື່ອມຕໍ່ ແລະ ລຶບແທ້ບໍ",
   "remove": "ລຶບ",
   "relaunch": "ເລີ່ມໃໝ່",
@@ -27,5 +28,9 @@
   "in_game": "ໃນເກມ",
   "connected": "ເຊື່ອມຕໍ່ແລ້ວ",
   "error": "ຂໍ້ຜິດພາດ",
-  "simulation_loading": "ກຳລັງໂຫຼດການຈຳລອງ"
+  "simulation_loading": "ກຳລັງໂຫຼດການຈຳລອງ",
+  "gamaless_banner": "GAMALESS — ປິດການຄວບຄຸມການຈຳລອງ",
+  "gamaless_mode_title": "ໂໝດ GAMALESS",
+  "gamaless_mode_description": "ຄຸນສົມບັດການຈຳລອງຖືກປິດໃຊ້ງານ. ບໍ່ມີເຊີບເວີ GAMA ເຊື່ອມຕໍ່.",
+  "gamaless_mode_headsets": "ການຈັດການຊຸດຫູຟັງຍັງໃຊ້ງານໄດ້."
 }

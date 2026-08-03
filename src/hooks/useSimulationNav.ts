@@ -92,6 +92,10 @@ export const useSimulationNav = () => {
 		}
 
 		const item = subProjectsList[index];
+		if (!item) {
+			logger.warn("handleSimulation called with an out-of-range index {index}", { index });
+			return;
+		}
 
 		if (item.type === "catalog") {
 			const catalog_item = item as VU_CATALOG_SETTING_JSON;

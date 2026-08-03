@@ -117,7 +117,15 @@ export class MonitorServer {
 						}
 						const index: number | undefined = jsonMonitor.simulationIndex;
 
-						if (index !== undefined && index >= 0 && index < this.controller.model_manager?.getModelList().length) {
+						// Number.isInteger rejects null (JSON's NaN) and non-integers — `null >= 0`
+						// would otherwise pass the bounds check and select model 0. The `!== undefined`
+						// keeps the type narrowed to number for the comparisons below.
+						if (
+							index !== undefined &&
+							Number.isInteger(index) &&
+							index >= 0 &&
+							index < this.controller.model_manager?.getModelList().length
+						) {
 							// Retrieve the simulation based on the index
 							this.controller.model_manager?.setActiveModelByIndex(index);
 							logger.debug("set active model to {modelName}", {

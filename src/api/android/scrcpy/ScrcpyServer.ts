@@ -5,9 +5,10 @@ import type { Adb } from "@yume-chan/adb";
 import { AdbScrcpyClient, AdbScrcpyExitedError, AdbScrcpyOptions3_3_3 } from "@yume-chan/adb-scrcpy";
 import { DefaultServerPath, type ScrcpyMediaStreamPacket } from "@yume-chan/scrcpy";
 import { ReadableStream } from "@yume-chan/stream-extra";
-
-import type { AdbManager } from "../adb/AdbManager.ts";
 import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
+import type { AdbManager } from "../adb/AdbManager.ts";
+import { isInvertedAspectRatio } from "./aspect.ts";
+import { nextUseH265 } from "./codec.ts";
 
 // Override the log function
 const logger = getLogger(["android", "ScrcpyServer"]);
@@ -109,9 +110,8 @@ export class ScrcpyServer {
 					// We never upgrade back — that would break already-connected h264-only clients.
 					if (!jsonMessage.h265 && !jsonMessage.h264) {
 						logger.fatal("Client doesn't support any compatible codec!");
-					} else if (!jsonMessage.h265) {
-						this.useH265 = false;
 					}
+					this.useH265 = nextUseH265(this.useH265, jsonMessage);
 
 					// Reset video streams if codec changed !
 					if (previousCodec !== this.useH265) {
@@ -393,7 +393,7 @@ export class ScrcpyServer {
 			logger.debug(`[${streamIp}] {metadata}`, { metadata });
 			// Prevent having stream ratio inverted, happened on some weird device...
 			// https://github.com/project-SIMPLE/simple.webplatform/issues/78
-			if ((metadata === undefined || metadata.width! < metadata.height!) && deviceModel.startsWith("Quest")) {
+			if (isInvertedAspectRatio(metadata, deviceModel)) {
 				logger.warn(
 					`[${streamIp}] Inverted aspect ratio (${metadata?.width}×${metadata?.height}), closing and retrying with flipped crop after cooldown...`,
 				);

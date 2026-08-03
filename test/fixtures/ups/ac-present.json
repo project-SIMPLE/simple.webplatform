@@ -1,0 +1,32 @@
+{
+	"name": "ac-present",
+	"description": "Nominal running state: on wall power, battery full, no shutdown armed.",
+	"reports": {
+		"12": [12, 100],
+		"15": [15, 8, 7],
+		"19": [19, 1],
+		"48": [48, 230],
+		"49": [49, 230, 0],
+		"21": [21, 255, 255],
+		"120": [120, 2],
+		"82": [82, 74, 1],
+		"50": [50, 176, 0],
+		"51": [51, 26, 1],
+		"13": [13, 95]
+	},
+	"expected": {
+		"batteryCharge": 100,
+		"runtimeSeconds": 1800,
+		"runtimeMinutes": 30,
+		"inputVoltage": 230,
+		"inputVoltagePrecise": 230,
+		"acPresent": true,
+		"onBattery": false,
+		"shutdownTimer": -1,
+		"beeperStatus": "enabled",
+		"nominalPowerWatts": 330,
+		"lowVoltageTransfer": 176,
+		"highVoltageTransfer": 282,
+		"fullChargeCapacity": 95
+	}
+}

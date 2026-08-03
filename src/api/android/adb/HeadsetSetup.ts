@@ -17,7 +17,6 @@ import Device = AdbServerClient.Device;
 import { readFile, stat } from "node:fs/promises";
 
 import { getLogger } from "@logtape/logtape";
-import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
 import {
 	ON_DEVICE_ADB_BROADCASTS,
 	ON_DEVICE_ADB_GLOBAL_SETTINGS,
@@ -26,8 +25,91 @@ import {
 	ON_DEVICE_ADB_SYSTEM_SETTINGS,
 	ON_DEVICE_OVR_PREFS,
 } from "../../core/Constants.ts";
+import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
+import { readApkVersionName } from "./ApkInspector.ts";
 
 const logger = getLogger(["android", "HeadsetSetup"]);
+
+/**
+ * Resolve the target version of a toolkit APK. Fast path: a dotted version encoded
+ * in the filename (e.g. "MyApp-1.2.3.apk"). Slow path: crack the APK open and read
+ * android:versionName from its compiled manifest (via ApkInspector). Returns null
+ * when neither is available.
+ */
+export async function parseApkVersion(apkFile: string): Promise<string | null> {
+	const fileNameMatch = apkFile.match(/-(\d+(?:\.\d+)+)\.apk$/);
+	if (fileNameMatch !== null) return fileNameMatch[1];
+
+	try {
+		const apkBytes = await readFile(resolveToolkitAsset(apkFile));
+		return readApkVersionName(apkBytes);
+	} catch (e) {
+		logger.warn(`Could not inspect version of APK '${apkFile}': {e}`, { e });
+		return null;
+	}
+}
+
+/**
+ * Compare two dotted version strings. Returns a negative number when a < b,
+ * a positive number when a > b, and 0 when they are equal. Missing segments
+ * are treated as 0 (so "1.2" === "1.2.0").
+ */
+export function compareVersions(a: string, b: string): number {
+	const pa = a.split(".").map(Number);
+	const pb = b.split(".").map(Number);
+	for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+		const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
+		if (diff !== 0) return diff;
+	}
+	return 0;
+}
+
+export interface ShellGetSet {
+	verbIndex: number;
+	/** The expected value the `get` output should contain. */
+	checkValue: string;
+	/** Args for the get command (verb prefixed with "g"). */
+	getArgs: string[];
+	/** Args for the set command (verb prefixed with "s"). */
+	setArgs: string[];
+}
+
+/**
+ * Derive the get/set adb-shell commands from a shell-setting entry. Each entry
+ * carries an "et"-prefixed verb; the get form prepends "g" and drops the last two
+ * elements (set_value + check_value), the set form prepends "s" and drops only the
+ * check_value. Returns null when no "et"-prefixed verb is present.
+ */
+export function deriveShellGetSet(args: string[]): ShellGetSet | null {
+	const verbIndex = args.findIndex((a) => a.startsWith("et"));
+	if (verbIndex === -1) return null;
+	const checkValue = args[args.length - 1];
+	const getArgs = args.slice(0, -2).map((a, i) => (i === verbIndex ? `g${a}` : a));
+	const setArgs = args.slice(0, -1).map((a, i) => (i === verbIndex ? `s${a}` : a));
+	return { verbIndex, checkValue, getArgs, setArgs };
+}
+
+/** True if `packageName` is installed on the device (via `pm list packages`). */
+export async function isPackageInstalled(adb: Adb, packageName: string): Promise<boolean> {
+	const process = await adb.subprocess.noneProtocol.spawn(`pm list packages ${packageName}`);
+	let output = "";
+	// @ts-expect-error
+	for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
+		output += chunk;
+	}
+	return output.includes(`package:${packageName}`);
+}
+
+/** Installed `versionName` of `packageName` (via `dumpsys package`), or null if absent. */
+export async function getInstalledVersion(adb: Adb, packageName: string): Promise<string | null> {
+	const process = await adb.subprocess.noneProtocol.spawn(`dumpsys package ${packageName}`);
+	let output = "";
+	// @ts-expect-error
+	for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
+		output += chunk;
+	}
+	return output.match(/versionName=(\S+)/)?.[1] ?? null;
+}
 
 export class HeadsetSetup {
 	private adbServer: AdbServerClient;
@@ -78,16 +160,14 @@ export class HeadsetSetup {
 		logger.debug(`[${serial}] Checking on-device shell settings...`);
 
 		for (const args of ON_DEVICE_ADB_SHELL_SETTINGS) {
-			const verbIndex = args.findIndex((a) => a.startsWith("et"));
-			if (verbIndex === -1) {
+			const derived = deriveShellGetSet(args);
+			if (!derived) {
 				logger.warn(`[${serial}] Shell setting entry has no 'et'-prefixed verb, skipping: ${args.join(" ")}`);
 				continue;
 			}
 
-			const checkValue = args[args.length - 1];
+			const { checkValue, getArgs, setArgs } = derived;
 
-			// Get command: verb → "g"+verb, drop the last 2 elements (set_value + check_value)
-			const getArgs = args.slice(0, -2).map((a, i) => (i === verbIndex ? `g${a}` : a));
 			const getProcess = await adb.subprocess.noneProtocol.spawn(getArgs.join(" "));
 			let getOutput = "";
 			// @ts-expect-error
@@ -99,8 +179,6 @@ export class HeadsetSetup {
 
 			if (getOutput.trim().includes(checkValue)) continue;
 
-			// Set command: verb → "s"+verb, drop only the last element (check_value)
-			const setArgs = args.slice(0, -1).map((a, i) => (i === verbIndex ? `s${a}` : a));
 			logger.debug(`[${serial}] Shell setting '${setArgs.join(" ")}' isn't correct, fixing it...`);
 			const setProcess = await adb.subprocess.noneProtocol.spawn(setArgs.join(" "));
 			let setOutput = "";
@@ -214,7 +292,7 @@ export class HeadsetSetup {
 		const APPS_TO_REMOVE: string[] = ["com.tpn.adbautoenable"];
 
 		for (const packageName of APPS_TO_REMOVE) {
-			const isInstalled = await this.isPackageInstalled(adb, packageName);
+			const isInstalled = await isPackageInstalled(adb, packageName);
 			if (isInstalled) {
 				logger.warn(`[${serial}] '${packageName}' is installed — removing...`);
 				await this.uninstallPackage(adb, serial, packageName);
@@ -236,20 +314,26 @@ export class HeadsetSetup {
 				permission: "android.permission.WRITE_SECURE_SETTINGS",
 				needsToStart: true,
 			},
+			{
+				packageName: "com.meta.shell.env.footprint.haven2025",
+				apkFile: "eu.project_simple.no-loft.apk",
+				permission: "",
+				needsToStart: false,
+			},
 		];
 
 		for (const { packageName, apkFile, permission, needsToStart } of REQUIRED_APPS) {
-			const targetVersion = this.parseApkVersion(apkFile);
+			const targetVersion = await parseApkVersion(apkFile);
 			logger.debug(`[${serial}] Checking '${packageName}'${targetVersion ? ` (target: v${targetVersion})` : ""}...`);
 
-			const isInstalled = await this.isPackageInstalled(adb, packageName);
+			const isInstalled = await isPackageInstalled(adb, packageName);
 
 			if (!isInstalled) {
 				logger.warn(`[${serial}] '${packageName}' is not installed — installing...`);
 				if (!(await this.installApk(adb, serial, resolveToolkitAsset(apkFile)))) continue;
 			} else if (targetVersion) {
-				const installedVersion = await this.getInstalledVersion(adb, packageName);
-				if (!installedVersion || this.compareVersions(installedVersion, targetVersion) < 0) {
+				const installedVersion = await getInstalledVersion(adb, packageName);
+				if (!installedVersion || compareVersions(installedVersion, targetVersion) < 0) {
 					logger.info(
 						`[${serial}] '${packageName}' v${installedVersion ?? "?"} → v${targetVersion} — uninstalling first (signature may differ)...`,
 					);
@@ -260,7 +344,7 @@ export class HeadsetSetup {
 				}
 			}
 
-			await this.ensurePermission(adb, serial, packageName, permission);
+			if (permission !== "") await this.ensurePermission(adb, serial, packageName, permission);
 
 			if (needsToStart) {
 				logger.debug(`[${serial}] First time installing '${packageName}', needs to start the application once...`);
@@ -275,41 +359,6 @@ export class HeadsetSetup {
 			}
 			logger.info(`[${serial}] All good updating '${packageName}' application :)`);
 		}
-	}
-
-	private parseApkVersion(apkFile: string): string | null {
-		const match = apkFile.match(/-(\d+(?:\.\d+)+)\.apk$/);
-		return match ? match[1] : null;
-	}
-
-	private compareVersions(a: string, b: string): number {
-		const pa = a.split(".").map(Number);
-		const pb = b.split(".").map(Number);
-		for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-			const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
-			if (diff !== 0) return diff;
-		}
-		return 0;
-	}
-
-	private async isPackageInstalled(adb: Adb, packageName: string): Promise<boolean> {
-		const process = await adb.subprocess.noneProtocol.spawn(`pm list packages ${packageName}`);
-		let output = "";
-		// @ts-expect-error
-		for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
-			output += chunk;
-		}
-		return output.includes(`package:${packageName}`);
-	}
-
-	private async getInstalledVersion(adb: Adb, packageName: string): Promise<string | null> {
-		const process = await adb.subprocess.noneProtocol.spawn(`dumpsys package ${packageName}`);
-		let output = "";
-		// @ts-expect-error
-		for await (const chunk of process.output.pipeThrough(new TextDecoderStream())) {
-			output += chunk;
-		}
-		return output.match(/versionName=(\S+)/)?.[1] ?? null;
 	}
 
 	private async uninstallPackage(adb: Adb, serial: string, packageName: string): Promise<void> {

@@ -153,12 +153,18 @@ class GamaConnector {
 		this.setGamaLoading(true);
 
 		try {
+			// Do NOT pin an address family here. Which family GAMA's Java server binds
+			// is platform-dependent: on Linux a wildcard bind is dual-stack, but on
+			// Windows it is IPv6-ONLY (V6ONLY socket default) — ::1 answers, 127.0.0.1
+			// refuses. Node's default family autoselection tries both and connects to
+			// whichever one accepts.
 			this.gama_socket = new WebSocket(`ws://${process.env.GAMA_IP_ADDRESS}:${process.env.GAMA_WS_PORT}`);
 
 			this.gama_socket.onopen = () => {
 				logger.debug(`Opening connection with GAMA Server`);
 
 				this.setGamaConnection(true);
+				this.setGamaExperimentId("");
 				this.setGamaExperimentState("NONE");
 			};
 
@@ -200,7 +206,31 @@ class GamaConnector {
 							logger.trace("Message received from Gama Server: CommandExecutedSuccessfully\n{message}", { message });
 
 							this.setGamaContentError("");
-							if (message.command.type === "load") this.setGamaExperimentName(message.content);
+
+							// The GUI-embedded GAMA server pushes SimulationStatus on every state
+							// change, but the headless server (gama-headless.sh -socket) only
+							// acknowledges commands. Derive state transitions from the acks so
+							// both work; SimulationStatus stays authoritative when it is pushed.
+							switch (message.command.type) {
+								case "load":
+									// GUI puts the experiment name in content, headless the experiment id.
+									this.setGamaExperimentName(message.command.experiment ?? message.content);
+									if (this.jsonGamaState.experiment_id === "") this.setGamaExperimentId(message.content);
+									if (this.jsonGamaState.experiment_state === "NONE") this.setGamaExperimentState("PAUSED");
+									break;
+								case "play":
+									this.setGamaExperimentState("RUNNING");
+									break;
+								case "pause":
+									this.setGamaExperimentState("PAUSED");
+									break;
+								case "stop":
+									this.controller.cancelLaunchInterval();
+									this.controller.player_manager.disableAllPlayerInGame();
+									this.setGamaExperimentId("");
+									this.setGamaExperimentState("NONE");
+									break;
+							}
 
 							try {
 								this.controller.broadcastSimulationOutput(message);
@@ -235,6 +265,7 @@ class GamaConnector {
 
 			this.gama_socket.onclose = (event) => {
 				this.setGamaConnection(false);
+				this.setGamaExperimentId("");
 				this.setGamaExperimentState("NONE");
 
 				this.controller.cancelLaunchInterval();

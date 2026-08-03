@@ -1,6 +1,11 @@
 import { Link } from "react-router-dom";
-import logoSimple from "/images/Logos/SIMPLE_Logo_Complet_Sticker.png";
 import LanguageSelector from "../LanguageSelector/LanguageSelector";
+
+// public/ assets are served as-is by Vite — reference by URL string, don't
+// import as a module (importing broke Vitest's transform on Windows: it
+// tried to resolve the root-absolute path as a filesystem path and failed
+// with "must be a file URL object... Received 'file:///images/...'").
+const logoSimple = "/images/Logos/SIMPLE_Logo_Complet_Sticker.png";
 
 interface HeaderProps {
 	onLogoClick?: () => void;
@@ -10,7 +15,11 @@ const Header = ({ onLogoClick }: HeaderProps) => {
 	return (
 		<div className="flex w-full justify-between align-middle relative">
 			{onLogoClick ? (
-				<button onClick={onLogoClick} className="text-white hover:text-gray-400 z-10 bg-transparent border-none p-0">
+				<button
+					type="button"
+					onClick={onLogoClick}
+					className="text-white hover:text-gray-400 z-10 bg-transparent border-none p-0"
+				>
 					<img
 						src={logoSimple}
 						alt="Logo"

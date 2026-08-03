@@ -4,12 +4,634 @@ on:
   push:
 
 jobs:
+  # Fast lane on every target OS: the platform ships as a native binary for all
+  # three, so unit/server tests must pass everywhere (path handling, native
+  # modules like node-hid and the uWebSockets.js binaries differ per OS).
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install npm modules
+        run: npm ci
+
+      # Lint results are platform-independent — checking once is enough.
+      - name: Lint & format check (biome)
+        if: runner.os == 'Linux'
+        run: npm run check
+
+      - name: Unit & frontend tests
+        run: npm run test:unit
+
+      - name: Real local-socket tests
+        run: npm run test:server
+
+      # Build the frontend so the StaticServer HTTP test runs (the GAMA tests in
+      # the integration project auto-skip here since no GAMA server is present).
+      - name: Build frontend
+        run: npm run build:frontend
+
+      - name: Integration tests (StaticServer; GAMA-gated ones skip)
+        run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-reports/integration-report.json
+
+      # `npm run build:frontend` ran above, so the StaticServer tests MUST have
+      # executed. Without this check a broken frontend build silently degrades
+      # this lane to "everything skipped, all green".
+      - name: Assert the StaticServer tests actually ran
+        run: node scripts/assert-tests-ran.mjs test-reports/integration-report.json --min-passed=2 --allow-skip=GAMA
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-${{ matrix.os }}
+          path: |
+            test-results/
+            test-reports/
+          if-no-files-found: ignore
+
+  # Real-GAMA integration tests. Boots a headless GAMA server, then runs the
+  # `integration` project (which auto-skips when no server is reachable).
+  #
+  # This job only runs once the repository variable GAMA_DOWNLOAD_URL is set to
+  # a GAMA headless build for Linux — until then it is a no-op, so it never
+  # blocks CI. Confirm the correct download URL and server-launch command for
+  # the GAMA version the team targets, then set that variable.
+  test-integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Disable pre-release as the plugin isn't compatible yet
+        #gama-version: ['latest', 'pre-release']
+        gama-version: ['latest']
+    env:
+      GAMA_IP_ADDRESS: localhost
+      GAMA_WS_PORT: "2000"
+    steps:
+      # Resolved through `gh api` rather than plain curl: unauthenticated
+      # api.github.com allows 60 requests/hour per IP, which runners share and
+      # regularly exhaust — the error body then has no .assets and jq dies with
+      # "Cannot iterate over null". `gh` uses GH_TOKEN (1000 requests/hour).
+      - name: Resolve GAMA download link
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ matrix.gama-version }}" = "latest" ]; then
+            GAMA_DOWNLOAD_URL=$(gh api repos/gama-platform/gama/releases/latest --jq '.assets[] | select(.name | contains("Linux_with_JDK") and endswith(".zip")) | .browser_download_url')
+          else
+            GAMA_DOWNLOAD_URL=$(gh api repos/gama-platform/gama/releases --jq '[.[] | select(.prerelease == true)][0].assets[] | select(.name | contains("Linux_with_JDK") and endswith(".zip")) | .browser_download_url')
+          fi
+          [ -n "$GAMA_DOWNLOAD_URL" ] || { echo "::error::No Linux_with_JDK .zip asset found on the ${{ matrix.gama-version }} GAMA release"; exit 1; }
+          echo "GAMA_DOWNLOAD_URL=$GAMA_DOWNLOAD_URL" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install npm modules
+        run: npm ci
+
+      - name: Download & unpack GAMA headless
+        run: |
+          curl -L "${{ env.GAMA_DOWNLOAD_URL }}" -o gama-headless.zip
+          unzip -q gama-headless.zip -d gama-headless
+          # Install SIMPLE's GAMA plugin
+          python3 $GITHUB_WORKSPACE/test/setup/p2Downloader.py 'https://project-simple.github.io/simple.toolchain/' ./gama-headless/dropins
+          # Force using dropins in headless
+          rm -fr gama-headless/headless/configuration && cp -r gama-headless/configuration gama-headless/headless/configuration
+
+      - name: Start GAMA WebSocket server
+        # Adjust to match the GAMA version's server-launch command. GAMA exposes
+        # a WebSocket server on GAMA_WS_PORT that GamaConnector connects to.
+        run: |
+          chmod +x gama-headless/**/gama-headless.sh || true
+          nohup bash -c 'gama-headless/**/gama-headless.sh -socket ${{ env.GAMA_WS_PORT }}' > gama-server.log 2>&1 &
+          # Wait (up to ~60s) for the server port to open.
+          for i in $(seq 1 60); do
+            if bash -c "echo > /dev/tcp/localhost/${{ env.GAMA_WS_PORT }}" 2>/dev/null; then
+              echo "GAMA server is up"; break
+            fi
+            sleep 1
+          done
+
+      - name: Set custom GAMA port
+        run: |
+          echo "GAMA_WS_PORT=${{ env.GAMA_WS_PORT }}" >> .env
+
+      - name: Integration tests (real GAMA)
+        run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-reports/integration-report.json
+
+      # This lane provisions GAMA, so all 12 GAMA tests must run. They self-skip
+      # when the server is unreachable — which is exactly how a dead GAMA used to
+      # produce a green build. StaticServer skips here (no `build:frontend` step).
+      - name: Assert the GAMA tests actually ran
+        run: node scripts/assert-tests-ran.mjs test-reports/integration-report.json --min-passed=12 --allow-skip=StaticServer
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-integration-${{ matrix.gama-version }}
+          path: |
+            test-results/
+            test-reports/
+          if-no-files-found: ignore
+
+      - name: Upload GAMA server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gama-server-log
+          path: gama-server.log
+          if-no-files-found: ignore
+
+  # Browser end-to-end: real backend (StaticServer + MonitorServer + ModelManager)
+  # driven by a headless Chromium. No GAMA/hardware needed — tiles render disabled.
+  test-e2e:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install npm modules
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests (builds frontend, boots the real backend)
+        run: npm run test:e2e
+
+      # app.spec + the no-stream streaming spec must run here. The live-canvas
+      # spec legitimately skips: this lane has no emulator.
+      - name: Assert the E2E specs actually ran
+        run: node scripts/assert-tests-ran.mjs test-results/e2e-report.json --min-passed=2 --allow-skip="live canvas"
+
+      - name: Upload E2E report and traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-report
+          path: test-results/
+          if-no-files-found: ignore
+
+  # Full-stack end-to-end against the COMPILED single-executable, wired to a real
+  # GAMA server AND a real Android emulator. Drives the whole flow from the browser:
+  # the model list loads, the platform connects to GAMA (tiles enable), a device's
+  # screen streams to a <canvas>, and an experiment is launched from the UI.
+  #
+  # Reuses the binary from the compilation-linux job (no rebuild) and boots GAMA the
+  # same way as test-integration. Non-blocking: emulator + GAMA are the slowest,
+  # flakiest parts of CI, so a failure here should not gate merges.
+  test-e2e-full:
+    runs-on: ubuntu-latest
+    needs: compilation-linux
+    env:
+      GAMA_IP_ADDRESS: localhost
+      GAMA_WS_PORT: "2000"
+    steps:
+
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install npm modules
+        run: npm ci
+
+      - name: Download the compiled Linux binary (from compilation-linux)
+        uses: actions/download-artifact@v8
+        with:
+          name: linux-compiled-archive
+          path: bin
+
+      - name: Make the binary executable
+        run: chmod +x bin/simple-linux
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # See the note on the test-integration job: `gh api` is authenticated, plain
+      # curl is not and hits the 60/hour per-IP limit shared across runners.
+      - name: Resolve GAMA download link
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          GAMA_DOWNLOAD_URL=$(gh api repos/gama-platform/gama/releases/latest --jq '.assets[] | select(.name | contains("Linux_with_JDK") and endswith(".zip")) | .browser_download_url')
+          [ -n "$GAMA_DOWNLOAD_URL" ] || { echo "::error::No Linux_with_JDK .zip asset found on the latest GAMA release"; exit 1; }
+          echo "GAMA_DOWNLOAD_URL=$GAMA_DOWNLOAD_URL" >> $GITHUB_ENV
+
+      - name: Download & unpack GAMA headless
+        run: |
+          curl -L "${{ env.GAMA_DOWNLOAD_URL }}" -o gama-headless.zip
+          unzip -q gama-headless.zip -d gama-headless
+          # Install SIMPLE's GAMA plugin
+          python3 $GITHUB_WORKSPACE/test/setup/p2Downloader.py 'https://project-simple.github.io/simple.toolchain/' ./gama-headless/dropins
+          # Force using dropins in headless
+          rm -fr gama-headless/headless/configuration && cp -r gama-headless/configuration gama-headless/headless/configuration
+
+      - name: Start GAMA WebSocket server
+        run: |
+          chmod +x gama-headless/**/gama-headless.sh || true
+          nohup bash -c 'gama-headless/**/gama-headless.sh -socket ${{ env.GAMA_WS_PORT }}' > gama-server.log 2>&1 &
+          up=""
+          for i in $(seq 1 60); do
+            if bash -c "echo > /dev/tcp/localhost/${{ env.GAMA_WS_PORT }}" 2>/dev/null; then
+              up=1; echo "GAMA server is up"; break
+            fi
+            sleep 1
+          done
+          [ -n "$up" ] || echo "::warning::GAMA server never opened port ${{ env.GAMA_WS_PORT }} — the GAMA-gated E2E tests will be skipped"
+
+      # Hardware-accelerate the emulator so it boots fast enough for the job.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # The emulator registers with the adb server on localhost:5037; test:e2e:full
+      # boots the binary (already pointed at GAMA), which connects to both. The
+      # specs self-skip when GAMA/streaming never come up — which reads as green,
+      # so the guard step below turns that back into a failure.
+      #
+      # The emulator must first be re-attached over TCP. SIMPLE only streams
+      # headsets that joined over Wi-Fi: AdbManager.startNewStream gates on
+      # `device.serial.includes(".")` and ScrcpyServer.startStreaming derives the
+      # stream key from `serial.split(":")[0]`, rejecting anything undotted. The
+      # emulator's native serial is "emulator-5554", so it silently never
+      # streams and the live-canvas spec times out. Connecting on 127.0.0.1:5555
+      # registers a second transport for the same device with a dotted serial,
+      # which passes both gates and yields stream id "127.0.0.1" — the same key
+      # test/adb/scrcpy-stream.test.ts drives runSession with.
+      - name: Full-stack E2E (binary + GAMA + emulator)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          # NOTE: android-emulator-runner runs this script ONE LINE PER `sh -c`.
+          # Every line must therefore be a complete command on its own — a
+          # multi-line `for`/`if`/`{ }` block is split mid-construct and dies with
+          # "Syntax error: end of file unexpected". Keep each statement on one line.
+          script: |
+            adb connect 127.0.0.1:5555
+            for i in $(seq 1 10); do adb devices | grep -q '^127\.0\.0\.1:5555[[:space:]]*device$' && break; sleep 1; done
+            adb devices
+            adb devices | grep -q '^127\.0\.0\.1:5555[[:space:]]*device$' || { echo "::error::Emulator is not attached over TCP — the platform's Wi-Fi-serial gate will block streaming and the live-canvas spec will time out."; exit 1; }
+            npm run test:e2e:full
+
+      # This lane provisions BOTH GAMA and an emulator, so all 4 specs must run:
+      # full-stack, player-forward and both streaming specs. Nothing may skip.
+      - name: Assert the full-stack specs actually ran
+        run: node scripts/assert-tests-ran.mjs test-results/e2e-full-report.json --min-passed=4
+
+      - name: Upload E2E report and traces
+        # if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-full-report-linux
+          path: test-results/
+          if-no-files-found: ignore
+
+      - name: Upload GAMA server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gama-server-log-e2e
+          path: gama-server.log
+          if-no-files-found: ignore
+
+  # macOS full-stack E2E: the compiled macOS binary + a real GAMA server, WITHOUT
+  # the Android emulator (that stays Linux-only). The macOS binary is a bare node
+  # SEA with no launcher — the same setup that hit the bufferutil bug — so this
+  # guards the GAMA-send path on macOS. The GAMA setup mirrors test-e2e-full; the
+  # GAMA steps are best-effort (macOS asset naming can differ) and non-fatal, so a
+  # GAMA that never comes up makes full-stack self-skip rather than fail the job.
+  test-e2e-full-macos:
+    runs-on: macos-latest
+    needs: compilation-macos
+    env:
+      GAMA_IP_ADDRESS: localhost
+      GAMA_WS_PORT: "2000"
+    steps:
+
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install npm modules
+        run: npm ci
+
+      - name: Download the compiled macOS binary (from compilation-macos)
+        uses: actions/download-artifact@v8
+        with:
+          name: macos-compiled-archive
+          path: bin
+
+      - name: Make the binary executable
+        run: chmod +x bin/simple-macos
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      # macOS GAMA ships ONLY as a .dmg (no headless zip). macos-latest is ARM, so
+      # use the M1 build with a bundled JDK.
+      - name: Resolve GAMA download link (macOS, M1 .dmg with JDK)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          GAMA_DOWNLOAD_URL=$(gh api repos/gama-platform/gama/releases/latest --jq '.assets[] | select(.name | contains("MacOS_M1_with_JDK") and endswith(".dmg")) | .browser_download_url')
+          [ -n "$GAMA_DOWNLOAD_URL" ] || { echo "::error::No MacOS_M1_with_JDK .dmg asset found on the latest GAMA release"; exit 1; }
+          echo "GAMA_DOWNLOAD_URL=$GAMA_DOWNLOAD_URL" >> $GITHUB_ENV
+
+      # Mount the .dmg, copy GAMA.app out (the volume is read-only), install the
+      # SIMPLE plugin into the app's dropins. Paths inside GAMA.app are discovered
+      # with `find` since the bundle layout differs from the Linux zip.
+      - name: Download, mount GAMA .dmg and install the SIMPLE plugin
+        continue-on-error: true
+        run: |
+          curl -L "${{ env.GAMA_DOWNLOAD_URL }}" -o gama.dmg
+          hdiutil attach gama.dmg -nobrowse -mountpoint /Volumes/GAMA
+          cp -R /Volumes/GAMA/*.app ./GAMA.app
+          hdiutil detach /Volumes/GAMA
+          DROPINS=$(find ./GAMA.app -type d -name dropins | head -1)
+          [ -z "$DROPINS" ] && DROPINS="./GAMA.app/Contents/Eclipse/dropins" && mkdir -p "$DROPINS"
+          python3 $GITHUB_WORKSPACE/test/setup/p2Downloader.py 'https://project-simple.github.io/simple.toolchain/' "$DROPINS"
+
+      - name: Start GAMA WebSocket server
+        continue-on-error: true
+        run: |
+          HEADLESS=$(find ./GAMA.app -name 'gama-headless.sh' | head -1)
+          chmod +x "$HEADLESS" || true
+          nohup bash -c "'$HEADLESS' -socket ${{ env.GAMA_WS_PORT }}" > gama-server.log 2>&1 &
+          up=""
+          for i in $(seq 1 120); do
+            if bash -c "echo > /dev/tcp/localhost/${{ env.GAMA_WS_PORT }}" 2>/dev/null; then up=1; echo "GAMA server is up"; break; fi
+            sleep 1
+          done
+          [ -n "$up" ] || echo "::warning::GAMA server never opened port ${{ env.GAMA_WS_PORT }} — the GAMA-gated E2E tests will be skipped"
+
+      # Vitest integration project against the live GAMA booted above — real-GAMA
+      # coverage on macOS, not just Linux. Self-skips if GAMA never came up (the
+      # ::warning:: above fired in that case).
+      - name: Integration tests (real GAMA)
+        run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-reports/integration-report.json
+
+      - name: Full-stack E2E (macOS binary + GAMA, no emulator)
+        run: npm run test:e2e:full
+
+      # Reports what actually ran instead of leaving "everything skipped" looking
+      # green. Non-blocking (`continue-on-error`) to match this lane's existing
+      # posture: the GAMA install/boot steps above are non-fatal by design, so a
+      # dead GAMA should annotate rather than gate merges. Drop the flag once the
+      # macOS GAMA setup is reliable.
+      - name: Assert the GAMA tests actually ran
+        if: always()
+        continue-on-error: true
+        run: |
+          rc=0
+          # `|| rc=1` so a failing first check still lets the second one report.
+          node scripts/assert-tests-ran.mjs test-reports/integration-report.json --min-passed=12 --allow-skip=StaticServer || rc=1
+          # No emulator on this runner, so the live-canvas streaming spec skips.
+          node scripts/assert-tests-ran.mjs test-results/e2e-full-report.json --min-passed=3 --allow-skip="live canvas" || rc=1
+          exit $rc
+
+      - name: Upload test reports and traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-macos
+          path: |
+            test-results/
+            test-reports/
+          if-no-files-found: ignore
+
+      - name: Upload GAMA server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gama-server-log-e2e-macos
+          path: gama-server.log
+          if-no-files-found: ignore
+
+  # Windows full-stack E2E: the compiled Windows binary + a real GAMA server, no
+  # emulator (Windows runners can't nest-virtualize Android). The Windows binary
+  # already sets WS_NO_BUFFER_UTIL via its launcher, so it dodged the bufferutil
+  # bug — this lane confirms it stays working. GAMA on Windows uses gama-headless.bat
+  # via pwsh; the exact layout/flags may need tuning, so the GAMA steps are
+  # non-fatal and full-stack self-skips if GAMA never comes up.
+  test-e2e-full-windows:
+    runs-on: windows-latest
+    needs: compilation-windows
+    env:
+      GAMA_IP_ADDRESS: localhost
+      GAMA_WS_PORT: "2000"
+    steps:
+
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install npm modules
+        run: npm ci
+
+      # download-artifact flattens the single-file archive to bin/simple-win.exe,
+      # which is what playwright.full.config.ts expects on win32.
+      - name: Download the compiled Windows binary (from compilation-windows)
+        uses: actions/download-artifact@v8
+        with:
+          name: windows-compiled-archive
+          path: bin
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      - name: Resolve GAMA download link (Windows)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          GAMA_DOWNLOAD_URL=$(gh api repos/gama-platform/gama/releases/latest --jq '.assets[] | select(.name | contains("Windows") and contains("with_JDK") and endswith(".zip")) | .browser_download_url')
+          [ -n "$GAMA_DOWNLOAD_URL" ] || { echo "::error::No Windows with_JDK .zip asset found on the latest GAMA release"; exit 1; }
+          echo "GAMA_DOWNLOAD_URL=$GAMA_DOWNLOAD_URL" >> $GITHUB_ENV
+
+      - name: Download & unpack GAMA headless
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          curl.exe -L "$env:GAMA_DOWNLOAD_URL" -o gama-headless.zip
+          Expand-Archive -Path gama-headless.zip -DestinationPath gama-headless -Force
+          python "$env:GITHUB_WORKSPACE/test/setup/p2Downloader.py" 'https://project-simple.github.io/simple.toolchain/' ./gama-headless/dropins
+          # Force using dropins in headless (same trick as the Linux jobs)
+          Remove-Item -Recurse -Force gama-headless/headless/configuration
+          Copy-Item -Recurse gama-headless/configuration gama-headless/headless/configuration
+
+      - name: Start GAMA WebSocket server
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $bat = Get-ChildItem -Path gama-headless -Recurse -Filter gama-headless.bat | Select-Object -First 1
+          # gama-headless.bat resolves everything relative to the CWD (..\plugins,
+          # ..\GAMA.ini, ..\jdk) — launched from the repo root it can't read
+          # GAMA.ini, computes -Xmx-1m and the JVM refuses to start.
+          #
+          # Launch through WMI, NOT as a child of this step. The runner tracks the
+          # step's process tree and kills it when the step completes — GAMA
+          # answered "up" inside this step and was dead by the next one, both for
+          # console-attached (-NoNewWindow) and detached (-WindowStyle Hidden)
+          # Start-Process launches. Win32_Process.Create spawns the process under
+          # the WMI provider host, outside the step's tree, like nohup on Linux.
+          $log = Join-Path $env:GITHUB_WORKSPACE 'gama-server.log'
+          $cmdLine = 'cmd.exe /S /C ""' + $bat.FullName + '" -socket ${{ env.GAMA_WS_PORT }} > "' + $log + '" 2>&1"'
+          $r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmdLine; CurrentDirectory = $bat.DirectoryName }
+          Write-Output "WMI Create: ReturnValue=$($r.ReturnValue) ProcessId=$($r.ProcessId)"
+          $up = $false
+          for ($i = 0; $i -lt 90; $i++) {
+            if (Test-NetConnection -ComputerName localhost -Port ${{ env.GAMA_WS_PORT }} -InformationLevel Quiet) { $up = $true; break }
+            Start-Sleep -Seconds 1
+          }
+          if ($up) { Write-Output "GAMA server is up" }
+          else {
+            Write-Output "::warning::GAMA server never opened port ${{ env.GAMA_WS_PORT }} — the GAMA-gated E2E tests will be skipped"
+            Get-Content $log -ErrorAction SilentlyContinue | Select-Object -Last 40
+          }
+
+      # Direct evidence for the step-boundary problem: is the GAMA process still
+      # alive HERE, one step after it reported "up"? Prints the java process list,
+      # who listens on the port (and on which address family), and GAMA's own log.
+      - name: GAMA liveness check (diagnostics)
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          Write-Output "--- java processes:"
+          Get-CimInstance Win32_Process -Filter "Name='java.exe' or Name='cmd.exe'" | Select-Object ProcessId, Name, CreationDate | Format-Table | Out-String
+          Write-Output "--- listeners on port ${{ env.GAMA_WS_PORT }}:"
+          netstat -ano | Select-String ':${{ env.GAMA_WS_PORT }} '
+          Write-Output ("--- ::1 reachable: " + (Test-NetConnection -ComputerName '::1' -Port ${{ env.GAMA_WS_PORT }} -InformationLevel Quiet))
+          Write-Output ("--- 127.0.0.1 reachable: " + (Test-NetConnection -ComputerName '127.0.0.1' -Port ${{ env.GAMA_WS_PORT }} -InformationLevel Quiet))
+          Write-Output "--- gama-server.log tail:"
+          Get-Content (Join-Path $env:GITHUB_WORKSPACE 'gama-server.log') -ErrorAction SilentlyContinue | Select-Object -Last 25
+
+      # Vitest integration project against the live GAMA booted above — real-GAMA
+      # coverage on Windows, not just Linux. Self-skips if GAMA never came up (the
+      # ::warning:: above fired in that case).
+      - name: Integration tests (real GAMA)
+        run: npm run test:integration -- --reporter=default --reporter=json --outputFile.json=test-reports/integration-report.json
+
+      - name: Full-stack E2E (Windows binary + GAMA, no emulator)
+        run: npm run test:e2e:full
+
+      # This is the lane where a GAMA killed at the step boundary produced a green
+      # run with every test skipped. The guard makes that state explicit. Kept
+      # non-blocking (`continue-on-error`) like the GAMA setup steps above; drop
+      # the flag once the WMI launcher is proven stable.
+      - name: Assert the GAMA tests actually ran
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $rc = 0
+          node scripts/assert-tests-ran.mjs test-reports/integration-report.json --min-passed=12 --allow-skip=StaticServer
+          if ($LASTEXITCODE -ne 0) { $rc = 1 }
+          # No emulator on this runner, so the live-canvas streaming spec skips.
+          node scripts/assert-tests-ran.mjs test-results/e2e-full-report.json --min-passed=3 --allow-skip="live canvas"
+          if ($LASTEXITCODE -ne 0) { $rc = 1 }
+          exit $rc
+
+      - name: Upload test reports and traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-windows
+          path: |
+            test-results/
+            test-reports/
+          if-no-files-found: ignore
+
+      - name: Upload GAMA server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gama-server-log-windows
+          path: gama-server.log
+          if-no-files-found: ignore
+
+  # Real-device ADB tests against a hardware-accelerated Android emulator.
+  # Covers the generic adb-server + shell paths (device discovery, isDeviceReady,
+  # transport shell round-trip, package/version detection). Quest/Oculus-specific
+  # provisioning is out of scope — no emulator equivalent exists.
+  #
+  # Separate, non-blocking job: emulator runs are the slowest/flakiest part of CI,
+  # so a failure here should not gate merges.
+  test-adb:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install npm modules
+        run: npm ci
+
+      # Grant the runner access to /dev/kvm so the emulator is hardware-accelerated
+      # (boots in ~15s instead of minutes). Requires GitHub's KVM-enabled Linux runners.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run ADB tests on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          # The emulator boots and registers with the adb server on localhost:5037,
+          # then `npm run test:adb` connects to it. The suite auto-skips if no
+          # device is present — which reads as green, so the guard step below turns
+          # a failed emulator boot back into a failure.
+          script: npm run test:adb -- --reporter=default --reporter=json --outputFile.json=test-reports/adb-report.json
+
+      # This lane provisions an emulator, so all 12 ADB tests must run.
+      - name: Assert the ADB tests actually ran
+        run: node scripts/assert-tests-ran.mjs test-reports/adb-report.json --min-passed=12
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-adb
+          path: |
+            test-results/
+            test-reports/
+          if-no-files-found: ignore
+
   compilation-linux:
     runs-on: ubuntu-latest
     steps:
 
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -20,7 +642,7 @@ jobs:
         run: npm run build:sea:linux
 
       - name: Export release for Linux
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-compiled-archive
           if-no-files-found: error
@@ -32,8 +654,8 @@ jobs:
     runs-on: macos-latest
     steps:
 
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -44,7 +666,7 @@ jobs:
         run: npm run build:sea:macos
 
       - name: Export release for macOS
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-compiled-archive
           if-no-files-found: error
@@ -56,11 +678,11 @@ jobs:
     runs-on: windows-latest
     steps:
 
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: 'stable'
 
@@ -71,7 +693,7 @@ jobs:
         run: npm run build:sea:win
 
       - name: Export release for Windows
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-compiled-archive
           if-no-files-found: error

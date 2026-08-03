@@ -11,33 +11,48 @@ const LanguageSelector = () => {
 	};
 
 	const buttonStyle =
-		"relative flex flex-row items-center justify-center cursor-pointer  transition-transform duration-300 hover:scale-105";
+		"relative flex flex-row items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-105 bg-transparent border-none p-0";
 
 	return (
 		<div className="flex flex-col  h-full justify-center z-10 mr-[95px] mt-[23px]">
 			{/* Button to open the popup */}
-			<img
-				src={` /images/Language_selection/Language_selection_Button_00.png`}
-				alt="language selection"
-				className="size-[6dvh] cursor-pointer hover:scale-110 transition-transform duration-200"
+			<button
+				type="button"
 				onClick={() => {
 					setShowPopup(true);
 				}}
-			/>
+				className="bg-transparent border-none p-0 flex items-center justify-center"
+			>
+				<img
+					src={` /images/Language_selection/Language_selection_Button_00.png`}
+					alt="language selection"
+					className="size-[6dvh] cursor-pointer hover:scale-110 transition-transform duration-200"
+				/>
+			</button>
 
 			{/* Pop-up */}
 			{showPopup && (
-				<div
-					className="fixed inset-0 flex items-center justify-center bg-black/50 "
+				<button
+					type="button"
+					className="fixed inset-0 flex items-center justify-center bg-black/50 w-full h-full cursor-default border-none"
 					onClick={() => setShowPopup(false)}
 				>
-					<div className=" p-6 rounded-lg w-80 relative top-0 right-0" onClick={(e) => e.stopPropagation()}>
-						<img
-							src={` images/Language_selection/Language_selection_close.png`}
-							alt=""
-							className="size-[5dvh] absolute top-[6%] right-[11.5%] mr-1 cursor-pointer z-10 hover:scale-110 transition-transform duration-200"
+					<button
+						type="button"
+						className=" p-6 rounded-lg w-80 relative top-0 right-0 cursor-default border-none bg-transparent"
+						onClick={(e) => e.stopPropagation()}
+					>
+						<button
+							type="button"
+							className="absolute top-[6%] right-[11.5%] mr-1 z-10 hover:scale-110 transition-transform duration-200 bg-transparent border-none p-0"
 							onClick={() => setShowPopup(false)}
-						/>
+						>
+							<img
+								src={` images/Language_selection/Language_selection_close.png`}
+								alt=""
+								className="size-[5dvh] cursor-pointer"
+							/>
+						</button>
 
 						<h3 className="text-lg font-semibold mb-4">{t("select_language")}</h3>
 
@@ -48,57 +63,33 @@ const LanguageSelector = () => {
 						/>
 
 						<div className="flex flex-col space-y-2 relative p-4 z-40">
-							<div className={buttonStyle}>
-								<img
-									src={`images/Language_selection/Language_selection_Button_01.png`}
-									alt="English"
-									onClick={() => changeLanguage("en")}
-								/>
+							<button type="button" className={buttonStyle} onClick={() => changeLanguage("en")}>
+								<img src={`images/Language_selection/Language_selection_Button_01.png`} alt="English" />
 								<p className="absolute pointer-events-none pb-2">English</p>
-							</div>
-							<div className={buttonStyle}>
-								<img
-									src={`images/Language_selection/Language_selection_Button_02.png`}
-									alt="French"
-									onClick={() => changeLanguage("fr")}
-								/>
+							</button>
+							<button type="button" className={buttonStyle} onClick={() => changeLanguage("fr")}>
+								<img src={`images/Language_selection/Language_selection_Button_02.png`} alt="French" />
 								<p className="absolute pointer-events-none pb-2">Français</p>
-							</div>
-							<div className={buttonStyle}>
-								<img
-									src={`images/Language_selection/Language_selection_Button_03.png`}
-									alt="Vietnamese"
-									onClick={() => changeLanguage("vi")}
-								/>
+							</button>
+							<button type="button" className={buttonStyle} onClick={() => changeLanguage("vi")}>
+								<img src={`images/Language_selection/Language_selection_Button_03.png`} alt="Vietnamese" />
 								<p className="absolute pointer-events-none pb-2">Việt</p>
-							</div>
-							<div className={buttonStyle}>
-								<img
-									src={`images/Language_selection/Language_selection_Button_04.png`}
-									alt="Thai"
-									onClick={() => changeLanguage("th")}
-								/>
+							</button>
+							<button type="button" className={buttonStyle} onClick={() => changeLanguage("th")}>
+								<img src={`images/Language_selection/Language_selection_Button_04.png`} alt="Thai" />
 								<p className="absolute pointer-events-none pb-2">แบบไทย</p>
-							</div>
-							<div className={buttonStyle}>
-								<img
-									src={`images/Language_selection/Language_selection_Button_05.png`}
-									alt="Lao"
-									onClick={() => changeLanguage("lo")}
-								/>
+							</button>
+							<button type="button" className={buttonStyle} onClick={() => changeLanguage("lo")}>
+								<img src={`images/Language_selection/Language_selection_Button_05.png`} alt="Lao" />
 								<p className="absolute pointer-events-none pb-2">ພາສາລາວ</p>
-							</div>
-							<div className={buttonStyle}>
-								<img
-									src={`images/Language_selection/Language_selection_Button_06.png`}
-									alt="Khmer"
-									onClick={() => changeLanguage("km")}
-								/>
+							</button>
+							<button type="button" className={buttonStyle} onClick={() => changeLanguage("km")}>
+								<img src={`images/Language_selection/Language_selection_Button_06.png`} alt="Khmer" />
 								<p className="absolute pointer-events-none pb-2 text-white">ភាសាខ្មែរ</p>
-							</div>
+							</button>
 						</div>
-					</div>
-				</div>
+					</button>
+				</button>
 			)}
 		</div>
 	);

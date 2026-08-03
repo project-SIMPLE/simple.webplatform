@@ -88,9 +88,9 @@ const SelectorSimulations = () => {
 			{gamaless ? (
 				<>
 					<div className="bg-yellow-100 border-4 border-yellow-500 rounded-xl px-8 py-6 text-center max-w-lg">
-						<h2 className="text-2xl font-bold text-yellow-700 mb-2">GAMALESS Mode</h2>
-						<p className="text-yellow-800">Simulation features are disabled. No GAMA server is connected.</p>
-						<p className="text-yellow-700 mt-2 text-sm">Headset management is still operational.</p>
+						<h2 className="text-2xl font-bold text-yellow-700 mb-2">{t("gamaless_mode_title")}</h2>
+						<p className="text-yellow-800">{t("gamaless_mode_description")}</p>
+						<p className="text-yellow-700 mt-2 text-sm">{t("gamaless_mode_headsets")}</p>
 					</div>
 					<Link to={"../streamPlayerScreen"} className="rounded-lg" target="_blank">
 						<img src={` /images/Buttons/Button_Display.png`} alt="display button" className="size-[6dvh]" />

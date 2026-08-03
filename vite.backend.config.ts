@@ -59,6 +59,15 @@ export default defineConfig({
 				"node-hid",
 				"fsevents",
 			],
+			output: {
+				// `ws`'s optional native `bufferutil`/`utf-8-validate` addons get bundled
+				// as empty shims here (noExternal), so `bufferUtil.mask` is undefined and
+				// every outgoing GAMA frame throws "bufferUtil.mask is not a function".
+				// Tell `ws` to use its pure-JS fallbacks instead — set before any require
+				// of ws runs. The Windows launcher sets the same vars; this covers the
+				// Linux/macOS binaries, which run node directly with no launcher wrapper.
+				banner: "process.env.WS_NO_BUFFER_UTIL='1';process.env.WS_NO_UTF_8_VALIDATE='1';",
+			},
 		},
 		ssr: true,
 	},

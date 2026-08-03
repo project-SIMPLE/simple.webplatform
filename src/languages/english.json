@@ -9,6 +9,7 @@
     "wait_minim_players_1":"Waiting for",
     "wait_minim_players_2":"more players to reach minimum players",
     "wait_maximum_players_1":"more players to reach maximum players",
+    "all_players_connected": "All players connected",
     "popup_question": "Do you really want to disconnect and remove",
     "remove": "Remove",
     "relaunch": "Relaunch",
@@ -27,6 +28,10 @@
     "in_game": "In game",
     "connected": "Connected",
     "error": "Error",
-    "simulation_loading": "Simulation loading"
+    "simulation_loading": "Simulation loading",
+    "gamaless_banner": "GAMALESS — simulation controls disabled",
+    "gamaless_mode_title": "GAMALESS Mode",
+    "gamaless_mode_description": "Simulation features are disabled. No GAMA server is connected.",
+    "gamaless_mode_headsets": "Headset management is still operational."
   }
   

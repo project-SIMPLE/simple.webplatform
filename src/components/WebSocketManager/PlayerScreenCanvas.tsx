@@ -50,13 +50,15 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, needsInterac
 		<>
 			{/* Popup */}
 			{showPopup === true ? (
-				<div
-					className={`backdrop-blur-md w-full h-full fixed inset-0 flex flex-col items-center justify-center z-50`}
+				<button
+					type="button"
+					className={`backdrop-blur-md w-full h-full fixed inset-0 flex flex-col items-center justify-center z-50 cursor-default border-none`}
 					onClick={() => setShowPopup(false)}
 				>
 					{/* <div ref={popupref} className={` ${isColoredHeadset ? bgColor : "bg-slate-500"} size-2/3 flex flex-col items-center justify-center`}> */}
-					<div
-						className={`rounded-md size-fit flex flex-col items-center relative`}
+					<button
+						type="button"
+						className={`rounded-md size-fit flex flex-col items-center relative cursor-default border-none bg-transparent`}
 						onClick={(e) => e.stopPropagation()}
 					>
 						<div
@@ -67,20 +69,22 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, needsInterac
 						</div>
 
 						<button
+							type="button"
 							onClick={() => setShowPopup(false)}
 							className="bg-white hover:bg-gray-200 rounded-full p-1 size-fit mb-2w"
 							style={{ position: "absolute", top: "0.5rem", right: "0.5rem" }}
 						>
 							<img src="/images/Buttons/Button_stop.png" alt="" className="size-8" />
 						</button>
-					</div>
-				</div>
+					</button>
+				</button>
 			) : null}
 
 			{/* meaningful content */}
 			{!isPlaceholder ? (
-				<div
-					className="w-full h-full relative"
+				<button
+					type="button"
+					className="w-full h-full relative cursor-default border-none bg-transparent"
 					onClick={
 						needsInteractivity
 							? () => {
@@ -97,7 +101,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, needsInterac
 					/>
 					{/* Inset holder sits inside the frame border (extra room at the bottom, which isn't straight). */}
 					<div ref={canvasref} className="absolute inset-[7%]" />
-				</div>
+				</button>
 			) : (
 				//  placeholder, with an eye icon
 				<div className="w-full h-full relative">

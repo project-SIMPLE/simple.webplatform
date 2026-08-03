@@ -1,0 +1,102 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { defineConfig, devices } from "@playwright/test";
+import { listAdbDevices } from "./test/setup/adb-probe.ts";
+
+// Full-stack end-to-end: the COMPILED binary wired to a real GAMA server and a
+// real Android device/emulator. Unlike playwright.sea.config.ts (binary only),
+// this boots the platform with GAMA_IP_ADDRESS/GAMA_WS_PORT set and relies on an
+// adb server on localhost:5037, so the GAMA-connection, streaming and
+// launch-from-browser specs actually run instead of skipping.
+//
+// Prerequisites (the CI `test-e2e-full` job provides them):
+//   - bin/simple-<platform> built (downloaded from the compilation-linux artifact)
+//   - a GAMA WebSocket server listening on GAMA_WS_PORT
+//   - an Android emulator registered with the adb server on localhost:5037
+const WEB_PORT = 8100;
+const MONITOR_WS_PORT = 8001;
+const HEADSET_WS_PORT = 8080;
+const GAMA_WS_PORT = process.env.GAMA_WS_PORT ?? "2000";
+
+// Expose to tests so they know not to skip hardware-dependent specs.
+//
+// This config is shared by all three full-stack lanes, but only the Linux one
+// provisions an Android emulator — so it cannot be hardcoded to "true" or the
+// streaming spec waits 60s for a canvas that can never appear on macOS/Windows.
+// Probe instead, and mirror the platform's own gate: SIMPLE streams a device
+// only when its adb serial looks like a Wi-Fi address (AdbManager.startNewStream
+// checks `serial.includes(".")`, ScrcpyServer.startStreaming derives the stream
+// key from `serial.split(":")[0]`). A bare "emulator-5554" is attached but not
+// streamable, so `adb connect 127.0.0.1:5555` in CI is what makes this true.
+const streamableDevice = listAdbDevices().find((d) => d.state === "device" && d.serial.includes("."));
+process.env.EXPECT_LIVE_HARDWARE = streamableDevice ? "true" : "false";
+console.log(
+	streamableDevice
+		? `[e2e:full] Streamable adb device ${streamableDevice.serial} — the live-canvas spec will run.`
+		: "[e2e:full] No streamable adb device (Wi-Fi serial) — the live-canvas spec will skip.",
+);
+
+// Absolute path so the webServer command launches under any shell (Windows cmd
+// doesn't accept the "./" prefix; forward-slash relative paths fail there).
+const BINARY = path.resolve(
+	{
+		darwin: "./bin/simple-macos",
+		win32: "./bin/simple-win.exe",
+	}[process.platform as string] ?? "./bin/simple-linux",
+);
+
+if (!existsSync(BINARY)) {
+	throw new Error(
+		`Compiled binary not found at ${BINARY}. Build it (npm run build:sea:*) or download the CI artifact.`,
+	);
+}
+
+export default defineConfig({
+	testDir: "./test/e2e",
+	// app.spec asserts the *no-GAMA* state (simulation tiles disabled); in this lane
+	// GAMA is connected so the tiles are enabled. It runs in the source/binary lanes.
+	testIgnore: ["**/app.spec.ts"],
+	// GAMA can take a while to load and run a model, so give the full flow room.
+	timeout: 120_000,
+	fullyParallel: false,
+	// One worker: every spec drives the SAME binary and the SAME stateful GAMA
+	// server (fullyParallel only serializes within a file — separate files still
+	// run in parallel workers, and e.g. player-forward's final Stop would kill
+	// full-stack's experiment mid-lifecycle).
+	workers: 1,
+	forbidOnly: !!process.env.CI,
+	retries: 0,
+	// `list` for humans reading the CI log; `json` for scripts/assert-tests-ran.mjs,
+	// which fails the lane when specs silently skipped (the exact failure mode this
+	// lane suffered: GAMA dying at a step boundary made every spec skip, green).
+	reporter: [["list"], ["json", { outputFile: "test-results/e2e-full-report.json" }]],
+	use: {
+		baseURL: `http://127.0.0.1:${WEB_PORT}`,
+		headless: true,
+		// Without these a CI failure leaves nothing but a one-line message.
+		trace: "retain-on-failure",
+		screenshot: "only-on-failure",
+		video: "retain-on-failure",
+	},
+	projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+	webServer: {
+		command: BINARY,
+		env: {
+			NODE_ENV: "production",
+			WEB_APPLICATION_PORT: String(WEB_PORT),
+			MONITOR_WS_PORT: String(MONITOR_WS_PORT),
+			// Player (Unity headset) WebSocket port — the #153 forward spec connects here.
+			HEADSET_WS_PORT: String(HEADSET_WS_PORT),
+			LEARNING_PACKAGE_PATH: "./learning-packages",
+			ENV_GAMALESS: "false",
+			// Point the platform at the GAMA server the CI job started.
+			GAMA_IP_ADDRESS: process.env.GAMA_IP_ADDRESS ?? "localhost",
+			GAMA_WS_PORT,
+		},
+		url: `http://127.0.0.1:${WEB_PORT}`,
+		timeout: 120_000,
+		reuseExistingServer: false,
+		stdout: "pipe",
+		stderr: "pipe",
+	},
+});
