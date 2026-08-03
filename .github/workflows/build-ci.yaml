@@ -405,7 +405,7 @@ jobs:
       # dead GAMA should annotate rather than gate merges. Drop the flag once the
       # macOS GAMA setup is reliable.
       - name: Assert the GAMA tests actually ran
-        if: failure()
+        if: always()
         continue-on-error: true
         run: |
           rc=0
@@ -546,7 +546,7 @@ jobs:
       # non-blocking (`continue-on-error`) like the GAMA setup steps above; drop
       # the flag once the WMI launcher is proven stable.
       - name: Assert the GAMA tests actually ran
-        if: failure()
+        if: always()
         continue-on-error: true
         shell: pwsh
         run: |
