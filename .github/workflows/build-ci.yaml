@@ -49,7 +49,7 @@ jobs:
         run: node scripts/assert-tests-ran.mjs test-reports/integration-report.json --min-passed=2 --allow-skip=GAMA
 
       - name: Upload test reports
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: test-reports-${{ matrix.os }}
@@ -139,7 +139,7 @@ jobs:
         run: node scripts/assert-tests-ran.mjs test-reports/integration-report.json --min-passed=12 --allow-skip=StaticServer
 
       - name: Upload test reports
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: test-reports-integration-${{ matrix.gama-version }}
@@ -182,7 +182,7 @@ jobs:
         run: node scripts/assert-tests-ran.mjs test-results/e2e-report.json --min-passed=2 --allow-skip="live canvas"
 
       - name: Upload E2E report and traces
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-report
@@ -282,7 +282,7 @@ jobs:
         run: node scripts/assert-tests-ran.mjs test-results/e2e-full-report.json --min-passed=4
 
       - name: Upload E2E report and traces
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-full-report-linux
@@ -383,7 +383,7 @@ jobs:
       # dead GAMA should annotate rather than gate merges. Drop the flag once the
       # macOS GAMA setup is reliable.
       - name: Assert the GAMA tests actually ran
-        if: always()
+        if: failure()
         continue-on-error: true
         run: |
           rc=0
@@ -394,7 +394,7 @@ jobs:
           exit $rc
 
       - name: Upload test reports and traces
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: test-reports-macos
@@ -524,7 +524,7 @@ jobs:
       # non-blocking (`continue-on-error`) like the GAMA setup steps above; drop
       # the flag once the WMI launcher is proven stable.
       - name: Assert the GAMA tests actually ran
-        if: always()
+        if: failure()
         continue-on-error: true
         shell: pwsh
         run: |
@@ -537,7 +537,7 @@ jobs:
           exit $rc
 
       - name: Upload test reports and traces
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: test-reports-windows
@@ -598,7 +598,7 @@ jobs:
         run: node scripts/assert-tests-ran.mjs test-reports/adb-report.json --min-passed=12
 
       - name: Upload test reports
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: test-reports-adb
