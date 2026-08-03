@@ -268,13 +268,35 @@ jobs:
       # boots the binary (already pointed at GAMA), which connects to both. The
       # specs self-skip when GAMA/streaming never come up — which reads as green,
       # so the guard step below turns that back into a failure.
+      #
+      # The emulator must first be re-attached over TCP. SIMPLE only streams
+      # headsets that joined over Wi-Fi: AdbManager.startNewStream gates on
+      # `device.serial.includes(".")` and ScrcpyServer.startStreaming derives the
+      # stream key from `serial.split(":")[0]`, rejecting anything undotted. The
+      # emulator's native serial is "emulator-5554", so it silently never
+      # streams and the live-canvas spec times out. Connecting on 127.0.0.1:5555
+      # registers a second transport for the same device with a dotted serial,
+      # which passes both gates and yields stream id "127.0.0.1" — the same key
+      # test/adb/scrcpy-stream.test.ts drives runSession with.
       - name: Full-stack E2E (binary + GAMA + emulator)
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
           arch: x86_64
           target: google_apis
-          script: npm run test:e2e:full
+          script: |
+            adb connect 127.0.0.1:5555
+            # The transport can take a moment to settle into "device" state.
+            for i in $(seq 1 10); do
+              adb devices | grep -q '^127\.0\.0\.1:5555[[:space:]]*device$' && break
+              sleep 1
+            done
+            adb devices
+            adb devices | grep -q '^127\.0\.0\.1:5555[[:space:]]*device$' || {
+              echo "::error::Emulator is not attached over TCP — the platform's Wi-Fi-serial gate will block streaming and the live-canvas spec will time out."
+              exit 1
+            }
+            npm run test:e2e:full
 
       # This lane provisions BOTH GAMA and an emulator, so all 4 specs must run:
       # full-stack, player-forward and both streaming specs. Nothing may skip.

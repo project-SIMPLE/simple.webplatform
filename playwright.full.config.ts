@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { defineConfig, devices } from "@playwright/test";
+import { listAdbDevices } from "./test/setup/adb-probe.ts";
 
 // Full-stack end-to-end: the COMPILED binary wired to a real GAMA server and a
 // real Android device/emulator. Unlike playwright.sea.config.ts (binary only),
@@ -18,7 +19,22 @@ const HEADSET_WS_PORT = 8080;
 const GAMA_WS_PORT = process.env.GAMA_WS_PORT ?? "2000";
 
 // Expose to tests so they know not to skip hardware-dependent specs.
-process.env.EXPECT_LIVE_HARDWARE = "true";
+//
+// This config is shared by all three full-stack lanes, but only the Linux one
+// provisions an Android emulator — so it cannot be hardcoded to "true" or the
+// streaming spec waits 60s for a canvas that can never appear on macOS/Windows.
+// Probe instead, and mirror the platform's own gate: SIMPLE streams a device
+// only when its adb serial looks like a Wi-Fi address (AdbManager.startNewStream
+// checks `serial.includes(".")`, ScrcpyServer.startStreaming derives the stream
+// key from `serial.split(":")[0]`). A bare "emulator-5554" is attached but not
+// streamable, so `adb connect 127.0.0.1:5555` in CI is what makes this true.
+const streamableDevice = listAdbDevices().find((d) => d.state === "device" && d.serial.includes("."));
+process.env.EXPECT_LIVE_HARDWARE = streamableDevice ? "true" : "false";
+console.log(
+	streamableDevice
+		? `[e2e:full] Streamable adb device ${streamableDevice.serial} — the live-canvas spec will run.`
+		: "[e2e:full] No streamable adb device (Wi-Fi serial) — the live-canvas spec will skip.",
+);
 
 // Absolute path so the webServer command launches under any shell (Windows cmd
 // doesn't accept the "./" prefix; forward-slash relative paths fail there).
