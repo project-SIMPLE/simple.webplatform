@@ -284,7 +284,7 @@ export async function ensureConfig(): Promise<void> {
 				results.useGama
 					? path({
 							message: "Learning packages folder (relative path from here, or absolute path)",
-							root: `${process.cwd()}/`,
+							root: `${process.cwd()}${process.platform === "win32" ? "\\" : "/"}`,
 							directory: true,
 							validate: (v) => {
 								const p = (v ?? "").trim();
@@ -306,7 +306,7 @@ export async function ensureConfig(): Promise<void> {
 				results.useGama && results.useExtraLearningPath
 					? path({
 							message: "Extra learning packages folder (optional, leave blank to skip)",
-							root: `${process.cwd()}/`,
+							root: `${process.cwd()}${process.platform === "win32" ? "\\" : "/"}`,
 							directory: true,
 							// allow empty (it's optional), otherwise it must exist
 							validate: (v) => {
