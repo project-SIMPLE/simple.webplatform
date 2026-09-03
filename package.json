@@ -51,7 +51,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "evilscan": "^1.9.1",
-    "express": "^4.22.2",
+    "express": "^5.2.1",
     "geoip-lite": "^2.0.3",
     "i18next": "^23.15.1",
     "i18next-browser-languagedetector": "^8.2.1",
