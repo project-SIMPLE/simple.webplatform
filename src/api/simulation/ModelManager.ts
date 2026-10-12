@@ -9,6 +9,7 @@ import type {
 } from "../../common/types.ts";
 import type Controller from "../core/Controller.ts";
 import { IS_PLATFORM_PACKAGED } from "../index.ts";
+import { APP_DIR } from "../infra/AppPaths.ts";
 import Model from "./Model.ts";
 
 // Override the log function
@@ -42,7 +43,7 @@ class ModelManager {
 
 		const learningPackagePath: string = isAbsolute(process.env.LEARNING_PACKAGE_PATH!)
 			? process.env.LEARNING_PACKAGE_PATH!
-			: path.join(process.cwd(), process.env.LEARNING_PACKAGE_PATH!);
+			: path.join(APP_DIR, process.env.LEARNING_PACKAGE_PATH!);
 
 		if (fs.existsSync(learningPackagePath)) {
 			directoriesWithProjects.push(learningPackagePath);
@@ -68,7 +69,7 @@ class ModelManager {
 			directoriesWithProjects.push(
 				isAbsolute(process.env.EXTRA_LEARNING_PACKAGE_PATH!)
 					? process.env.EXTRA_LEARNING_PACKAGE_PATH!
-					: path.join(process.cwd(), process.env.EXTRA_LEARNING_PACKAGE_PATH!),
+					: path.join(APP_DIR, process.env.EXTRA_LEARNING_PACKAGE_PATH!),
 			);
 		}
 
@@ -76,7 +77,7 @@ class ModelManager {
 			const errorMessage: string =
 				`Couldn't find any learning package folder in your configuration...` +
 				`\nPlease set an existing path in your '.env' for 'LEARNING_PACKAGE_PATH' or 'EXTRA_LEARNING_PACKAGE_PATH'` +
-				`\n\tCurrent '.env' path :  ${process.cwd()}/.env` +
+				`\n\tCurrent '.env' path :  ${path.join(APP_DIR, ".env")}` +
 				`\n\tCurrent 'LEARNING_PACKAGE_PATH' path : ${learningPackagePath}`;
 			if (IS_PLATFORM_PACKAGED) {
 				// Not logger as the platform close before logger prints

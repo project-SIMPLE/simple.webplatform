@@ -13,14 +13,12 @@
 
 import { existsSync, statSync, writeFileSync } from "node:fs";
 import { networkInterfaces } from "node:os";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { cancel, confirm, group, intro, isCancel, note, outro, path, text } from "@clack/prompts";
+import { APP_DIR } from "./AppPaths.ts";
 
-// In a pkg binary, the real on-disk location is the executable's directory.
-// In dev (tsx/vite), fall back to the current working directory.
-// @ts-expect-error `process.pkg` is injected by @yao-pkg/pkg at runtime.
-const isPackaged = typeof process.pkg !== "undefined";
-const baseDir = isPackaged ? dirname(process.execPath) : process.cwd();
+// Same folder the backend loads the .env from (see AppPaths.ts).
+const baseDir = APP_DIR;
 const envPath = join(baseDir, ".env");
 
 const forceReconfigure = process.argv.includes("--configure");

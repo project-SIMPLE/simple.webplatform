@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { _extractIPv4, asBool, computeIsPlatformPackaged, LOG_ROTATION, parseHeadsetsIp } from "./index.ts";
+import {
+	_extractIPv4,
+	asBool,
+	computeIsPlatformPackaged,
+	isSameEntryFile,
+	LOG_ROTATION,
+	parseHeadsetsIp,
+} from "./index.ts";
 
 describe("_extractIPv4", () => {
 	it("extracts a bare IPv4 address", () => {
@@ -127,5 +134,32 @@ describe("LOG_ROTATION (issue #66)", () => {
 
 	it("keeps the total capped footprint well under 1 GiB", () => {
 		expect(LOG_ROTATION.maxSize * LOG_ROTATION.maxFiles).toBeLessThan(0x400 * 0x400 * 1024);
+	});
+});
+
+// On Windows the backend silently never booted when the terminal's drive-letter
+// case differed from the one in import.meta.url: the guard compared paths strictly.
+describe("isSameEntryFile (entry-point guard)", () => {
+	const self = "C:\\Users\\me\\simple.webplatform\\src\\api\\index.ts";
+
+	it("matches a Windows path that differs only by drive-letter or folder case", () => {
+		expect(isSameEntryFile("c:\\Users\\me\\simple.webplatform\\src\\api\\index.ts", self, "win32")).toBe(true);
+		expect(isSameEntryFile("C:\\users\\ME\\simple.webplatform\\src\\api\\index.ts", self, "win32")).toBe(true);
+	});
+
+	it("matches a Windows path written with forward slashes", () => {
+		expect(isSameEntryFile("C:/Users/me/simple.webplatform/src/api/index.ts", self, "win32")).toBe(true);
+	});
+
+	it("stays case-sensitive on POSIX", () => {
+		expect(isSameEntryFile("/srv/app/src/api/index.ts", "/srv/app/src/api/index.ts", "linux")).toBe(true);
+		expect(isSameEntryFile("/srv/App/src/api/index.ts", "/srv/app/src/api/index.ts", "linux")).toBe(false);
+	});
+
+	it("matches the compiled .js / .cjs sibling and rejects another file", () => {
+		expect(isSameEntryFile("/srv/app/index.js", "/srv/app/index.ts", "linux")).toBe(true);
+		expect(isSameEntryFile("/srv/app/index.cjs", "/srv/app/index.ts", "linux")).toBe(true);
+		expect(isSameEntryFile("/srv/app/other.ts", "/srv/app/index.ts", "linux")).toBe(false);
+		expect(isSameEntryFile(undefined, "/srv/app/index.ts", "linux")).toBe(false);
 	});
 });

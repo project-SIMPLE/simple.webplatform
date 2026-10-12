@@ -9,6 +9,7 @@ import { configure, fingersCrossed, getConsoleSink, getLevelFilter, getLogger, w
 import { getPrettyFormatter } from "@logtape/pretty";
 import dotenv from "dotenv";
 import Controller from "./core/Controller.ts";
+import { APP_DIR } from "./infra/AppPaths.ts";
 import { isMacMini } from "./infra/DeviceDetector.ts";
 import { StaticServer } from "./infra/StaticServer.ts";
 import { ensureConfig } from "./infra/TuiConfig.ts";
@@ -106,7 +107,6 @@ export const IS_PLATFORM_PACKAGED = computeIsPlatformPackaged({
 	argv0: process.argv[0],
 	argv1: process.argv[1],
 });
-const exeDir = IS_PLATFORM_PACKAGED ? path.dirname(process.execPath) : process.cwd();
 
 // errorLog.log rotation (issue #66: the log file used to grow without bound).
 // Keep at most `maxFiles` rollovers of `maxSize` each, capping total disk use.
@@ -156,7 +156,7 @@ async function loadConfiguration(): Promise<void> {
 	// Ensure a .env exists — no-op if one is already present, prompts on first run.
 	await ensureConfig();
 
-	dotenv.config({ path: path.join(exeDir, ".env") });
+	dotenv.config({ path: path.join(APP_DIR, ".env") });
 
 	// Default value for every option value
 	// GAMA =====
@@ -276,16 +276,30 @@ async function main() {
 	await start();
 }
 
+// Whether `argv1` (the script the runner was started with) designates `self`
+// (this module's file). Windows paths are case-insensitive and the drive letter's
+// case depends on the terminal that launched the process (`c:\\` vs `C:\\`), so a
+// strict comparison there makes the backend silently never start.
+export function isSameEntryFile(argv1: string | undefined, self: string, platform: string = process.platform): boolean {
+	if (!argv1) return false;
+	const p = platform === "win32" ? path.win32 : path.posix;
+	const norm = (f: string) => {
+		const resolved = p.resolve(f);
+		return platform === "win32" ? resolved.toLowerCase() : resolved;
+	};
+	const entry = norm(argv1);
+	const me = norm(self);
+	// Match dev (`tsx src/api/index.ts`) and any compiled `.js`/`.cjs` sibling.
+	return entry === me || entry === me.replace(/\.ts$/, ".js") || entry === me.replace(/\.ts$/, ".cjs");
+}
+
 // Only boot the platform when this module is the process entry point. Importing
 // it (e.g. from the test suite) must not spin up servers, adb, timers, etc.
 function _isEntryPoint(): boolean {
 	// In a packaged SEA build this bundle is always the entry point.
 	if (IS_PLATFORM_PACKAGED) return true;
 	try {
-		const entry = process.argv[1] ? path.resolve(process.argv[1]) : "";
-		const self = fileURLToPath(import.meta.url);
-		// Match dev (`tsx src/api/index.ts`) and any compiled `.js`/`.cjs` sibling.
-		return entry === self || entry === self.replace(/\.ts$/, ".js") || entry === self.replace(/\.ts$/, ".cjs");
+		return isSameEntryFile(process.argv[1], fileURLToPath(import.meta.url));
 	} catch {
 		return false;
 	}

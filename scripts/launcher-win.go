@@ -24,7 +24,13 @@ const magic = "SWPN"
 const footerSize = 12
 
 func main() {
-	nodePath, err := extractNode()
+	selfPath, err := os.Executable()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[simple] Fatal: cannot find own executable: %v\n", err)
+		os.Exit(1)
+	}
+
+	nodePath, err := extractNode(selfPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[simple] Fatal: %v\n", err)
 		os.Exit(1)
@@ -38,6 +44,9 @@ func main() {
 	cmd.Env = append(os.Environ(),
 		"WS_NO_BUFFER_UTIL=1",
 		"WS_NO_UTF_8_VALIDATE=1",
+		// node.exe runs from the temp folder: tell it where this launcher lives so the
+		// `.env` and relative paths resolve next to it (see src/api/infra/AppPaths.ts).
+		"SIMPLE_APP_DIR="+filepath.Dir(selfPath),
 	)
 
 	cmd.Stdin = os.Stdin
@@ -52,12 +61,7 @@ func main() {
 	}
 }
 
-func extractNode() (string, error) {
-	selfPath, err := os.Executable()
-	if err != nil {
-		return "", fmt.Errorf("cannot find own executable: %w", err)
-	}
-
+func extractNode(selfPath string) (string, error) {
 	f, err := os.Open(selfPath)
 	if err != nil {
 		return "", fmt.Errorf("cannot open self: %w", err)
