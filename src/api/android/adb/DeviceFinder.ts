@@ -1,9 +1,7 @@
-// @ts-expect-error
-
 import { exec } from "node:child_process";
 import { type NetworkInterfaceInfo, networkInterfaces } from "node:os";
 import { getLogger } from "@logtape/logtape";
-import Evilscan from "evilscan";
+import Evilscan, { type EvilscanResult } from "evilscan";
 import { ENV_EXTRA_VERBOSE, ENV_VERBOSE, HEADSETS_IP } from "../../index.ts";
 import type { AdbManager } from "./AdbManager.ts";
 
@@ -137,7 +135,7 @@ class DeviceFinder {
 			return false;
 		}
 
-		const scanner = new Evilscan({
+		const scanner: Evilscan = new Evilscan({
 			target: ipAddress,
 			port: "5555,30000-49999", // your custom range
 			status: "O", // 'TROU' : Timeout, Refused, Open, Unreachable
@@ -147,13 +145,13 @@ class DeviceFinder {
 		});
 
 		scanner
-			.on("result", async (data: unknown) => {
+			.on("result", async (data: EvilscanResult) => {
 				loggerES.trace(`Scan of ${ipAddress} find this: {data}`, { data });
 				if (!alreadyConnected) {
 					loggerES.trace(`Trying to ADB connect to ${data.ip}:${data.port}`);
 
 					try {
-						alreadyConnected = await this.adbManager.connectNewDevice(data.ip, data.port);
+						alreadyConnected = await this.adbManager.connectNewDevice(data.ip, String(data.port));
 						if (alreadyConnected) scanner.abort();
 					} catch (e) {
 						if (ENV_EXTRA_VERBOSE) loggerES.error("Couldn't connect with this error message: {e}", { e });
@@ -198,8 +196,8 @@ class DeviceFinder {
 			concurrency: 255, // how many ports to test in parallel
 			timeout: 1000, // maximum number of milliseconds before closing the connection
 		})
-			.on("result", async (data: unknown) => {
-				if ((data as { ip: string }).ip !== serverLocalIp) {
+			.on("result", async (data: EvilscanResult) => {
+				if (data.ip !== serverLocalIp) {
 					loggerES.trace(`Scan find this: ${data.ip}`);
 					this.ipToConnect.push((data as { ip: string }).ip);
 				}

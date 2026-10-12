@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { readApkVersionName } from "./ApkInspector.ts";
+import { readApkVersionName } from "./ApkInspector";
 
 // Reads the real APKs bundled in toolkit/ — no device or external tooling needed.
 function apk(name: string): Buffer {
