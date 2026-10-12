@@ -24,6 +24,7 @@ type Provisioning = {
 	applyGlobalSettings(adb: Adb, serial: string): Promise<void>;
 	applySystemSettings(adb: Adb, serial: string): Promise<void>;
 	applySecureSettings(adb: Adb, serial: string): Promise<void>;
+	checkSetting(adb: Adb, namespace: string, param: string, expectedValue: string | number): Promise<boolean>;
 };
 
 describe.skipIf(!reachable)("HeadsetSetup provisioning (real device/emulator)", () => {
@@ -31,7 +32,7 @@ describe.skipIf(!reachable)("HeadsetSetup provisioning (real device/emulator)", 
 	let setup: Provisioning;
 
 	async function settingsGet(namespace: string, key: string): Promise<string> {
-		const out = await conn.adb.subprocess.noneProtocol.spawnWaitText(["settings", "get", namespace, key]);
+		const out = await conn.adb.subprocess.noneProtocol.spawn(["settings", "get", namespace, key]).wait().toString();
 		return out.trim();
 	}
 
@@ -72,4 +73,14 @@ describe.skipIf(!reachable)("HeadsetSetup provisioning (real device/emulator)", 
 			String(ON_DEVICE_ADB_GLOBAL_SETTINGS.wifi_sleep_policy),
 		);
 	}, 60_000);
+
+	// Constants.ts declares most values as numbers while `settings get` prints text:
+	// a strict comparison reported every numeric setting as wrong on each startup.
+	it("checkSetting recognises an applied numeric setting as correct", async () => {
+		await setup.applySystemSettings(conn.adb, conn.device.serial);
+		for (const [key, value] of Object.entries(ON_DEVICE_ADB_SYSTEM_SETTINGS)) {
+			expect(typeof value).toBe("number");
+			expect(await setup.checkSetting(conn.adb, "system", key, value)).toBe(true);
+		}
+	});
 });

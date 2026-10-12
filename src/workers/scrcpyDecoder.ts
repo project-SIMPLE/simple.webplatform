@@ -1,4 +1,4 @@
-import type { ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
+import type { ScrcpyVideoCodecId, ScrcpyVideoStreamPacket } from "@yume-chan/scrcpy";
 import {
 	BitmapVideoFrameRenderer,
 	WebCodecsVideoDecoder,
@@ -9,7 +9,7 @@ self.addEventListener("message", (e) => {
 	const { codec, canvas, stream, port, useH265, type } = e.data as {
 		codec: ScrcpyVideoCodecId;
 		canvas: OffscreenCanvas;
-		stream?: ReadableStream<ScrcpyMediaStreamPacket>;
+		stream?: ReadableStream<ScrcpyVideoStreamPacket>;
 		port?: MessagePort;
 		useH265: boolean;
 		type: "direct" | "port";
@@ -17,9 +17,9 @@ self.addEventListener("message", (e) => {
 
 	let renderer: WebGLVideoFrameRenderer | BitmapVideoFrameRenderer;
 	if (WebGLVideoFrameRenderer.isSupported) {
-		renderer = new WebGLVideoFrameRenderer(canvas);
+		renderer = new WebGLVideoFrameRenderer({ canvas });
 	} else {
-		renderer = new BitmapVideoFrameRenderer(canvas);
+		renderer = new BitmapVideoFrameRenderer({ canvas });
 	}
 
 	const decoder = new WebCodecsVideoDecoder({
@@ -32,21 +32,21 @@ self.addEventListener("message", (e) => {
 		postMessage({ type: "sizeChanged", width, height });
 	});
 
-	let activeStream: ReadableStream<ScrcpyMediaStreamPacket>;
+	let activeStream: ReadableStream<ScrcpyVideoStreamPacket>;
 
 	if (type === "direct" && stream) {
 		activeStream = stream;
 	} else if (type === "port" && port) {
 		// Reconstruct a ReadableStream from the MessagePort (Safari doesn't support
 		// transferring ReadableStream directly via postMessage).
-		activeStream = new ReadableStream<ScrcpyMediaStreamPacket>({
+		activeStream = new ReadableStream<ScrcpyVideoStreamPacket>({
 			start(controller) {
 				port.onmessage = ({ data }) => {
 					if (data.done) {
 						controller.close();
 						port.close();
 					} else {
-						controller.enqueue(data.value as ScrcpyMediaStreamPacket);
+						controller.enqueue(data.value as ScrcpyVideoStreamPacket);
 					}
 				};
 				port.start();

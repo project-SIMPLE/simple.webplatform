@@ -8,7 +8,7 @@
 
 import { spawn } from "node:child_process";
 import { Adb, AdbServerClient } from "@yume-chan/adb";
-import { AdbServerNodeTcpConnector } from "@yume-chan/adb-server-node-tcp";
+import { AdbServerNodeJsClient } from "@yume-chan/adb-server-node-tcp";
 
 import Device = AdbServerClient.Device;
 
@@ -35,7 +35,13 @@ export class AdbManager {
 	constructor(controller: Controller) {
 		this.controller = controller;
 		try {
-			this.adbServer = new AdbServerClient(new AdbServerNodeTcpConnector({ host: "localhost", port: 5037 }));
+
+			// Automatically uses environment variables if set:
+			// ADB_SERVER_SOCKET - full socket specification
+			// ANDROID_ADB_SERVER_ADDRESS - server address
+			// ANDROID_ADB_SERVER_PORT - server port
+			//https://tangoadb.dev/next/tango/upgrade/?_highlight=adbservernodejstcpconnector#-add-environment-variable-support
+			this.adbServer = new AdbServerNodeJsClient();
 		} catch (e) {
 			logger.error(`Can't connect to device's ADB server ${e}`);
 		}

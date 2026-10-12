@@ -114,6 +114,14 @@ if (fs.existsSync(toolkitDir)) {
 		}
 	}
 }
+// The scrcpy server is no longer in toolkit/: it's downloaded in node_modules by
+// @yume-chan/fetch-scrcpy-server (postinstall). ScrcpyServer reads it back under this key.
+const scrcpyServerPath = path.join(root, "node_modules", "@yume-chan", "fetch-scrcpy-server", "server.bin");
+if (!fs.existsSync(scrcpyServerPath)) {
+	console.error("[SEA] ERROR: scrcpy server binary not found. Run: npm install");
+	process.exit(1);
+}
+toolkitAssets["toolkit/scrcpy-server"] = path.relative(root, scrcpyServerPath).replace(/\\/g, "/");
 const toolkitCount = Object.keys(toolkitAssets).length;
 if (toolkitCount === 0) {
 	console.error("[SEA] ERROR: no files found in toolkit/. Headset setup and streaming need them.");

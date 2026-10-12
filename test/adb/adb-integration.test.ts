@@ -1,5 +1,5 @@
 import { Adb, AdbServerClient } from "@yume-chan/adb";
-import { AdbServerNodeTcpConnector } from "@yume-chan/adb-server-node-tcp";
+import { AdbServerNodeJsTcpConnector } from "@yume-chan/adb-server-node-tcp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AdbManager } from "../../src/api/android/adb/AdbManager.ts";
 import { getInstalledVersion, isPackageInstalled } from "../../src/api/android/adb/HeadsetSetup.ts";
@@ -30,7 +30,7 @@ describe.skipIf(!reachable)("ADB integration (real device/emulator)", () => {
 	}
 
 	beforeAll(async () => {
-		server = new AdbServerClient(new AdbServerNodeTcpConnector({ host: "localhost", port: 5037 }));
+		server = new AdbServerClient(new AdbServerNodeJsTcpConnector({ host: "localhost", port: 5037 }));
 		device = await findTargetDevice();
 		const transport = await server.createTransport(device);
 		adb = new Adb(transport);
@@ -62,7 +62,7 @@ describe.skipIf(!reachable)("ADB integration (real device/emulator)", () => {
 	});
 
 	it("runs a shell command over an Adb transport (createTransport path)", async () => {
-		const sdk = await adb.subprocess.noneProtocol.spawnWaitText(["getprop", "ro.build.version.sdk"]);
+		const sdk = await adb.subprocess.noneProtocol.spawn(["getprop", "ro.build.version.sdk"]).wait().toString();
 		expect(Number(sdk.trim())).toBeGreaterThan(0);
 	});
 

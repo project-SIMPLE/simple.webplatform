@@ -1,5 +1,5 @@
 import { getLogger } from "@logtape/logtape";
-import { type ScrcpyMediaStreamPacket, ScrcpyVideoCodecId } from "@yume-chan/scrcpy";
+import { ScrcpyVideoCodecId, type ScrcpyVideoStreamPacket } from "@yume-chan/scrcpy";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { deserializeData, sortStreamKeys } from "./videoPackets.ts";
 
@@ -96,7 +96,7 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 		// in readableControllers before this function ever suspends at the first await.
 		// Without this, the first config packet arriving in onmessage would see controller=undefined
 		// and be silently dropped, leaving the decoder permanently uninitialised.
-		const stream = new ReadableStream<ScrcpyMediaStreamPacket>({
+		const stream = new ReadableStream<ScrcpyVideoStreamPacket>({
 			start(controller) {
 				readableControllers.set(deviceId, controller);
 
@@ -204,7 +204,7 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 									// or just send the value. In Firefox, detaching was causing issues.
 									// However, since we fallback to MessageChannel ONLY when ReadableStream transfer fails,
 									// Firefox (which supports stream transfer) will use the direct path above.
-									if (value?.data instanceof Uint8Array) {
+									if (value.type !== "session" && value.data instanceof Uint8Array) {
 										transferables.push(value.data.buffer);
 									}
 									port1.postMessage({ done: false, value }, transferables);

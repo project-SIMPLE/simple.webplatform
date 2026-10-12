@@ -2,9 +2,10 @@ import uWS, { type TemplatedApp } from "uWebSockets.js";
 import fs from "node:fs/promises";
 import { getLogger, type Logger } from "@logtape/logtape";
 import type { Adb } from "@yume-chan/adb";
-import { AdbScrcpyClient, AdbScrcpyExitedError, AdbScrcpyOptions3_3_3 } from "@yume-chan/adb-scrcpy";
-import { DefaultServerPath, type ScrcpyMediaStreamPacket } from "@yume-chan/scrcpy";
-import { ReadableStream } from "@yume-chan/stream-extra";
+import { AdbScrcpyClient, AdbScrcpyExitedError, AdbScrcpyOptions5_0_1 } from "@yume-chan/adb-scrcpy";
+import { BIN, VERSION } from "@yume-chan/fetch-scrcpy-server";
+import { DefaultServerPath, type ScrcpyVideoStreamPacket } from "@yume-chan/scrcpy";
+import { ReadableStream, WritableStream } from "@yume-chan/stream-extra";
 import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
 import type { AdbManager } from "../adb/AdbManager.ts";
 import { isInvertedAspectRatio } from "./aspect.ts";
@@ -13,6 +14,50 @@ import { nextUseH265 } from "./codec.ts";
 // Override the log function
 const logger = getLogger(["android", "ScrcpyServer"]);
 
+// Key of the scrcpy server binary in the SEA asset store (see scripts/build-sea-*.mjs)
+const SCRCPY_SERVER_ASSET = "scrcpy-server";
+
+// Crop (and rotation) isolating a single eye of the headset's stereo feed.
+// Returns undefined for unknown devices: no cropping is applied.
+function deviceCrop(deviceModel: string, flipWidth: boolean): { crop: string; angle?: number } | undefined {
+	if (deviceModel === "Quest_3S") {
+		return { crop: flipWidth ? "1570:1482:170:150" : "1482:1570:170:150" };
+	}
+	if (deviceModel === "Quest_3") {
+		return { angle: 23, crop: flipWidth ? "1570:1482:300:250" : "1482:1570:300:250" };
+	}
+	return undefined;
+}
+
+function buildScrcpyOptions(useH265: boolean, crop: ReturnType<typeof deviceCrop>) {
+	return new AdbScrcpyOptions5_0_1(
+		{
+			// scrcpy options
+			// No videoCodecOptions: let the Android encoder choose its own profile/level.
+			// Decoding is done by WebCodecs in the browser, which supports any H264/H265 profile.
+			videoCodec: useH265 ? "h265" : "h264",
+			// Video settings
+			video: true,
+			maxSize: 1570,
+			maxFps: 30,
+			videoBitRate: 8000000, // 8Mbps - Default value
+			// Android soft settings
+			stayAwake: true,
+			keepActive: true, // Keep device active v4.0
+			// Clean feed
+			audio: false,
+			control: true,
+			// Device-specific crop. flipWidth swaps width↔height to handle devices that
+			// report an inverted aspect ratio on the first connection.
+			...crop,
+		},
+		// The server refuses any client announcing another version than its own.
+		{ version: VERSION },
+	);
+}
+
+type ScrcpyClient = AdbScrcpyClient<ReturnType<typeof buildScrcpyOptions>>;
+
 export class ScrcpyServer {
 	// =======================
 	// WebSocket
@@ -20,7 +65,7 @@ export class ScrcpyServer {
 	private readonly wsClients: Set<uWS.WebSocket<unknown>>; // control channel: codec negotiation + stream_available announcements
 	private readonly streamClients: Map<string, Set<uWS.WebSocket<{ streamId: string }>>>; // per-device data sockets, keyed by device IP
 	private readonly activeStreams: Set<string>; // device IPs with a live scrcpy session (used to validate /stream/:id upgrades)
-	private readonly scrcpyClientsByIp: Map<string, AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>>; // for triggering config reset on new device socket
+	private readonly scrcpyClientsByIp: Map<string, ScrcpyClient>; // for triggering config reset on new device socket
 
 	private readonly maxBackpressure: number = 8 * 1024 * 1024; // 8 MB total
 	private readonly dropThreshold: number = 6 * 1024 * 1024; // 2 MB headroom before maxBackpressure
@@ -228,15 +273,14 @@ export class ScrcpyServer {
 	}
 
 	async loadScrcpyServer() {
-		// To keep for when walking away from custom server
-		//this.server = await fs.readFile(BIN)
-
-		// Use custom hotfix from rom1v (official scrcpy's dev)
-		// This fix 'simply' better manage fallback video API weirdly working on MQ headsets
-		// https://github.com/Genymobile/scrcpy/issues/5913#issuecomment-3677889916
-		const scrcpyServerFullPath: string = resolveToolkitAsset("scrcpyServer-v3.3.4-rom1v");
-		this.server = await fs.readFile(scrcpyServerFullPath);
-		logger.trace(`Loading scrcpy server from '${scrcpyServerFullPath}'`);
+		try {
+			// Dev (tsx): BIN points at the binary downloaded in node_modules by the postinstall script.
+			this.server = await fs.readFile(BIN);
+		} catch (_) {
+			// Packaged (SEA): no node_modules on disk, the binary is embedded as a toolkit asset.
+			this.server = await fs.readFile(resolveToolkitAsset(SCRCPY_SERVER_ASSET));
+		}
+		logger.debug(`Loaded scrcpy server v${VERSION}`);
 	}
 
 	// Entry point: validate the device IP, then keep the stream alive forever.
@@ -307,37 +351,23 @@ export class ScrcpyServer {
 		// with data from a different codec causes h264SearchConfiguration "Invalid data" crashes.
 		const sessionIsH265 = this.useH265; // snapshot: this.useH265 may change during the session
 
+		const crop = deviceCrop(deviceModel, flipWidth);
+		if (!crop) {
+			logger.warn(`[${streamIp}] Device ${deviceModel} is unknown, so no cropping is applied`);
+		}
+
 		// Build fresh options each session so a codec switch is picked up correctly.
-		const scrcpyOptions = new AdbScrcpyOptions3_3_3(
-			{
-				// scrcpy options
-				// No videoCodecOptions: let the Android encoder choose its own profile/level.
-				// Decoding is done by WebCodecs in the browser, which supports any H264/H265 profile.
-				videoCodec: sessionIsH265 ? "h265" : "h264",
-				// Video settings
-				video: true,
-				maxSize: 1570,
-				maxFps: 30,
-				videoBitRate: 8000000, // 8Mbps - Default value
-				// Android soft settings
-				stayAwake: true,
-				// Clean feed
-				audio: false,
-				control: true,
-			},
-			// Spoofing version, there's only bug-fixing between .3 and .4 so should be safe
-			{ version: "3.3.4" },
-		);
+		const scrcpyOptions = buildScrcpyOptions(sessionIsH265, crop);
 		logger.debug(`[${streamIp}] Starting scrcpy stream with ${sessionIsH265 ? "h265" : "h264"} codec`);
 
-		let client: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>> | undefined;
+		let client: ScrcpyClient | undefined;
 		// True once the client is registered in activeStreams/scrcpyClientsByIp.
 		// Guards the codec-switch check in catch: a setup-phase failure (e.g. bad
 		// metadata) must not be mistaken for a codec switch and suppress restart.
 		let registered = false;
 
 		// Load the scrcpy server binary before entering the session. A failure here
-		// (e.g. the toolkit binary missing from the package) can never be fixed by
+		// (e.g. the binary missing from node_modules or from the package) can never be fixed by
 		// retrying, so stop the supervisor loop cleanly instead of restarting every
 		// second forever — otherwise the device appears to "loop" without ever
 		// streaming. See resolveToolkitAsset / build-sea-*.mjs for bundling.
@@ -347,7 +377,7 @@ export class ScrcpyServer {
 			} catch (e) {
 				logger.fatal(
 					`[${streamIp}] Cannot load the scrcpy server binary — streaming disabled for ${adbConnection.serial}. ` +
-						`Is the 'toolkit/' folder bundled? {e}`,
+						`Did the postinstall script download it (dev), or is it embedded in the executable (packaged)? {e}`,
 					{ e },
 				);
 				return false; // do not restart: retrying cannot recover a missing/unreadable binary
@@ -358,11 +388,10 @@ export class ScrcpyServer {
 			logger.info(`[${streamIp}] Starting scrcpy for ${adbConnection.serial}`);
 
 			logger.debug(`[${streamIp}] Sync adb with ${adbConnection.serial}`);
-			const sync = await adbConnection.sync();
 			try {
-				await sync.write({
-					filename: DefaultServerPath,
-					file: new ReadableStream({
+				await adbConnection.sync.write({
+					path: DefaultServerPath,
+					readable: new ReadableStream({
 						start: (controller) => {
 							controller.enqueue(new Uint8Array(this.server!));
 							controller.close();
@@ -371,31 +400,38 @@ export class ScrcpyServer {
 				});
 			} catch (error) {
 				logger.fatal(`[${streamIp}] Error writing scrcpy server to  ${adbConnection.serial}: {error}`, { error });
-			} finally {
-				await sync.dispose();
-			}
-
-			// Apply device-specific crop. flipWidth swaps width↔height to handle devices that
-			// report an inverted aspect ratio on the first connection.
-			if (deviceModel === "Quest_3S") {
-				scrcpyOptions.value.crop = flipWidth ? "1570:1482:170:150" : "1482:1570:170:150";
-			} else if (deviceModel === "Quest_3") {
-				scrcpyOptions.value.angle = 23;
-				scrcpyOptions.value.crop = flipWidth ? "1570:1482:300:250" : "1482:1570:300:250";
-			} else {
-				logger.warn(`[${streamIp}] Device ${deviceModel} is unknown, so no cropping is applied`);
 			}
 
 			logger.debug(`[${streamIp}] Pushing & start scrcpy server from ${adbConnection.serial}`);
 			client = await AdbScrcpyClient.start(adbConnection, DefaultServerPath, scrcpyOptions);
 
-			const { metadata, stream: videoPacketStream } = await client.videoStream;
-			logger.debug(`[${streamIp}] {metadata}`, { metadata });
+			const videoStream = await client.videoStream;
+			const videoPacketStream = videoStream?.stream;
+			logger.debug(`[${streamIp}] {metadata}`, { metadata: videoStream?.metadata });
+
+			// Since scrcpy 4.0 the frame size isn't part of the stream metadata anymore: it comes
+			// with the first packet of the stream (a "session" packet). Read that one packet so the
+			// size is known before registering the stream; race against the process exiting so a
+			// server dying without sending anything doesn't hang the supervisor.
+			let firstPacket: ScrcpyVideoStreamPacket | undefined;
+			if (videoPacketStream != null) {
+				const reader = videoPacketStream.getReader();
+				firstPacket = await Promise.race([
+					reader.read().then((r) => r.value),
+					client.exited.then(
+						() => undefined,
+						() => undefined,
+					),
+				]);
+				reader.releaseLock();
+			}
+			const size = videoStream && { width: videoStream.width, height: videoStream.height };
+
 			// Prevent having stream ratio inverted, happened on some weird device...
 			// https://github.com/project-SIMPLE/simple.webplatform/issues/78
-			if (isInvertedAspectRatio(metadata, deviceModel)) {
+			if (isInvertedAspectRatio(size, deviceModel)) {
 				logger.warn(
-					`[${streamIp}] Inverted aspect ratio (${metadata?.width}×${metadata?.height}), closing and retrying with flipped crop after cooldown...`,
+					`[${streamIp}] Inverted aspect ratio (${size?.width}×${size?.height}), closing and retrying with flipped crop after cooldown...`,
 				);
 				// Close gracefully so the device releases the scrcpy server, then let the
 				// supervisor loop restart with the flipped crop after its 1s cooldown.
@@ -420,7 +456,6 @@ export class ScrcpyServer {
 			// Print output of Scrcpy server
 			client.output
 				.pipeTo(
-					// @ts-expect-error
 					new WritableStream<string>({
 						write(chunk: string): void {
 							logger.trace(`[${streamIp}] {chunk}`, { chunk });
@@ -431,52 +466,54 @@ export class ScrcpyServer {
 					logger.debug(`[${streamIp}] Scrcpy output stream closed: {err}`, { err });
 				});
 
-			if (videoPacketStream != null) {
-				videoPacketStream
-					.pipeTo(
-						// @ts-expect-error
-						new WritableStream({
-							write: (packet: ScrcpyMediaStreamPacket) => {
-								switch (packet.type) {
-									case "configuration":
-										{
-											// Handle configuration packet
-											const newStreamConfig = JSON.stringify({
-												streamId: streamIp,
-												h265: sessionIsH265,
-												type: "configuration",
-												data: Buffer.from(packet.data).toString("base64"), // Convert Uint8Array to Base64 string
-											});
-											// Send to all clients on this device's data socket
-											this.broadcastToStream(streamIp, newStreamConfig);
-											logger.trace(`[${streamIp}] Sending configuration frame {newStreamConfig}`, { newStreamConfig });
-										}
-										break;
+			const handlePacket = (packet: ScrcpyVideoStreamPacket) => {
+				switch (packet.type) {
+					case "session":
+						// Frame size announcement (scrcpy >= 4.0): the browser's decoder reads the
+						// size from the codec configuration, nothing to forward.
+						logger.trace(`[${streamIp}] Video session ${packet.width}×${packet.height}`);
+						break;
 
-									case "data":
-										// Handle data packet — sent on the dedicated per-device socket
-										this.broadcastToStream(
-											streamIp,
-											JSON.stringify({
-												streamId: streamIp,
-												h265: sessionIsH265,
-												type: "data",
-												keyframe: packet.keyframe,
-												// @ts-expect-error
-												pts: packet.pts.toString(), // Convert bigint to string
-												data: Buffer.from(packet.data).toString("base64"), // Convert Uint8Array to Base64 string
-											}),
-										);
-										break;
-									default:
-										logger.warn(`[${streamIp}] Unkown packet from video pipe: {packet}`, { packet });
-								}
-							},
-						}),
-					)
-					.catch((e) => {
-						logger.error(`[${streamIp}] Error while piping video stream of ${adbConnection.serial}\n{e}`, { e });
-					});
+					case "configuration":
+						{
+							// Handle configuration packet
+							const newStreamConfig = JSON.stringify({
+								streamId: streamIp,
+								h265: sessionIsH265,
+								type: "configuration",
+								data: Buffer.from(packet.data).toString("base64"), // Convert Uint8Array to Base64 string
+							});
+							// Send to all clients on this device's data socket
+							this.broadcastToStream(streamIp, newStreamConfig);
+							logger.trace(`[${streamIp}] Sending configuration frame {newStreamConfig}`, { newStreamConfig });
+						}
+						break;
+
+					case "data":
+						// Handle data packet — sent on the dedicated per-device socket
+						this.broadcastToStream(
+							streamIp,
+							JSON.stringify({
+								streamId: streamIp,
+								h265: sessionIsH265,
+								type: "data",
+								keyframe: packet.keyframe,
+								pts: packet.pts?.toString(), // Convert bigint to string
+								data: Buffer.from(packet.data).toString("base64"), // Convert Uint8Array to Base64 string
+							}),
+						);
+						break;
+					default:
+						logger.warn(`[${streamIp}] Unkown packet from video pipe: {packet}`, { packet });
+				}
+			};
+
+			if (videoPacketStream != null) {
+				// The packet consumed by the size check above still has to go through
+				if (firstPacket) handlePacket(firstPacket);
+				videoPacketStream.pipeTo(new WritableStream({ write: handlePacket })).catch((e) => {
+					logger.error(`[${streamIp}] Error while piping video stream of ${adbConnection.serial}\n{e}`, { e });
+				});
 			} else {
 				logger.error(`[${streamIp}] Couldn't find a video stream from ${adbConnection.serial}'s scrcpy server`);
 			}
@@ -557,14 +594,14 @@ export class ScrcpyServer {
 		}
 	}
 
-	async resentConfigPackage(client: AdbScrcpyClient<AdbScrcpyOptions3_3_3<true>>): Promise<boolean> {
+	async resentConfigPackage(client: ScrcpyClient): Promise<boolean> {
 		logger.trace("Reset video for client {client}", { client });
 		try {
-			const result = await client.controller?.resetVideo();
+			const result: unknown = await client.controller?.resetVideo();
 			logger.trace("Properly reset video stream {result}", { result });
 			return false; // false = no error
 		} catch (err) {
-			const textError = err && (typeof err === "string" ? err : err instanceof Error ? err.message : String(err));
+			const textError: string = (typeof err === "string" ? err : err instanceof Error ? err.message : String(err));
 			if (textError?.includes("WritableStream is closed")) {
 				logger.error("ResetVideo failed, probably leftover timeout from previous video stream { err }", { err });
 			} else {
