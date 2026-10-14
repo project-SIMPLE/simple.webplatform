@@ -15,11 +15,11 @@ import { nextUseH265 } from "./codec.ts";
 const logger = getLogger(["android", "ScrcpyServer"]);
 
 // Key of the scrcpy server binary in the SEA asset store (see scripts/build-sea-*.mjs)
-const SCRCPY_SERVER_ASSET = "scrcpy-server";
+export const SCRCPY_SERVER_ASSET = "scrcpy-server";
 
 // Crop (and rotation) isolating a single eye of the headset's stereo feed.
 // Returns undefined for unknown devices: no cropping is applied.
-function deviceCrop(deviceModel: string, flipWidth: boolean): { crop: string; angle?: number } | undefined {
+export function deviceCrop(deviceModel: string, flipWidth: boolean): { crop: string; angle?: number } | undefined {
 	if (deviceModel === "Quest_3S") {
 		return { crop: flipWidth ? "1570:1482:170:150" : "1482:1570:170:150" };
 	}
@@ -29,7 +29,7 @@ function deviceCrop(deviceModel: string, flipWidth: boolean): { crop: string; an
 	return undefined;
 }
 
-function buildScrcpyOptions(useH265: boolean, crop: ReturnType<typeof deviceCrop>) {
+export function buildScrcpyOptions(useH265: boolean, crop: ReturnType<typeof deviceCrop>) {
 	return new AdbScrcpyOptions5_0_1(
 		{
 			// scrcpy options
@@ -113,7 +113,7 @@ export class ScrcpyServer {
 
 		this.wsServer.listen(host, port, (token) => {
 			if (token) {
-				logger.info(`Creating monitor server on: ws://${host}:${port}`);
+				logger.info(`Video stream server listening on: ws://${host}:${port}`);
 			} else {
 				logger.error("Failed to listen on the specified port and host");
 			}
@@ -601,7 +601,7 @@ export class ScrcpyServer {
 			logger.trace("Properly reset video stream {result}", { result });
 			return false; // false = no error
 		} catch (err) {
-			const textError: string = (typeof err === "string" ? err : err instanceof Error ? err.message : String(err));
+			const textError: string = typeof err === "string" ? err : err instanceof Error ? err.message : String(err);
 			if (textError?.includes("WritableStream is closed")) {
 				logger.error("ResetVideo failed, probably leftover timeout from previous video stream { err }", { err });
 			} else {

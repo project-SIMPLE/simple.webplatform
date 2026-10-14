@@ -32,6 +32,18 @@ describe("deserializeData", () => {
 		expect(Array.from(packet.data)).toEqual(BYTES);
 	});
 
+	// pts is optional in the scrcpy protocol; the backend then leaves it out of the
+	// JSON. BigInt(undefined) throws, which would kill the stream in the browser.
+	it("parses a data packet that carries no pts", () => {
+		const out = deserializeData(
+			JSON.stringify({ type: "data", streamId: "10.0.0.5", h265: true, keyframe: false, data: B64 }),
+		);
+		const packet = out?.packet as { type: string; pts?: bigint; data: Uint8Array };
+		expect(packet.type).toBe("data");
+		expect(packet.pts).toBeUndefined();
+		expect(Array.from(packet.data)).toEqual(BYTES);
+	});
+
 	it("returns null for an unknown packet type", () => {
 		expect(deserializeData(JSON.stringify({ type: "mystery", streamId: "x" }))).toBeNull();
 	});

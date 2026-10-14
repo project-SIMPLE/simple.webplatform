@@ -32,7 +32,7 @@ class PlayerManager {
 			.App()
 			.listen(Number(process.env.HEADSET_WS_PORT), (token) => {
 				if (token) {
-					logger.info(`Creating monitor server on: ws://0.0.0.0:${Number(process.env.HEADSET_WS_PORT)}`);
+					logger.info(`Headset server listening on: ws://0.0.0.0:${Number(process.env.HEADSET_WS_PORT)}`);
 					logger.debug("{token}", { token });
 				} else {
 					logger.error(`Failed to listen on the specified port ${process.env.HEADSET_WS_PORT}`);

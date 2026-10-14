@@ -55,8 +55,11 @@ export async function parseApkVersion(apkFile: string): Promise<string | null> {
  * are treated as 0 (so "1.2" === "1.2.0").
  */
 export function compareVersions(a: string, b: string): number {
-	const pa = a.split(".").map(Number);
-	const pb = b.split(".").map(Number);
+	// Leading digits only: a versionName may carry a suffix ("1.3-beta"), and a
+	// NaN segment would make every comparison false (never older, never updated).
+	const segments = (v: string) => v.split(".").map((s) => Number.parseInt(s, 10) || 0);
+	const pa = segments(a);
+	const pb = segments(b);
 	for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
 		const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
 		if (diff !== 0) return diff;
@@ -226,7 +229,12 @@ export class HeadsetSetup {
 		logger.debug(`[${serial}] All on-device broadcasts sent`);
 	}
 
-	private async checkSetting(adb: Adb, namespace: string, param: string, expectedValue: string | number): Promise<boolean> {
+	private async checkSetting(
+		adb: Adb,
+		namespace: string,
+		param: string,
+		expectedValue: string | number,
+	): Promise<boolean> {
 		const output = await adb.subprocess.noneProtocol.spawn(`settings get ${namespace} ${param}`).wait().toString();
 		const result = output.trim();
 		// `settings get` always prints text, while Constants.ts declares most values as numbers

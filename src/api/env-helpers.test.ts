@@ -56,10 +56,16 @@ describe("env helpers — adversarial inputs", () => {
 		expect(parseHeadsetsIp("headset at 192.168.1.5 now").ips).toEqual(["192.168.1.5"]);
 	});
 
-	it("asBool is whitespace- and format-sensitive (documents current behavior)", () => {
-		expect(asBool(" true")).toBe(false); // not trimmed
-		expect(asBool("TRUE ")).toBe(false);
+	it("asBool ignores surrounding whitespace (a quoted .env value keeps its spaces)", () => {
+		expect(asBool(" true")).toBe(true);
+		expect(asBool("TRUE ")).toBe(true);
+		expect(asBool("\t1\n")).toBe(true);
+	});
+
+	it("asBool only accepts true / 1 / yes", () => {
 		expect(asBool("1.0")).toBe(false);
+		expect(asBool("on")).toBe(false);
+		expect(asBool("")).toBe(false);
 		expect(asBool("👍")).toBe(false);
 	});
 });

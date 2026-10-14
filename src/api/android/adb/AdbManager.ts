@@ -35,7 +35,6 @@ export class AdbManager {
 	constructor(controller: Controller) {
 		this.controller = controller;
 		try {
-
 			// Automatically uses environment variables if set:
 			// ADB_SERVER_SOCKET - full socket specification
 			// ANDROID_ADB_SERVER_ADDRESS - server address

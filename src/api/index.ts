@@ -30,7 +30,7 @@ export const _extractIPv4 = (raw: string): string | null => {
 // Coerce an env-var string to a boolean: true for "true"/"1"/"yes" (case-insensitive),
 // false for anything else (including undefined).
 export function asBool(value: string | undefined): boolean {
-	return value !== undefined ? ["true", "1", "yes"].includes(value.toLowerCase()) : false;
+	return value !== undefined ? ["true", "1", "yes"].includes(value.trim().toLowerCase()) : false;
 }
 
 // Parse a ";"-separated HEADSETS_IP string into sanitized IPv4s. Pure: returns the

@@ -28,7 +28,8 @@ export const deserializeData = (serializedData: string) => {
 				packet: {
 					type: parsed.type,
 					keyframe: parsed.keyframe,
-					pts: BigInt(parsed.pts),
+					// Optional in the scrcpy protocol: the backend omits it when the frame has none
+					pts: parsed.pts === undefined ? undefined : BigInt(parsed.pts),
 					data: Uint8Array.from(atob(parsed.data), (c) => c.charCodeAt(0)),
 				},
 			};

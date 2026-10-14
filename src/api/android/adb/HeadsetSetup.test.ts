@@ -82,8 +82,13 @@ describe("HeadsetSetup.setupHeadset device gate", () => {
 });
 
 describe("version/shell helpers — adversarial inputs", () => {
-	it("compareVersions returns NaN for non-numeric segments (documents current behavior)", () => {
-		expect(Number.isNaN(compareVersions("1.a.3", "1.0.3"))).toBe(true);
+	// A NaN result makes `compareVersions(installed, target) < 0` false, so an app
+	// with an unusual versionName would be treated as up to date forever.
+	it("compareVersions always returns a number, reading the leading digits of each segment", () => {
+		expect(compareVersions("1.a.3", "1.0.3")).toBe(0);
+		expect(compareVersions("1.3-beta", "1.3")).toBe(0);
+		expect(compareVersions("1.2-rc1", "1.3")).toBeLessThan(0);
+		expect(compareVersions("2.0.0-debug", "1.9")).toBeGreaterThan(0);
 	});
 
 	it("compareVersions treats an empty string as 0.0.0", () => {
