@@ -1,5 +1,6 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { resolveAppDir } from "./AppPaths.ts";
+import { APP_DIR_ENV, resolveAppDir } from "./AppPaths.ts";
 
 describe("resolveAppDir", () => {
 	const linux = { execPath: "/opt/simple/simple-linux", cwd: "/home/user" };
@@ -27,5 +28,13 @@ describe("resolveAppDir", () => {
 
 	it("ignores an empty launcher folder", () => {
 		expect(resolveAppDir({ ...linux, launcherDir: "", packaged: true })).toBe("/opt/simple");
+	});
+});
+
+// The Go launcher and the backend agree on the variable's name by hand.
+describe("Windows launcher contract", () => {
+	it("exports its own folder under the variable the backend reads", () => {
+		const launcher = readFileSync("scripts/launcher-win.go", "utf8");
+		expect(launcher).toContain(`"${APP_DIR_ENV}="+filepath.Dir(selfPath)`);
 	});
 });

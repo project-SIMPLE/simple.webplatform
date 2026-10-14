@@ -176,6 +176,44 @@ describe("ensureConfig — when it runs at all", () => {
 		expect(warn).toHaveBeenCalledOnce();
 	});
 
+	// Windows: the launcher runs node.exe from %TEMP% with another working directory
+	// and passes its own folder in SIMPLE_APP_DIR. The .env must be looked up and
+	// written there — the folder the backend then loads it from.
+	describe("with the folder passed by the Windows launcher", () => {
+		let appDir: string;
+
+		beforeEach(() => {
+			appDir = mkdtempSync(join(tmpdir(), "tuiconfig-appdir-"));
+			process.env.SIMPLE_APP_DIR = appDir;
+			process.stdin.isTTY = undefined;
+			vi.spyOn(console, "warn").mockImplementation(() => {});
+		});
+
+		afterEach(() => {
+			delete process.env.SIMPLE_APP_DIR;
+			rmSync(appDir, { recursive: true, force: true });
+		});
+
+		it("writes the default .env next to the launcher, not in the working directory", async () => {
+			const { defaultEnv, ensureConfig } = await loadTui();
+
+			await ensureConfig();
+
+			expect(readFileSync(join(appDir, ".env"), "utf8")).toBe(defaultEnv());
+			expect(existsSync(join(cwd, ".env"))).toBe(false);
+		});
+
+		it("keeps the .env already sitting next to the launcher", async () => {
+			writeFileSync(join(appDir, ".env"), "ENV_GAMALESS=true\n", "utf8");
+			const { ensureConfig } = await loadTui();
+
+			await ensureConfig();
+
+			expect(readFileSync(join(appDir, ".env"), "utf8")).toBe("ENV_GAMALESS=true\n");
+			expect(existsSync(join(cwd, ".env"))).toBe(false);
+		});
+	});
+
 	it("does not overwrite an existing .env with defaults when there is no TTY", async () => {
 		process.stdin.isTTY = undefined;
 		writeFileSync(join(cwd, ".env"), "EXISTING=1\n", "utf8");

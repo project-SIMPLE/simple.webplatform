@@ -32,9 +32,22 @@ export function listAdbDevices(): AdbDevice[] {
 	}
 }
 
-/** Serial of the first device in the "device" (ready) state, or null. */
+/**
+ * True for the mDNS entry (`adb-<serial>-<id>._adb-tls-connect._tcp`) that adb lists
+ * next to a wirelessly paired device. The platform ignores those (AdbManager.isDeviceReady).
+ */
+export function isMdnsSerial(serial: string): boolean {
+	return serial.includes("._adb-tls-connect._tcp");
+}
+
+/**
+ * Serial of the first device in the "device" (ready) state, or null. A device the
+ * platform would actually use is preferred over its mDNS twin, which is only
+ * returned when nothing else is attached.
+ */
 export function firstReadyDevice(): string | null {
-	return listAdbDevices().find((d) => d.state === "device")?.serial ?? null;
+	const ready = listAdbDevices().filter((d) => d.state === "device");
+	return (ready.find((d) => !isMdnsSerial(d.serial)) ?? ready[0])?.serial ?? null;
 }
 
 /** True when at least one adb device/emulator is attached and ready. */

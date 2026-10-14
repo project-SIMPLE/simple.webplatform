@@ -3,7 +3,7 @@ import { AdbServerNodeJsTcpConnector } from "@yume-chan/adb-server-node-tcp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AdbManager } from "../../src/api/android/adb/AdbManager.ts";
 import { getInstalledVersion, isPackageInstalled } from "../../src/api/android/adb/HeadsetSetup.ts";
-import { firstReadyDevice, isAdbDeviceReady } from "../setup/adb-probe.ts";
+import { firstReadyDevice, isAdbDeviceReady, isMdnsSerial } from "../setup/adb-probe.ts";
 
 // Requires a real adb device/emulator on localhost:5037 (CI provides one via the
 // Android emulator runner). When none is attached the whole suite is skipped, so
@@ -49,16 +49,18 @@ describe.skipIf(!reachable)("ADB integration (real device/emulator)", () => {
 		expect(device.state).toBe("device");
 	});
 
-	it("AdbManager.isDeviceReady accepts a real device and rejects the fake mDNS serial", () => {
+	it("AdbManager.isDeviceReady accepts a real device and rejects its mDNS twin", () => {
 		// Build a bare AdbManager off the prototype so no scrcpy/uWS servers start.
 		const manager = Object.create(AdbManager.prototype) as AdbManager;
 
-		expect(manager.isDeviceReady(device)).toBe(true);
+		// The probe prefers a usable device; when only the mDNS entry of a wirelessly
+		// paired headset is attached, that entry is what we got and it must be refused.
+		expect(manager.isDeviceReady(device)).toBe(!isMdnsSerial(device.serial));
 
-		// The Unity/TCP stack exposes phantom "*._adb-tls-connect._tcp" entries that
-		// must be ignored (see commit 49d55d6).
-		const fake = { ...device, serial: `${device.serial}._adb-tls-connect._tcp` } as Device;
-		expect(manager.isDeviceReady(fake)).toBe(false);
+		// adb lists a phantom "adb-<serial>-<id>._adb-tls-connect._tcp" entry next to
+		// a wireless device; it must be ignored (see commit 49d55d6).
+		const twin = { ...device, serial: "adb-2G0YC1ZF8Q05RW-KEQjyK._adb-tls-connect._tcp" } as Device;
+		expect(manager.isDeviceReady(twin)).toBe(false);
 	});
 
 	it("runs a shell command over an Adb transport (createTransport path)", async () => {

@@ -1,9 +1,19 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { VU_CATALOG_SETTING_JSON, VU_MODEL_SETTING_JSON } from "../../common/types.ts";
 import type Controller from "../core/Controller.ts";
+
+// The application folder (where the .env lives). Normally fixed at startup; made
+// adjustable here to prove relative paths resolve from it and not from the cwd.
+const appDir = vi.hoisted(() => ({ value: process.cwd() }));
+vi.mock("../infra/AppPaths.ts", () => ({
+	get APP_DIR() {
+		return appDir.value;
+	},
+}));
+
 import ModelManager from "./ModelManager.ts";
 
 // The ModelManager constructor scans LEARNING_PACKAGE_PATH (and the optional
@@ -62,6 +72,7 @@ describe("ModelManager package discovery (real filesystem)", () => {
 	afterEach(() => {
 		fs.rmSync(tmp, { recursive: true, force: true });
 		process.env = { ...savedEnv };
+		appDir.value = process.cwd();
 	});
 
 	it("discovers a single json_settings package in a sub-folder", () => {
@@ -167,18 +178,34 @@ describe("ModelManager package discovery (real filesystem)", () => {
 		}
 	});
 
-	it("resolves a relative LEARNING_PACKAGE_PATH against the working directory", () => {
-		// Place the fixture under cwd so the relative branch of the path logic runs.
-		const rel = path.relative(process.cwd(), tmp);
-		writePackage(tmp, "pkgA", modelSettings("Alpha", "./alpha.gaml"), ["alpha.gaml"]);
-		process.env.LEARNING_PACKAGE_PATH = rel;
-
-		// A tmpdir outside cwd cannot be expressed as a usable relative path on
-		// every platform; only assert when it round-trips.
-		if (path.join(process.cwd(), rel) !== tmp) return;
+	// On Windows the packaged backend runs from %TEMP%, not from the folder of the
+	// executable: relative paths in the .env must follow the .env, not the cwd.
+	it("resolves a relative LEARNING_PACKAGE_PATH from the application folder, not the working directory", () => {
+		writePackage(path.join(tmp, "packages"), "pkgA", modelSettings("Alpha", "./alpha.gaml"), ["alpha.gaml"]);
+		appDir.value = tmp;
+		process.env.LEARNING_PACKAGE_PATH = "./packages";
+		expect(fs.existsSync(path.join(process.cwd(), "packages"))).toBe(false);
 
 		const mm = new ModelManager(fakeController);
-		expect(mm.getModelList()).toHaveLength(1);
+
+		expect(mm.getModelList().map((m) => m.getJsonSettings().name)).toEqual(["Alpha"]);
+	});
+
+	it("resolves a relative EXTRA_LEARNING_PACKAGE_PATH from the application folder too", () => {
+		writePackage(path.join(tmp, "packages"), "pkgA", modelSettings("Alpha", "./alpha.gaml"), ["alpha.gaml"]);
+		writePackage(path.join(tmp, "more"), "pkgB", modelSettings("Beta", "./beta.gaml"), ["beta.gaml"]);
+		appDir.value = tmp;
+		process.env.LEARNING_PACKAGE_PATH = "packages";
+		process.env.EXTRA_LEARNING_PACKAGE_PATH = "more";
+
+		const mm = new ModelManager(fakeController);
+
+		expect(
+			mm
+				.getModelList()
+				.map((m) => m.getJsonSettings().name)
+				.sort(),
+		).toEqual(["Alpha", "Beta"]);
 	});
 
 	it("survives a missing learning-package folder with an empty model list", () => {

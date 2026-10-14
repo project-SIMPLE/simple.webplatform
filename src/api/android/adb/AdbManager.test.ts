@@ -25,7 +25,8 @@ describe("AdbManager.isDeviceReady", () => {
 
 	it("rejects the phantom mDNS TLS-connect serial even when 'device'", () => {
 		const { manager } = bareManager();
-		expect(manager.isDeviceReady(device("192.168.1.5:5555._adb-tls-connect._tcp", "device"))).toBe(false);
+		// Shape adb really lists for a wirelessly paired headset: adb-<serial>-<id>._adb-tls-connect._tcp
+		expect(manager.isDeviceReady(device("adb-2G0YC1ZF8Q05RW-KEQjyK._adb-tls-connect._tcp", "device"))).toBe(false);
 	});
 
 	it("rejects an offline device and disconnects the stale entry", () => {
