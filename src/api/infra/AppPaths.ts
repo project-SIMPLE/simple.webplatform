@@ -10,6 +10,7 @@
 //     process.execPath points into the temp folder; the launcher passes its own
 //     folder in SIMPLE_APP_DIR instead (see scripts/launcher-win.go).
 
+import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 
@@ -44,3 +45,20 @@ export const APP_DIR = resolveAppDir({
 	execPath: process.execPath,
 	cwd: process.cwd(),
 });
+
+/**
+ * Resolve a path coming from the `.env` (e.g. LEARNING_PACKAGE_PATH).
+ *
+ * A relative path is looked up next to the `.env` first (the application folder),
+ * then in the working directory: a binary launched from a project root — as CI and
+ * `./bin/simple-linux` do — keeps finding `./learning-packages` there. When it
+ * exists in neither, the application-folder location is returned so the caller
+ * reports (or creates) the path next to the `.env`.
+ */
+export function resolveAppPath(p: string, appDir: string = APP_DIR, cwd: string = process.cwd()): string {
+	if (path.isAbsolute(p)) return p;
+	const nextToEnv = path.join(appDir, p);
+	if (existsSync(nextToEnv)) return nextToEnv;
+	const inCwd = path.join(cwd, p);
+	return existsSync(inCwd) ? inCwd : nextToEnv;
+}

@@ -9,7 +9,7 @@
 
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 interface PromptOptions {
@@ -236,7 +236,8 @@ describe("ensureConfig — learning-package pickers", () => {
 		for (const needle of ["Learning packages folder (relative", "Extra learning packages folder"]) {
 			const prompt = promptFor(needle);
 			expect(prompt?.kind).toBe("path");
-			expect(prompt?.opts.root).toBe(`${cwd}/`);
+			// Real platform separator: this test runs unpatched on Windows CI too.
+			expect(prompt?.opts.root).toBe(`${cwd}${sep}`);
 		}
 	});
 

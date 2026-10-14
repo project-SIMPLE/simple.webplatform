@@ -8,7 +8,8 @@ import type Controller from "../core/Controller.ts";
 // The application folder (where the .env lives). Normally fixed at startup; made
 // adjustable here to prove relative paths resolve from it and not from the cwd.
 const appDir = vi.hoisted(() => ({ value: process.cwd() }));
-vi.mock("../infra/AppPaths.ts", () => ({
+vi.mock("../infra/AppPaths.ts", async (importOriginal) => ({
+	...(await importOriginal<typeof import("../infra/AppPaths.ts")>()),
 	get APP_DIR() {
 		return appDir.value;
 	},
@@ -206,6 +207,26 @@ describe("ModelManager package discovery (real filesystem)", () => {
 				.map((m) => m.getJsonSettings().name)
 				.sort(),
 		).toEqual(["Alpha", "Beta"]);
+	});
+
+	// CI and `./bin/simple-linux` launch the binary from the project root, with the
+	// learning packages there and not next to the executable.
+	it("falls back to the working directory when the relative path is not in the application folder", () => {
+		const emptyAppDir = fs.mkdtempSync(path.join(os.tmpdir(), "simple-mm-app-"));
+		const previousCwd = process.cwd();
+		try {
+			writePackage(path.join(tmp, "packages"), "pkgA", modelSettings("Alpha", "./alpha.gaml"), ["alpha.gaml"]);
+			appDir.value = emptyAppDir;
+			process.chdir(tmp);
+			process.env.LEARNING_PACKAGE_PATH = "./packages";
+
+			const mm = new ModelManager(fakeController);
+
+			expect(mm.getModelList().map((m) => m.getJsonSettings().name)).toEqual(["Alpha"]);
+		} finally {
+			process.chdir(previousCwd);
+			fs.rmSync(emptyAppDir, { recursive: true, force: true });
+		}
 	});
 
 	it("survives a missing learning-package folder with an empty model list", () => {

@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import path, { isAbsolute } from "node:path";
+import path from "node:path";
 import { getLogger } from "@logtape/logtape";
 import type {
 	MIN_VU_CATALOG_SETTING_JSON,
@@ -9,7 +9,7 @@ import type {
 } from "../../common/types.ts";
 import type Controller from "../core/Controller.ts";
 import { IS_PLATFORM_PACKAGED } from "../index.ts";
-import { APP_DIR } from "../infra/AppPaths.ts";
+import { APP_DIR, resolveAppPath } from "../infra/AppPaths.ts";
 import Model from "./Model.ts";
 
 // Override the log function
@@ -41,9 +41,7 @@ class ModelManager {
 	#initModelsList(): void {
 		const directoriesWithProjects: string[] = [];
 
-		const learningPackagePath: string = isAbsolute(process.env.LEARNING_PACKAGE_PATH!)
-			? process.env.LEARNING_PACKAGE_PATH!
-			: path.join(APP_DIR, process.env.LEARNING_PACKAGE_PATH!);
+		const learningPackagePath: string = resolveAppPath(process.env.LEARNING_PACKAGE_PATH!, APP_DIR);
 
 		if (fs.existsSync(learningPackagePath)) {
 			directoriesWithProjects.push(learningPackagePath);
@@ -66,11 +64,7 @@ class ModelManager {
 		}
 
 		if (process.env.EXTRA_LEARNING_PACKAGE_PATH !== "") {
-			directoriesWithProjects.push(
-				isAbsolute(process.env.EXTRA_LEARNING_PACKAGE_PATH!)
-					? process.env.EXTRA_LEARNING_PACKAGE_PATH!
-					: path.join(APP_DIR, process.env.EXTRA_LEARNING_PACKAGE_PATH!),
-			);
+			directoriesWithProjects.push(resolveAppPath(process.env.EXTRA_LEARNING_PACKAGE_PATH!, APP_DIR));
 		}
 
 		if (directoriesWithProjects.length === 0) {
