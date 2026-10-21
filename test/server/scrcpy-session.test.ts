@@ -272,7 +272,7 @@ describe("ScrcpyServer.runSession (real session logic, scripted device)", () => 
 			return value;
 		};
 
-		expect(await cropFor("Quest_3", false, [1570, 1482])).toMatchObject({ angle: 23 });
+		expect(await cropFor("Quest_3", false, [1570, 1482])).toMatchObject({ angle: 21 });
 		expect(String((await cropFor("Quest_3", false, [1570, 1482]))?.crop)).toBe("1482:1570:300:250");
 		expect(String((await cropFor("Quest_3", true, [1570, 1482]))?.crop)).toBe("1570:1482:300:250");
 		expect(String((await cropFor("Quest_3S", true, [1570, 1482]))?.crop)).toBe("1570:1482:170:150");

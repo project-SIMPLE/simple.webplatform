@@ -34,7 +34,7 @@ const WRITE_SECURE = "android.permission.WRITE_SECURE_SETTINGS";
 // The three APKs HeadsetSetup ships, with the version read from their manifest.
 const APKS = [
 	{ file: "tdg.oculuswirelessadb.apk", pkg: "tdg.oculuswirelessadb", version: "1.3" },
-	{ file: "eu.project_simple.adbautoenable.apk", pkg: "eu.project_simple.adbautoenable", version: "1.0.0" },
+	{ file: "eu.project_simple.adbautoenable.apk", pkg: "eu.project_simple.adbautoenable", version: "3.0.0" },
 	{ file: "eu.project_simple.no-loft.apk", pkg: "com.meta.shell.env.footprint.haven2025", version: "999.9.9.9.99" },
 ].map((apk) => ({ ...apk, size: statSync(resolveToolkitAsset(apk.file)).size }));
 
@@ -205,21 +205,21 @@ describe("HeadsetSetup required apps", () => {
 	});
 
 	it("replaces an outdated adbautoenable and starts the new one", async () => {
-		preinstall({ [autoEnable]: "0.9.0" });
+		preinstall({ [autoEnable]: "2.9.0" });
 
 		await setup.checkRequiredApps(adb, headset.serial);
 
 		expect(headset.sent("pm uninstall")).toEqual([`pm uninstall ${autoEnable}`]);
-		expect(headset.packages.get(autoEnable)?.version).toBe("1.0.0");
+		expect(headset.packages.get(autoEnable)?.version).toBe("3.0.0");
 		expect(launches()).toHaveLength(1);
 	});
 
 	it("never downgrades a newer app", async () => {
-		preinstall({ [autoEnable]: "2.0.0" });
+		preinstall({ [autoEnable]: "4.0.0" });
 
 		await setup.checkRequiredApps(adb, headset.serial);
 
-		expect(headset.packages.get(autoEnable)?.version).toBe("2.0.0");
+		expect(headset.packages.get(autoEnable)?.version).toBe("4.0.0");
 		expect(launches()).toEqual([]);
 	});
 

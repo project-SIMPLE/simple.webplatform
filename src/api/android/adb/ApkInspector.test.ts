@@ -14,7 +14,7 @@ describe("readApkVersionName", () => {
 	});
 
 	it("reads android:versionName from the other toolkit APKs", () => {
-		expect(readApkVersionName(apk("eu.project_simple.adbautoenable.apk"))).toBe("1.0.0");
+		expect(readApkVersionName(apk("eu.project_simple.adbautoenable.apk"))).toBe("3.0.0");
 		expect(readApkVersionName(apk("tdg.oculuswirelessadb.apk"))).toBe("1.3");
 	});
 
