@@ -113,9 +113,26 @@ describe("ScrcpyServer.runSession (real session logic, scripted device)", () => 
 	let device: ReturnType<typeof fakeDevice>;
 	let startOptions: { version: string; value: Record<string, unknown> } | undefined;
 	const pushed: Uint8Array[] = [];
+	// Device-side events in order: shell commands, then "scrcpy start"
+	const deviceLog: string[] = [];
+	let displaySizeOverride: string | null = null;
 
 	const adb = {
 		serial: "192.168.68.10:5555",
+		subprocess: {
+			noneProtocol: {
+				// Only `wm size` / `wm size reset` are sent before a session
+				spawn: (command: string) => {
+					deviceLog.push(command);
+					if (command === "wm size reset") displaySizeOverride = null;
+					const output =
+						command === "wm size"
+							? `Physical size: 4128x2208\n${displaySizeOverride ? `Override size: ${displaySizeOverride}\n` : ""}`
+							: "";
+					return { wait: () => ({ toString: async () => output }) };
+				},
+			},
+		},
 		sync: {
 			// Receives the scrcpy server binary pushed to the headset.
 			write: async ({ readable }: { readable: ReadableStream<Uint8Array> }) => {
@@ -136,6 +153,7 @@ describe("ScrcpyServer.runSession (real session logic, scripted device)", () => 
 		// the library's own client — is real, built on the scripted device's streams.
 		vi.spyOn(AdbScrcpyClient, "start").mockImplementation((async (_adb: Adb, _path: string, options: never) => {
 			startOptions = options;
+			deviceLog.push("scrcpy start");
 			return new AdbScrcpyClient({
 				options,
 				process: device.process,
@@ -149,6 +167,8 @@ describe("ScrcpyServer.runSession (real session logic, scripted device)", () => 
 
 	afterEach(() => {
 		pushed.length = 0;
+		deviceLog.length = 0;
+		displaySizeOverride = null;
 		startOptions = undefined;
 	});
 
@@ -258,6 +278,36 @@ describe("ScrcpyServer.runSession (real session logic, scripted device)", () => 
 		expect(String((await cropFor("Quest_3S", true, [1570, 1482]))?.crop)).toBe("1570:1482:170:150");
 		// Unknown devices are streamed untouched.
 		expect((await cropFor("Pixel_7", false, [720, 1280]))?.crop).toBeUndefined();
+	});
+
+	// Issue #192. scrcpy keeps the display size it started with, so resetting the
+	// override in parallel (e.g. during headset provisioning) is too late.
+	it("removes a display size override before starting scrcpy on a cropped headset", async () => {
+		device = fakeDevice();
+		device.send(metadata("Quest 3"), sessionPacket(1570, 1482));
+		displaySizeOverride = "12384x2208";
+
+		const session = internals.runSession(adb, "10.0.0.6", "Quest_3", true);
+		await vi.waitFor(() => expect(startOptions).toBeDefined());
+
+		expect(deviceLog).toEqual(["wm size", "wm size reset", "wm size", "scrcpy start"]);
+
+		device.die();
+		await session;
+	});
+
+	it("does not touch the display size of a device it does not crop", async () => {
+		device = fakeDevice();
+		device.send(metadata("Pixel 7"), sessionPacket(720, 1280));
+		displaySizeOverride = "1440x2560";
+
+		const session = internals.runSession(adb, "10.0.0.7", "Pixel_7", false);
+		await vi.waitFor(() => expect(startOptions).toBeDefined());
+
+		expect(deviceLog).toEqual(["scrcpy start"]);
+
+		device.die();
+		await session;
 	});
 
 	it("does not hang when the scrcpy server dies before sending a single packet", async () => {

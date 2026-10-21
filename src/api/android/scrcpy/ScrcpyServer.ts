@@ -10,6 +10,7 @@ import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
 import type { AdbManager } from "../adb/AdbManager.ts";
 import { isInvertedAspectRatio } from "./aspect.ts";
 import { nextUseH265 } from "./codec.ts";
+import { resetDisplaySizeOverride } from "./display.ts";
 
 // Override the log function
 const logger = getLogger(["android", "ScrcpyServer"]);
@@ -354,6 +355,14 @@ export class ScrcpyServer {
 		const crop = deviceCrop(deviceModel, flipWidth);
 		if (!crop) {
 			logger.warn(`[${streamIp}] Device ${deviceModel} is unknown, so no cropping is applied`);
+		} else {
+			// The crop is in physical pixels: an overridden display size would offset it (issue #192).
+			// Checked on every session, as scrcpy keeps the size it started with.
+			try {
+				await resetDisplaySizeOverride(adbConnection, streamIp);
+			} catch (e) {
+				logger.warn(`[${streamIp}] Couldn't check the display size, streaming anyway: {e}`, { e });
+			}
 		}
 
 		// Build fresh options each session so a codec switch is picked up correctly.
