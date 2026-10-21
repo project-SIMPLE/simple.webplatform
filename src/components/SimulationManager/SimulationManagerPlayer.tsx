@@ -41,7 +41,7 @@ const SimulationManagerPlayer = ({ Playerkey, selectedPlayer, className, playerI
 			{showPopUpManageHeadset ? (
 				<button
 					type="button"
-					className="fixed inset-0 flex items-center justify-center bg-slate-800 bg-opacity-75 z-10 w-full h-full cursor-default border-none"
+					className="fixed inset-0 flex items-center justify-center bg-slate-800/75 z-10 w-full h-full cursor-default border-none"
 					onClick={toggleShowPopUpManageHeadset}
 				>
 					<button

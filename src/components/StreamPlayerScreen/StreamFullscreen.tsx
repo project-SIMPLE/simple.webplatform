@@ -11,7 +11,7 @@ const StreamFullscreen = () => {
 
 	return (
 		<div className={`w-full h-full flex flew-row items-center justify-center ${bgColor}`}>
-			<VideoStreamManager selectedCanvas={cleanId} hideInfos={true} />
+			<VideoStreamManager selectedCanvas={cleanId} />
 		</div>
 	);
 };

@@ -7,11 +7,10 @@ interface PlayerScreenCanvasProps {
 	isPlaceholder?: boolean; // if true, renders an empty placeholder div instead of a canvas tile
 	needsInteractivity?: boolean; // enables click-to-popup behaviour for the StreamPlayersScreenControl page
 	canvas?: HTMLCanvasElement; // the canvas element managed by VideoStreamManager; attached to the DOM via a ref inside the useEffect
-	id?: string; // headset identifier (e.g. "192.168.1.101:5555"); used to derive color and display the player label
-	hideInfos?: boolean; // hides the player id label, used in fullscreen mode
+	id?: string; // headset identifier (e.g. "192.168.1.101:5555"); used to derive the frame and popup color
 }
 
-const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, needsInteractivity }: PlayerScreenCanvasProps) => {
+const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity }: PlayerScreenCanvasProps) => {
 	const ipIdentifier: string = id ? id.split(":")[0].split(".")[id.split(".").length - 1] : "";
 	const canvasref = useRef<HTMLDivElement>(null);
 	const popupref = useRef<HTMLDivElement>(null);
@@ -52,7 +51,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, needsInterac
 			{showPopup === true ? (
 				<button
 					type="button"
-					className={`backdrop-blur-md w-full h-full fixed inset-0 flex flex-col items-center justify-center z-50 cursor-default border-none`}
+					className={`backdrop-blur-md bg-transparent w-full h-full fixed inset-0 flex flex-col items-center justify-center z-50 cursor-default border-none`}
 					onClick={() => setShowPopup(false)}
 				>
 					{/* <div ref={popupref} className={` ${isColoredHeadset ? bgColor : "bg-slate-500"} size-2/3 flex flex-col items-center justify-center`}> */}
@@ -64,9 +63,7 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, hideInfos, needsInterac
 						<div
 							ref={popupref}
 							className={`h-full flex flex-col p-1 rounded-md ${isColoredHeadset ? bgColor : "bg-slate-500"}`}
-						>
-							{hideInfos ? null : <p className="bg-slate-200 rounded-t-md p-1"> {`Player: ${id}`}</p>}
-						</div>
+						/>
 
 						<button
 							type="button"

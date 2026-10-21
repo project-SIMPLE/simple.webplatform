@@ -34,15 +34,22 @@ describe("PlayerScreenCanvas", () => {
 		expect(canvas.isConnected).toBe(false);
 	});
 
-	it("opens a fullscreen popup with the player label when interactive and clicked", async () => {
+	it("moves the stream into a fullscreen popup when clicked, and back to the tile on close", async () => {
 		const canvas = document.createElement("canvas");
-		render(<PlayerScreenCanvas id="192.168.1.101:5555" canvas={canvas} needsInteractivity />);
-
-		// No popup label before interaction.
-		expect(screen.queryByText(/Player:/)).not.toBeInTheDocument();
+		const { container } = render(<PlayerScreenCanvas id="192.168.1.101:5555" canvas={canvas} needsInteractivity />);
+		const tileHolder = canvas.parentElement;
 
 		await userEvent.click(screen.getByRole("button"));
 
-		expect(screen.getByText(/Player: 192\.168\.1\.101:5555/)).toBeInTheDocument();
+		// The stream alone fills the popup: viewport-capped, no player label on top.
+		expect(canvas.parentElement).not.toBe(tileHolder);
+		expect(canvas.classList.contains("max-h-[95dvh]")).toBe(true);
+		expect(screen.queryByText(/Player:/)).not.toBeInTheDocument();
+
+		const closeButton = container.querySelector('img[src="/images/Buttons/Button_stop.png"]')?.closest("button");
+		if (!closeButton) throw new Error("popup close button not rendered");
+		await userEvent.click(closeButton);
+
+		expect(canvas.parentElement).toBe(tileHolder);
 	});
 });

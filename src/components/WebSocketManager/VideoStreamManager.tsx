@@ -8,11 +8,10 @@ const STREAM_ASPECT_RATIO = 1570 / 1482;
 interface VideoStreamManagerProps {
 	needsInteractivity?: boolean;
 	selectedCanvas?: string;
-	hideInfos?: boolean; // boolean to be passed down as a prop to player screen canvas
 }
 
 // The React component
-const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: VideoStreamManagerProps) => {
+const VideoStreamManager = ({ needsInteractivity, selectedCanvas }: VideoStreamManagerProps) => {
 	const { canvasList, sortedKeys } = useVideoStreams(selectedCanvas);
 
 	// Dynamic grid: one cell per live stream, sized to the container by useVideoGrid.
@@ -26,7 +25,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 		<div className="w-fit">
 			<p>amount of streams: {Object.keys(canvasList).length}</p>
 			{Object.entries(canvasList).map(([key, canvas]) => (
-				<PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} hideInfos />
+				<PlayerScreenCanvas key={key} id={key} canvas={canvas} needsInteractivity={needsInteractivity} />
 			))}
 		</div>
 	) : (
@@ -42,7 +41,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 			>
 				{sortedKeys.map((key) => (
 					<div key={key} style={{ width: tileWidth, height: tileHeight }} className="flex items-center justify-center">
-						<PlayerScreenCanvas id={key} canvas={canvasList[key]} needsInteractivity={true} hideInfos={hideInfos} />
+						<PlayerScreenCanvas id={key} canvas={canvasList[key]} needsInteractivity={true} />
 					</div>
 				))}
 				{streamCount === 0 && (
@@ -51,7 +50,6 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas, hideInfos }: V
 							isPlaceholder
 							id="placeholder"
 							needsInteractivity={needsInteractivity}
-							hideInfos={hideInfos}
 						/>
 					</div>
 				)}

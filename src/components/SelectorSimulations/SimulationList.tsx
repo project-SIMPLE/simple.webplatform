@@ -52,7 +52,7 @@ const SimulationList = ({ list, handleSimulation, gama, className }: SimulationL
 						data-nav-item="tile"
 						disabled={!gama.connected}
 						onClick={() => handleSimulation(index)}
-						className={`group rounded-2xl items-center relative size-[13dvw] bg-transparent border-none p-0 cursor-pointer focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${className && className}`}
+						className={`group rounded-2xl items-center relative size-[13dvw] bg-transparent border-none p-0 cursor-pointer focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed ${className && className}`}
 					>
 						{/* {simulation.type == "catalog" ? <img src={` /images/Headset/Headset_04_orange.png`} className='rounded-full bg-slate-500 opacity-90 size-16 absolute top-[40%] left-[40%] z-20' /> : null} //? downward arrow */}
 						{/* Hovered or focused tile scales up, so keyboard focus shows the active tile like a hover. */}

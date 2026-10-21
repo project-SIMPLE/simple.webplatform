@@ -116,7 +116,7 @@ const SelectorSimulations = () => {
 								data-nav-item="back"
 								onClick={() => back()}
 								aria-label="Back"
-								className="absolute left-[3.1dvw] top-10 bg-transparent border-none p-0 cursor-pointer focus:outline-none hover:scale-110 focus:scale-110 transition-transform duration-200"
+								className="absolute left-[3.1dvw] top-10 bg-transparent border-none p-0 cursor-pointer focus:outline-hidden hover:scale-110 focus:scale-110 transition-transform duration-200"
 							>
 								<img src={` /images/Buttons/Button_back.png`} alt="" className="size-[6dvh]" />
 							</button>
