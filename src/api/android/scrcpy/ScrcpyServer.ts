@@ -24,7 +24,7 @@ export function deviceCrop(deviceModel: string, flipWidth: boolean): { crop: str
 		return { crop: flipWidth ? "1570:1482:170:150" : "1482:1570:170:150" };
 	}
 	if (deviceModel === "Quest_3") {
-		return { angle: 23, crop: flipWidth ? "1570:1482:300:250" : "1482:1570:300:250" };
+		return { angle: 21, crop: flipWidth ? "1570:1482:300:250" : "1482:1570:300:250" };
 	}
 	return undefined;
 }

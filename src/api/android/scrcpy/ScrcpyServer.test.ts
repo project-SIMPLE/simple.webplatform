@@ -88,7 +88,7 @@ describe("deviceCrop", () => {
 	});
 
 	it("also rotates the picture on a Quest 3", () => {
-		expect(deviceCrop("Quest_3", false)).toEqual({ crop: "1482:1570:300:250", angle: 23 });
+		expect(deviceCrop("Quest_3", false)).toEqual({ crop: "1482:1570:300:250", angle: 21 });
 	});
 
 	it("swaps width and height, not the offsets, when flipped", () => {
@@ -125,7 +125,7 @@ describe("buildScrcpyOptions", () => {
 	it("sends the device crop to the server as scrcpy arguments", () => {
 		const args = buildScrcpyOptions(false, deviceCrop("Quest_3", false)).serialize();
 		expect(args).toContain("crop=1482:1570:300:250");
-		expect(args).toContain("angle=23");
+		expect(args).toContain("angle=21");
 		// No crop means no crop argument at all, not an empty one.
 		expect(
 			buildScrcpyOptions(false, undefined)
