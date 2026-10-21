@@ -46,11 +46,7 @@ const VideoStreamManager = ({ needsInteractivity, selectedCanvas }: VideoStreamM
 				))}
 				{streamCount === 0 && (
 					<div style={{ width: tileWidth, height: tileHeight }} className="flex items-center justify-center">
-						<PlayerScreenCanvas
-							isPlaceholder
-							id="placeholder"
-							needsInteractivity={needsInteractivity}
-						/>
+						<PlayerScreenCanvas isPlaceholder id="placeholder" needsInteractivity={needsInteractivity} />
 					</div>
 				)}
 			</div>
