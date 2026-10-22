@@ -1,12 +1,79 @@
-import { describe, expect, it } from "vitest";
+import net from "node:net";
+import { afterEach, describe, expect, it } from "vitest";
 import {
 	_extractIPv4,
 	asBool,
 	computeIsPlatformPackaged,
+	findBusyUwsPorts,
 	isSameEntryFile,
 	LOG_ROTATION,
 	parseHeadsetsIp,
 } from "./index.ts";
+
+describe("findBusyUwsPorts", () => {
+	const held: net.Server[] = [];
+
+	afterEach(async () => {
+		await Promise.all(held.splice(0).map((s) => new Promise((resolve) => s.close(resolve))));
+	});
+
+	// Listen on an ephemeral port and keep it, standing in for another process (e.g. a stale adb daemon).
+	function hold(host?: string): Promise<string> {
+		const server = net.createServer();
+		held.push(server);
+		return new Promise((resolve) =>
+			server.listen({ port: 0, host }, () => resolve(String((server.address() as net.AddressInfo).port))),
+		);
+	}
+
+	// An ephemeral port that is free right now
+	async function freePort(): Promise<string> {
+		const port = await hold("127.0.0.1");
+		await new Promise((resolve) => held.pop()?.close(resolve));
+		return port;
+	}
+
+	async function env(overrides: NodeJS.ProcessEnv = {}): Promise<NodeJS.ProcessEnv> {
+		return {
+			WEB_APPLICATION_HOST: "127.0.0.1",
+			MONITOR_WS_PORT: await freePort(),
+			HEADSET_WS_PORT: await freePort(),
+			VIDEO_WS_PORT: await freePort(),
+			...overrides,
+		};
+	}
+
+	it("reports nothing when every port is free", async () => {
+		expect(await findBusyUwsPorts(await env(), true)).toEqual([]);
+	});
+
+	it("probes the monitor port on WEB_APPLICATION_HOST, like MonitorServer listens", async () => {
+		const port = await hold("127.0.0.1");
+		expect(await findBusyUwsPorts(await env({ MONITOR_WS_PORT: port }), false)).toEqual([
+			{ name: "monitor WebSocket (MONITOR_WS_PORT)", port },
+		]);
+	});
+
+	it("probes the headset port on the default dual-stack host, like PlayerManager listens", async () => {
+		const port = await hold(); // no host = "::", as uWS listen(port) does
+		expect(await findBusyUwsPorts(await env({ HEADSET_WS_PORT: port }), false)).toEqual([
+			{ name: "headset WebSocket (HEADSET_WS_PORT)", port },
+		]);
+	});
+
+	it("only probes the video port when adb (and so the ScrcpyServer) is in use", async () => {
+		const port = await hold("127.0.0.1");
+		const e = await env({ VIDEO_WS_PORT: port });
+		expect(await findBusyUwsPorts(e, false)).toEqual([]);
+		expect(await findBusyUwsPorts(e, true)).toEqual([{ name: "video stream (VIDEO_WS_PORT)", port }]);
+	});
+
+	it("reports every busy port, not just the first", async () => {
+		const [monitor, video] = [await hold("127.0.0.1"), await hold("127.0.0.1")];
+		const busy = await findBusyUwsPorts(await env({ MONITOR_WS_PORT: monitor, VIDEO_WS_PORT: video }), true);
+		expect(busy.map((b) => b.port)).toEqual([monitor, video]);
+	});
+});
 
 describe("_extractIPv4", () => {
 	it("extracts a bare IPv4 address", () => {
