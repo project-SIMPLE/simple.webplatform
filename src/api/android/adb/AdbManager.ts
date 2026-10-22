@@ -31,9 +31,18 @@ export class AdbManager {
 	clientCurrentlyStreaming: Device[] = [];
 	observer!: AdbServerClient.DeviceObserver; //!: AdbServerClient;
 	deviceStatuses: Map<string, string> = new Map();
+	// `adb start-server` run kicked off by the constructor, awaited in init()
+	private readonly adbDaemonStarted: Promise<void>;
 
 	constructor(controller: Controller) {
 		this.controller = controller;
+		// Must run before ANY uWS server listens (the Controller builds us first). On Windows,
+		// uWS sockets are inheritable (no SOCK_CLOEXEC there), so a daemon spawned later inherits
+		// the monitor/headset/video listening sockets and keeps them alive after the backend exits.
+		// The next run then silently binds the same ports (uWS sets SO_REUSEADDR), but
+		// connections land on the orphaned sockets and hang. spawn() creates the process
+		// synchronously, so starting it here is enough — no need to wait for it.
+		this.adbDaemonStarted = this.startAdbDaemon();
 		try {
 			// Automatically uses environment variables if set:
 			// ADB_SERVER_SOCKET - full socket specification
@@ -66,7 +75,7 @@ export class AdbManager {
 		// Ensure the adb daemon is running WITHOUT blocking the event loop. A cold-boot daemon
 		// start can take several seconds; spawnSync would freeze the whole process (and the uWS
 		// servers) during that time, so use async spawn instead.
-		await this.startAdbDaemon();
+		await this.adbDaemonStarted;
 
 		// Init watching ADB clients
 		this.observer = await this.adbServer.trackDevices();

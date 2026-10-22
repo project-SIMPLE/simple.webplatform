@@ -26,6 +26,14 @@ export class Controller {
 	// mDnsService: mDnsService;
 
 	constructor(useAdb: boolean) {
+		// AdbManager must be built BEFORE any uWS server: it spawns the long-lived adb daemon,
+		// which on Windows would otherwise inherit (and orphan) their listening sockets.
+		if (useAdb) {
+			this.adb_manager = new AdbManager(this);
+		} else {
+			logger.warn("Couldn't find ADB working or started, cancelling ADB management");
+		}
+
 		// this.mDnsService = new mDnsService(process.env.WEB_HOSTNAME);
 		this.monitor_server = new MonitorServer(this);
 		this.player_manager = new PlayerManager(this);
@@ -41,12 +49,6 @@ export class Controller {
 		} else {
 			this.model_manager = new ModelManager(this);
 			this.gama_connector = new GamaConnector(this);
-		}
-
-		if (useAdb) {
-			this.adb_manager = new AdbManager(this);
-		} else {
-			logger.warn("Couldn't find ADB working or started, cancelling ADB management");
 		}
 
 		this.ups_service = new UpsManager();
