@@ -1,4 +1,4 @@
-import WebSocket from "ws";
+import WebSocket, { type ClientOptions } from "ws";
 
 type Json = Record<string, unknown>;
 type Predicate = (msg: Json) => boolean;
@@ -19,9 +19,12 @@ export interface TestClient {
  * A minimal real WebSocket client for the socket integration tests. Buffers every
  * message and lets a test await the first one matching a predicate, so unrelated
  * traffic (e.g. heartbeat pings) never breaks an assertion.
+ *
+ * `options.localAddress` picks the source address, to simulate several headsets
+ * connecting from different IPs.
  */
-export function openClient(url: string): TestClient {
-	const socket = new WebSocket(url);
+export function openClient(url: string, options?: ClientOptions): TestClient {
+	const socket = new WebSocket(url, options);
 	const buffer: Json[] = [];
 	const waiters: { predicate: Predicate; resolve: (m: Json) => void }[] = [];
 

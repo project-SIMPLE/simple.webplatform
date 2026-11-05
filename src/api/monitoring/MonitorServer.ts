@@ -3,6 +3,7 @@ import { getLogger } from "@logtape/logtape";
 import type { JsonMonitor } from "../core/Constants.ts";
 import type { Controller } from "../core/Controller.ts";
 import { ENV_GAMALESS } from "../index.ts";
+import { type RemoteAddressData, upgradeWithRemoteAddress } from "../infra/RemoteAddress.ts";
 import type Model from "../simulation/Model.ts";
 
 const logger = getLogger(["monitor", "MonitorServer"]);
@@ -12,7 +13,7 @@ const logger = getLogger(["monitor", "MonitorServer"]);
  */
 export class MonitorServer {
 	private controller: Controller;
-	private wsClients: Set<uWS.WebSocket<unknown>>;
+	private wsClients: Set<uWS.WebSocket<RemoteAddressData>>;
 	private wsServer!: TemplatedApp; //: WebSocketServer;
 
 	/**
@@ -21,7 +22,7 @@ export class MonitorServer {
 	 */
 	constructor(controller: Controller) {
 		this.controller = controller;
-		this.wsClients = new Set<uWS.WebSocket<unknown>>();
+		this.wsClients = new Set<uWS.WebSocket<RemoteAddressData>>();
 
 		const host = process.env.WEB_APPLICATION_HOST || "0.0.0.0";
 		const port = parseInt(process.env.MONITOR_WS_PORT || "8001", 10);
@@ -37,12 +38,15 @@ export class MonitorServer {
 			}
 		});
 
-		this.wsServer.ws("/*", {
+		this.wsServer.ws<RemoteAddressData>("/*", {
 			// compression: (uWS.SHARED_COMPRESSOR | uWS.SHARED_DECOMPRESSOR), // Enable compression
 			idleTimeout: 30, // 30 seconds timeout
 
+			// ws.getRemoteAddressAsText() is empty outside upgrade; capture the address here
+			upgrade: upgradeWithRemoteAddress,
+
 			open: (ws) => {
-				logger.debug("Connected to monitor server");
+				logger.debug(`Connected to monitor server from ${ws.getUserData().ip}`);
 				this.wsClients.add(ws);
 				this.sendMonitorGamaState();
 				this.sendMonitorJsonSettings();
@@ -273,7 +277,7 @@ export class MonitorServer {
 	 * @param clientWsId (optional) WS to send the message to
 	 * @return void
 	 */
-	sendMessageByWs(message: unknown, clientWsId?: uWS.WebSocket<unknown>): void {
+	sendMessageByWs(message: unknown, clientWsId?: uWS.WebSocket<RemoteAddressData>): void {
 		if (this.wsClients !== undefined) {
 			this.wsClients.forEach((client) => {
 				if (clientWsId === undefined || clientWsId === client) {
@@ -282,17 +286,17 @@ export class MonitorServer {
 					switch (r) {
 						case 0:
 							logger.warn(`Backpressure is building up. Data will be drain overtime to {client}`, {
-								client: Buffer.from(client.getRemoteAddressAsText()).toString(),
+								client: client.getUserData().ip,
 							});
 							break;
 						case 2:
 							logger.error(`Backpressure detected. Data not sent to client {client}`, {
-								client: Buffer.from(client.getRemoteAddressAsText()).toString(),
+								client: client.getUserData().ip,
 							});
 							break;
 						default:
 							logger.trace(`Properly sent message to client {client}`, {
-								client: Buffer.from(client.getRemoteAddressAsText()).toString(),
+								client: client.getUserData().ip,
 							});
 					}
 				}

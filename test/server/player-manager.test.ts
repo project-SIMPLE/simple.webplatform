@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type Controller from "../../src/api/core/Controller.ts";
 import PlayerManager from "../../src/api/multiplayer/PlayerManager.ts";
 import { freePort } from "../setup/free-port.ts";
+import { type LoopbackSource, twoLoopbackSources } from "../setup/loopback.ts";
 import { openClient, type TestClient } from "../setup/ws-client.ts";
 
 // Recording Controller at PlayerManager's output boundary. A COMPLETE stub (all
@@ -156,11 +157,6 @@ describe("PlayerManager chaos — malformed & lifecycle", () => {
 		await vi.waitFor(() => expect(controller.sendExpression).toHaveBeenCalledWith("p1", "do stuff;"));
 	});
 
-	// (The "disconnect flagging on drop" path can't be tested over loopback: uWS
-	// returns an empty getRemoteAddressAsText(), so the player is keyed by "" and the
-	// close handler's `!playerIP` guard skips cleanup. Real headsets have non-empty
-	// IPs; this empty-key edge is reported in the local chaos-findings.md instead.)
-
 	it("treats a second socket from the same host as a reconnect (one entry)", async () => {
 		const c1 = connect();
 		await c1.waitOpen();
@@ -193,5 +189,121 @@ describe("PlayerManager chaos — malformed & lifecycle", () => {
 		await c.waitFor((m) => m.type === "json_state");
 		await vi.waitFor(() => expect(controller.addInGamePlayer).toHaveBeenCalled());
 		expect(pm.getArrayPlayerList().p1?.in_game).toBe(true);
+	});
+});
+
+// Regression: field report from a 6-headset classroom (2026-11-05). With GAMA
+// connected, only the first headset could join; any other headset was taken as
+// that first player reconnecting, keeping its id and color. Cause: uWS's
+// ws.getRemoteAddressAsText() returns "" in open/message/close, so every headset
+// was keyed by "". The address is now captured at upgrade time.
+describe("PlayerManager — one player per headset address", () => {
+	let pm: PlayerManager;
+	let controller: Controller;
+	let port: number;
+	let sources: [LoopbackSource, LoopbackSource];
+	const clients: TestClient[] = [];
+
+	function connectFrom(source: LoopbackSource) {
+		const c = openClient(
+			`ws://${source.host}:${port}`,
+			source.localAddress ? { localAddress: source.localAddress } : undefined,
+		);
+		clients.push(c);
+		return c;
+	}
+
+	async function registerFrom(source: LoopbackSource, id: string) {
+		const c = connectFrom(source);
+		await c.waitOpen();
+		c.send({ type: "connection", id, heartbeat: 60_000 });
+		await c.waitFor((m) => m.type === "json_state" && m.id_player === id);
+		return c;
+	}
+
+	const keyOf = (id: string) => [...pm.playerList.entries()].find(([, p]) => p.id === id)?.[0];
+
+	beforeEach(async () => {
+		sources = await twoLoopbackSources();
+		port = await freePort();
+		process.env.HEADSET_WS_PORT = String(port);
+		controller = recordingController("RUNNING");
+		pm = new PlayerManager(controller);
+	});
+
+	afterEach(async () => {
+		for (const c of clients) await c.close();
+		clients.length = 0;
+		pm.close();
+	});
+
+	it("keys a player by the client's real address, never an empty string", async () => {
+		await registerFrom(sources[0], "Player_1");
+		expect(pm.playerList.has("")).toBe(false);
+		expect(keyOf("Player_1")).toBe(sources[0].expectedKey);
+	});
+
+	it("registers two headsets from different addresses as two players", async () => {
+		await registerFrom(sources[0], "Player_102");
+		await registerFrom(sources[1], "Player_103");
+
+		expect(pm.playerList.size).toBe(2);
+		expect(Object.keys(pm.getArrayPlayerList()).sort()).toEqual(["Player_102", "Player_103"]);
+		const [key102, key103] = [keyOf("Player_102"), keyOf("Player_103")];
+		expect(key102).not.toBe(key103);
+		if (sources[1].expectedKey) expect(key103).toBe(sources[1].expectedKey);
+	});
+
+	it("adds every headset to the running GAMA experiment", async () => {
+		await registerFrom(sources[0], "Player_102");
+		await registerFrom(sources[1], "Player_103");
+
+		await vi.waitFor(() => expect(controller.addInGamePlayer).toHaveBeenCalledTimes(2));
+		expect(controller.addInGamePlayer).toHaveBeenCalledWith(keyOf("Player_102"));
+		expect(controller.addInGamePlayer).toHaveBeenCalledWith(keyOf("Player_103"));
+		expect(pm.getArrayPlayerList().Player_102?.in_game).toBe(true);
+		expect(pm.getArrayPlayerList().Player_103?.in_game).toBe(true);
+	});
+
+	it("delivers each headset its own simulation output", async () => {
+		const c102 = await registerFrom(sources[0], "Player_102");
+		const c103 = await registerFrom(sources[1], "Player_103");
+
+		pm.broadcastSimulationOutput({
+			contents: [
+				{ id: ["Player_102"], contents: { for: "102" } },
+				{ id: ["Player_103"], contents: { for: "103" } },
+			],
+		});
+
+		expect((await c102.waitFor((m) => m.type === "json_output")).contents).toEqual({ for: "102" });
+		expect((await c103.waitFor((m) => m.type === "json_output")).contents).toEqual({ for: "103" });
+	});
+
+	it("registers a different headset after the first one disconnects", async () => {
+		const first = await registerFrom(sources[0], "Player_102");
+		await first.close();
+		await vi.waitFor(() => expect(pm.getArrayPlayerList().Player_102?.connected).toBe(false));
+
+		const second = await registerFrom(sources[1], "Player_103");
+
+		// The new headset keeps its own identity instead of taking over Player_102
+		expect(pm.getArrayPlayerList().Player_103?.connected).toBe(true);
+		expect(pm.getArrayPlayerList().Player_102?.connected).toBe(false);
+		second.send({ type: "expression", expr: "do stuff;" });
+		await vi.waitFor(() => expect(controller.sendExpression).toHaveBeenCalledWith("Player_103", "do stuff;"));
+	});
+
+	it("still restores the same player when a headset reconnects from its address", async () => {
+		const first = await registerFrom(sources[0], "Player_102");
+		await first.close();
+		await vi.waitFor(() => expect(pm.getArrayPlayerList().Player_102?.connected).toBe(false));
+
+		const again = connectFrom(sources[0]);
+		await again.waitOpen();
+		const state = await again.waitFor((m) => m.type === "json_state" && m.id_player === "Player_102");
+
+		expect(state.connected).toBe(true);
+		expect(pm.playerList.size).toBe(1);
 	});
 });

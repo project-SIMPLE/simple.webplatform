@@ -5,6 +5,7 @@ import type { PlayerState } from "../../common/types.ts";
 import type { JsonOutput, JsonPlayer, JsonPlayerAsk, Player } from "../core/Constants.ts";
 import type Controller from "../core/Controller.ts";
 import { ENV_AGGRESSIVE_DISCONNECT, ENV_EXTRA_VERBOSE } from "../index.ts";
+import { type RemoteAddressData, upgradeWithRemoteAddress } from "../infra/RemoteAddress.ts";
 
 // Override the log function
 const logger: Logger = getLogger(["multi", "PlayerManager"]);
@@ -38,14 +39,19 @@ class PlayerManager {
 					logger.error(`Failed to listen on the specified port ${process.env.HEADSET_WS_PORT}`);
 				}
 			})
-			.ws("/*", {
+			.ws<RemoteAddressData>("/*", {
 				// Server doesn't compress yet
 				// WebSocketSharp (Unity side) doesn't support deflating messages
 				// https://github.com/sta/websocket-sharp/issues/580
 				//: (uWS.SHARED_COMPRESSOR | uWS.SHARED_DECOMPRESSOR),
 
+				// Players are keyed by their IP address. It must be captured here:
+				// ws.getRemoteAddressAsText() returns "" in open/message/close, which
+				// merged every headset into a single player.
+				upgrade: upgradeWithRemoteAddress,
+
 				open: (ws) => {
-					const playerWsId: string = Buffer.from(ws.getRemoteAddressAsText()).toString();
+					const playerWsId: string = ws.getUserData().ip;
 
 					// Check if known player or not
 					if (this.playerList.has(playerWsId)) {
@@ -78,7 +84,7 @@ class PlayerManager {
 				// ======================================
 
 				message: (ws, message) => {
-					const playerIP = Buffer.from(ws.getRemoteAddressAsText()).toString();
+					const playerIP = ws.getUserData().ip;
 					const jsonPlayer: JsonPlayer = JSON.parse(Buffer.from(message).toString());
 
 					// Alive as received any message
@@ -169,14 +175,7 @@ class PlayerManager {
 
 					// Fallback: identify by remote IP (getIndexByPlayerWs returns undefined when
 					// the player has already reconnected and player.ws points to the new socket)
-					if (!playerIP) {
-						try {
-							const ip = Buffer.from(ws.getRemoteAddressAsText()).toString();
-							if (ip) playerIP = ip;
-						} catch (e) {
-							logger.trace("getRemoteAddressAsText failed in close handler: {e}", { e });
-						}
-					}
+					if (!playerIP) playerIP = ws.getUserData().ip || undefined;
 
 					if (!playerIP) logger.error("Can't find which WebSocket been closed...");
 					else

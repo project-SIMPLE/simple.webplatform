@@ -2,10 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import type { Controller } from "../core/Controller.ts";
 import { MonitorServer } from "./MonitorServer.ts";
 
-type FakeClient = { send: ReturnType<typeof vi.fn>; getRemoteAddressAsText: () => Uint8Array };
+// The peer address lives in the socket's user data (captured at upgrade time).
+type FakeClient = { send: ReturnType<typeof vi.fn>; getUserData: () => { ip: string } };
 
 function fakeClient(): FakeClient {
-	return { send: vi.fn(() => 1), getRemoteAddressAsText: () => new Uint8Array() };
+	return { send: vi.fn(() => 1), getUserData: () => ({ ip: "127.0.0.1" }) };
 }
 
 // Build a MonitorServer off the prototype so no uWS server is started.
