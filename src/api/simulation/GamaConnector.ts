@@ -54,6 +54,9 @@ class GamaConnector {
 		this.controller.notifyMonitor();
 	}
 	setGamaContentError(contentError: string) {
+		// Every command ack clears the error. Only tell the monitors when it actually changes,
+		// or each headset `ask` (hundreds per second) re-sends the whole state to every monitor.
+		if (this.jsonGamaState.content_error === contentError) return;
 		this.jsonGamaState.content_error = contentError;
 		this.controller.notifyMonitor();
 	}

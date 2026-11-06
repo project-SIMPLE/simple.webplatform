@@ -174,6 +174,34 @@ describe("GamaConnector message dispatch", () => {
 		}
 	});
 
+	// Each headset `ask` is acked by GAMA, and each ack clears content_error. Notifying the
+	// monitors on every ack re-sent the whole state hundreds of times per second.
+	it("command acks do not notify the monitors while content_error stays empty", () => {
+		const { controller, socket } = newConnector();
+		const ack = {
+			type: "CommandExecutedSuccessfully",
+			content: "",
+			command: { type: "ask", action: "move_player_external", agent: "simulation[0].unity_linker[0]" },
+		};
+		receive(socket, ack);
+		vi.mocked(controller.notifyMonitor).mockClear();
+
+		for (let i = 0; i < 100; i++) receive(socket, ack);
+		expect(controller.notifyMonitor).not.toHaveBeenCalled();
+	});
+
+	it("an ack after a GAMA error clears content_error and notifies the monitors once", () => {
+		const { gama, controller, socket } = newConnector();
+		receive(socket, { type: GAMA_ERROR_MESSAGES[0], content: "boom" });
+		vi.mocked(controller.notifyMonitor).mockClear();
+
+		const ack = { type: "CommandExecutedSuccessfully", content: "", command: { type: "ask" } };
+		receive(socket, ack);
+		receive(socket, ack);
+		expect(gama.getJsonGama().content_error).toBe("");
+		expect(controller.notifyMonitor).toHaveBeenCalledTimes(1);
+	});
+
 	it("CommandExecutedSuccessfully of a load stores the experiment name", () => {
 		const { gama, socket } = newConnector();
 		receive(socket, {

@@ -15,6 +15,9 @@ export class MonitorServer {
 	private controller: Controller;
 	private wsClients: Set<uWS.WebSocket<RemoteAddressData>>;
 	private wsServer!: TemplatedApp; //: WebSocketServer;
+	// Monitors with data waiting / with messages dropped, until their socket drains
+	private readonly backpressured = new Set<uWS.WebSocket<RemoteAddressData>>();
+	private readonly dropping = new Set<uWS.WebSocket<RemoteAddressData>>();
 
 	/**
 	 * Creates the websocket server
@@ -44,6 +47,11 @@ export class MonitorServer {
 
 			// ws.getRemoteAddressAsText() is empty outside upgrade; capture the address here
 			upgrade: upgradeWithRemoteAddress,
+
+			drain: (ws) => {
+				this.backpressured.delete(ws);
+				if (this.dropping.delete(ws)) logger.info(`Monitor ${ws.getUserData().ip} caught up`);
+			},
 
 			open: (ws) => {
 				logger.debug(`Connected to monitor server from ${ws.getUserData().ip}`);
@@ -194,6 +202,8 @@ export class MonitorServer {
 			close: (ws, code: number, message) => {
 				try {
 					this.wsClients.delete(ws);
+					this.backpressured.delete(ws);
+					this.dropping.delete(ws);
 					logger.debug(`Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
 
 					// Handle specific close codes
@@ -279,20 +289,31 @@ export class MonitorServer {
 	 */
 	sendMessageByWs(message: unknown, clientWsId?: uWS.WebSocket<RemoteAddressData>): void {
 		if (this.wsClients !== undefined) {
+			// Serialized once, not once per connected monitor
+			const serialized = JSON.stringify(message);
 			this.wsClients.forEach((client) => {
 				if (clientWsId === undefined || clientWsId === client) {
-					const r: number = client.send(JSON.stringify(message), false, true); // Force message compression
+					const r: number = client.send(serialized, false, true); // Force message compression
 
+					// Warned once per stall (drain clears it), not once per message. Warnings, not
+					// errors: an error makes the file log write out its whole trace buffer.
 					switch (r) {
 						case 0:
-							logger.warn(`Backpressure is building up. Data will be drain overtime to {client}`, {
-								client: client.getUserData().ip,
-							});
+							if (!this.backpressured.has(client)) {
+								this.backpressured.add(client);
+								logger.warn(`Backpressure is building up. Data will be drain overtime to {client}`, {
+									client: client.getUserData().ip,
+								});
+							}
 							break;
 						case 2:
-							logger.error(`Backpressure detected. Data not sent to client {client}`, {
-								client: client.getUserData().ip,
-							});
+							this.backpressured.add(client);
+							if (!this.dropping.has(client)) {
+								this.dropping.add(client);
+								logger.warn(`Backpressure detected. Data not sent to client {client}`, {
+									client: client.getUserData().ip,
+								});
+							}
 							break;
 						default:
 							logger.trace(`Properly sent message to client {client}`, {
