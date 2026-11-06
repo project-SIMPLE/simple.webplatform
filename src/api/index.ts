@@ -222,6 +222,11 @@ async function loadConfiguration(): Promise<void> {
 			file: fingersCrossed(getRotatingFileSink("errorLog.log", { ...LOG_ROTATION }), {
 				triggerLevel: "error",
 				bufferLevel: "debug", // Buffer debug and below; info/warn pass through immediately
+				// After an error, write the buffered context and go back to buffering. The default,
+				// "passthrough", wrote every later trace record to disk for the rest of the run: with
+				// several headsets that is megabytes per second, formatted and written synchronously
+				// on the event loop that also relays GAMA and headset messages.
+				afterTrigger: "buffer",
 			}),
 		},
 		loggers: [

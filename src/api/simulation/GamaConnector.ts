@@ -195,6 +195,13 @@ class GamaConnector {
 							break;
 
 						case "SimulationOutput":
+							// A GAML `write` statement reaches us as console output, { message, color },
+							// not as a JSON string meant for the headsets. It is not an error: logging it
+							// as one flushed the whole trace buffer to disk on every `write` of the model.
+							if (typeof message.content !== "string") {
+								logger.debug("GAMA console output: {output}", { output: message.content?.message ?? message.content });
+								break;
+							}
 							try {
 								this.controller.broadcastSimulationOutput(JSON.parse(message.content));
 							} catch (_error) {

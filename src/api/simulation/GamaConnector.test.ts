@@ -1,3 +1,4 @@
+import { configure, type LogRecord, reset } from "@logtape/logtape";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Replace the `ws` client with a fake that never touches the network. It records
@@ -147,6 +148,30 @@ describe("GamaConnector message dispatch", () => {
 		const { controller, socket } = newConnector();
 		receive(socket, { type: "SimulationOutput", content: JSON.stringify({ foo: "bar" }) });
 		expect(controller.broadcastSimulationOutput).toHaveBeenCalledWith({ foo: "bar" });
+	});
+
+	// A GAML `write` arrives as { message, color }. Treating it as a parse error made every
+	// `write` of the model flush the trace buffer and switch file logging to full trace.
+	it("SimulationOutput console output from a GAML write is neither broadcast nor logged as an error", async () => {
+		const records: LogRecord[] = [];
+		await configure({
+			reset: true,
+			sinks: { memory: (record) => records.push(record) },
+			loggers: [{ category: ["sim"], sinks: ["memory"], lowestLevel: "trace" }],
+		});
+		try {
+			const { controller, socket } = newConnector();
+			const consoleOutput = {
+				type: "SimulationOutput",
+				content: { message: "Start rain at time 90s\n", color: null },
+				exp_id: "",
+			};
+			expect(() => receive(socket, consoleOutput)).not.toThrow();
+			expect(controller.broadcastSimulationOutput).not.toHaveBeenCalled();
+			expect(records.filter((r) => r.level === "error" || r.level === "fatal")).toEqual([]);
+		} finally {
+			await reset();
+		}
 	});
 
 	it("CommandExecutedSuccessfully of a load stores the experiment name", () => {
