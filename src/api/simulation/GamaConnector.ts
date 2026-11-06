@@ -10,6 +10,23 @@ import type Model from "./Model.ts";
 const logger: Logger = getLogger(["sim", "GamaConnector"]);
 
 /**
+ * Asks that only matter for their latest value: a newer one makes an older, unsent one useless.
+ * Each headset sends them every frame (about 50 per second each). While GAMA has not yet
+ * acknowledged the previous one from the same headset, a new one replaces the waiting one
+ * instead of queueing behind it, so a slow GAMA gets the latest positions, not a growing backlog.
+ * When GAMA keeps up, every ask is still sent.
+ */
+export const LATEST_WINS_ACTIONS: ReadonlySet<string> = new Set(["move_player_external", "move_geoms_followed"]);
+
+// An unacknowledged latest-wins ask stops holding back newer ones after this long
+export const LATEST_WINS_ACK_TIMEOUT_MS = 1000;
+
+type LatestWinsSlot = {
+	inFlight?: { action: string; args: string; since: number };
+	pending?: JsonPlayerAsk;
+};
+
+/**
  * This class creates a websocket client for Gama Server.
  */
 class GamaConnector {
@@ -19,6 +36,9 @@ class GamaConnector {
 	gama_socket: WebSocket | null = null;
 
 	listMessages: unknown[] = [];
+
+	// Latest-wins asks per "<headset>|<action>": the one GAMA is processing and the newest waiting
+	private readonly latestWins = new Map<string, LatestWinsSlot>();
 
 	/**
 	 * Constructor of the websocket client
@@ -191,6 +211,7 @@ class GamaConnector {
 							) {
 								this.controller.cancelLaunchInterval();
 								this.controller.player_manager.disableAllPlayerInGame();
+								this.latestWins.clear();
 								this.controller.notifyMonitor();
 							}
 
@@ -237,8 +258,12 @@ class GamaConnector {
 								case "stop":
 									this.controller.cancelLaunchInterval();
 									this.controller.player_manager.disableAllPlayerInGame();
+									this.latestWins.clear();
 									this.setGamaExperimentId("");
 									this.setGamaExperimentState("NONE");
+									break;
+								case "ask":
+									this.answerLatestWins(message.command);
 									break;
 							}
 
@@ -260,6 +285,8 @@ class GamaConnector {
 							if (GAMA_ERROR_MESSAGES.includes(type)) {
 								logger.error("Error message received from Gama Server: {message}", { message });
 
+								// A refused ask is answered too: it must not hold back the next one
+								this.answerLatestWins(message.command);
 								this.setGamaContentError(message);
 								//this.setGamaLoading(false);
 							} else {
@@ -274,6 +301,8 @@ class GamaConnector {
 			};
 
 			this.gama_socket.onclose = (event) => {
+				// Answers to asks sent on this socket will never come
+				this.latestWins.clear();
 				this.setGamaConnection(false);
 				this.setGamaExperimentId("");
 				this.setGamaExperimentState("NONE");
@@ -488,13 +517,56 @@ class GamaConnector {
 	/**
 	 * Sends an ask to GAMA
 	 * @param {object} json - The JSON containing the information of the ask
+	 * @param {string} sender - The headset it comes from. With it, asks in LATEST_WINS_ACTIONS are coalesced
 	 */
-	sendAsk(json: JsonPlayerAsk) {
+	sendAsk(json: JsonPlayerAsk, sender?: string) {
 		if (["NONE", "NOTREADY"].includes(this.jsonGamaState.experiment_state)) return;
 
-		this.listMessages = [json];
+		if (sender === undefined || !LATEST_WINS_ACTIONS.has(json.action)) {
+			this.sendNow(json);
+			return;
+		}
 
+		const key = `${sender}|${json.action}`;
+		const slot = this.latestWins.get(key) ?? {};
+		this.latestWins.set(key, slot);
+
+		if (slot.inFlight && Date.now() - slot.inFlight.since < LATEST_WINS_ACK_TIMEOUT_MS) {
+			slot.pending = json; // replaces an older waiting one: only the latest matters
+			return;
+		}
+		this.sendLatestWins(slot, json);
+	}
+
+	private sendNow(json: JsonPlayerAsk) {
+		this.listMessages = [json];
 		this.sendMessages();
+	}
+
+	private sendLatestWins(slot: LatestWinsSlot, json: JsonPlayerAsk) {
+		slot.inFlight = { action: json.action, args: json.args, since: Date.now() };
+		slot.pending = undefined;
+		this.sendNow(json);
+	}
+
+	/**
+	 * GAMA answered an ask (acknowledged or refused): free its slot, and send the ask that waited.
+	 * Answers echo the command, so they are matched on action and args. GAMA answers in order, so
+	 * when several slots match (two headsets sending the same args) the oldest one is answered.
+	 */
+	private answerLatestWins(command: { action?: string; args?: string } | undefined) {
+		if (!command?.action || !LATEST_WINS_ACTIONS.has(command.action)) return;
+
+		let answered: LatestWinsSlot | undefined;
+		for (const slot of this.latestWins.values()) {
+			const inFlight = slot.inFlight;
+			if (inFlight?.action !== command.action || inFlight.args !== command.args) continue;
+			if (!answered?.inFlight || inFlight.since < answered.inFlight.since) answered = slot;
+		}
+		if (!answered) return;
+
+		answered.inFlight = undefined;
+		if (answered.pending) this.sendLatestWins(answered, answered.pending);
 	}
 
 	close() {

@@ -203,8 +203,8 @@ export class Controller {
 		else logger.debug("[sendExpression] Message received to send to GAMA, but the webplatform is in GAMALESS mode...");
 	}
 
-	sendAsk(json: JsonPlayerAsk) {
-		if (!ENV_GAMALESS) this.gama_connector?.sendAsk(json);
+	sendAsk(json: JsonPlayerAsk, sender?: string) {
+		if (!ENV_GAMALESS) this.gama_connector?.sendAsk(json, sender);
 		else logger.debug("[sendAsk] Message received to send to GAMA, but the webplatform is in GAMALESS mode...");
 	}
 

@@ -38,7 +38,7 @@ vi.mock("ws", () => ({ default: FakeWebSocket }));
 
 import { GAMA_ERROR_MESSAGES } from "../core/Constants.ts";
 import type Controller from "../core/Controller.ts";
-import GamaConnector from "./GamaConnector.ts";
+import GamaConnector, { LATEST_WINS_ACK_TIMEOUT_MS } from "./GamaConnector.ts";
 
 // Spy Controller exposing just what GamaConnector touches.
 function makeController() {
@@ -384,5 +384,120 @@ describe("GamaConnector chaos — malformed frames & lifecycle", () => {
 		const sentBefore = socket.sent.length;
 		gama.launchExperiment(); // guard: only when connected && state === "NONE"
 		expect(socket.sent.length).toBe(sentBefore);
+	});
+});
+
+// Each headset sends its position and followed geometries every frame. When GAMA falls behind,
+// queueing them all built an ever-growing backlog of positions already out of date.
+describe("GamaConnector latest-wins asks", () => {
+	function running() {
+		const ctx = newConnector();
+		ctx.socket.onopen?.();
+		ctx.socket.onmessage?.({ data: JSON.stringify({ type: "SimulationStatus", exp_id: "e1", content: "RUNNING" }) });
+		return ctx;
+	}
+	const move = (id: string, x: number) => ({
+		type: "ask",
+		action: "move_player_external",
+		args: JSON.stringify({ id, x: String(x) }),
+		agent: "simulation[0].unity_linker[0]",
+	});
+	const ack = (socket: FakeWebSocket, command: object) =>
+		socket.onmessage?.({ data: JSON.stringify({ type: "CommandExecutedSuccessfully", content: "", command }) });
+	const sentArgs = (socket: FakeWebSocket) => socket.sent.map((s) => JSON.parse(s).args);
+
+	it("sends every ask while GAMA answers each one before the next", () => {
+		const { gama, socket } = running();
+		for (let x = 1; x <= 3; x++) {
+			gama.sendAsk(move("Player_101", x), "192.168.68.101");
+			ack(socket, move("Player_101", x));
+		}
+		expect(sentArgs(socket)).toEqual([1, 2, 3].map((x) => move("Player_101", x).args));
+	});
+
+	it("keeps only the newest ask while the previous one is unanswered, and sends it on the answer", () => {
+		const { gama, socket } = running();
+		gama.sendAsk(move("Player_101", 1), "192.168.68.101");
+		gama.sendAsk(move("Player_101", 2), "192.168.68.101"); // replaced by 3 before being sent
+		gama.sendAsk(move("Player_101", 3), "192.168.68.101");
+		expect(sentArgs(socket)).toEqual([move("Player_101", 1).args]);
+
+		ack(socket, move("Player_101", 1));
+		expect(sentArgs(socket)).toEqual([move("Player_101", 1).args, move("Player_101", 3).args]);
+	});
+
+	it("holds each headset back separately", () => {
+		const { gama, socket } = running();
+		gama.sendAsk(move("Player_101", 1), "192.168.68.101");
+		gama.sendAsk(move("Player_102", 1), "192.168.68.102"); // another headset: not held back
+		expect(socket.sent).toHaveLength(2);
+	});
+
+	it("does not coalesce other actions, nor asks without a known sender", () => {
+		const { gama, socket } = running();
+		const other = { type: "ask", action: "ChangeTreeState", args: "{}", agent: "simulation[0].unity_linker[0]" };
+		gama.sendAsk(other, "192.168.68.101");
+		gama.sendAsk(other, "192.168.68.101");
+		gama.sendAsk(move("Player_101", 1));
+		gama.sendAsk(move("Player_101", 2));
+		expect(socket.sent).toHaveLength(4);
+	});
+
+	it("stops holding asks back when an answer never comes", () => {
+		vi.useFakeTimers();
+		try {
+			const { gama, socket } = running();
+			gama.sendAsk(move("Player_101", 1), "192.168.68.101");
+			gama.sendAsk(move("Player_101", 2), "192.168.68.101");
+			expect(socket.sent).toHaveLength(1);
+
+			vi.advanceTimersByTime(LATEST_WINS_ACK_TIMEOUT_MS);
+			gama.sendAsk(move("Player_101", 3), "192.168.68.101");
+			expect(sentArgs(socket)).toEqual([move("Player_101", 1).args, move("Player_101", 3).args]);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("treats a refused ask as answered", () => {
+		const { gama, socket } = running();
+		gama.sendAsk(move("Player_101", 1), "192.168.68.101");
+		gama.sendAsk(move("Player_101", 2), "192.168.68.101");
+		socket.onmessage?.({
+			data: JSON.stringify({ type: GAMA_ERROR_MESSAGES[0], content: "boom", command: move("Player_101", 1) }),
+		});
+		expect(sentArgs(socket)).toEqual([move("Player_101", 1).args, move("Player_101", 2).args]);
+	});
+
+	// Headsets often send identical followed geometries; GAMA answers in order, so the
+	// oldest identical ask is the one answered.
+	it("matches an answer to the oldest of identical asks from two headsets", () => {
+		vi.useFakeTimers();
+		try {
+			const { gama, socket } = running();
+			const trees = (x: number) => ({ ...move("", 0), action: "move_geoms_followed", args: `trees ${x}` });
+			gama.sendAsk(trees(0), "192.168.68.101");
+			vi.advanceTimersByTime(5);
+			gama.sendAsk(trees(0), "192.168.68.102");
+			gama.sendAsk(trees(1), "192.168.68.101"); // waits for the first answer
+			gama.sendAsk(trees(2), "192.168.68.102"); // waits for the second answer
+
+			ack(socket, trees(0)); // answers 101's ask, sent first
+			expect(sentArgs(socket)).toEqual(["trees 0", "trees 0", "trees 1"]);
+			ack(socket, trees(0)); // then 102's
+			expect(sentArgs(socket)).toEqual(["trees 0", "trees 0", "trees 1", "trees 2"]);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("forgets unanswered asks when the GAMA socket closes", () => {
+		const { gama, socket } = running();
+		gama.sendAsk(move("Player_101", 1), "192.168.68.101");
+		socket.onclose?.({ wasClean: false }); // unclean: the connector keeps the socket to retry
+		socket.onmessage?.({ data: JSON.stringify({ type: "SimulationStatus", exp_id: "e1", content: "RUNNING" }) });
+
+		gama.sendAsk(move("Player_101", 2), "192.168.68.101"); // not held back by the lost one
+		expect(sentArgs(socket)).toEqual([move("Player_101", 1).args, move("Player_101", 2).args]);
 	});
 });
