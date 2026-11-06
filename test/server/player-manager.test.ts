@@ -235,6 +235,30 @@ describe("PlayerManager chaos — malformed & lifecycle", () => {
 		}
 	});
 
+	// A headset reconnecting before its old socket's close event got a second heartbeat timer:
+	// the close is ignored as stale and never cleared the first one. Pings then doubled.
+	it("keeps a single heartbeat timer when a headset reconnects before its old socket closes", async () => {
+		const c1 = connect();
+		await c1.waitOpen();
+		c1.send({ type: "connection", id: "p1", heartbeat: 200 });
+		await c1.waitFor((m) => m.type === "json_state");
+
+		const c2 = connect(); // same address: the reconnect path runs while c1 is still open
+		let pings = 0;
+		c2.socket.on("message", (data) => {
+			if (JSON.parse(data.toString()).type !== "ping") return;
+			pings++;
+			c2.send({ type: "pong", id: "p1" });
+		});
+		await c2.waitOpen();
+		await c1.close(); // the stale close: must not leave a timer behind either
+
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+		// One timer at 200 ms: about 5 pings in a second. Two timers: about 10.
+		expect(pings).toBeGreaterThanOrEqual(3);
+		expect(pings).toBeLessThanOrEqual(7);
+	});
+
 	it("adds a player in-game when it connects during a RUNNING experiment", async () => {
 		controller = recordingController("RUNNING");
 		port = await freePort();

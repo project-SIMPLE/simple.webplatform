@@ -93,7 +93,10 @@ class PlayerManager {
 							this.addPlayerConnection(playerWsId, true);
 						}
 
-						// Restart ping interval
+						// Restart ping interval. Clear the old one first: when the headset reconnects
+						// before its old socket's close event, that close is ignored as stale and never
+						// clears it, so every such reconnection added one more heartbeat timer.
+						clearInterval(player.timeout);
 						player.timeout = setInterval(() => this.sendHeartbeat(playerWsId), player.ping_interval);
 
 						// Update new version of player
