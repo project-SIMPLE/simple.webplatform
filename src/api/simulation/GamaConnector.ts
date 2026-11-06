@@ -21,6 +21,9 @@ export const LATEST_WINS_ACTIONS: ReadonlySet<string> = new Set(["move_player_ex
 // An unacknowledged latest-wins ask stops holding back newer ones after this long
 export const LATEST_WINS_ACK_TIMEOUT_MS = 1000;
 
+// stopExperiment waits at most this long for GAMA to report the experiment paused
+const STOP_PAUSE_TIMEOUT_MS = 5000;
+
 type LatestWinsSlot = {
 	inFlight?: { action: string; args: string; since: number };
 	pending?: JsonPlayerAsk;
@@ -406,13 +409,19 @@ class GamaConnector {
 	 */
 	async stopExperiment() {
 		this.setGamaLoading(true);
-		// Try to pause before closing experiment
+		// Try to pause before closing experiment. Only a running experiment is paused (see
+		// pauseExperiment), so only then is there a pause to wait for: the former loop waited for
+		// PAUSED unconditionally, polling every 1 ms forever from any other state (e.g. NOTREADY).
+		const mustWaitForPause = this.jsonGamaState.experiment_state === "RUNNING";
 		this.pauseExperiment();
 
-		// Wait for simulation to be fully paused
-		while (this.jsonGamaState.experiment_state !== "PAUSED") {
-			await new Promise((resolve) => setTimeout(resolve, 1));
+		// Wait for simulation to be fully paused, but never forever: stop anyway after the timeout
+		const deadline = Date.now() + STOP_PAUSE_TIMEOUT_MS;
+		while (mustWaitForPause && this.jsonGamaState.experiment_state === "RUNNING" && Date.now() < deadline) {
+			await new Promise((resolve) => setTimeout(resolve, 20));
 		}
+		if (this.jsonGamaState.experiment_state === "RUNNING")
+			logger.warn(`GAMA did not report the experiment paused within ${STOP_PAUSE_TIMEOUT_MS} ms, stopping it anyway`);
 
 		// Stop experiment
 		this.listMessages = [this.jsonControlGamaExperiment("stop")];

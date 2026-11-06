@@ -307,9 +307,7 @@ function receive_state(_gama: GamaConnector, socket: FakeWebSocket, state: strin
 	socket.onmessage?.({ data: JSON.stringify({ type: "SimulationStatus", exp_id: "e1", content: state }) });
 }
 
-// Adversarial frames, faults and wrong-order commands driven through the real
-// on* handlers. NB: stopExperiment() with nothing running loops forever waiting
-// for PAUSED — a hang, documented in test/chaos-findings.md, not run here.
+// Adversarial frames, faults and wrong-order commands driven through the real on* handlers.
 describe("GamaConnector chaos — malformed frames & lifecycle", () => {
 	function receive(socket: FakeWebSocket, raw: unknown) {
 		socket.onmessage?.({ data: typeof raw === "string" ? raw : JSON.stringify(raw) });
@@ -384,6 +382,45 @@ describe("GamaConnector chaos — malformed frames & lifecycle", () => {
 		const sentBefore = socket.sent.length;
 		gama.launchExperiment(); // guard: only when connected && state === "NONE"
 		expect(socket.sent.length).toBe(sentBefore);
+	});
+
+	// It used to poll every 1 ms, forever, for a PAUSED that never comes from these states.
+	it.each(["NONE", "NOTREADY", "PAUSED"])("stopExperiment from %s sends the stop without waiting", async (state) => {
+		const { gama, socket } = newConnector();
+		socket.onopen?.();
+		receive(socket, { type: "SimulationStatus", exp_id: "e1", content: state });
+
+		await gama.stopExperiment();
+		expect(socket.sent.map((s) => JSON.parse(s).type)).toEqual(["stop"]);
+	});
+
+	it("stopExperiment while RUNNING pauses, waits for GAMA, then stops", async () => {
+		const { gama, socket } = newConnector();
+		socket.onopen?.();
+		receive(socket, { type: "SimulationStatus", exp_id: "e1", content: "RUNNING" });
+
+		const stopping = gama.stopExperiment();
+		expect(socket.sent.map((s) => JSON.parse(s).type)).toEqual(["pause"]);
+		receive(socket, { type: "SimulationStatus", exp_id: "e1", content: "PAUSED" });
+
+		await stopping;
+		expect(socket.sent.map((s) => JSON.parse(s).type)).toEqual(["pause", "stop"]);
+	});
+
+	it("stopExperiment stops anyway when GAMA never confirms the pause", async () => {
+		vi.useFakeTimers();
+		try {
+			const { gama, socket } = newConnector();
+			socket.onopen?.();
+			receive(socket, { type: "SimulationStatus", exp_id: "e1", content: "RUNNING" });
+
+			const stopping = gama.stopExperiment();
+			await vi.advanceTimersByTimeAsync(6000);
+			await stopping;
+			expect(socket.sent.map((s) => JSON.parse(s).type)).toEqual(["pause", "stop"]);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 });
 
