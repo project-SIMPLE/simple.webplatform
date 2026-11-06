@@ -1,3 +1,4 @@
+import { configure, type LogRecord, reset } from "@logtape/logtape";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type Controller from "../../src/api/core/Controller.ts";
 import PlayerManager from "../../src/api/multiplayer/PlayerManager.ts";
@@ -66,6 +67,44 @@ describe("PlayerManager over a real WebSocket", () => {
 		pm.broadcastSimulationOutput({ contents: [{ id: ["p1"], contents: { hello: "world" } }] });
 		const out = await client.waitFor((m) => m.type === "json_output");
 		expect(out.contents).toEqual({ hello: "world" });
+	});
+
+	// uWS closes a socket that sends more than maxPayloadLength, 16 KiB by default:
+	// about 500 followed geometries in one move_geoms_followed.
+	it("accepts a headset message larger than 16 KiB and forwards the ask with its sender", async () => {
+		await register("p1");
+		const ask = {
+			type: "ask",
+			action: "move_geoms_followed",
+			args: JSON.stringify({ ids: "tree|||".repeat(10_000) }), // ~70 KB
+			agent: "simulation[0].unity_linker[0]",
+		};
+		client.send(ask);
+
+		await vi.waitFor(() => expect(controller.sendAsk).toHaveBeenCalled());
+		const [forwarded, sender] = (controller.sendAsk as ReturnType<typeof vi.fn>).mock.calls[0];
+		expect(forwarded).toMatchObject(ask);
+		expect(sender).toBe("127.0.0.1");
+		expect(client.socket.readyState).toBe(client.socket.OPEN);
+	});
+
+	// With the 64 KiB uWS default, once the kernel buffer to a headset busy on the WiFi was full,
+	// uWS silently dropped every further message from GAMA.
+	it("delivers every GAMA output to a headset that stalls for a moment", async () => {
+		await register("p1");
+		const outputs = 1200; // ~6 MB of 5 KB outputs: far past 64 KiB, under the new limit
+		let received = 0;
+		client.socket.on("message", (data) => {
+			if (JSON.parse(data.toString()).type === "json_output") received++;
+		});
+
+		const tcp = (client.socket as unknown as { _socket: { pause(): void; resume(): void } })._socket;
+		tcp.pause(); // the headset stops reading
+		const payload = "x".repeat(5000);
+		for (let i = 0; i < outputs; i++) pm.broadcastSimulationOutput({ contents: [{ id: ["p1"], contents: payload }] });
+		tcp.resume();
+
+		await vi.waitFor(() => expect(received).toBe(outputs), { timeout: 10_000 });
 	});
 
 	it("sends heartbeat pings on the configured interval", async () => {
@@ -174,6 +213,26 @@ describe("PlayerManager chaos — malformed & lifecycle", () => {
 
 	it("ignores simulation output addressed to an unknown player id", () => {
 		expect(() => pm.broadcastSimulationOutput({ contents: [{ id: ["nobody"], contents: { x: 1 } }] })).not.toThrow();
+	});
+
+	// GAMA keeps sending output to a player who left, every cycle. An error per output made
+	// the file log write out its whole trace buffer each time.
+	it("warns about output for an unknown player at most once, without logging an error", async () => {
+		const records: LogRecord[] = [];
+		await configure({
+			reset: true,
+			sinks: { memory: (record) => records.push(record) },
+			loggers: [{ category: ["multi"], sinks: ["memory"], lowestLevel: "debug" }],
+		});
+		try {
+			for (let cycle = 0; cycle < 50; cycle++)
+				pm.broadcastSimulationOutput({ contents: [{ id: ["Player_gone"], contents: { x: cycle } }] });
+
+			expect(records.filter((r) => r.level === "error" || r.level === "fatal")).toEqual([]);
+			expect(records.filter((r) => r.level === "warning")).toHaveLength(1);
+		} finally {
+			await reset();
+		}
 	});
 
 	it("adds a player in-game when it connects during a RUNNING experiment", async () => {

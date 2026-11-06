@@ -10,6 +10,13 @@ import { type RemoteAddressData, upgradeWithRemoteAddress } from "../infra/Remot
 // Override the log function
 const logger: Logger = getLogger(["multi", "PlayerManager"]);
 
+// Largest message a headset may send (uWS default: 16 KiB, then the socket is closed)
+export const HEADSET_MAX_PAYLOAD_BYTES = 16 * 1024 * 1024;
+// Data allowed to wait for a slow headset before uWS drops messages (uWS default: 64 KiB)
+export const HEADSET_MAX_BACKPRESSURE_BYTES = 8 * 1024 * 1024;
+// A recurring problem is logged at most once in this window
+const REPEATED_LOG_INTERVAL_MS = 10_000;
+
 /**
  * Creates a websocket server to handle player connections
  */
@@ -20,6 +27,11 @@ class PlayerManager {
 
 	//playerList: Map<WS ID/IP ADDRESS, Player>;
 	playerList: Map<string, Player>;
+
+	// Headsets (by IP) whose messages uWS is currently dropping, until their socket drains
+	private readonly droppingTo = new Set<string>();
+	// Last time each recurring problem was logged, keyed by problem
+	private readonly lastLogged = new Map<string, number>();
 
 	/**
 	 * Creates a Websocket Server
@@ -44,6 +56,19 @@ class PlayerManager {
 				// WebSocketSharp (Unity side) doesn't support deflating messages
 				// https://github.com/sta/websocket-sharp/issues/580
 				//: (uWS.SHARED_COMPRESSOR | uWS.SHARED_DECOMPRESSOR),
+
+				// The uWS defaults are far too small for a game: a headset sending more than
+				// 16 KiB at once (e.g. ~500 followed geometries) was disconnected with code 1009,
+				// and once 64 KiB were waiting for a headset busy on the WiFi, every further GAMA
+				// message to it was silently dropped.
+				maxPayloadLength: HEADSET_MAX_PAYLOAD_BYTES,
+				maxBackpressure: HEADSET_MAX_BACKPRESSURE_BYTES,
+
+				drain: (ws) => {
+					const player = this.playerList.get(ws.getUserData().ip);
+					if (player && this.droppingTo.delete(ws.getUserData().ip))
+						logger.info(`[${player.id}] Caught up, messages from GAMA are delivered again`);
+				},
 
 				// Players are keyed by their IP address. It must be captured here:
 				// ws.getRemoteAddressAsText() returns "" in open/message/close, which
@@ -143,11 +168,13 @@ class PlayerManager {
 
 						case "ask":
 							{
-								const askJsonPlayer: JsonPlayerAsk = JSON.parse(Buffer.from(message).toString());
+								// Already parsed above: an ask carries its own fields in the same message
+								const askJsonPlayer = jsonPlayer as unknown as JsonPlayerAsk;
 								logger.trace(`[PLAYER ${this.playerList.get(playerIP)?.id}] Sent expression: {json}`, {
 									json: askJsonPlayer,
 								});
-								this.controller.sendAsk(askJsonPlayer);
+								// The sender lets GAMA's relay keep only its latest position update
+								this.controller.sendAsk(askJsonPlayer, playerIP);
 							}
 							break;
 
@@ -170,6 +197,8 @@ class PlayerManager {
 				// ======================================
 
 				close: (ws, code: number, message) => {
+					this.droppingTo.delete(ws.getUserData().ip);
+
 					// Try exact ws reference match first
 					let playerIP: string | undefined = this.getIndexByPlayerWs(ws);
 
@@ -242,17 +271,22 @@ class PlayerManager {
 	}
 
 	// Getters
+	// Not finding the player is not logged here: callers know whether it is expected. GAMA keeps
+	// sending output to a player who left, every cycle, and an error per lookup made the file log
+	// write out its whole trace buffer each time.
 	getIndexByPlayerId(id: string): string | undefined {
-		let toReturn: string | undefined;
 		for (const [key, player] of this.playerList) {
-			if (player.id === id) {
-				toReturn = key;
-				break;
-			}
+			if (player.id === id) return key;
 		}
-		if (toReturn === undefined) logger.error(`Cannot find player with ID ${id}}`);
+		return undefined;
+	}
 
-		return toReturn;
+	/** Logs a recurring problem at most once per REPEATED_LOG_INTERVAL_MS for the same key. */
+	private warnRepeated(key: string, message: string): void {
+		const now = Date.now();
+		if (now - (this.lastLogged.get(key) ?? 0) < REPEATED_LOG_INTERVAL_MS) return;
+		this.lastLogged.set(key, now);
+		logger.warn(message);
 	}
 
 	getIndexByPlayerWs(ws: uWS.WebSocket<unknown>): string | undefined {
@@ -458,14 +492,17 @@ class PlayerManager {
 
 		try {
 			jsonOutput.contents.forEach((element) => {
+				// Serialized once for every player it goes to, not once per player
+				const serialized = JSON.stringify({ contents: element.contents, type: "json_output" });
 				element.id.forEach((idPlayer) => {
 					const playerIp: string | undefined = this.getIndexByPlayerId(idPlayer);
 					if (playerIp !== undefined) {
-						const jsonOutputPlayer = {
-							contents: element.contents,
-							type: "json_output",
-						};
-						this.sendMessageByWs(playerIp, jsonOutputPlayer);
+						this.sendSerializedByWs(playerIp, serialized);
+					} else {
+						this.warnRepeated(
+							`unknown:${idPlayer}`,
+							`GAMA sends output to ${idPlayer}, who is not connected to the WebPlatform`,
+						);
 					}
 				});
 			});
@@ -505,26 +542,40 @@ class PlayerManager {
 	 */
 	//message sent is not necessarily a string, see PlayerManager, for example
 	sendMessageByWs(playerWsId: string, message: unknown): number {
-		let jsonPlayer!: Player;
-		if (this.playerList.has(playerWsId) && this.playerList.get(playerWsId)?.connected)
-			jsonPlayer = this.playerList.get(playerWsId)!;
-		else {
+		return this.sendSerializedByWs(playerWsId, JSON.stringify(message));
+	}
+
+	/** Same as sendMessageByWs, for a message already serialized to JSON. */
+	sendSerializedByWs(playerWsId: string, serialized: string): number {
+		const jsonPlayer = this.playerList.get(playerWsId);
+		if (!jsonPlayer?.connected) {
 			if (ENV_EXTRA_VERBOSE)
-				if (!this.playerList.has(playerWsId))
-					logger.error(`Missing player - Can't send a message to player ${playerWsId}`);
+				if (!jsonPlayer) logger.warn(`Missing player - Can't send a message to player ${playerWsId}`);
 				else logger.warn(`Disconnected player - Can't send a message to player ${playerWsId}`);
 
 			return -1;
 		}
 
+		let result: number;
 		try {
-			return jsonPlayer.ws.send(JSON.stringify(message), false, true); // not binary, compress
+			result = jsonPlayer.ws.send(serialized, false, true); // not binary, compress
 		} catch (_e) {
 			// Socket closed between the connected-check above and the send (race condition)
 			logger.warn(`WebSocket for ${playerWsId} closed mid-send, marking disconnected`);
 			jsonPlayer.connected = false;
 			return 0;
 		}
+
+		// 2: uWS dropped the message, the headset has more than maxBackpressure waiting.
+		// It used to go unnoticed. Logged once per stall (drain clears it), and as a warning:
+		// an error makes the file log write out its whole trace buffer, every message.
+		if (result === 2 && !this.droppingTo.has(playerWsId)) {
+			this.droppingTo.add(playerWsId);
+			logger.warn(
+				`[${jsonPlayer.id}] Headset too slow to receive: dropping messages until it catches up (${jsonPlayer.ws.getBufferedAmount()} bytes waiting)`,
+			);
+		}
+		return result;
 	}
 
 	close() {
