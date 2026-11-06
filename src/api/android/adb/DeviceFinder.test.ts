@@ -1,5 +1,30 @@
-import { describe, expect, it } from "vitest";
-import DeviceFinder, { isOnHeadsetSubnet, isValidIpv4Literal, pickServerLocalIp } from "./DeviceFinder.ts";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+// Records each port scan instead of opening thousands of sockets; a scan finishes at once, empty.
+const { scans } = vi.hoisted(() => ({ scans: [] as string[] }));
+vi.mock("evilscan", () => ({
+	default: class {
+		private handlers: Record<string, () => void> = {};
+		constructor(options: { target: string }) {
+			scans.push(options.target);
+		}
+		on(event: string, handler: () => void) {
+			this.handlers[event] = handler;
+			return this;
+		}
+		run() {
+			this.handlers.done?.();
+		}
+		abort() {}
+	},
+}));
+
+import DeviceFinder, {
+	isOnHeadsetSubnet,
+	isValidIpv4Literal,
+	PORT_SCAN_INTERVAL_MS,
+	pickServerLocalIp,
+} from "./DeviceFinder.ts";
 
 describe("isValidIpv4Literal", () => {
 	it("accepts four-octet literals", () => {
@@ -54,6 +79,47 @@ describe("DeviceFinder.removeConnectedIp", () => {
 		finder.removeConnectedIp();
 
 		expect(finder.ipToConnect).toEqual(["192.168.68.11"]);
+	});
+});
+
+// A headset that answers ping but has wireless adb off used to be port-scanned on every 5 s retry:
+// 20,000 ports, 500 connections at a time, on the WiFi the other headsets play on.
+describe("DeviceFinder port scan rate", () => {
+	function finderWithReachableDevice() {
+		const adbManager = {
+			clientCurrentlyStreaming: [],
+			connectNewDevice: vi.fn(async () => false),
+		} as unknown as ConstructorParameters<typeof DeviceFinder>[0];
+		const finder = new DeviceFinder(adbManager);
+		vi.spyOn(finder as unknown as { isDeviceReachable(ip: string): Promise<boolean> }, "isDeviceReachable") //
+			.mockResolvedValue(true);
+		return finder;
+	}
+
+	beforeEach(() => {
+		scans.length = 0;
+	});
+
+	it("port-scans a reachable headset at most once per interval", async () => {
+		vi.useFakeTimers();
+		try {
+			const finder = finderWithReachableDevice();
+			for (let retry = 0; retry < 5; retry++) await finder.scanAndConnectIP("192.168.68.30");
+			expect(scans).toEqual(["192.168.68.30"]);
+
+			vi.advanceTimersByTime(PORT_SCAN_INTERVAL_MS);
+			await finder.scanAndConnectIP("192.168.68.30");
+			expect(scans).toEqual(["192.168.68.30", "192.168.68.30"]);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("rate-limits each headset on its own", async () => {
+		const finder = finderWithReachableDevice();
+		await finder.scanAndConnectIP("192.168.68.30");
+		await finder.scanAndConnectIP("192.168.68.31");
+		expect(scans).toEqual(["192.168.68.30", "192.168.68.31"]);
 	});
 });
 

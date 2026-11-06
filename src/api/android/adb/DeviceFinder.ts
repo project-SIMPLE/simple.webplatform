@@ -39,10 +39,15 @@ export function pickServerLocalIp(interfaces: NodeJS.Dict<NetworkInterfaceInfo[]
 	return serverLocalIp;
 }
 
+// Minimum delay between two port scans of the same reachable headset
+export const PORT_SCAN_INTERVAL_MS = 30_000;
+
 class DeviceFinder {
 	adbManager: AdbManager;
 	ipToConnect: string[];
 	isScanning: boolean = false;
+	// When each reachable-but-unconnected headset was last port-scanned
+	private readonly lastPortScan = new Map<string, number>();
 
 	constructor(adbm: AdbManager) {
 		this.adbManager = adbm;
@@ -135,6 +140,16 @@ class DeviceFinder {
 			return false;
 		}
 
+		// A headset that answers ping but whose wireless adb is off was port-scanned every 5 s:
+		// 20,000 ports, 500 connections at a time, on the WiFi the other headsets play on.
+		// Its ping is still retried every 5 s, but the scan at most once per PORT_SCAN_INTERVAL_MS.
+		const lastScan = this.lastPortScan.get(ipAddress);
+		if (lastScan !== undefined && Date.now() - lastScan < PORT_SCAN_INTERVAL_MS) {
+			logger.debug(`Device at ${ipAddress} was port-scanned less than ${PORT_SCAN_INTERVAL_MS / 1000}s ago, waiting`);
+			return false;
+		}
+		this.lastPortScan.set(ipAddress, Date.now());
+
 		const scanner: Evilscan = new Evilscan({
 			target: ipAddress,
 			port: "5555,30000-49999", // your custom range
@@ -169,6 +184,8 @@ class DeviceFinder {
 			await new Promise((f) => setTimeout(f, 1000));
 		}
 
+		// Connected: if it drops later, scan it again right away
+		if (alreadyConnected) this.lastPortScan.delete(ipAddress);
 		return alreadyConnected;
 	}
 
