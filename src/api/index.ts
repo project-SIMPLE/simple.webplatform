@@ -5,12 +5,21 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getRotatingFileSink } from "@logtape/file";
-import { configure, fingersCrossed, getConsoleSink, getLevelFilter, getLogger, withFilter } from "@logtape/logtape";
+import {
+	configure,
+	dispose,
+	fingersCrossed,
+	getConsoleSink,
+	getLevelFilter,
+	getLogger,
+	withFilter,
+} from "@logtape/logtape";
 import { getPrettyFormatter } from "@logtape/pretty";
 import dotenv from "dotenv";
 import Controller from "./core/Controller.ts";
 import { APP_DIR } from "./infra/AppPaths.ts";
 import { isMacMini } from "./infra/DeviceDetector.ts";
+import { isPortInUse } from "./infra/PortCheck.ts";
 import { StaticServer } from "./infra/StaticServer.ts";
 import { ensureConfig } from "./infra/TuiConfig.ts";
 
@@ -234,6 +243,30 @@ async function loadConfiguration(): Promise<void> {
 	HEADSETS_IP = parsedHeadsets.ips;
 }
 
+// Lists the uWS servers' ports that are already taken, checked BEFORE they listen. On Windows
+// uWS would otherwise bind a port another process holds without any error, and the frontend
+// would hang forever with nothing in the logs (see PortCheck.ts). Hosts mirror each server's
+// own listen() call. Pure apart from the probes: the caller logs and exits.
+export async function findBusyUwsPorts(
+	env: NodeJS.ProcessEnv,
+	withVideo: boolean,
+): Promise<{ name: string; port: string }[]> {
+	const appHost = env.WEB_APPLICATION_HOST || "0.0.0.0";
+	const ports: { name: string; port: string; host?: string }[] = [
+		{ name: "monitor WebSocket (MONITOR_WS_PORT)", port: env.MONITOR_WS_PORT || "8001", host: appHost },
+		{ name: "headset WebSocket (HEADSET_WS_PORT)", port: env.HEADSET_WS_PORT || "8080" },
+	];
+	if (withVideo) {
+		ports.push({ name: "video stream (VIDEO_WS_PORT)", port: env.VIDEO_WS_PORT || "8082", host: appHost });
+	}
+
+	const busy: { name: string; port: string }[] = [];
+	for (const { name, port, host } of ports) {
+		if (await isPortInUse(Number(port), host)) busy.push({ name, port });
+	}
+	return busy;
+}
+
 /*
     APPLICATION ENTRY POINT ================================
  */
@@ -258,6 +291,23 @@ async function start() {
 	}
 
 	useAdb = await _detectAdb();
+
+	const busyPorts = await findBusyUwsPorts(process.env, useAdb);
+	if (busyPorts.length > 0) {
+		for (const { name, port } of busyPorts) {
+			logger.fatal(`Port ${port} for the ${name} server is already in use by another process.`);
+		}
+		logger.fatal(
+			"Close the process using it (e.g. another running instance of the platform), or change the port in .env.",
+		);
+		if (process.platform === "win32") {
+			logger.fatal(
+				"On Windows, it may be an adb.exe daemon started by an older version of the platform and holding its ports: run `adb kill-server`, then restart.",
+			);
+		}
+		await dispose(); // flush the (non-blocking) log sinks so the explanation isn't lost
+		process.exit(1);
+	}
 
 	const c = new Controller(useAdb);
 	await c.initialize();

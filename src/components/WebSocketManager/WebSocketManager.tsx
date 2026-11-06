@@ -12,6 +12,14 @@ import type {
 
 const logger = getLogger(["components", "WebSocketManager"]);
 
+// How long a socket may stay CONNECTING before it is aborted and retried. On Firefox only, doubled
+// after each stalled attempt, up to just past the 60s cap of its reconnect throttling (see connect()).
+export const INITIAL_CONNECT_TIMEOUT_MS = 3000;
+export const MAX_CONNECT_TIMEOUT_MS = 65_000;
+
+// Only Firefox delays reconnects to a failing host; Chromium-based browsers and Safari don't.
+export const isFirefox = (userAgent: string): boolean => userAgent.includes("Firefox/");
+
 // Define types for the WebSocket context
 interface WebSocketContextType {
 	ws: WebSocket | null;
@@ -68,6 +76,8 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 		let socket: WebSocket | null = null;
 		let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 		let connectTimeout: ReturnType<typeof setTimeout> | null = null;
+		let connectTimeoutMs = INITIAL_CONNECT_TIMEOUT_MS;
+		const escalateConnectTimeout = isFirefox(navigator.userAgent);
 		// Set on unmount so pending timers don't reconnect a dead component.
 		let disposed = false;
 
@@ -143,17 +153,24 @@ const WebSocketManager = ({ children }: WebSocketManagerProps) => {
 
 			// The backend binds port 8001 early but can block the event loop during startup
 			// (adb probe, synchronous model-file scan), leaving the WS upgrade pending for
-			// seconds. If we're still CONNECTING after 3s, abort and retry — the retry
+			// seconds. If we're still CONNECTING after the timeout, abort and retry — the retry
 			// usually lands once startup's blocking work is done.
+			// On Firefox, the timeout doubles after each stalled attempt: after failed connections
+			// (e.g. the backend was down), Firefox delays new attempts to that host by up to 60s,
+			// with the socket CONNECTING meanwhile (RFC 6455 §7.2.3). A fixed 3s abort would kill
+			// every attempt before Firefox even dials, and never reconnect once the backend is back.
+			const timeoutMs = connectTimeoutMs;
 			connectTimeout = setTimeout(() => {
 				if (socket && socket.readyState === WebSocket.CONNECTING) {
-					logger.warn("WebSocket still connecting after 3s, retrying...");
+					logger.warn(`WebSocket still connecting after ${timeoutMs / 1000}s, retrying...`);
+					if (escalateConnectTimeout) connectTimeoutMs = Math.min(timeoutMs * 2, MAX_CONNECT_TIMEOUT_MS);
 					socket.close(); // triggers onclose → scheduleReconnect
 				}
-			}, 3000);
+			}, timeoutMs);
 
 			socket.onopen = () => {
 				if (connectTimeout) clearTimeout(connectTimeout);
+				connectTimeoutMs = INITIAL_CONNECT_TIMEOUT_MS;
 				logger.info("WebSocket connected to backend");
 				setIsWsConnected(true);
 			};
