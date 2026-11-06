@@ -261,11 +261,13 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 			}
 
 			const ws = new WebSocket(`ws://${host}:${port}/stream/${streamId}`);
+			// Frames are binary (see common/videoFrame.ts): read them as ArrayBuffer, not Blob
+			ws.binaryType = "arraybuffer";
 			deviceSockets.set(streamId, ws);
 
 			ws.onmessage = (event) => {
 				// Deserialize the message and enqueue the data into the readable stream
-				const deserializedData = deserializeData(event.data);
+				const deserializedData = deserializeData(event.data, streamId);
 				if (!deserializedData) return; // unknown packet type — already logged in deserializeData
 
 				// Detect codec change on every configuration packet, regardless of channel ordering.

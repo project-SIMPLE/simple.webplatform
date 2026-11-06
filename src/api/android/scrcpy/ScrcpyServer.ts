@@ -6,6 +6,7 @@ import { AdbScrcpyClient, AdbScrcpyExitedError, AdbScrcpyOptions5_0_1 } from "@y
 import { BIN, VERSION } from "@yume-chan/fetch-scrcpy-server";
 import { DefaultServerPath, type ScrcpyVideoStreamPacket } from "@yume-chan/scrcpy";
 import { ReadableStream, WritableStream } from "@yume-chan/stream-extra";
+import { encodeVideoFrame } from "../../../common/videoFrame.ts";
 import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
 import type { AdbManager } from "../adb/AdbManager.ts";
 import { isInvertedAspectRatio } from "./aspect.ts";
@@ -484,31 +485,23 @@ export class ScrcpyServer {
 						break;
 
 					case "configuration":
-						{
-							// Handle configuration packet
-							const newStreamConfig = JSON.stringify({
-								streamId: streamIp,
-								h265: sessionIsH265,
-								type: "configuration",
-								data: Buffer.from(packet.data).toString("base64"), // Convert Uint8Array to Base64 string
-							});
-							// Send to all clients on this device's data socket
-							this.broadcastToStream(streamIp, newStreamConfig);
-							logger.trace(`[${streamIp}] Sending configuration frame {newStreamConfig}`, { newStreamConfig });
-						}
+						// Sent to every client on this device's data socket, as one binary frame
+						this.broadcastToStream(
+							streamIp,
+							encodeVideoFrame({ type: "configuration", h265: sessionIsH265, data: packet.data }),
+						);
+						logger.trace(`[${streamIp}] Sent configuration frame ({bytes} bytes)`, { bytes: packet.data.byteLength });
 						break;
 
 					case "data":
-						// Handle data packet — sent on the dedicated per-device socket
 						this.broadcastToStream(
 							streamIp,
-							JSON.stringify({
-								streamId: streamIp,
-								h265: sessionIsH265,
+							encodeVideoFrame({
 								type: "data",
-								keyframe: packet.keyframe,
-								pts: packet.pts?.toString(), // Convert bigint to string
-								data: Buffer.from(packet.data).toString("base64"), // Convert Uint8Array to Base64 string
+								h265: sessionIsH265,
+								keyframe: packet.keyframe ?? false,
+								pts: packet.pts,
+								data: packet.data,
 							}),
 						);
 						break;
@@ -620,7 +613,7 @@ export class ScrcpyServer {
 		}
 	}
 
-	private safeSend(ws: uWS.WebSocket<{ streamId: string }>, packetJson: string): void {
+	private safeSend(ws: uWS.WebSocket<{ streamId: string }>, frame: Uint8Array): void {
 		const customLogger = logger.getChild("Drain");
 		const { streamId } = ws.getUserData();
 
@@ -635,14 +628,14 @@ export class ScrcpyServer {
             2 : Message dropped — backpressure limit exceeded
                 - The last one is the only interesting one
          */
-		if (ws.send(packetJson, false, true) === 2) {
+		if (ws.send(frame, true, false) === 2) {
 			customLogger.error(`[${streamId}] Video stream frame dropped...`);
 		}
 	}
 
-	broadcastToStream(ip: string, packetJson: string): void {
+	broadcastToStream(ip: string, frame: Uint8Array): void {
 		this.streamClients.get(ip)?.forEach((client) => {
-			this.safeSend(client, packetJson);
+			this.safeSend(client, frame);
 		});
 	}
 

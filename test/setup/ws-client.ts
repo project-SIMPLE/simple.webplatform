@@ -28,12 +28,18 @@ export function openClient(url: string, options?: ClientOptions): TestClient {
 	const buffer: Json[] = [];
 	const waiters: { predicate: Predicate; resolve: (m: Json) => void }[] = [];
 
-	socket.on("message", (data) => {
+	socket.on("message", (data, isBinary) => {
 		let msg: Json;
-		try {
-			msg = JSON.parse(data.toString());
-		} catch {
-			msg = { raw: data.toString() };
+		if (isBinary) {
+			// Binary messages (e.g. video frames) are kept as bytes: { binary: ArrayBuffer }
+			const bytes = data as Buffer;
+			msg = { binary: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) };
+		} else {
+			try {
+				msg = JSON.parse(data.toString());
+			} catch {
+				msg = { raw: data.toString() };
+			}
 		}
 		const i = waiters.findIndex((w) => w.predicate(msg));
 		if (i >= 0) {

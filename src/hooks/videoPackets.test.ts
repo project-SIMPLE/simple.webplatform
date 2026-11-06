@@ -1,14 +1,20 @@
 import { describe, expect, it } from "vitest";
+import { encodeVideoFrame, type VideoFrame } from "../common/videoFrame.ts";
 import { deserializeData, sortStreamKeys } from "./videoPackets.ts";
 
-// atob("AAECAw==") -> bytes 0,1,2,3
-const B64 = "AAECAw==";
 const BYTES = [0, 1, 2, 3];
 
+// What the browser receives with binaryType = "arraybuffer"
+function wire(frame: VideoFrame): ArrayBuffer {
+	const encoded = encodeVideoFrame(frame);
+	return encoded.buffer.slice(encoded.byteOffset, encoded.byteOffset + encoded.byteLength);
+}
+
 describe("deserializeData", () => {
-	it("parses a configuration packet, decoding the base64 payload", () => {
+	it("parses a configuration packet, tagging it with the socket's stream id", () => {
 		const out = deserializeData(
-			JSON.stringify({ type: "configuration", streamId: "192.168.0.10", h265: true, data: B64 }),
+			wire({ type: "configuration", h265: true, data: new Uint8Array(BYTES) }),
+			"192.168.0.10",
 		);
 		expect(out).not.toBeNull();
 		expect(out?.streamId).toBe("192.168.0.10");
@@ -19,24 +25,25 @@ describe("deserializeData", () => {
 
 	it("parses a data packet with keyframe flag and BigInt pts", () => {
 		const out = deserializeData(
-			JSON.stringify({ type: "data", streamId: "10.0.0.5", h265: false, keyframe: true, pts: "123456789", data: B64 }),
+			wire({ type: "data", h265: false, keyframe: true, pts: 123456789n, data: new Uint8Array(BYTES) }),
+			"10.0.0.5",
 		);
 		expect(out).not.toBeNull();
 		if (out === null) return;
 		expect(out.useH265).toBe(false);
 		const packet = out.packet as { type: string; keyframe: boolean; pts: bigint; data: Uint8Array };
 		expect(packet.type).toBe("data");
-		// pts is decoded as a BigInt so large timestamps don't lose precision.
+		// pts stays a BigInt so large timestamps don't lose precision.
 		expect(packet.pts).toBe(123456789n);
 		expect(packet.keyframe).toBe(true);
 		expect(Array.from(packet.data)).toEqual(BYTES);
 	});
 
-	// pts is optional in the scrcpy protocol; the backend then leaves it out of the
-	// JSON. BigInt(undefined) throws, which would kill the stream in the browser.
+	// pts is optional in the scrcpy protocol. BigInt(undefined) used to throw, killing the stream.
 	it("parses a data packet that carries no pts", () => {
 		const out = deserializeData(
-			JSON.stringify({ type: "data", streamId: "10.0.0.5", h265: true, keyframe: false, data: B64 }),
+			wire({ type: "data", h265: true, keyframe: false, data: new Uint8Array(BYTES) }),
+			"10.0.0.5",
 		);
 		const packet = out?.packet as { type: string; pts?: bigint; data: Uint8Array };
 		expect(packet.type).toBe("data");
@@ -44,8 +51,12 @@ describe("deserializeData", () => {
 		expect(Array.from(packet.data)).toEqual(BYTES);
 	});
 
-	it("returns null for an unknown packet type", () => {
-		expect(deserializeData(JSON.stringify({ type: "mystery", streamId: "x" }))).toBeNull();
+	it("returns null for a text message (e.g. the former JSON format)", () => {
+		expect(deserializeData(JSON.stringify({ type: "data", data: "AAECAw==" }), "x")).toBeNull();
+	});
+
+	it("returns null for a buffer too short to be a frame", () => {
+		expect(deserializeData(new ArrayBuffer(3), "x")).toBeNull();
 	});
 });
 

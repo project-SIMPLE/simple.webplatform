@@ -4,6 +4,7 @@ import { type Consumable, ReadableStream, WritableStream } from "@yume-chan/stre
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { AdbManager } from "../../src/api/android/adb/AdbManager.ts";
 import { ScrcpyServer } from "../../src/api/android/scrcpy/ScrcpyServer.ts";
+import { decodeVideoFrame, type VideoFrame } from "../../src/common/videoFrame.ts";
 import { freePort } from "../setup/free-port.ts";
 import { openClient } from "../setup/ws-client.ts";
 
@@ -32,6 +33,11 @@ type Internals = {
 };
 
 const CODEC_H264 = 0x68323634;
+
+/** The video frame carried by a data-socket message, or null if it is not a binary frame. */
+function asFrame(message: Record<string, unknown>): VideoFrame | null {
+	return message.binary instanceof ArrayBuffer ? decodeVideoFrame(message.binary) : null;
+}
 
 // ---- scrcpy wire format (>= 4.0): 64-byte device name + u32 codec id, then frames
 // with a 12-byte header (flags+pts on 8 bytes, payload size on 4).
@@ -216,18 +222,17 @@ describe("ScrcpyServer.runSession (real session logic, scripted device)", () => 
 			framePacket(frame, { keyframe: true, pts: 123_456_789_012n }),
 		);
 
-		const gotConfig = await data.waitFor((m) => m.type === "configuration");
-		expect(gotConfig).toMatchObject({ streamId: ip, h265: false });
-		expect(Buffer.from(gotConfig.data as string, "base64")).toEqual(Buffer.from(config));
+		// Frames are binary (common/videoFrame.ts), the codec bytes untouched
+		const gotConfig = asFrame(await data.waitFor((m) => asFrame(m)?.type === "configuration"));
+		expect(gotConfig).toEqual({ type: "configuration", h265: false, data: config });
 
-		const gotFrame = await data.waitFor((m) => m.type === "data");
-		// pts travels as a string: a 64-bit timestamp does not survive JSON as a number.
-		expect(gotFrame).toMatchObject({ streamId: ip, h265: false, keyframe: true, pts: "123456789012" });
-		expect(Buffer.from(gotFrame.data as string, "base64")).toEqual(Buffer.from(frame));
+		const gotFrame = asFrame(await data.waitFor((m) => asFrame(m)?.type === "data"));
+		// The 64-bit pts arrives exact, as a bigint.
+		expect(gotFrame).toEqual({ type: "data", h265: false, keyframe: true, pts: 123_456_789_012n, data: frame });
 
 		// The browser decoder reads the size from the codec configuration: "session"
-		// packets must never reach it (it would not know the type).
-		await expect(data.waitFor((m) => m.type === "session", 300)).rejects.toThrow("timed out");
+		// packets must never reach it (it would not know the type), nor anything that is not a frame.
+		await expect(data.waitFor((m) => asFrame(m) === null, 300)).rejects.toThrow("timed out");
 
 		// The scrcpy process ending is reported, and the supervisor is asked to restart.
 		device.die();

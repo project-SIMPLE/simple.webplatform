@@ -1,42 +1,30 @@
 import { getLogger } from "@logtape/logtape";
+import { decodeVideoFrame } from "../common/videoFrame.ts";
 
 const logger = getLogger(["hooks", "useVideoStreams"]);
 
 /**
- * Deserialize a scrcpy stream frame (a JSON string received over the device
- * socket) into a decoder packet. Base64 payloads are decoded to Uint8Array and
- * the presentation timestamp is parsed to BigInt. Returns null for unknown
- * packet types (logged) so the caller can safely skip them.
+ * Turns one binary frame received on a device socket (see common/videoFrame.ts) into a
+ * decoder packet. The socket carries a single device, so the caller passes its stream id.
+ * Returns null (logged) for anything that is not a binary frame, so the caller can skip it.
  */
-export const deserializeData = (serializedData: string) => {
-	const parsed = JSON.parse(serializedData);
-
-	switch (parsed.type) {
-		case "configuration":
-			return {
-				streamId: parsed.streamId,
-				useH265: parsed.h265,
-				packet: {
-					type: parsed.type,
-					data: Uint8Array.from(atob(parsed.data), (c) => c.charCodeAt(0)),
-				},
-			};
-		case "data":
-			return {
-				streamId: parsed.streamId,
-				useH265: parsed.h265,
-				packet: {
-					type: parsed.type,
-					keyframe: parsed.keyframe,
-					// Optional in the scrcpy protocol: the backend omits it when the frame has none
-					pts: parsed.pts === undefined ? undefined : BigInt(parsed.pts),
-					data: Uint8Array.from(atob(parsed.data), (c) => c.charCodeAt(0)),
-				},
-			};
-		default:
-			logger.warn("[Scrcpy-VideoStreamManager] Unknown packet type received: {type}", { type: parsed.type });
-			return null;
+export const deserializeData = (message: unknown, streamId: string) => {
+	const frame = message instanceof ArrayBuffer ? decodeVideoFrame(message) : null;
+	if (frame === null) {
+		logger.warn("[Scrcpy-VideoStreamManager] Ignoring a message that is not a video frame on {streamId}", {
+			streamId,
+		});
+		return null;
 	}
+
+	if (frame.type === "configuration") {
+		return { streamId, useH265: frame.h265, packet: { type: frame.type, data: frame.data } };
+	}
+	return {
+		streamId,
+		useH265: frame.h265,
+		packet: { type: frame.type, keyframe: frame.keyframe, pts: frame.pts, data: frame.data },
+	};
 };
 
 /**

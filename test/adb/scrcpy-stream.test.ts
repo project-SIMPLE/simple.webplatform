@@ -2,6 +2,7 @@ import type { Adb } from "@yume-chan/adb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { AdbManager } from "../../src/api/android/adb/AdbManager.ts";
 import { ScrcpyServer } from "../../src/api/android/scrcpy/ScrcpyServer.ts";
+import { decodeVideoFrame } from "../../src/common/videoFrame.ts";
 import { type AdbConnection, connectFirstDevice } from "../setup/adb-connect.ts";
 import { isAdbDeviceReady } from "../setup/adb-probe.ts";
 import { freePort } from "../setup/free-port.ts";
@@ -84,14 +85,15 @@ describe.skipIf(!reachable)("ScrcpyServer streaming (real device/emulator)", () 
 		const data = openClient(`ws://127.0.0.1:${port}/stream/${STREAM_IP}`);
 		await data.waitOpen();
 
-		const config = await data.waitFor((m) => m.type === "configuration", 25_000);
-		expect(config.streamId).toBe(STREAM_IP);
-		expect(typeof config.data).toBe("string");
+		// Frames are binary (common/videoFrame.ts)
+		const asFrame = (m: Record<string, unknown>) =>
+			m.binary instanceof ArrayBuffer ? decodeVideoFrame(m.binary) : null;
 
-		const frame = await data.waitFor((m) => m.type === "data", 25_000);
-		expect(frame.streamId).toBe(STREAM_IP);
-		expect(typeof frame.data).toBe("string"); // base64 payload
-		expect((frame.data as string).length).toBeGreaterThan(0);
+		const config = asFrame(await data.waitFor((m) => asFrame(m)?.type === "configuration", 25_000));
+		expect(config?.data.byteLength).toBeGreaterThan(0);
+
+		const frame = asFrame(await data.waitFor((m) => asFrame(m)?.type === "data", 25_000));
+		expect(frame?.data.byteLength).toBeGreaterThan(0);
 
 		await data.close();
 		await control.close();
