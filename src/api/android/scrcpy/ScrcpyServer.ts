@@ -19,6 +19,12 @@ const logger = getLogger(["android", "ScrcpyServer"]);
 // Key of the scrcpy server binary in the SEA asset store (see scripts/build-sea-*.mjs)
 export const SCRCPY_SERVER_ASSET = "scrcpy-server";
 
+// How a video frame may be dropped: a delta frame needs every frame since the last keyframe
+type VideoFrameKind = "configuration" | "keyframe" | "delta";
+
+// At most one encoder reset (fresh keyframe) per device in this window
+const KEYFRAME_REQUEST_INTERVAL_MS = 2000;
+
 // Crop (and rotation) isolating a single eye of the headset's stereo feed.
 // Returns undefined for unknown devices: no cropping is applied.
 export function deviceCrop(deviceModel: string, flipWidth: boolean): { crop: string; angle?: number } | undefined {
@@ -70,7 +76,13 @@ export class ScrcpyServer {
 	private readonly scrcpyClientsByIp: Map<string, ScrcpyClient>; // for triggering config reset on new device socket
 
 	private readonly maxBackpressure: number = 8 * 1024 * 1024; // 8 MB total
-	private readonly dropThreshold: number = 6 * 1024 * 1024; // 2 MB headroom before maxBackpressure
+	// Video queued past this is skipped instead of sent. About 1 s at the 8 Mbps bitrate: the
+	// former 6 MB let a slow viewer fall about 6 s behind before any frame was dropped.
+	private readonly dropThreshold: number = 1024 * 1024;
+	// Data sockets that lost a frame and skip delta frames until a keyframe reaches them
+	private readonly waitingForKeyframe = new Set<uWS.WebSocket<{ streamId: string }>>();
+	// Last time a keyframe was requested from each device, to rate-limit encoder resets
+	private readonly lastKeyframeRequest = new Map<string, number>();
 
 	// Starts optimistic (h265); permanently downgraded to h264 if any client can't decode h265
 	private useH265: boolean = true;
@@ -269,6 +281,7 @@ export class ScrcpyServer {
 			close: (ws, code, message) => {
 				const { streamId } = ws.getUserData();
 				this.streamClients.get(streamId)?.delete(ws);
+				this.waitingForKeyframe.delete(ws);
 				logger.info(`[${streamId}] Device socket closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
 			},
 		});
@@ -489,6 +502,7 @@ export class ScrcpyServer {
 						this.broadcastToStream(
 							streamIp,
 							encodeVideoFrame({ type: "configuration", h265: sessionIsH265, data: packet.data }),
+							"configuration",
 						);
 						logger.trace(`[${streamIp}] Sent configuration frame ({bytes} bytes)`, { bytes: packet.data.byteLength });
 						break;
@@ -503,6 +517,7 @@ export class ScrcpyServer {
 								pts: packet.pts,
 								data: packet.data,
 							}),
+							packet.keyframe ? "keyframe" : "delta",
 						);
 						break;
 					default:
@@ -613,48 +628,78 @@ export class ScrcpyServer {
 		}
 	}
 
-	private safeSend(ws: uWS.WebSocket<{ streamId: string }>, frame: Uint8Array): void {
-		const customLogger = logger.getChild("Drain");
-		const { streamId } = ws.getUserData();
+	/**
+	 * Sends one binary frame (see common/videoFrame.ts) to every client watching a device.
+	 *
+	 * A client that falls behind skips frames instead of queueing them: queued video is shown
+	 * late, which is the lag users see. Dropping a delta frame corrupts the picture until the
+	 * next keyframe, so a client that lost one skips every delta frame until a keyframe gets
+	 * through, and scrcpy is asked for that keyframe right away rather than at its next
+	 * scheduled one. Configuration frames are small and always sent.
+	 */
+	broadcastToStream(ip: string, frame: Uint8Array, kind: VideoFrameKind): void {
+		this.streamClients.get(ip)?.forEach((client) => {
+			this.sendFrame(client, frame, kind);
+		});
+	}
 
-		if (ws.getBufferedAmount() > this.dropThreshold) {
-			customLogger.warn(`[${streamId}] Dropping frame — client too slow`);
+	private sendFrame(ws: uWS.WebSocket<{ streamId: string }>, frame: Uint8Array, kind: VideoFrameKind): void {
+		if (kind === "delta" && this.waitingForKeyframe.has(ws)) return;
+
+		if (kind !== "configuration" && ws.getBufferedAmount() > this.dropThreshold) {
+			this.startWaitingForKeyframe(ws, "client too slow");
 			return;
 		}
 
 		/*  Possible returned values:
-            0 : OK
-            1 : Backpressure built up (but still queued)
+            0 : Backpressure built up (but still queued)
+            1 : OK
             2 : Message dropped — backpressure limit exceeded
-                - The last one is the only interesting one
          */
 		if (ws.send(frame, true, false) === 2) {
-			customLogger.error(`[${streamId}] Video stream frame dropped...`);
+			this.startWaitingForKeyframe(ws, "send buffer full");
+		} else if (kind === "keyframe" && this.waitingForKeyframe.delete(ws)) {
+			logger.getChild("Drain").info(`[${ws.getUserData().streamId}] Keyframe delivered, video resumed`);
 		}
 	}
 
-	broadcastToStream(ip: string, frame: Uint8Array): void {
-		this.streamClients.get(ip)?.forEach((client) => {
-			this.safeSend(client, frame);
-		});
+	private startWaitingForKeyframe(ws: uWS.WebSocket<{ streamId: string }>, reason: string): void {
+		const { streamId } = ws.getUserData();
+		// Logged once per stall, not once per skipped frame. A warning, not an error: an error
+		// makes the file log write out its whole trace buffer, on a path that runs 30 times a second.
+		if (!this.waitingForKeyframe.has(ws)) {
+			this.waitingForKeyframe.add(ws);
+			logger.getChild("Drain").warn(`[${streamId}] Skipping video until the next keyframe (${reason})`);
+		}
+		this.requestKeyframe(streamId);
+	}
+
+	// resetVideo makes scrcpy send a fresh configuration and keyframe. Rate-limited per device:
+	// each reset restarts the encoder, and a client still behind would otherwise ask every frame.
+	private requestKeyframe(streamId: string): void {
+		const now = Date.now();
+		if (now - (this.lastKeyframeRequest.get(streamId) ?? 0) < KEYFRAME_REQUEST_INTERVAL_MS) return;
+		this.lastKeyframeRequest.set(streamId, now);
+
+		const client = this.scrcpyClientsByIp.get(streamId);
+		if (client) void this.resentConfigPackage(client);
 	}
 
 	broadcastToClients(packetJson: string): void {
 		const customLogger: Logger = logger.getChild("Drain");
 		this.wsClients.forEach((client) => {
 			if (client.getBufferedAmount() > this.dropThreshold) {
-				customLogger.warn("Dropping frame — client too slow");
+				customLogger.warn("Dropping control message — client too slow");
 				return;
 			}
 
 			/*  Possible returned values:
-                0 : OK
-                1 : Backpressure built up (but still queued)
+                0 : Backpressure built up (but still queued)
+                1 : OK
                 2 : Message dropped — backpressure limit exceeded
-                    - The last one is the only interesting one
              */
 			if (client.send(packetJson, false, true) === 2) {
-				customLogger.error("Video stream frame dropped...");
+				customLogger.warn("Control message dropped, send buffer full");
 			}
 		});
 	}

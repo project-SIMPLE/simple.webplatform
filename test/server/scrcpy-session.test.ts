@@ -182,6 +182,94 @@ describe("ScrcpyServer.runSession (real session logic, scripted device)", () => 
 		vi.restoreAllMocks();
 	});
 
+	// A viewer that falls behind must skip video, not queue it (queued video is shown late:
+	// the casting lag), and must not see the corruption a lost delta frame causes.
+	describe("frame dropping for a slow viewer", () => {
+		type FakeViewer = { buffered: number; sendResult: number; sent: string[] };
+		const ip = "10.0.0.9";
+
+		function viewer(): FakeViewer & { ws: unknown } {
+			const state: FakeViewer = { buffered: 0, sendResult: 1, sent: [] };
+			const ws = {
+				getUserData: () => ({ streamId: ip }),
+				getBufferedAmount: () => state.buffered,
+				send: (frame: Uint8Array) => {
+					state.sent.push(new TextDecoder().decode(frame));
+					return state.sendResult;
+				},
+			};
+			return Object.assign(state, { ws });
+		}
+
+		function setup(...viewers: { ws: unknown }[]) {
+			const resetVideo = vi.fn(async () => {});
+			const streams = internals as unknown as {
+				streamClients: Map<string, Set<unknown>>;
+				scrcpyClientsByIp: Map<string, unknown>;
+				lastKeyframeRequest: Map<string, number>;
+				broadcastToStream(ip: string, frame: Uint8Array, kind: "configuration" | "keyframe" | "delta"): void;
+			};
+			streams.streamClients.set(ip, new Set(viewers.map((v) => v.ws)));
+			streams.scrcpyClientsByIp.set(ip, { controller: { resetVideo } });
+			streams.lastKeyframeRequest.delete(ip);
+			const send = (label: string, kind: "configuration" | "keyframe" | "delta") =>
+				streams.broadcastToStream(ip, new TextEncoder().encode(label), kind);
+			const cleanup = () => {
+				streams.streamClients.delete(ip);
+				streams.scrcpyClientsByIp.delete(ip);
+			};
+			return { send, resetVideo, cleanup };
+		}
+
+		it("skips delta frames from a lost frame until a keyframe gets through, and asks for one", () => {
+			const slow = viewer();
+			const { send, resetVideo, cleanup } = setup(slow);
+
+			send("d1", "delta");
+			slow.buffered = 2 * 1024 * 1024; // over the 1 MB threshold
+			send("d2", "delta");
+			send("k1", "keyframe"); // still too far behind: skipped too
+			slow.buffered = 0; // caught up
+			send("d3", "delta"); // would decode garbage without the frames lost before it
+			send("k2", "keyframe");
+			send("d4", "delta");
+
+			expect(slow.sent).toEqual(["d1", "k2", "d4"]);
+			// One encoder reset for the stall, not one per skipped frame
+			expect(resetVideo).toHaveBeenCalledTimes(1);
+			cleanup();
+		});
+
+		it("treats a frame uWS dropped (send returned 2) as lost", () => {
+			const slow = viewer();
+			const { send, cleanup } = setup(slow);
+
+			slow.sendResult = 2;
+			send("d1", "delta");
+			slow.sendResult = 1;
+			send("d2", "delta");
+			send("k1", "keyframe");
+
+			expect(slow.sent).toEqual(["d1", "k1"]); // d1 was attempted (and lost), d2 skipped
+			cleanup();
+		});
+
+		it("always sends configuration frames, and leaves other viewers of the stream alone", () => {
+			const slow = viewer();
+			const fast = viewer();
+			const { send, cleanup } = setup(slow, fast);
+
+			slow.buffered = 2 * 1024 * 1024;
+			send("c1", "configuration");
+			send("d1", "delta");
+			send("d2", "delta");
+
+			expect(slow.sent).toEqual(["c1"]);
+			expect(fast.sent).toEqual(["c1", "d1", "d2"]);
+			cleanup();
+		});
+	});
+
 	it("pushes the scrcpy server and announces the client version of that same binary", async () => {
 		device = fakeDevice();
 		device.send(metadata("Quest 3"), sessionPacket(1570, 1482));
