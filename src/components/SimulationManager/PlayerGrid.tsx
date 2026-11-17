@@ -9,6 +9,14 @@ interface PlayerGridProps {
 
 /** Row of connected headsets plus transparent placeholder slots up to maxPlayers. */
 const PlayerGrid = ({ playerList, maxPlayers }: PlayerGridProps) => {
+	const connected = Object.keys(playerList).length;
+	// Stable slot ids for the empty places. Don't use crypto.randomUUID() here: it only exists in
+	// secure contexts (HTTPS or localhost), so opening the page by LAN IP (e.g. from an iPad) threw
+	// during render and blanked the whole page.
+	const emptySlots = Array.from(
+		{ length: Math.max(0, Number(maxPlayers) - connected) },
+		(_, i) => `placeholder-slot-${connected + i + 1}`,
+	);
 	return (
 		<div className="flex justify-center items-center  space-x-4 ">
 			{/*Display Headset Connected */}
@@ -18,14 +26,11 @@ const PlayerGrid = ({ playerList, maxPlayers }: PlayerGridProps) => {
 			})}
 
 			{/* //!       Display remaining headsets in transparent orange if the number of detected players is less than the maximum number of players */}
-			{Array.from({ length: Number(maxPlayers) - Object.keys(playerList).length }).map((_, _index) => {
-				const uniqueId = crypto.randomUUID();
-				return (
-					<div key={`placeholder-${uniqueId}`} className="flex flex-col items-center cursor-not-allowed">
-						<VRHeadset />
-					</div>
-				);
-			})}
+			{emptySlots.map((slotId) => (
+				<div key={slotId} className="flex flex-col items-center cursor-not-allowed">
+					<VRHeadset />
+				</div>
+			))}
 		</div>
 	);
 };

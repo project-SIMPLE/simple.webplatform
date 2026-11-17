@@ -28,4 +28,20 @@ describe("PlayerGrid", () => {
 		render(<PlayerGrid playerList={playerList} maxPlayers={2} />);
 		expect(screen.getAllByAltText("VR Headset")).toHaveLength(2);
 	});
+
+	// Regression: opening the page by LAN IP (http://192.168.x.x:8000, e.g. from an iPad) is not a
+	// secure context, so crypto.randomUUID is undefined there; using it for placeholder keys threw
+	// during render and blanked the Simulation Manager page.
+	it("renders placeholders outside a secure context (no crypto.randomUUID)", () => {
+		vi.stubGlobal("crypto", { getRandomValues: crypto.getRandomValues.bind(crypto) });
+		try {
+			const playerList: PlayerList = {
+				headset_1: { connected: true, in_game: false, date_connection: "10:00" },
+			};
+			render(<PlayerGrid playerList={playerList} maxPlayers={4} />);
+			expect(screen.getAllByAltText("VR Headset")).toHaveLength(4);
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
 });
