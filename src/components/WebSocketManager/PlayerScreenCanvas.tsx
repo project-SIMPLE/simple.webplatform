@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { HEADSET_COLOR_CLASS, HEADSET_COLOR_NAME } from "../../common/constants";
+import type { StreamSurface } from "../../hooks/useVideoStreams";
 
 // All hooks in this component are called unconditionally — the early `return null` at the
 // top guards against an invalid id, but it runs before any hook call.
 interface PlayerScreenCanvasProps {
 	isPlaceholder?: boolean; // if true, renders an empty placeholder div instead of a canvas tile
 	needsInteractivity?: boolean; // enables click-to-popup behaviour for the StreamPlayersScreenControl page
-	canvas?: HTMLCanvasElement; // the canvas element managed by VideoStreamManager; attached to the DOM via a ref inside the useEffect
+	canvas?: StreamSurface; // the canvas (WebCodecs) or video (MSE fallback) managed by VideoStreamManager; attached to the DOM via a ref inside the useEffect
 	id?: string; // headset identifier (e.g. "192.168.1.101:5555"); used to derive the frame and popup color
 }
 
@@ -27,14 +28,14 @@ const PlayerScreenCanvas = ({ canvas, id, isPlaceholder, needsInteractivity }: P
 
 			if (showPopup) {
 				if (popupref.current) {
-					popupref.current.querySelector("canvas")?.remove();
+					popupref.current.querySelector("canvas, video")?.remove();
 					popupref.current.appendChild(canvas);
 					canvas.classList.add("rounded-lg", "max-h-[95dvh]", "max-w-[95dvw]");
 				}
 			} else if (canvasref.current) {
 				// Fill the inset holder; the holder insets from the frame border and clips the corners.
 				canvas.classList.add("w-full", "h-full");
-				canvasref.current.querySelector("canvas")?.remove();
+				canvasref.current.querySelector("canvas, video")?.remove();
 				canvasref.current.appendChild(canvas);
 			}
 		}

@@ -1,6 +1,7 @@
 import { getLogger } from "@logtape/logtape";
 import { ScrcpyVideoCodecId, type ScrcpyVideoStreamPacket } from "@yume-chan/scrcpy";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { isMseSupported, MsePlayer } from "./mse/MsePlayer.ts";
 import { deserializeData, sortStreamKeys } from "./videoPackets.ts";
 
 // `localhost` resolves to IPv6 ::1 first in most browsers, but the backend uWS video server
@@ -10,18 +11,26 @@ const port: string = "8082";
 
 const logger = getLogger(["hooks", "useVideoStreams"]);
 
+/** What a stream is drawn on: a canvas fed by WebCodecs, or a `<video>` fed through MSE. */
+export type StreamSurface = HTMLCanvasElement | HTMLVideoElement;
+
+// WebCodecs (VideoDecoder) only exists in secure contexts (HTTPS or localhost). A page opened by
+// LAN IP over plain HTTP (e.g. from an iPad) falls back to Media Source Extensions.
+const hasWebCodecs = (): boolean => typeof VideoDecoder !== "undefined";
+const canPlayVideo = (): boolean => hasWebCodecs() || isMseSupported("h264") || isMseSupported("h265");
+
 /**
  * Owns the scrcpy video-streaming lifecycle: the control socket (codec negotiation +
- * stream announcements), the per-device data sockets, the decoder Web Workers, and the
- * canvas elements. Returns the live canvas map and a stable, numerically-sorted key list.
+ * stream announcements), the per-device data sockets, the decoders (WebCodecs Web Workers, or
+ * MSE players outside a secure context), and the canvas/video elements. Returns the live canvas map and a stable, numerically-sorted key list.
  *
  * The decoder Maps are intentionally render-local (not refs) and the lifecycle effect runs
  * once on mount, closing over the first render's Maps and newVideoStream (see the biome-ignore
  * below). Do not promote these Maps to refs — it changes teardown/reconnect timing.
  */
 export const useVideoStreams = (selectedCanvas?: string) => {
-	const [canvasList, setCanvasList] = useState<Record<string, HTMLCanvasElement>>({});
-	const canvasRefs = useRef<Map<string, HTMLCanvasElement>>(new Map());
+	const [canvasList, setCanvasList] = useState<Record<string, StreamSurface>>({});
+	const canvasRefs = useRef<Map<string, StreamSurface>>(new Map());
 
 	const sortedKeys = useMemo(() => sortStreamKeys(Object.keys(canvasList)), [canvasList]);
 
@@ -32,23 +41,50 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 	const streamIsH265 = new Map<string, boolean>();
 	// Map of worker instances for each stream
 	const decoderWorkers = useRef<Map<string, Worker>>(new Map());
+	// MSE players, for streams played in a <video> when WebCodecs is unavailable
+	const msePlayers = useRef<Map<string, MsePlayer>>(new Map());
+
+	/** Stops whichever decoder (worker or MSE player) a stream has. Only touches refs, so it is safe from stale closures. */
+	function stopDecoder(deviceId: string) {
+		decoderWorkers.current.get(deviceId)?.terminate();
+		decoderWorkers.current.delete(deviceId);
+		msePlayers.current.get(deviceId)?.dispose();
+		msePlayers.current.delete(deviceId);
+	}
 
 	async function newVideoStream(deviceId: string, useH265: boolean = false) {
 		// Avoid having controller creation hell if connection is too fast
 		readableControllers.set(deviceId, undefined);
 
+		const useMse = !hasWebCodecs();
+		const codec = useH265 ? "h265" : "h264";
+		if (useMse && !isMseSupported(codec)) {
+			// The entry set above keeps the next packets from retrying; the server downgrades to
+			// H.264 once this client reports no H.265 support, and that config packet restarts us.
+			logger.warn(
+				"[Scrcpy-VideoStreamManager] WebCodecs unavailable and MSE can't play the {codec} stream of {deviceId}, waiting for another codec...",
+				{ codec, deviceId },
+			);
+			return;
+		}
+
 		// Wait for HTML to be available
 
 		if (document.getElementById(deviceId)) {
 			logger.info(" Restarting new ReadableStream for {deviceId}", { deviceId });
-			document.getElementById(deviceId)?.querySelector("canvas")?.remove();
+			document.getElementById(deviceId)?.querySelector("canvas, video")?.remove();
 		} else {
 			// Create new stream
 			logger.info(" Create new ReadableStream for {deviceId}", { deviceId });
 		}
 		// Prepare video stream =======================
 
-		const canvas = document.createElement("canvas");
+		// Clean up any existing decoder
+		stopDecoder(deviceId);
+
+		// WebCodecs draws on a canvas from a worker; the MSE fallback plays in a <video>
+		const msePlayer = useMse ? new MsePlayer(codec) : undefined;
+		const canvas: StreamSurface = msePlayer ? msePlayer.video : document.createElement("canvas");
 
 		// Catch cases with non IP devices (USB
 		const canvasId: string =
@@ -67,30 +103,6 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 			}
 		}
 
-		const offscreenCanvas = canvas.transferControlToOffscreen();
-
-		// Clean up any existing worker
-		if (decoderWorkers.current.has(deviceId)) {
-			decoderWorkers.current.get(deviceId)?.terminate();
-			decoderWorkers.current.delete(deviceId);
-		}
-
-		// Create a new web worker to handle the stream
-		const worker = new Worker(new URL("../workers/scrcpyDecoder.ts", import.meta.url), { type: "module" });
-		decoderWorkers.current.set(deviceId, worker);
-
-		worker.onerror = (err) => {
-			logger.error("[Scrcpy-VideoStreamManager] Worker error for {deviceId}: {message}", {
-				deviceId,
-				message: err.message,
-			});
-		};
-		worker.onmessage = (event) => {
-			if (event.data?.type !== "sizeChanged") {
-				logger.debug(`[${deviceId}] Received an unknown message: ${event.data}`);
-			}
-		};
-
 		// Create the ReadableStream BEFORE the async codec check.
 		// new ReadableStream() calls start() synchronously, so the real controller is placed
 		// in readableControllers before this function ever suspends at the first await.
@@ -108,11 +120,7 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 				readableControllers.delete(deviceId);
 				isDecoderHasConfig.delete(deviceId);
 
-				// Terminate the worker
-				if (decoderWorkers.current.has(deviceId)) {
-					decoderWorkers.current.get(deviceId)?.terminate();
-					decoderWorkers.current.delete(deviceId);
-				}
+				stopDecoder(deviceId);
 
 				// Use the canvas already in scope — canvasList captures a stale closure
 				// (React state at render time) so canvasList[deviceId] is always undefined here.
@@ -128,15 +136,48 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 			},
 		});
 
-		if (typeof VideoDecoder === "undefined") {
-			logger.warn(
-				"[Scrcpy-VideoStreamManager] WebCodecs API (VideoDecoder) is not available in this browser, aborting stream",
+		if (msePlayer) {
+			logger.info(
+				"[Scrcpy-VideoStreamManager] WebCodecs unavailable (not a secure context?), playing {deviceId} through MSE",
+				{
+					deviceId,
+				},
 			);
-			stream.cancel(); // closes the ReadableStream and triggers its cancel() cleanup callback
-			worker.terminate();
-			decoderWorkers.current.delete(deviceId);
+			msePlayers.current.set(deviceId, msePlayer);
+			// Closing the stream (tearDownStream) ends the pipe; the player is disposed by stopDecoder
+			void stream
+				.pipeTo(
+					new WritableStream<ScrcpyVideoStreamPacket>({
+						write(packet) {
+							msePlayer.write(packet);
+						},
+					}),
+				)
+				.catch((error) => {
+					logger.debug("[Scrcpy-VideoStreamManager] MSE pipe for {deviceId} ended: {error}", { deviceId, error });
+				});
 			return;
 		}
+
+		if (!(canvas instanceof HTMLCanvasElement)) return; // narrows the type: the MSE path returned above
+
+		const offscreenCanvas = canvas.transferControlToOffscreen();
+
+		// Create a new web worker to handle the stream
+		const worker = new Worker(new URL("../workers/scrcpyDecoder.ts", import.meta.url), { type: "module" });
+		decoderWorkers.current.set(deviceId, worker);
+
+		worker.onerror = (err) => {
+			logger.error("[Scrcpy-VideoStreamManager] Worker error for {deviceId}: {message}", {
+				deviceId,
+				message: err.message,
+			});
+		};
+		worker.onmessage = (event) => {
+			if (event.data?.type !== "sizeChanged") {
+				logger.debug(`[${deviceId}] Received an unknown message: ${event.data}`);
+			}
+		};
 
 		await VideoDecoder.isConfigSupported({
 			// Check if h265 is supported
@@ -240,7 +281,7 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 		// Reconnects automatically after 1 s on unexpected close.
 		function connectDeviceSocket(streamId: string) {
 			if (cleanedUp) return;
-			if (typeof VideoDecoder === "undefined") return;
+			if (!canPlayVideo()) return;
 
 			// Prevent the stale socket's onclose from firing a reconnect when we replace it
 			const existing = deviceSockets.get(streamId);
@@ -253,11 +294,7 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 				readableControllers.delete(streamId);
 				isDecoderHasConfig.delete(streamId);
 
-				// Terminate the worker
-				if (decoderWorkers.current.has(streamId)) {
-					decoderWorkers.current.get(streamId)?.terminate();
-					decoderWorkers.current.delete(streamId);
-				}
+				stopDecoder(streamId);
 			}
 
 			const ws = new WebSocket(`ws://${host}:${port}/stream/${streamId}`);
@@ -339,11 +376,7 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 			isDecoderHasConfig.delete(streamId);
 			streamIsH265.delete(streamId);
 
-			// Terminate the worker
-			if (decoderWorkers.current.has(streamId)) {
-				decoderWorkers.current.get(streamId)?.terminate();
-				decoderWorkers.current.delete(streamId);
-			}
+			stopDecoder(streamId);
 
 			// Remove canvas from DOM and React state
 			const canvas = canvasRefs.current.get(streamId);
@@ -373,8 +406,14 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 					supportH265 = false,
 					supportAv1 = false;
 
-				if (typeof VideoDecoder === "undefined") {
-					logger.warn("[SCRCPY] WebCodecs API not available, reporting no codec support");
+				if (!hasWebCodecs()) {
+					// Not a secure context (e.g. LAN IP over plain HTTP): report what MSE can play
+					supportH264 = isMseSupported("h264");
+					supportH265 = isMseSupported("h265");
+					logger.warn(
+						"[SCRCPY] WebCodecs API not available, MSE fallback supports h264: {supportH264}, h265: {supportH265}",
+						{ supportH264, supportH265 },
+					);
 				} else {
 					// Check if h264 is supported
 					await VideoDecoder.isConfigSupported({ codec: "avc1.4D401E" }).then((r) => {
@@ -458,6 +497,10 @@ export const useVideoStreams = (selectedCanvas?: string) => {
 				worker.terminate();
 			});
 			decoderWorkers.current.clear();
+			msePlayers.current.forEach((player) => {
+				player.dispose();
+			});
+			msePlayers.current.clear();
 		};
 	}, []);
 
