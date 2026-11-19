@@ -42,6 +42,9 @@ export function makeGamaHarness(model: Model): GamaHarness {
 				const p = players.get(id);
 				if (p) p.in_game = inGame;
 			},
+			// Called when the connector adopts an experiment GAMA was already running (issue #156)
+			addEveryPlayer: () => {},
+			notifyPlayerError: () => {},
 		},
 		model_manager: { getActiveModel: () => model },
 	} as unknown as Controller;

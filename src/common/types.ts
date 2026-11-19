@@ -62,6 +62,8 @@ export interface GamaState {
 	content_error: string;
 	experiment_id: string;
 	experiment_name: string;
+	/** True when GAMA runs an experiment the platform didn't launch and cannot control (e.g. opened in GAMA's GUI) */
+	foreign_experiment_detected?: boolean;
 }
 
 /** Record of players keyed by their identifier */

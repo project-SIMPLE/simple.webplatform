@@ -31,6 +31,8 @@ function makeHarness(model: Model): Controller {
 			getPlayerState: () => undefined,
 			getPlayerId: (id: string) => id,
 			togglePlayerInGame: () => {},
+			addEveryPlayer: () => {},
+			notifyPlayerError: () => {},
 		},
 		model_manager: {
 			getActiveModel: () => model,

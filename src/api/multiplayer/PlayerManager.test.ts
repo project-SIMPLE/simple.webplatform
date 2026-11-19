@@ -4,15 +4,22 @@ import type Controller from "../core/Controller.ts";
 import PlayerManager from "./PlayerManager.ts";
 
 // Minimal Controller stub for addPlayerConnection, which only touches
-// `controller.gama_connector.jsonGamaState.experiment_state` and
-// `controller.addInGamePlayer`.
+// `controller.gama_connector.canTalkToExperiment()` and `controller.addInGamePlayer`.
+// The stub connector owns the experiment, so only its state decides (see
+// GamaConnector.test.ts for the ownership rules themselves).
 function stubController(
 	experimentState: string | null,
 	addInGamePlayer = vi.fn(),
 ): { controller: Controller; addInGamePlayer: ReturnType<typeof vi.fn> } {
 	const controller = {
 		// `null` models "no GAMA connector attached" (the issue #34 crash condition).
-		gama_connector: experimentState === null ? undefined : { jsonGamaState: { experiment_state: experimentState } },
+		gama_connector:
+			experimentState === null
+				? undefined
+				: {
+						jsonGamaState: { experiment_state: experimentState },
+						canTalkToExperiment: () => !["NONE", "NOTREADY"].includes(experimentState),
+					},
 		addInGamePlayer,
 	} as unknown as Controller;
 	return { controller, addInGamePlayer };
