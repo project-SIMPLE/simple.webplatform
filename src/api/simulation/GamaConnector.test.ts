@@ -36,7 +36,12 @@ type FakeWebSocket = InstanceType<typeof FakeWebSocket>;
 
 vi.mock("ws", () => ({ default: FakeWebSocket }));
 
-import { extractCreatePlayerId, GAMA_ERROR_MESSAGES, GAMA_PROBE_EXPR, GAMA_PROBE_TIMEOUT_MS } from "../core/Constants.ts";
+import {
+	extractCreatePlayerId,
+	GAMA_ERROR_MESSAGES,
+	GAMA_PROBE_EXPR,
+	GAMA_PROBE_TIMEOUT_MS,
+} from "../core/Constants.ts";
 import type Controller from "../core/Controller.ts";
 import GamaConnector, { LATEST_WINS_ACK_TIMEOUT_MS } from "./GamaConnector.ts";
 
@@ -557,10 +562,7 @@ describe("GamaConnector latest-wins asks", () => {
 
 		gama.sendAsk(move("Player_101", 2), "192.168.68.101"); // not held back by the lost one
 		const asks = [...lost, ...socket.sent].map((s) => JSON.parse(s)).filter((m) => m.type === "ask");
-		expect(asks.map((m) => m.args)).toEqual([
-			move("Player_101", 1).args,
-			move("Player_101", 2).args,
-		]);
+		expect(asks.map((m) => m.args)).toEqual([move("Player_101", 1).args, move("Player_101", 2).args]);
 	});
 });
 

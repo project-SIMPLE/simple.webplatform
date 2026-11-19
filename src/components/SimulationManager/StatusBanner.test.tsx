@@ -15,6 +15,19 @@ describe("StatusBanner", () => {
 		expect(screen.getByText(english.gamaless_banner)).toBeInTheDocument();
 	});
 
+	// Issue #156: GAMA runs an experiment opened from its own interface that the platform cannot use
+	it("warns when GAMA runs an experiment the platform cannot control", () => {
+		renderBanner({ foreignExperimentDetected: true, playerCount: 4 });
+		expect(screen.getByText(english.foreign_experiment_banner)).toBeInTheDocument();
+		expect(screen.queryByText(english.all_players_connected)).not.toBeInTheDocument();
+	});
+
+	it("keeps the GAMALESS banner over the foreign-experiment warning", () => {
+		renderBanner({ gamaless: true, foreignExperimentDetected: true });
+		expect(screen.getByText(english.gamaless_banner)).toBeInTheDocument();
+		expect(screen.queryByText(english.foreign_experiment_banner)).not.toBeInTheDocument();
+	});
+
 	it("renders nothing once the experiment is running", () => {
 		const { container } = renderBanner({ experimentState: "RUNNING" });
 		expect(container).toBeEmptyDOMElement();
