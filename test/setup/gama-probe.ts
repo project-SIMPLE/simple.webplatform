@@ -11,8 +11,12 @@ export function gamaUrl(): string {
  * Probe whether a GAMA WebSocket server is up and accepting connections.
  * Resolves true on a successful open, false on any error/timeout — so the
  * integration suite can skip itself offline instead of failing.
+ *
+ * With no server the connection is refused at once, so the timeout only runs when
+ * something listens but is slow to accept: a GAMA busy with a load, as on the
+ * macOS CI runners, where the former 2 s made whole test files skip (2026-11-17).
  */
-export function isGamaReachable(timeoutMs = 2000): Promise<boolean> {
+export function isGamaReachable(timeoutMs = 10_000): Promise<boolean> {
 	return new Promise((resolve) => {
 		let settled = false;
 		const done = (ok: boolean, socket?: WebSocket) => {

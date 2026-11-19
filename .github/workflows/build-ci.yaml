@@ -125,6 +125,14 @@ jobs:
             sleep 1
           done
 
+      # The port opening doesn't mean GAMA is ready: its first `load` still has to
+      # compile the model, much slower than every later one, and that landed in the
+      # tests' 15 s budgets (the macOS runners stopped fitting it, 2026-11). Do that
+      # first load here, with a generous budget, so the tests start on a warm GAMA.
+      - name: Warm GAMA up (first model load)
+        timeout-minutes: 6
+        run: node scripts/gama-warmup.mjs --timeout=300
+
       - name: Set custom GAMA port
         run: |
           echo "GAMA_WS_PORT=${{ env.GAMA_WS_PORT }}" >> .env
@@ -257,6 +265,14 @@ jobs:
           done
           [ -n "$up" ] || echo "::warning::GAMA server never opened port ${{ env.GAMA_WS_PORT }} — the GAMA-gated E2E tests will be skipped"
 
+      # The port opening doesn't mean GAMA is ready: its first `load` still has to
+      # compile the model, much slower than every later one, and that landed in the
+      # tests' 15 s budgets (the macOS runners stopped fitting it, 2026-11). Do that
+      # first load here, with a generous budget, so the tests start on a warm GAMA.
+      - name: Warm GAMA up (first model load)
+        timeout-minutes: 6
+        run: node scripts/gama-warmup.mjs --timeout=300
+
       # Hardware-accelerate the emulator so it boots fast enough for the job.
       - name: Enable KVM
         run: |
@@ -386,6 +402,15 @@ jobs:
             sleep 1
           done
           [ -n "$up" ] || echo "::warning::GAMA server never opened port ${{ env.GAMA_WS_PORT }} — the GAMA-gated E2E tests will be skipped"
+
+      # The port opening doesn't mean GAMA is ready: its first `load` still has to
+      # compile the model, much slower than every later one, and that landed in the
+      # tests' 15 s budgets (the macOS runners stopped fitting it, 2026-11). Do that
+      # first load here, with a generous budget, so the tests start on a warm GAMA.
+      - name: Warm GAMA up (first model load)
+        continue-on-error: true
+        timeout-minutes: 6
+        run: node scripts/gama-warmup.mjs --timeout=300
 
       # Vitest integration project against the live GAMA booted above — real-GAMA
       # coverage on macOS, not just Linux. Self-skips if GAMA never came up (the
@@ -528,6 +553,15 @@ jobs:
           Write-Output ("--- 127.0.0.1 reachable: " + (Test-NetConnection -ComputerName '127.0.0.1' -Port ${{ env.GAMA_WS_PORT }} -InformationLevel Quiet))
           Write-Output "--- gama-server.log tail:"
           Get-Content (Join-Path $env:GITHUB_WORKSPACE 'gama-server.log') -ErrorAction SilentlyContinue | Select-Object -Last 25
+
+      # The port opening doesn't mean GAMA is ready: its first `load` still has to
+      # compile the model, much slower than every later one, and that landed in the
+      # tests' 15 s budgets (the macOS runners stopped fitting it, 2026-11). Do that
+      # first load here, with a generous budget, so the tests start on a warm GAMA.
+      - name: Warm GAMA up (first model load)
+        continue-on-error: true
+        timeout-minutes: 6
+        run: node scripts/gama-warmup.mjs --timeout=300
 
       # Vitest integration project against the live GAMA booted above — real-GAMA
       # coverage on Windows, not just Linux. Self-skips if GAMA never came up (the
