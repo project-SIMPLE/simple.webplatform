@@ -10,7 +10,7 @@ import { encodeVideoFrame } from "../../../common/videoFrame.ts";
 import { resolveToolkitAsset } from "../../infra/ToolkitAssets.ts";
 import type { AdbManager } from "../adb/AdbManager.ts";
 import { isInvertedAspectRatio } from "./aspect.ts";
-import { nextUseH265 } from "./codec.ts";
+import { type ClientCodecSupport, chooseUseH265, isCodecReport } from "./codec.ts";
 import { resetDisplaySizeOverride } from "./display.ts";
 
 // Override the log function
@@ -24,6 +24,12 @@ type VideoFrameKind = "configuration" | "keyframe" | "delta";
 
 // At most one encoder reset (fresh keyframe) per device in this window
 const KEYFRAME_REQUEST_INTERVAL_MS = 2000;
+
+// How long every viewer must have been able to decode H.265 before the streams switch back to it.
+// A switch restarts every headset stream (a few seconds without video for everyone), and pages
+// reconnect their control socket on reload or page change: without this wait, reloading the page
+// of an H.264-only viewer would switch H.264 -> H.265 -> H.264.
+const CODEC_UPGRADE_DELAY_MS = 15_000;
 
 // Crop (and rotation) isolating a single eye of the headset's stereo feed.
 // Returns undefined for unknown devices: no cropping is applied.
@@ -84,8 +90,15 @@ export class ScrcpyServer {
 	// Last time a keyframe was requested from each device, to rate-limit encoder resets
 	private readonly lastKeyframeRequest = new Map<string, number>();
 
-	// Starts optimistic (h265); permanently downgraded to h264 if any client can't decode h265
+	// Codec every stream uses: H.265 while every viewer decodes it (see codec.ts). Starts optimistic.
 	private useH265: boolean = true;
+	// What each control client (viewer) reported it can decode, until it disconnects
+	private readonly codecReports = new Map<uWS.WebSocket<unknown>, ClientCodecSupport>();
+	// Pending switch back to H.265, cancelled if an H.264-only viewer shows up in the meantime
+	private codecUpgradeTimer: ReturnType<typeof setTimeout> | undefined;
+	private readonly codecUpgradeDelayMs: number = CODEC_UPGRADE_DELAY_MS;
+	// Codec switches run one after the other: each one closes and restarts every stream
+	private codecSwitches: Promise<void> = Promise.resolve();
 
 	// IPs that currently have an active startStreaming supervisor loop running.
 	private readonly activeStartStreaming = new Set<string>();
@@ -155,44 +168,20 @@ export class ScrcpyServer {
 					.info(`Backpressure drained, streaming should be back to normal, buffered: ${ws.getBufferedAmount()}`);
 			},
 
-			message: async (_ws, message) => {
+			message: (ws, message) => {
 				try {
-					const jsonMessage: { type: string; h264: boolean; h265: boolean; av1: boolean } = JSON.parse(
-						Buffer.from(message).toString(),
-					);
-
+					const jsonMessage: unknown = JSON.parse(Buffer.from(message).toString());
 					logger.debug("Received message from streaming client:\n{jsonMessage}", { jsonMessage });
+					if (!isCodecReport(jsonMessage)) {
+						logger.warn("Ignoring an unknown message from a streaming client: {jsonMessage}", { jsonMessage });
+						return;
+					}
 
-					const previousCodec = this.useH265;
-					// Codec selection is a one-way downgrade: start optimistic (h265),
-					// switch to h264 permanently if any client can't decode h265.
-					// We never upgrade back — that would break already-connected h264-only clients.
 					if (!jsonMessage.h265 && !jsonMessage.h264) {
 						logger.fatal("Client doesn't support any compatible codec!");
 					}
-					this.useH265 = nextUseH265(this.useH265, jsonMessage);
-
-					// Reset video streams if codec changed !
-					if (previousCodec !== this.useH265) {
-						logger.warn(`Restarting streams with new codec (${this.useH265 ? "h265" : "h264"})`);
-						// Clear active streams immediately so control clients that reconnect
-						// during the transition don't receive stale stream_available announcements.
-						// The exited handlers on old clients will now find no matching entry to delete.
-						const clientsToStop = [...this.scrcpyClientsByIp.values()];
-						this.activeStreams.clear();
-						this.scrcpyClientsByIp.clear();
-						for (const client of clientsToStop) {
-							await client.controller?.close();
-							await client.close();
-						}
-						await this.adbManager.restartStreamingAll().then(async () => {
-							logger.debug("All streams restarted");
-							// Ensure video stream are well init after long restart
-							await this.resentAllConfigPackage(true, 500).then(() =>
-								logger.trace("Config resent after stream restart"),
-							);
-						});
-					}
+					this.codecReports.set(ws, { h264: jsonMessage.h264, h265: jsonMessage.h265, av1: jsonMessage.av1 });
+					this.updateCodec();
 				} catch (e) {
 					logger.error("Something went wrong on message received...\n{e}", { e });
 				}
@@ -202,6 +191,8 @@ export class ScrcpyServer {
 				try {
 					this.wsClients.delete(ws);
 					logger.info(`Connection closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
+					// The viewer no longer constrains the codec: maybe every remaining one decodes H.265
+					if (this.codecReports.delete(ws)) this.updateCodec();
 
 					// Handle specific close codes
 					switch (code) {
@@ -284,6 +275,74 @@ export class ScrcpyServer {
 				this.waitingForKeyframe.delete(ws);
 				logger.info(`[${streamId}] Device socket closed. Code: ${code}, Reason: ${Buffer.from(message).toString()}`);
 			},
+		});
+	}
+
+	// =======================
+	// Codec negotiation
+
+	/**
+	 * Moves the streams to the codec every connected viewer can decode (see codec.ts). Switching
+	 * to H.264 happens at once, so a viewer that can't decode H.265 gets video. Switching back to
+	 * H.265 waits codecUpgradeDelayMs and is cancelled if an H.264-only viewer reports in the
+	 * meantime: every switch restarts all the streams.
+	 */
+	private updateCodec(): void {
+		const target = chooseUseH265(this.codecReports.values());
+
+		if (!target) {
+			this.cancelCodecUpgrade();
+			if (this.useH265) this.switchCodec(false, "a viewer can't decode h265");
+			return;
+		}
+		if (this.useH265 || this.codecUpgradeTimer) return;
+
+		logger.info(`Every viewer decodes h265: switching back to it in ${this.codecUpgradeDelayMs / 1000} s`);
+		this.codecUpgradeTimer = setTimeout(() => {
+			this.codecUpgradeTimer = undefined;
+			// Re-checked: viewers may have come and gone during the wait
+			if (!this.useH265 && chooseUseH265(this.codecReports.values())) {
+				this.switchCodec(true, "every viewer decodes h265");
+			}
+		}, this.codecUpgradeDelayMs);
+		// Never keeps the process alive on its own
+		this.codecUpgradeTimer.unref?.();
+	}
+
+	private cancelCodecUpgrade(): void {
+		if (!this.codecUpgradeTimer) return;
+		clearTimeout(this.codecUpgradeTimer);
+		this.codecUpgradeTimer = undefined;
+		logger.info("Switch back to h265 cancelled: a viewer can't decode it");
+	}
+
+	/** Sets the codec and restarts every stream with it, after any switch still in progress. */
+	private switchCodec(useH265: boolean, reason: string): void {
+		this.useH265 = useH265;
+		const codec = useH265 ? "h265" : "h264";
+		this.codecSwitches = this.codecSwitches.then(async () => {
+			// A later switch may have changed the codec again before this one ran
+			if (this.useH265 !== useH265) return;
+			logger.warn(`Restarting streams with new codec (${codec}): ${reason}`);
+			try {
+				// Clear active streams immediately so control clients that reconnect
+				// during the transition don't receive stale stream_available announcements.
+				// The exited handlers on old clients will now find no matching entry to delete.
+				const clientsToStop = [...this.scrcpyClientsByIp.values()];
+				this.activeStreams.clear();
+				this.scrcpyClientsByIp.clear();
+				for (const client of clientsToStop) {
+					await client.controller?.close();
+					await client.close();
+				}
+				await this.adbManager.restartStreamingAll();
+				logger.debug("All streams restarted");
+				// Ensure video stream are well init after long restart
+				await this.resentAllConfigPackage(true, 500);
+				logger.trace("Config resent after stream restart");
+			} catch (e) {
+				logger.error(`Couldn't restart the streams with ${codec}: {e}`, { e });
+			}
 		});
 	}
 

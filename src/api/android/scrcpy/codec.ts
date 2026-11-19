@@ -1,10 +1,11 @@
 /**
  * Codec negotiation for the scrcpy video stream.
  *
- * The server starts optimistic (h265) and performs a ONE-WAY downgrade to h264
- * the moment any streaming client reports it cannot decode h265 (e.g. Safari —
- * issue #133). It never upgrades back to h265, since that would break
- * already-connected h264-only clients mid-session (issue #69).
+ * Every headset streams in one codec, chosen for all the viewers at once (the browser pages that
+ * report what they can decode). H.265 is used while every viewer can decode it; one viewer that
+ * can't (e.g. Safari, issue #133) moves every stream to H.264, and once no such viewer is left the
+ * streams go back to H.265. Upgrading never happens while an H.264-only viewer is still
+ * connected, which is what issue #69 broke.
  */
 export interface ClientCodecSupport {
 	h264: boolean;
@@ -13,18 +14,20 @@ export interface ClientCodecSupport {
 }
 
 /**
- * Given the server's current codec choice and a client's advertised capabilities,
- * return the codec the server should use going forward.
- *
- * @param current  the server's current `useH265` value
- * @param caps     the codecs the reporting client can decode
- * @returns the new `useH265` value (true = h265, false = h264)
+ * The codec the streams should use for these viewer reports: true (H.265) unless a viewer that
+ * can decode something can't decode H.265. A viewer that supports neither codec can't be served
+ * whatever the choice, so it doesn't count. No reports at all: H.265, the optimistic default.
  */
-export function nextUseH265(current: boolean, caps: ClientCodecSupport): boolean {
-	// No compatible codec at all: keep the current choice (the caller logs fatal).
-	if (!caps.h265 && !caps.h264) return current;
-	// Client can't decode h265: downgrade permanently.
-	if (!caps.h265) return false;
-	// Client supports h265: never upgrade back from a prior downgrade.
-	return current;
+export function chooseUseH265(reports: Iterable<ClientCodecSupport>): boolean {
+	for (const report of reports) {
+		if ((report.h264 || report.h265) && !report.h265) return false;
+	}
+	return true;
+}
+
+/** True when a decoded control message is a viewer's codec report. */
+export function isCodecReport(message: unknown): message is ClientCodecSupport & { type: "codecVideo" } {
+	if (typeof message !== "object" || message === null) return false;
+	const { type, h264, h265 } = message as Record<string, unknown>;
+	return type === "codecVideo" && typeof h264 === "boolean" && typeof h265 === "boolean";
 }
