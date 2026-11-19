@@ -16,7 +16,11 @@ function recordingController(experimentState = "NONE") {
 		sendExpression: vi.fn(),
 		sendAsk: vi.fn(),
 		purgePlayer: vi.fn(),
-		gama_connector: { jsonGamaState: { experiment_state: experimentState } },
+		gama_connector: {
+			jsonGamaState: { experiment_state: experimentState },
+			// Mirrors GamaConnector's ownership gate (#156): an experiment we own, live.
+			canTalkToExperiment: () => ["RUNNING", "PAUSED"].includes(experimentState),
+		},
 	} as unknown as Controller;
 }
 
